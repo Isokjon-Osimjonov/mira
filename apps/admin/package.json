@@ -1,0 +1,27 @@
+{
+  "name": "@mira/admin",
+  "version": "0.0.1",
+  "private": true,
+  "nx": {
+    "tags": [
+      "scope:admin"
+    ]
+  },
+  "dependencies": {
+    "@tanstack/react-query": "^5.100.14",
+    "@tanstack/react-router": "^1.170.8",
+    "axios": "^1.16.1",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^1.16.0",
+    "tailwind-merge": "^3.6.0",
+    "zustand": "^5.0.13"
+  },
+  "devDependencies": {
+    "@types/node": "20.19.9",
+    "@vitejs/plugin-react": "^6.0.2",
+    "autoprefixer": "^10.5.0",
+    "postcss": "^8.5.15",
+    "tailwindcss": "^4.3.0"
+  }
+}

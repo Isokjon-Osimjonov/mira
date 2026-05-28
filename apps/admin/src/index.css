@@ -1,0 +1,31 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Violet Luxe brand — maps to Tailwind violet palette */
+    --background:            250 100% 98%; /* violet-50  #F5F3FF */
+    --foreground:            265  89% 23%; /* violet-950 #2E1065 */
+
+    --primary:               263  70% 58%; /* violet-600 #7C3AED */
+    --primary-foreground:      0   0% 100%;
+
+    --secondary:             251  91% 95%; /* violet-100 #EDE9FE */
+    --secondary-foreground:  265  89% 23%; /* violet-950 #2E1065 */
+
+    --muted:                 251  91% 95%; /* violet-100 #EDE9FE */
+    --muted-foreground:      263  68% 55%; /* violet-500 approx  */
+
+    --accent:                251  91% 95%; /* violet-100 #EDE9FE */
+    --accent-foreground:     265  89% 23%; /* violet-950 #2E1065 */
+
+    --destructive:             0  84% 60%;
+    --destructive-foreground:  0   0% 100%;
+
+    --border:                263  68% 87%; /* violet-200 approx  */
+    --input:                 263  68% 87%;
+    --ring:                  263  70% 58%; /* violet-600 #7C3AED */
+    --radius:                0.5rem;
+  }
+}

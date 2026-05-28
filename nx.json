@@ -1,25 +1,12 @@
 {
   "$schema": "./node_modules/nx/schemas/nx-schema.json",
-  "analytics": false,
-  "namedInputs": {
-    "default": ["{projectRoot}/**/*", "sharedGlobals"],
-    "production": ["default"],
-    "sharedGlobals": []
+  "targetDefaults": {
+    "build": { "cache": true, "dependsOn": ["^build"] },
+    "test":  { "cache": true },
+    "lint":  { "cache": true }
   },
-  "plugins": [
-    {
-      "plugin": "@nx/js/typescript",
-      "options": {
-        "typecheck": {
-          "targetName": "typecheck"
-        },
-        "build": {
-          "targetName": "build",
-          "configName": "tsconfig.lib.json",
-          "buildDepsName": "build-deps",
-          "watchDepsName": "watch-deps"
-        }
-      }
-    }
-  ]
+  "generators": {
+    "@nx/react": { "library": { "style": "css" } }
+  },
+  "defaultBase": "main"
 }
