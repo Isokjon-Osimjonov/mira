@@ -1,0 +1,51 @@
+name: Mobile Native Build
+
+on:
+  push:
+    tags:
+      - 'v*'          # v1.0.0, v1.1.0 tag push qilganda
+
+jobs:
+  build:
+    name: EAS Build (${{ matrix.platform }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        platform: [android, ios]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: '10'
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Setup EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build ${{ matrix.platform }}
+        working-directory: apps/mobile
+        run: |
+          eas build \
+            --profile production \
+            --platform ${{ matrix.platform }} \
+            --non-interactive \
+            --no-wait
+
+      - name: Notify on success
+        if: success()
+        run: echo "✅ ${{ matrix.platform }} build submitted to EAS"

@@ -1,12 +1,24 @@
 {
   "$schema": "./node_modules/nx/schemas/nx-schema.json",
   "targetDefaults": {
-    "build": { "cache": true, "dependsOn": ["^build"] },
-    "test":  { "cache": true },
-    "lint":  { "cache": true }
+    "build": {
+      "cache": true,
+      "dependsOn": ["^build"]
+    },
+    "test": {
+      "cache": true
+    },
+    "lint": {
+      "cache": true
+    }
   },
   "generators": {
-    "@nx/react": { "library": { "style": "css" } }
+    "@nx/react": {
+      "library": {
+        "style": "css"
+      }
+    }
   },
-  "defaultBase": "main"
+  "defaultBase": "main",
+  "analytics": true
 }

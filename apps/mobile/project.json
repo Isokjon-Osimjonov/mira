@@ -1,0 +1,38 @@
+{
+  "name": "mobile",
+  "tags": [
+    "scope:mobile"
+  ],
+  "targets": {
+    "serve": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm exec expo start",
+        "cwd": "apps/mobile"
+      }
+    },
+    "build:android": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "eas build --profile production --platform android",
+        "cwd": "apps/mobile"
+      }
+    },
+    "build:ios": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "eas build --profile production --platform ios",
+        "cwd": "apps/mobile"
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint",
+      "options": {
+        "lintFilePatterns": [
+          "apps/mobile/**/*.{ts,tsx}"
+        ]
+      }
+    }
+  },
+  "implicitDependencies": []
+}

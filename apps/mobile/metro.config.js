@@ -6,17 +6,18 @@ const monorepoRoot = path.resolve(projectRoot, '../..')
 
 const config = getDefaultConfig(projectRoot)
 
-// Watch the entire monorepo so Metro can find libs/
-config.watchFolders = [monorepoRoot]
+// Monorepo uchun: default watchFolders ga qo'shamiz (o'rniga emas)
+config.watchFolders = [
+  ...config.watchFolders || [],
+  monorepoRoot,
+]
 
-// Resolve modules from mobile first, then monorepo root
 config.resolver.nodeModulesPaths = [
   path.resolve(projectRoot, 'node_modules'),
   path.resolve(monorepoRoot, 'node_modules'),
 ]
 
-// Required for pnpm symlinks
+// pnpm symlinks uchun kerak — expo doctor warning ni ignore qiling
 config.resolver.unstable_enableSymlinks = true
-config.resolver.unstable_enablePackageExports = true
 
 module.exports = config

@@ -1,0 +1,31 @@
+{
+  "name": "admin",
+  "tags": [
+    "scope:admin"
+  ],
+  "targets": {
+    "serve": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm exec vite --port 3000",
+        "cwd": "apps/admin"
+      }
+    },
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm exec vite build",
+        "cwd": "apps/admin"
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint",
+      "options": {
+        "lintFilePatterns": [
+          "apps/admin/src/**/*.{ts,tsx}"
+        ]
+      }
+    }
+  },
+  "implicitDependencies": []
+}
