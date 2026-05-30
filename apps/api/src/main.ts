@@ -1,30 +1,32 @@
 import { createServer } from 'http'
-import { createApp }    from './app'
-import { initSocket }   from './config/socket'
-import { pool }         from './config/db'
-import { env }          from './config/env'
+import { createApp }   from './app'
+import { initSocket }  from './config/socket'
+import { pool }        from './config/db'
+import { env }         from './config/env'
+import { startBot }    from './bot/bot'
 
 async function bootstrap() {
   const app        = createApp()
   const httpServer = createServer(app)
 
-  // Init Socket.io (must be before listen)
   initSocket(httpServer)
+
+  // Start Telegram bot (non-blocking)
+  startBot().catch((err) => {
+    console.error('Bot start failed:', err.message)
+  })
 
   httpServer.listen(env.PORT, () => {
     console.log(`\n🚀 API:    http://localhost:${env.PORT}`)
     console.log(`🔌 Socket: ws://localhost:${env.PORT}`)
+    console.log(`🤖 Bot:    @${env.BOT_USERNAME}`)
     console.log(`🌿 Env:    ${env.NODE_ENV}\n`)
   })
 
-  // ─── Graceful shutdown ──────────────────────────────────────
   const shutdown = async (signal: string) => {
-    console.log(`\n${signal} received — shutting down...`)
+    console.log(`\n${signal} — shutting down...`)
     await pool.end()
-    httpServer.close(() => {
-      console.log('✅ Server closed')
-      process.exit(0)
-    })
+    httpServer.close(() => process.exit(0))
   }
 
   process.on('SIGTERM', () => shutdown('SIGTERM'))

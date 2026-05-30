@@ -1,11 +1,11 @@
 // Brand: Violet Luxe (confirmed by client)
 // All values = Tailwind v3 violet palette
 export const BRAND = {
-  DEFAULT: '#7C3AED', // violet-600 — primary
-  dark:    '#4C1D95', // violet-900 — dark variant
-  soft:    '#EDE9FE', // violet-100 — soft background
-  bg:      '#F5F3FF', // violet-50  — page background
-  text:    '#2E1065', // violet-950 — body text on light
+  DEFAULT: '#E11D74', // violet-600 — primary
+  dark:    '#9D1352', // violet-900 — dark variant
+  soft:    '#FCE7F3', // violet-100 — soft background
+  bg:      '#FFF8FB', // violet-50  — page background
+  text:    '#1A0A10', // violet-950 — body text on light
 } as const
 
 export const REGION = { UZB: 'UZB', KOR: 'KOR' } as const
