@@ -1,46 +1,37 @@
-import express from 'express'
-import cors from 'cors'
-import helmet from 'helmet'
-import morgan from 'morgan'
-import { env } from './config/env'
-import { pool } from './config/db'
-import { errorHandler } from './middleware/errorHandler'
+import { createServer } from 'http'
+import { createApp }    from './app'
+import { initSocket }   from './config/socket'
+import { pool }         from './config/db'
+import { env }          from './config/env'
 
-const app = express()
+async function bootstrap() {
+  const app        = createApp()
+  const httpServer = createServer(app)
 
-// ─── Middleware ──────────────────────────────────
-app.use(helmet())
-app.use(cors({
-  origin: env.CORS_ORIGINS.split(','),
-  credentials: true,
-}))
-app.use(express.json({ limit: '10mb' }))
-app.use(morgan(env.NODE_ENV === 'development' ? 'dev' : 'combined'))
+  // Init Socket.io (must be before listen)
+  initSocket(httpServer)
 
-// ─── Health check ────────────────────────────────
-app.get('/health', (_req, res) => {
-  res.json({ status: 'ok', env: env.NODE_ENV })
+  httpServer.listen(env.PORT, () => {
+    console.log(`\n🚀 API:    http://localhost:${env.PORT}`)
+    console.log(`🔌 Socket: ws://localhost:${env.PORT}`)
+    console.log(`🌿 Env:    ${env.NODE_ENV}\n`)
+  })
+
+  // ─── Graceful shutdown ──────────────────────────────────────
+  const shutdown = async (signal: string) => {
+    console.log(`\n${signal} received — shutting down...`)
+    await pool.end()
+    httpServer.close(() => {
+      console.log('✅ Server closed')
+      process.exit(0)
+    })
+  }
+
+  process.on('SIGTERM', () => shutdown('SIGTERM'))
+  process.on('SIGINT',  () => shutdown('SIGINT'))
+}
+
+bootstrap().catch((err) => {
+  console.error('❌ Bootstrap failed:', err)
+  process.exit(1)
 })
-
-// ─── Routes ──────────────────────────────────────
-// TODO: add routers here
-// app.use('/api/v1/auth',     authRouter)
-// app.use('/api/v1/products', productsRouter)
-// app.use('/api/v1/orders',   ordersRouter)
-
-// ─── Error handler ───────────────────────────────
-app.use(errorHandler)
-
-// ─── Start ───────────────────────────────────────
-app.listen(env.PORT, () => {
-  console.log(`🚀 API running on http://localhost:${env.PORT}`)
-  console.log(`   ENV: ${env.NODE_ENV}`)
-})
-
-// ─── Graceful shutdown ───────────────────────────
-process.on('SIGTERM', async () => {
-  await pool.end()
-  process.exit(0)
-})
-
-export default app

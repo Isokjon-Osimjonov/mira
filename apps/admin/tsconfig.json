@@ -1,18 +1,25 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
+    "baseUrl": ".",
     "target": "ES2020",
     "module": "ESNext",
     "moduleResolution": "bundler",
     "jsx": "react-jsx",
     "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "types": ["vite/client"],
     "paths": {
-      "@/*": ["./src/*"],
+      "@/*":              ["./src/*"],
       "@mira/shared-types": ["../../libs/shared-types/src/index.ts"],
       "@mira/shared-utils": ["../../libs/shared-utils/src/index.ts"],
       "@mira/ui-config":    ["../../libs/ui-config/src/index.ts"]
     }
   },
-  "include": ["src"],
+  "include": [
+    "src",
+    "../../libs/shared-types/src",
+    "../../libs/shared-utils/src",
+    "../../libs/ui-config/src"
+  ],
   "exclude": ["node_modules", "dist"]
 }
