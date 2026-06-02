@@ -110,6 +110,17 @@ export async function updateProduct(req: Request, res: Response, next: NextFunct
   }
 }
 
+export async function updateProductImages(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { id } = req.params
+    const { imageUrls } = req.body
+    const result = await service.updateProductImages(id, imageUrls)
+    res.json({ data: result, error: null })
+  } catch (err) {
+    next(err)
+  }
+}
+
 export async function deleteProduct(req: Request, res: Response, next: NextFunction) {
   try {
     const { id } = req.params

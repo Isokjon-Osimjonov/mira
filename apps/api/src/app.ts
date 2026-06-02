@@ -35,6 +35,7 @@ import waitlistRouter from './modules/waitlists/waitlists.router'
 import notificationRouter from './modules/notifications/notifications.router'
 import rolesRouter from './modules/roles/roles.router'
 import adminUsersRouter from './modules/admin-users/admin-users.router'
+import adminRouter from './modules/admin/admin.router'
 import customersRouter from './modules/customers/customers.router'
 import suppliersRouter from './modules/suppliers/suppliers.router'
 import purchaseOrdersRouter from './modules/purchase-orders/purchase-orders.router'
@@ -109,6 +110,9 @@ export function createApp() {
   // Public Products & Categories
   app.use('/api/v1/categories', categoryRouter)
   app.use('/api/v1/products', productRouter)
+  app.use('/api/v1/brands', (req, res, next) => {
+    import('./modules/products/products.controller').then((ctrl) => ctrl.getBrands(req, res, next))
+  })
   app.use('/api/v1/settings', settingsRouter)
   app.use('/api/v1/exchange-rates', exchangeRateRouter)
 
@@ -134,6 +138,7 @@ export function createApp() {
   app.use('/api/v1/admin/kor-shipping-tiers', korShippingAdminRouter)
   app.use('/api/v1/admin/roles', rolesRouter)
   app.use('/api/v1/admin/users', adminUsersRouter)
+  app.use('/api/v1/admin', adminRouter)
   app.use('/api/v1/admin/customers', customersRouter)
   app.use('/api/v1/admin/customers', customerAddressRouter)
   app.use('/api/v1/admin/suppliers', suppliersRouter)

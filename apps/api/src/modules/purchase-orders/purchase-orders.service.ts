@@ -11,7 +11,7 @@ import {
 import { eq, and, sql, desc, count, ilike, or } from 'drizzle-orm'
 import { emit } from '../../config/socket'
 import { notifyLowStock } from '../../bot/helpers/notify'
-import { checkLowStock } from '../inventory/inventory.service'
+import { checkLowStock, notifyWaitlistCustomers } from '../inventory/inventory.service'
 import type {
   CreatePurchaseOrderDto,
   UpdatePurchaseOrderDto,
@@ -324,6 +324,11 @@ export async function receivePurchaseOrder(id: string, data: ReceivePODto, admin
     // Low stock check
     for (const productId of productsReceived) {
       await checkLowStock(tx, productId)
+
+      const [product] = await tx.select().from(products).where(eq(products.id, productId)).limit(1)
+      if (product) {
+        notifyWaitlistCustomers(productId, product.name).catch(console.error)
+      }
     }
 
     return updated

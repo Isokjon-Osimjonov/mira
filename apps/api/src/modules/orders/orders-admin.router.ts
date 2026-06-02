@@ -6,6 +6,7 @@ const adminRouter = Router()
 
 adminRouter.get('/', requirePermission('orders', 'read'), ctrl.adminGetOrders)
 adminRouter.get('/:id', requirePermission('orders', 'read'), ctrl.adminGetOrderDetail)
+adminRouter.get('/:id/invoice', requirePermission('orders', 'read'), ctrl.downloadInvoice)
 adminRouter.post('/', requirePermission('orders', 'write'), ctrl.adminCreateOrder)
 
 adminRouter.patch('/:id/confirm-payment', requirePermission('orders', 'write'), ctrl.confirmPayment)

@@ -16,6 +16,7 @@ adminRouter.get('/', requirePermission('products', 'read'), ctrl.getProductsAdmi
 adminRouter.get('/by-barcode/:barcode', requireAdmin, ctrl.getProductByBarcode)
 adminRouter.post('/', requirePermission('products', 'write'), ctrl.createProduct)
 adminRouter.put('/:id', requirePermission('products', 'write'), ctrl.updateProduct)
+adminRouter.put('/:id/images', requirePermission('products', 'write'), ctrl.updateProductImages)
 adminRouter.delete('/:id', requirePermission('products', 'write'), ctrl.deleteProduct)
 adminRouter.put('/:id/pricing', requirePermission('products', 'write'), ctrl.updatePricing)
 

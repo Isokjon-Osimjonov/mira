@@ -75,6 +75,7 @@ export const orders = pgTable('orders', {
   refundAmount: bigint('refund_amount', { mode: 'bigint' }),
   refundedAt: timestamp('refunded_at', { withTimezone: true }),
   refundedBy: uuid('refunded_by').references(() => adminUsers.id, { onDelete: 'set null' }),
+  refundRequestedAt: timestamp('refund_requested_at', { withTimezone: true }),
   refundNote: text('refund_note'),
   
   paymentCurrency: varchar('payment_currency', { length: 3 }),

@@ -55,8 +55,12 @@ export const cancelOrderSchema = z.object({
 })
 
 export const refundOrderSchema = z.object({
-  refundAmount: z.coerce.number().min(0),
+  refundAmount: z.coerce.number().positive(),
   refundNote: z.string().optional(),
+})
+
+export const requestRefundSchema = z.object({
+  reason: z.string().min(10).max(1000),
 })
 
 export const addExpenseSchema = z.object({

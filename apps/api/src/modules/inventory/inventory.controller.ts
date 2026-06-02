@@ -45,6 +45,27 @@ export async function updateBatch(req: Request, res: Response, next: NextFunctio
   }
 }
 
+export async function getProductMovements(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { productId } = req.params
+    const { type, dateFrom, dateTo } = req.query as any
+    const page = Number(req.query.page || 1)
+    const limit = Number(req.query.limit || 20)
+
+    const result = await service.getProductMovements({
+      productId,
+      type,
+      dateFrom,
+      dateTo,
+      page,
+      limit,
+    })
+    res.json({ data: result, error: null })
+  } catch (err) {
+    next(err)
+  }
+}
+
 export async function writeOffStock(req: Request, res: Response, next: NextFunction) {
   try {
     const admin = req.user as AdminJwtPayload

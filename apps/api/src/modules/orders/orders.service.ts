@@ -31,6 +31,7 @@ import {
   notifyPaymentSubmitted,
   notifyCustomer,
   notifyCustomerFull,
+  sendAdminAlert,
 } from '../../bot/helpers/notify'
 import { validateCoupon } from '../coupons/coupons.service'
 import type {
@@ -764,7 +765,7 @@ export async function uploadReceipt(orderId: string, customerId: string, dto: Up
 
 export async function getCustomerOrders(
   customerId: string,
-  query: { page?: number; limit?: number; status?: string }
+  query: { page?: number; limit?: number; status?: string; search?: string }
 ) {
   const page = query.page || 1
   const limit = query.limit || 20
@@ -772,6 +773,9 @@ export async function getCustomerOrders(
 
   let where = eq(orders.customerId, customerId)
   if (query.status) where = and(where, eq(orders.status, query.status as any)) as any
+  if (query.search) {
+    where = and(where, ilike(orders.orderNumber, `%${escapeLikeQuery(query.search)}%`)) as any
+  }
 
   const items = await db
     .select()
@@ -836,6 +840,119 @@ export async function getCustomerOrderDetail(orderId: string, customerId: string
     .orderBy(asc(orderStatusHistory.createdAt))
 
   return { ...order, items, statusHistory: history }
+}
+
+export async function cancelOrderByCustomer(
+  orderId: string,
+  customerId: string,
+  reason?: string
+): Promise<void> {
+  await db.transaction(async (tx) => {
+    const [order] = await tx
+      .select()
+      .from(orders)
+      .where(and(eq(orders.id, orderId), eq(orders.customerId, customerId)))
+      .limit(1)
+
+    if (!order) throw { status: 404, code: 'ORDER_NOT_FOUND', message: 'Buyurtma topilmadi' }
+
+    if (!['PENDING_PAYMENT', 'PAYMENT_REJECTED'].includes(order.status)) {
+      throw {
+        status: 400,
+        code: 'ORDER_CANCEL_NOT_ALLOWED',
+        message: "Ushbu buyurtmani bekor qilib bo'lmaydi",
+      }
+    }
+
+    // Release stock reservations
+    await tx
+      .update(stockReservations)
+      .set({ status: 'RELEASED' })
+      .where(and(eq(stockReservations.orderId, orderId), eq(stockReservations.status, 'ACTIVE')))
+
+    await tx
+      .update(orders)
+      .set({
+        status: 'CANCELED',
+        updatedAt: new Date(),
+      })
+      .where(eq(orders.id, orderId))
+
+    await tx.insert(orderStatusHistory).values({
+      orderId,
+      fromStatus: order.status,
+      toStatus: 'CANCELED',
+      note: reason ?? 'Mijoz tomonidan bekor qilindi',
+    })
+
+    // Notify admin
+    await sendAdminAlert(
+      `❌ <b>Mijoz buyurtmani bekor qildi</b>\n\n` +
+        `📦 <b>#${order.orderNumber}</b>\n` +
+        `💬 Sabab: ${reason ?? 'Sabab ko\'rsatilmagan'}`
+    )
+
+    const tokens = await getCustomerTokens(customerId)
+    await notifyCustomerFull({
+      customerId: customerId,
+      telegramId: tokens.telegramId,
+      expoPushToken: tokens.expoPushToken,
+      type: 'ORDER_STATUS',
+      channel: 'BOTH',
+      title: 'Buyurtma bekor qilindi ❌',
+      body: `#${order.orderNumber} bekor qilindi`,
+      telegramMessage: `❌ <b>Buyurtmangiz bekor qilindi</b>\n📦 #${order.orderNumber}`,
+      data: { orderId: order.id, type: 'CANCELED' },
+    })
+  })
+}
+
+export async function requestRefundByCustomer(
+  orderId: string,
+  customerId: string,
+  reason: string
+): Promise<void> {
+  const [order] = await db
+    .select()
+    .from(orders)
+    .where(and(eq(orders.id, orderId), eq(orders.customerId, customerId)))
+    .limit(1)
+
+  if (!order) throw { status: 404, code: 'ORDER_NOT_FOUND', message: 'Buyurtma topilmadi' }
+
+  if (order.status !== 'DELIVERED') {
+    throw {
+      status: 400,
+      code: 'ORDER_REFUND_NOT_ALLOWED',
+      message: 'Faqat yetkazilgan buyurtmani qaytarish mumkin',
+    }
+  }
+
+  if (order.refundRequestedAt) {
+    throw {
+      status: 400,
+      code: 'REFUND_ALREADY_REQUESTED',
+      message: "Qaytarish so'rovi allaqachon yuborilgan",
+    }
+  }
+
+  await db
+    .update(orders)
+    .set({
+      refundRequestedAt: new Date(),
+      refundNote: reason,
+      updatedAt: new Date(),
+    })
+    .where(eq(orders.id, orderId))
+
+  const [customer] = await db.select().from(customers).where(eq(customers.id, customerId)).limit(1)
+
+  await sendAdminAlert(
+    `🔄 <b>Qaytarish so'rovi!</b>\n\n` +
+      `📦 <b>#${order.orderNumber}</b>\n` +
+      `💬 Sabab: ${reason}\n` +
+      `📞 Mijoz: ${customer?.phone || 'Noma\'lum'}`
+  )
 }
 
 // ─── Admin Endpoints ─────────────────────────────────────────────────────
@@ -1630,6 +1747,84 @@ export async function adminGetOrderDetail(orderId: string) {
     .orderBy(asc(orderExpenses.createdAt))
 
   return { ...order, customer, items, statusHistory, expenses }
+}
+
+export async function getInvoiceData(orderId: string, userId: string, isAdmin: boolean) {
+  const [order] = await db.select().from(orders).where(eq(orders.id, orderId)).limit(1)
+  if (!order) throw { status: 404, code: 'ORDER_NOT_FOUND', message: 'Topilmadi' }
+
+  if (!isAdmin && order.customerId !== userId) {
+    throw { status: 403, code: 'ORDER_UNAUTHORIZED', message: "Ruxsat yo'q" }
+  }
+
+  const items = await db
+    .select({
+      product: { name: products.name },
+      quantity: orderItems.quantity,
+      unitPriceSnapshot: orderItems.unitPriceSnapshot,
+      subtotalSnapshot: orderItems.subtotalSnapshot,
+      isWholesale: sql<boolean>`${orderItems.quantity} >= ${productRegionalConfigs.minWholesaleQty}`,
+    })
+    .from(orderItems)
+    .innerJoin(products, eq(orderItems.productId, products.id))
+    .innerJoin(
+      productRegionalConfigs,
+      and(
+        eq(productRegionalConfigs.productId, orderItems.productId),
+        eq(productRegionalConfigs.regionCode, order.deliveryRegion as any)
+      )
+    )
+    .where(eq(orderItems.orderId, orderId))
+
+  const [customer] = await db.select().from(customers).where(eq(customers.id, order.customerId))
+
+  const [rate] = await db
+    .select()
+    .from(exchangeRateSnapshots)
+    .where(eq(exchangeRateSnapshots.id, order.rateSnapshotId!))
+    .limit(1)
+
+  return {
+    order: {
+      orderNumber: order.orderNumber,
+      createdAt: order.createdAt,
+      status: order.status,
+      totalAmount: order.totalAmount,
+      discountAmount: order.discountAmount ?? 0n,
+      cargoFee: order.cargoFee ?? 0n,
+      currency: 'KRW',
+    },
+    items: items.map((i) => ({
+      productName: i.product.name,
+      quantity: i.quantity,
+      unitPrice: i.unitPriceSnapshot,
+      subtotal: i.subtotalSnapshot,
+      isWholesale: i.isWholesale,
+    })),
+    customer: {
+      firstName: customer.firstName,
+      lastName: customer.lastName,
+      phone: customer.phone,
+    },
+    delivery: {
+      fullName: order.deliveryFullName ?? customer.firstName,
+      phone: order.deliveryPhone ?? customer.phone,
+      addressLine1: order.deliveryAddressLine1 ?? '',
+      city: order.deliveryCity ?? undefined,
+      postalCode: order.deliveryPostalCode ?? undefined,
+      regionCode: order.deliveryRegion ?? 'KOR',
+    },
+    company: {
+      name: 'Mira Cosmetics',
+      website: 'miracosmetics.uz',
+      telegram: '@mira_cosmetics_bot',
+    },
+    exchangeRate: rate
+      ? {
+          krwToUzs: rate.krwToUzs,
+        }
+      : undefined,
+  }
 }
 
 // ─── Automation ──────────────────────────────────────────────────────────

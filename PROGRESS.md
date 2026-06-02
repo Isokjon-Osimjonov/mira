@@ -52,9 +52,11 @@
 - [x] ESLint module boundaries
 - [x] Prettier configuration
 - [x] DB Seeded (Settings, Categories, Tiers, Roles)
-- [x] **Full API Test Suite (34/34 functional flows passing)**
+- [x] Full API Test Suite (34/34 functional flows passing)
+- [x] **Backend verified and ready for frontend integration**
 
 ### Infrastructure
+
 - [x] Nx monorepo (pnpm workspaces, node-linker=hoisted)
 - [x] apps/api (Express + TypeScript)
 - [x] apps/admin (React + Vite + Shadcn/ui + Tailwind v3)
@@ -109,6 +111,32 @@
 ---
 
 ## 🔄 Changelog
+
+### v0.2.9-dev (2026-06-02)
+- **Final Backend Completion**:
+  - Customer order cancellation flow with stock release.
+  - Customer refund request system with admin alerts.
+  - Waitlist stock notification engine (Push + Telegram).
+  - Product image management: reorder and Cloudinary validation.
+  - Dynamic Order Invoice PDF generation using `pdfkit`.
+  - Customer order search and status filtering.
+  - Public `brands` endpoint with region filtering.
+  - Product-specific stock movement history for audit.
+  - Automated and manual database backups via Telegram.
+  - Extended admin order search (order number + phone).
+
+### v0.2.9-dev (2026-06-02)
+- **Backend Verification & Stabilization**:
+  - Customer order cancellation flow with stock release.
+  - Customer refund request system with admin alerts.
+  - Waitlist stock notification engine (Push + Telegram).
+  - Product image management: reorder and Cloudinary validation.
+  - Dynamic Order Invoice PDF generation using `pdfkit`.
+  - Customer order search and status filtering.
+  - Public `brands` endpoint with region filtering.
+  - Product-specific stock movement history for audit.
+  - Automated and manual database backups via Telegram.
+  - Extended admin order search (order number + phone).
 
 ### v0.2.8-dev (2026-06-02)
 - **New Feature**: Customer Profile management (update name and photo with Cloudinary validation).

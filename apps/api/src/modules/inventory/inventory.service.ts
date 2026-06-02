@@ -7,10 +7,16 @@ import {
   settings,
   adminUsers,
   expenses,
+  waitlists,
+  customers,
 } from '@mira/db'
 import { eq, and, sql, desc, asc, min, inArray, gte, lte, isNotNull, gt } from 'drizzle-orm'
 import { emit } from '../../config/socket'
-import { notifyLowStock, sendAdminAlert } from '../../bot/helpers/notify'
+import {
+  notifyLowStock,
+  sendAdminAlert,
+  notifyCustomerFull,
+} from '../../bot/helpers/notify'
 import type { CreateBatchDto, UpdateBatchDto } from './inventory.schema'
 
 export async function getStockSummary() {
@@ -112,8 +118,56 @@ export async function createBatch(data: CreateBatchDto, adminId: string) {
     // 3. Check low stock threshold
     await checkLowStock(tx, data.productId)
 
+    // 4. Notify waitlist
+    const [product] = await tx.select().from(products).where(eq(products.id, data.productId)).limit(1)
+    if (product) {
+      notifyWaitlistCustomers(data.productId, product.name).catch(console.error)
+    }
+
     return newBatch
   })
+}
+
+export async function notifyWaitlistCustomers(productId: string, productName: string): Promise<void> {
+  const list = await db
+    .select({
+      customerId: waitlists.customerId,
+      telegramId: customers.telegramId,
+      expoPushToken: customers.expoPushToken,
+      firstName: customers.firstName,
+    })
+    .from(waitlists)
+    .innerJoin(customers, eq(customers.id, waitlists.customerId))
+    .where(and(eq(waitlists.productId, productId), eq(waitlists.notified, false)))
+
+  if (list.length === 0) return
+
+  for (const w of list) {
+    try {
+      await notifyCustomerFull({
+        customerId: w.customerId,
+        telegramId: w.telegramId,
+        expoPushToken: w.expoPushToken,
+        type: 'STOCK_BACK',
+        channel: 'BOTH',
+        title: `${productName} mavjud! 🎉`,
+        body: `Siz kutgan mahsulot sotuvga chiqdi. Tez buyurtma bering!`,
+        telegramMessage:
+          `🎉 <b>Mahsulot mavjud!</b>\n\n` +
+          `📦 <b>${productName}</b>\n` +
+          `Siz kutgan mahsulot omborda bor.\n` +
+          `Tez buyurtma bering! 👇`,
+        data: { productId, type: 'WAITLIST_AVAILABLE' },
+      })
+
+      await db
+        .update(waitlists)
+        .set({ notified: true, notifiedAt: new Date() })
+        .where(and(eq(waitlists.customerId, w.customerId), eq(waitlists.productId, productId)))
+    } catch (err) {
+      console.error(`Waitlist notify failed for customer ${w.customerId}:`, err)
+    }
+  }
 }
 
 export async function getBatchesByProduct(productId: string) {
@@ -337,6 +391,61 @@ export async function getWriteOffHistory(params: {
     .offset(offset)
 
   const [countRes] = await db.select({ count: sql<number>`count(*)` }).from(stockMovements).where(where)
+  const total = Number(countRes.count)
+
+  return {
+    items,
+    meta: {
+      page: params.page,
+      limit: params.limit,
+      total,
+      hasNext: offset + params.limit < total,
+      hasPrev: params.page > 1,
+    },
+  }
+}
+
+export async function getProductMovements(params: {
+  productId: string
+  type?: string
+  dateFrom?: string
+  dateTo?: string
+  page: number
+  limit: number
+}) {
+  const offset = (params.page - 1) * params.limit
+
+  let where = eq(stockMovements.productId, params.productId)
+  if (params.type) where = and(where, eq(stockMovements.movementType, params.type as any)) as any
+  if (params.dateFrom)
+    where = and(where, gte(stockMovements.createdAt, new Date(params.dateFrom))) as any
+  if (params.dateTo)
+    where = and(where, lte(stockMovements.createdAt, new Date(params.dateTo))) as any
+
+  const items = await db
+    .select({
+      id: stockMovements.id,
+      type: stockMovements.movementType,
+      quantityDelta: stockMovements.quantityDelta,
+      qtyBefore: stockMovements.qtyBefore,
+      qtyAfter: stockMovements.qtyAfter,
+      reason: stockMovements.reason,
+      createdAt: stockMovements.createdAt,
+      batch: { batchRef: inventoryBatches.batchRef },
+      admin: { fullName: adminUsers.fullName },
+    })
+    .from(stockMovements)
+    .innerJoin(inventoryBatches, eq(stockMovements.batchId, inventoryBatches.id))
+    .leftJoin(adminUsers, eq(stockMovements.performedBy, adminUsers.id))
+    .where(where)
+    .orderBy(desc(stockMovements.createdAt))
+    .limit(params.limit)
+    .offset(offset)
+
+  const [countRes] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(stockMovements)
+    .where(where)
   const total = Number(countRes.count)
 
   return {

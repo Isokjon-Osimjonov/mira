@@ -10,6 +10,7 @@ import {
   cancelOrderSchema,
   refundOrderSchema,
   addExpenseSchema,
+  requestRefundSchema,
 } from './orders.schema'
 
 // ─── Customer Endpoints ──────────────────────────────────────────────────
@@ -52,8 +53,9 @@ export async function getCustomerOrders(req: Request, res: Response) {
     const page = req.query.page ? Number(req.query.page) : undefined
     const limit = req.query.limit ? Number(req.query.limit) : undefined
     const status = req.query.status as string | undefined
+    const search = req.query.search as string | undefined
 
-    const result = await service.getCustomerOrders(customerId, { page, limit, status })
+    const result = await service.getCustomerOrders(customerId, { page, limit, status, search })
 
     return res.json({ data: result.items, meta: result.meta, error: null })
   } catch (e: any) {
@@ -104,13 +106,61 @@ export async function uploadReceipt(req: Request, res: Response) {
     return res.json({ data: { id: data.id, status: data.status }, error: null })
   } catch (e: any) {
     if (e.name === 'ZodError') {
-      return res
-        .status(400)
-        .json({
-          data: null,
-          error: { message: "Ma'lumotlar noto'g'ri", code: 'VALIDATION_ERROR', details: e.errors },
-        })
+      return res.status(400).json({
+        data: null,
+        error: { message: "Ma'lumotlar noto'g'ri", code: 'VALIDATION_ERROR', details: e.errors },
+      })
     }
+    return res
+      .status(e.status ?? 500)
+      .json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
+  }
+}
+
+export async function cancelOrderByCustomer(req: Request, res: Response) {
+  try {
+    const customerId = (req.user as any).sub
+    const { id } = req.params
+    const { reason } = req.body
+    await service.cancelOrderByCustomer(id, customerId, reason)
+    return res.json({ data: { success: true }, error: null })
+  } catch (e: any) {
+    return res
+      .status(e.status ?? 500)
+      .json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
+  }
+}
+
+export async function requestRefund(req: Request, res: Response) {
+  try {
+    const customerId = (req.user as any).sub
+    const { id } = req.params
+    const validated = requestRefundSchema.parse(req.body)
+    await service.requestRefundByCustomer(id, customerId, validated.reason)
+    return res.json({ data: { success: true }, error: null })
+  } catch (e: any) {
+    if (e.name === 'ZodError') {
+      return res.status(400).json({
+        data: null,
+        error: { message: "Ma'lumotlar noto'g'ri", code: 'VALIDATION_ERROR', details: e.errors },
+      })
+    }
+    return res
+      .status(e.status ?? 500)
+      .json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
+  }
+}
+
+export async function downloadInvoice(req: Request, res: Response) {
+  try {
+    const orderId = req.params.id
+    const isAdmin = (req.user as any).type === 'admin'
+    const userId = (req.user as any).sub
+
+    const data = await service.getInvoiceData(orderId, userId, isAdmin)
+    const { generateInvoicePDF } = await import('../../lib/invoice')
+    generateInvoicePDF(data, res)
+  } catch (e: any) {
     return res
       .status(e.status ?? 500)
       .json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })

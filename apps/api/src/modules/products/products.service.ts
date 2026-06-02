@@ -314,6 +314,23 @@ export async function updateProduct(id: string, data: UpdateProductDto) {
   return updated
 }
 
+export async function updateProductImages(id: string, imageUrls: string[]) {
+  // Validate images
+  if (imageUrls.some((url) => !isValidCloudinaryUrl(url))) {
+    throw { status: 400, code: 'INVALID_URL', message: 'Faqat Cloudinary URL qabul qilinadi' }
+  }
+
+  const [updated] = await db
+    .update(products)
+    .set({ imageUrls, updatedAt: new Date() })
+    .where(eq(products.id, id))
+    .returning()
+
+  if (!updated) throw { status: 404, code: 'PRODUCT_NOT_FOUND', message: 'Mahsulot topilmadi' }
+
+  return updated.imageUrls
+}
+
 export async function deleteProduct(id: string) {
   return await db.transaction(async (tx) => {
     const [deleted] = await tx
