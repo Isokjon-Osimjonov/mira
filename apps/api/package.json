@@ -68,11 +68,13 @@
     "@mira/shared-types": "workspace:*",
     "@mira/shared-utils": "workspace:*",
     "@types/cookie-parser": "^1.4.10",
+    "@types/node-cron": "^3.0.11",
     "axios": "^1.16.0",
     "bcryptjs": "^3.0.3",
     "cloudinary": "^2.10.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
+    "exceljs": "^4.4.0",
     "express": "^4.21.2",
     "express-rate-limit": "^8.5.2",
     "grammy": "^1.43.0",
@@ -80,6 +82,7 @@
     "jsonwebtoken": "^9.0.3",
     "morgan": "^1.10.1",
     "multer": "^2.1.1",
+    "node-cron": "^4.2.1",
     "socket.io": "^4.8.3"
   },
   "devDependencies": {
