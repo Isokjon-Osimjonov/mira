@@ -4,8 +4,13 @@
     "module": "CommonJS",
     "moduleResolution": "node",
     "outDir": "../../dist/apps/api",
-    "rootDir": "src"
+    "noEmit": true
   },
-  "include": ["src/**/*.ts"],
+  "include": [
+    "src/**/*.ts",
+    "../../libs/db/src/**/*.ts",
+    "../../libs/shared-types/src/**/*.ts",
+    "../../libs/shared-utils/src/**/*.ts"
+  ],
   "exclude": ["node_modules", "dist"]
 }

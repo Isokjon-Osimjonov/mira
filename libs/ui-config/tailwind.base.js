@@ -11,11 +11,11 @@ module.exports = {
     extend: {
       colors: {
         brand: {
-          DEFAULT: '#7C3AED', // violet-600
-          dark:    '#4C1D95', // violet-900
-          soft:    '#EDE9FE', // violet-100
-          bg:      '#F5F3FF', // violet-50
-          text:    '#2E1065', // violet-950
+          DEFAULT: '#E11D74', // violet-600
+          dark:    '#9D1352', // violet-900
+          soft:    '#FCE7F3', // violet-100
+          bg:      '#FFF8FB', // violet-50
+          text:    '#1A0A10', // violet-950
         },
       },
       fontFamily: {

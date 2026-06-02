@@ -70,7 +70,8 @@
       "react": "19.1.0",
       "react-dom": "19.1.0",
       "react-native-worklets": "~0.8.0",
-      "tailwindcss": "^3.4.17"
+      "tailwindcss": "^3.4.17",
+      "axios": "^1.7.0"
     }
   }
 }

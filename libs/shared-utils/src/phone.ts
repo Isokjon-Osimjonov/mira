@@ -1,4 +1,4 @@
-import type { Region } from '@mira/shared-types'
+import type { Region } from '../../shared-types/src/common'
 
 export const getRegionFromPhone = (phone: string): Region => {
   const p = phone.replace(/\s/g, '')
