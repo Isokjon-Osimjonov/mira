@@ -1,8 +1,8 @@
 # 🪞 Mira Cosmetics — Project Progress
 
-> Last updated: 2026-05-30
-> Version: 0.1.0-dev
-> Sprint: #1 — Foundation
+> Last updated: 2026-06-02
+> Version: 0.2.0-dev
+> Sprint: #7 — Dashboard & Marketing
 
 ---
 
@@ -12,18 +12,32 @@
 |-------|--------|----------|
 | Infrastructure | ✅ Done | 100% |
 | Database Schema | ✅ Done | 100% |
-| Auth API | 🔴 Not Started | 0% |
-| Products API | 🔴 Not Started | 0% |
-| Orders API | 🔴 Not Started | 0% |
+| Auth API | ✅ Done | 100% |
+| Products API | ✅ Done | 100% |
+| Orders API | ✅ Done | 100% |
 | Admin Panel | 🟡 Setup Only | 5% |
 | Mobile App | 🟡 Setup Only | 5% |
-| Telegram Bot | 🔴 Not Started | 0% |
+| Telegram Bot | 🟡 Setup Only | 10% |
 | CI/CD | ✅ Done | 90% |
 | DevOps/Docker | 🟡 Local Only | 20% |
 
 ---
 
 ## ✅ Completed
+
+### API
+- [x] Auth API
+- [x] Products API (Categories, Products, Inventory, Upload)
+- [x] Settings API
+- [x] Exchange Rate API
+- [x] Cart API
+- [x] Coupon API
+- [x] Orders API
+- [x] Boxes + KOR Shipping Tiers API
+- [x] Wishlists + Waitlists API
+- [x] Notifications API
+- [x] Customers Admin API
+- [x] Admin Users + Roles API
 
 ### Infrastructure
 - [x] Nx monorepo (pnpm workspaces, node-linker=hoisted)
@@ -45,29 +59,6 @@
 - [x] Drizzle Studio verified (localhost:4984)
 - [x] ALTER TABLE: admin_users.created_by + customers.notes
 
-### Mobile
-- [x] EAS Build configured (bundle: uz.miracosmetics)
-- [x] First preview APK built successfully
-- [x] Expo Router setup (_layout.tsx)
-- [x] NativeWind v4 + Tailwind v3
-- [x] app.config.ts (scheme: mira-cosmetics)
-- [x] Placeholder assets (icon, splash, adaptive-icon)
-- [x] Fixed: reanimated 4.1.7 + worklets 0.8.3 compatibility
-
-### Admin
-- [x] Vite + React + TypeScript
-- [x] Shadcn/ui (baseColor: zinc, CSS vars violet)
-- [x] Tailwind v3.4.x (downgraded from v4)
-- [x] components.json configured
-- [x] src/lib/utils.ts (cn helper)
-
-### API
-- [x] Express + TypeScript starter
-- [x] Zod env validation (crash on startup if invalid)
-- [x] /health endpoint
-- [x] errorHandler middleware
-- [x] Graceful shutdown (SIGTERM)
-
 ### CI/CD
 - [x] GitHub Actions (5 workflows)
 - [x] ci.yml — lint + type check (every push)
@@ -83,72 +74,34 @@
 
 ## 🚧 In Progress
 
-### Sprint #1 — Auth Foundation
-- [ ] BOT_TOKEN → @BotFather /newbot
-- [ ] Grammy.js bot setup (apps/api/src/bot/)
-- [ ] Auth API routes
+### Sprint #7 — Dashboard & Marketing
+- [ ] Dashboard/Analytics API
+- [ ] Telegram Posts API
+- [ ] Expenses API
+- [ ] Cron jobs setup
 
 ---
 
 ## 📋 Pending
 
-### Sprint #1 — Auth Foundation
-- [ ] `POST /api/v1/auth/request-otp` — phone → deep link token
-- [ ] `POST /api/v1/auth/verify-otp` — code → JWT
-- [ ] `POST /api/v1/auth/refresh` — refresh token rotation
-- [ ] `GET  /api/v1/auth/me` — current user
-- [ ] Grammy.js /start TOKEN handler → send OTP
-- [ ] Admin login: `POST /api/v1/admin/auth/login`
-- [ ] Admin auth middleware (JWT + permission check)
-- [ ] Mobile: Login screen UI
-- [ ] Mobile: OTP screen UI
-- [ ] Mobile: Profile setup screen (first login)
-
-### Sprint #2 — Catalog
-- [ ] `GET  /api/v1/categories` — list
-- [ ] `GET  /api/v1/products` — list (filter, sort, paginate)
-- [ ] `GET  /api/v1/products/:id` — detail
-- [ ] Admin: Category CRUD
-- [ ] Admin: Product CRUD (with image upload → Cloudinary)
-- [ ] Admin: Inventory batch creation
+### Mobile
 - [ ] Mobile: Home screen
 - [ ] Mobile: Category browse
 - [ ] Mobile: Product list + detail
-
-### Sprint #3 — Cart & Checkout
-- [ ] `POST /api/v1/cart/add`
-- [ ] `GET  /api/v1/cart`
-- [ ] `DELETE /api/v1/cart/:itemId`
-- [ ] `POST /api/v1/orders` — checkout submit
-- [ ] `POST /api/v1/orders/:id/receipt` — upload receipt
-- [ ] Stock reservation on checkout
-- [ ] Auto-cancel cron (payment_deadline)
 - [ ] Mobile: Cart screen
 - [ ] Mobile: Checkout flow (3 screens)
-
-### Sprint #4 — Orders & Payments
-- [ ] Admin: Order management (list, detail, status change)
-- [ ] Admin: Payment verification
-- [ ] Admin: Pick & pack scanner
-- [ ] `GET /api/v1/orders` — customer history
 - [ ] Mobile: Order history + detail
 - [ ] Mobile: Receipt reupload screen
-- [ ] Telegram notifications (status changes)
 
-### Sprint #5 — Admin Dashboard
+### Admin
 - [ ] Admin: Dashboard (sales summary, KPIs)
-- [ ] Admin: Customer management
-- [ ] Admin: Coupon management
-- [ ] Admin: Exchange rate management
-- [ ] Admin: Settings page
-- [ ] Admin: RBAC permissions page
+- [ ] Admin: Customer management UI
+- [ ] Admin: Coupon management UI
+- [ ] Admin: Exchange rate management UI
+- [ ] Admin: Settings page UI
+- [ ] Admin: RBAC permissions page UI
 
-### Sprint #6 — Polish
-- [ ] Wishlists + Waitlists
-- [ ] Push notifications
-- [ ] Telegram marketing posts
-- [ ] Analytics / Sales reports
-- [ ] General expenses tracking
+### DevOps
 - [ ] Production VPS setup
 - [ ] Docker compose (production)
 - [ ] Domain + SSL setup
@@ -190,6 +143,12 @@
 ---
 
 ## 🔄 Changelog
+
+### v0.2.0-dev (2026-06-02)
+- Complete Backend API Implementation
+- Products, Settings, Exchange Rates, Cart, Coupons, Orders
+- Wishlists, Waitlists, Notifications, Admin Management
+- Integrated Socket.io and Telegram Bot notifications
 
 ### v0.1.0-dev (2026-05-30)
 - Initial monorepo setup
