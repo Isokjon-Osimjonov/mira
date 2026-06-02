@@ -79,6 +79,16 @@ export async function getProductsAdmin(req: Request, res: Response, next: NextFu
   }
 }
 
+export async function getProductByBarcode(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { barcode } = req.params
+    const result = await service.getProductByBarcode(barcode)
+    res.json({ data: result, error: null })
+  } catch (err) {
+    next(err)
+  }
+}
+
 export async function createProduct(req: Request, res: Response, next: NextFunction) {
   try {
     const validated = CreateProductSchema.parse(req.body)

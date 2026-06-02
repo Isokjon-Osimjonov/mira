@@ -110,6 +110,11 @@
 
 ## 🔄 Changelog
 
+### v0.2.7-dev (2026-06-02)
+- **New Endpoint**: `GET /api/v1/admin/products/by-barcode/:barcode` for exact product lookup.
+  - Returns product details, current stock levels, and regional pricing.
+  - Optimized for inventory and purchase order workflows.
+
 ### v0.2.6-dev (2026-06-02)
 - **New Module**: Addresses API (Customer + Admin).
   - Multi-region support (UZB + KOR formats).

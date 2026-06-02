@@ -209,6 +209,53 @@ export async function getProductsByCategorySlug(slug: string, query: any) {
   return getProducts({ ...query, category: category.id })
 }
 
+export async function getProductByBarcode(barcode: string) {
+  const rate = await getLatestExchangeRate()
+  const krwToUzs = rate?.krwToUzs || 0
+
+  const [product] = await db
+    .select()
+    .from(products)
+    .where(and(eq(products.barcode, barcode), isNull(products.deletedAt)))
+    .limit(1)
+
+  if (!product) throw { status: 404, code: 'PRODUCT_NOT_FOUND', message: 'Mahsulot topilmadi' }
+
+  const configs = await db
+    .select()
+    .from(productRegionalConfigs)
+    .where(eq(productRegionalConfigs.productId, product.id))
+
+  const stock = await db
+    .select({ total: sql<number>`SUM(${inventoryBatches.currentQty})` })
+    .from(inventoryBatches)
+    .where(eq(inventoryBatches.productId, product.id))
+
+  const processedConfigs = configs.map((c) => {
+    const retailPriceKrw = Number(c.retailPrice)
+    const wholesalePriceKrw = Number(c.wholesalePrice)
+    return {
+      ...c,
+      retailPriceKrw,
+      wholesalePriceKrw,
+      retailPriceUzs: Math.round((retailPriceKrw * krwToUzs) / 100) * 100,
+      wholesalePriceUzs: Math.round((wholesalePriceKrw * krwToUzs) / 100) * 100,
+    }
+  })
+
+  return {
+    id: product.id,
+    name: product.name,
+    brandName: product.brandName,
+    barcode: product.barcode,
+    sku: product.sku,
+    currentStock: Number(stock[0]?.total || 0),
+    imageUrl: product.imageUrls?.[0] || null,
+    korRegionalConfig: processedConfigs.find((c) => c.regionCode === 'KOR'),
+    uzbRegionalConfig: processedConfigs.find((c) => c.regionCode === 'UZB'),
+  }
+}
+
 export async function createProduct(data: CreateProductDto) {
   return await db.transaction(async (tx) => {
     const { regionalConfigs, ...productData } = data
