@@ -1,6 +1,7 @@
 import { db } from '../../config/db'
 import { suppliers, purchaseOrders } from '@mira/db'
 import { eq, and, sql, desc, count, ilike, or } from 'drizzle-orm'
+import { escapeLikeQuery } from '../../lib/sanitize'
 import type { CreateSupplierDto, UpdateSupplierDto } from './suppliers.schema'
 
 export async function getSuppliers(query: {

@@ -64,6 +64,7 @@
     ]
   },
   "dependencies": {
+    "@grammyjs/ratelimiter": "^1.2.1",
     "@mira/db": "workspace:*",
     "@mira/shared-types": "workspace:*",
     "@mira/shared-utils": "workspace:*",
@@ -78,6 +79,7 @@
     "expo-server-sdk": "^6.1.0",
     "express": "^4.21.2",
     "express-rate-limit": "^8.5.2",
+    "express-slow-down": "^3.1.0",
     "grammy": "^1.43.0",
     "helmet": "^8.2.0",
     "jsonwebtoken": "^9.0.3",

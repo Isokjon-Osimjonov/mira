@@ -6,6 +6,7 @@ import { checkPhoneRateLimit } from '../../middleware/rateLimiter'
 import { signAccess, signRefresh, verifyRefresh } from '../../lib/jwt'
 import { env } from '../../config/env'
 import type { RequestOtpDto, VerifyOtpDto } from './auth.schema'
+import { logSecurityEvent } from '../../lib/audit-log'
 
 // Region from phone prefix
 function getRegion(phone: string): 'UZB' | 'KOR' {
@@ -20,11 +21,17 @@ function buildDeepLink(token: string): string {
 }
 
 // ─── Request OTP ──────────────────────────────────────────────
-export async function requestOtp(dto: RequestOtpDto) {
+export async function requestOtp(dto: RequestOtpDto, deviceInfo?: string, ipAddress?: string) {
   const { phone } = dto
 
   // Per-phone rate limit (max 3 per 10 min)
   if (!checkPhoneRateLimit(phone)) {
+    logSecurityEvent({
+      type: 'SUSPICIOUS_ACTIVITY',
+      ip: ipAddress || 'unknown',
+      userAgent: deviceInfo,
+      details: { reason: 'otp_rate_limit_exceeded', phone }
+    })
     throw {
       status: 429,
       code: 'PHONE_RATE_LIMITED',
@@ -45,6 +52,13 @@ export async function requestOtp(dto: RequestOtpDto) {
     token,
     phone,
     expiresAt: expires,
+  })
+
+  logSecurityEvent({
+    type: 'OTP_REQUEST',
+    ip: ipAddress || 'unknown',
+    userAgent: deviceInfo,
+    details: { phone }
   })
 
   return {
@@ -76,6 +90,12 @@ export async function verifyOtp(dto: VerifyOtpDto, deviceInfo?: string, ipAddres
 
   // Max attempts check
   if ((authToken.attempts ?? 0) >= 3) {
+    logSecurityEvent({
+      type: 'SUSPICIOUS_ACTIVITY',
+      ip: ipAddress || 'unknown',
+      userAgent: deviceInfo,
+      details: { reason: 'otp_max_attempts_reached', phone: authToken.phone }
+    })
     throw { status: 429, code: 'MAX_ATTEMPTS', message: "Urinishlar soni tugadi. Qayta so'rang" }
   }
 

@@ -69,6 +69,8 @@ Nothing that changes between environments or depends on business state may be ha
 - `TOKEN_REUSE`: 401 - Token reuse attack detected (revokes family).
 - `CUSTOMER_INACTIVE`: 401 - Account suspended.
 - `NO_REFRESH_TOKEN`: 401 - Missing cookie.
+- `ACCOUNT_LOCKED`: 429 - Admin account suspended after failed login attempts.
+- `INVALID_URL`: 400 - URL provided does not match allowed patterns (e.g., non-Cloudinary).
 
 ### Product Domain (`products.service.ts`)
 - `PRODUCT_NOT_FOUND`: 404 - Product does not exist or deleted.

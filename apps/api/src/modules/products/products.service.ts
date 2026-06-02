@@ -8,6 +8,9 @@ import {
   cartItems,
 } from '@mira/db'
 import { eq, and, isNull, sql, desc, asc, ilike, or, inArray } from 'drizzle-orm'
+import { escapeLikeQuery } from '../../lib/sanitize'
+import { validateSort } from '../../lib/sort-whitelist'
+import { isValidCloudinaryUrl } from '../../lib/validate-url'
 import type { CreateProductDto, UpdateProductDto, UpdatePricingDto } from './products.schema'
 
 export async function getLatestExchangeRate() {
@@ -48,13 +51,13 @@ export async function getProducts(query: {
     where = and(where, eq(products.brandName, query.brand))
   }
   if (query.q) {
-    where = gardens(
+    where = and(
       where,
       or(
-        ilike(products.name, `%${query.q}%`),
-        ilike(products.barcode, `%${query.q}%`),
-        ilike(products.sku, `%${query.q}%`),
-        ilike(products.brandName, `%${query.q}%`)
+        ilike(products.name, `%${escapeLikeQuery(query.q)}%`),
+        ilike(products.barcode, `%${escapeLikeQuery(query.q)}%`),
+        ilike(products.sku, `%${escapeLikeQuery(query.q)}%`),
+        ilike(products.brandName, `%${escapeLikeQuery(query.q)}%`)
       )
     )
   }
@@ -106,7 +109,9 @@ export async function getProducts(query: {
     .where(where)
 
   // Sorting
-  let orderBy = desc(products.createdAt)
+  const safeSort = validateSort('products', query.sort || 'createdAt')
+  let orderBy: any = desc((products as any)[safeSort])
+  
   if (query.sort === 'price_asc') orderBy = asc(productRegionalConfigs.retailPrice)
   if (query.sort === 'price_desc') orderBy = desc(productRegionalConfigs.retailPrice)
   if (query.sort === 'newest') orderBy = desc(products.createdAt)
@@ -245,6 +250,11 @@ export async function createProduct(data: CreateProductDto) {
 }
 
 export async function updateProduct(id: string, data: UpdateProductDto) {
+  // Validate images
+  if (data.imageUrls?.some((url) => !isValidCloudinaryUrl(url))) {
+    throw { status: 400, code: 'INVALID_URL', message: 'Faqat Cloudinary URL qabul qilinadi' }
+  }
+
   const { regionalConfigs, ...productData } = data
 
   const [updated] = await db
@@ -291,6 +301,13 @@ export async function updatePricing(id: string, data: UpdatePricingDto) {
           and(
             eq(productRegionalConfigs.productId, id),
             eq(productRegionalConfigs.regionCode, config.regionCode)
+          )
+        )
+    }
+    return { success: true }
+  })
+}
+   eq(productRegionalConfigs.regionCode, config.regionCode)
           )
         )
     }

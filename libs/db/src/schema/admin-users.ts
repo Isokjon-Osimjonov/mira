@@ -1,6 +1,6 @@
 import type { AnyPgColumn } from 'drizzle-orm/pg-core';
 import {
-  pgTable, uuid, varchar, text, boolean, timestamp, uniqueIndex, index, check,
+  pgTable, uuid, varchar, text, boolean, timestamp, uniqueIndex, index, check, integer
 } from 'drizzle-orm/pg-core';
 import { relations, sql } from 'drizzle-orm';
 
@@ -36,6 +36,8 @@ export const adminUsers = pgTable('admin_users', {
   isSuperAdmin: boolean('is_super_admin').default(false).notNull(),
   isActive: boolean('is_active').default(true).notNull(),
   mustChangePassword: boolean('must_change_password').default(false).notNull(),
+  loginAttempts: integer('login_attempts').notNull().default(0),
+  lockedUntil: timestamp('locked_until', { withTimezone: true }),
   lastLoginAt: timestamp('last_login_at', { withTimezone: true }),
   createdBy: uuid('created_by').references((): AnyPgColumn => adminUsers.id, { onDelete: 'set null' }),
   deletedAt: timestamp('deleted_at', { withTimezone: true }),

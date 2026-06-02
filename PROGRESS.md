@@ -110,6 +110,20 @@
 
 ## 🔄 Changelog
 
+### v0.2.3-dev (2026-06-02)
+- **Security Hardening**: Implemented 12 production-grade security fixes.
+  - Production error handler (stack trace masking)
+  - Admin account lockout (5 attempts → 30min lock)
+  - Cloudinary URL validation (SSRF prevention)
+  - Grammy bot rate limiting
+  - DDoS mitigation (express-slow-down)
+  - SQL injection prevention (LIKE query escaping)
+  - ORDER BY injection prevention (Sort field whitelist)
+  - API quota protection (Exchange rate cooldown)
+  - Security headers (CSP/HSTS via Helmet)
+  - XSS prevention (Input sanitization middleware)
+  - Security audit logging framework
+
 ### v0.2.2-dev (2026-06-02)
 - **Bug Fix**: Context-aware `telegramId` update logic in `verifyOtp`. Now correctly handles Telegram account switching for existing customers while blocking cross-user conflicts.
 - **Bug Fix**: Improved OTP transaction atomicity by including token consumption within the same unit of work.

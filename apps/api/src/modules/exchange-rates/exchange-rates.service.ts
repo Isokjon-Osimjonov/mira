@@ -63,6 +63,24 @@ export async function fetchAndSaveExchangeRate() {
     }
   }
 
+  const [lastFetch] = await db
+    .select({ createdAt: exchangeRateSnapshots.createdAt })
+    .from(exchangeRateSnapshots)
+    .where(eq(exchangeRateSnapshots.source, 'API'))
+    .orderBy(desc(exchangeRateSnapshots.createdAt))
+    .limit(1)
+
+  if (lastFetch) {
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000)
+    if (lastFetch.createdAt > oneHourAgo) {
+      throw {
+        status: 429,
+        code: 'RATE_LIMITED',
+        message: 'Valyuta kursi 1 soatda faqat 1 marta yangilanadi'
+      }
+    }
+  }
+
   const url = `${env.EXCHANGE_RATE_API_URL}/${env.EXCHANGE_RATE_API_KEY}/latest/KRW`
 
   try {

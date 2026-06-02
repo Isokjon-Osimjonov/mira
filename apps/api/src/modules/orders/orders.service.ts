@@ -24,6 +24,7 @@ import {
   dailySalesSummary,
 } from '@mira/db'
 import { eq, and, sql, desc, asc, isNull, or, ilike, gte, lte } from 'drizzle-orm'
+import { escapeLikeQuery } from '../../lib/sanitize'
 import { emit } from '../../config/socket'
 import {
   notifyNewOrder,
@@ -44,6 +45,7 @@ import type {
   AddExpenseDto,
 } from './orders.schema'
 import { getSettings } from '../settings/settings.service'
+import { isValidCloudinaryUrl } from '../../lib/validate-url'
 
 const VALID_TRANSITIONS: Record<string, string[]> = {
   PENDING_PAYMENT: ['PAYMENT_SUBMITTED', 'CANCELED'],
@@ -526,6 +528,10 @@ export async function checkoutCart(customerId: string, region: 'UZB' | 'KOR', dt
 }
 
 export async function uploadReceipt(orderId: string, customerId: string, dto: UploadReceiptDto) {
+  if (!isValidCloudinaryUrl(dto.receiptUrl)) {
+    throw { status: 400, code: 'INVALID_URL', message: 'Faqat Cloudinary URL qabul qilinadi' }
+  }
+
   return await db.transaction(async (tx) => {
     const [order] = await tx.select().from(orders).where(eq(orders.id, orderId)).limit(1)
     if (!order) throw { status: 404, code: 'ORDER_NOT_FOUND', message: 'Buyurtma topilmadi' }
@@ -701,8 +707,8 @@ export async function adminGetOrders(query: {
     where = and(
       where,
       or(
-        ilike(orders.orderNumber, `%${query.search}%`),
-        ilike(orders.deliveryPhone, `%${query.search}%`)
+        ilike(orders.orderNumber, `%${escapeLikeQuery(query.search)}%`),
+        ilike(orders.deliveryPhone, `%${escapeLikeQuery(query.search)}%`)
       )
     )
   }

@@ -1,6 +1,7 @@
 import { db } from '../../config/db'
 import { coupons, couponRedemptions, userCoupons, customers, orders } from '@mira/db'
 import { eq, and, isNull, sql, ilike, or, desc } from 'drizzle-orm'
+import { escapeLikeQuery } from '../../lib/sanitize'
 import type { CreateCouponDto, UpdateCouponDto, UpdateCouponStatusDto } from './coupons.schema'
 
 type CouponRow = typeof coupons.$inferSelect
@@ -225,7 +226,7 @@ export async function getCoupons(query: {
   if (query.search) {
     where = and(
       where,
-      or(ilike(coupons.code, `%${query.search}%`), ilike(coupons.name, `%${query.search}%`))
+      or(ilike(coupons.code, `%${escapeLikeQuery(query.search)}%`), ilike(coupons.name, `%${escapeLikeQuery(query.search)}%`))
     ) as any
   }
 

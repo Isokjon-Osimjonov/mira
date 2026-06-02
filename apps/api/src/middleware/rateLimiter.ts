@@ -1,8 +1,16 @@
 import rateLimit from 'express-rate-limit'
+import slowDown from 'express-slow-down'
 
 const json = (message: string, code: string) => ({
   data: null,
   error: { message, code },
+})
+
+export const speedLimiter = slowDown({
+  windowMs: 60 * 1000,    // 1 minute
+  delayAfter: 50,          // after 50 requests
+  delayMs: (hits) => (hits - 50) * 200,  // +200ms per request
+  maxDelayMs: 5000,        // max 5 second delay
 })
 
 // Strict: OTP requests — 5 per 10 min per IP

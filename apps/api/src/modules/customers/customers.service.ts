@@ -14,6 +14,7 @@ import {
   products,
 } from '@mira/db'
 import { eq, and, sql, desc, count, sum, max, min, isNull, or, ilike, avg } from 'drizzle-orm'
+import { escapeLikeQuery } from '../../lib/sanitize'
 import type { UpdateCustomerNotesDto, BlockCustomerDto, AssignCouponDto } from './customers.schema'
 
 export async function getCustomers(query: {

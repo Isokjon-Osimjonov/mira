@@ -5,6 +5,7 @@ import { eq, and, gt } from 'drizzle-orm'
 import { signAccess, signRefresh, verifyRefresh } from '../../../lib/jwt'
 import { generateToken, hashToken } from '../../../lib/otp'
 import type { AdminLoginDto } from './admin-auth.schema'
+import { logSecurityEvent } from '../../../lib/audit-log'
 
 export async function adminLogin(dto: AdminLoginDto, deviceInfo?: string, ipAddress?: string) {
   const [admin] = await db
@@ -14,12 +15,61 @@ export async function adminLogin(dto: AdminLoginDto, deviceInfo?: string, ipAddr
     .limit(1)
 
   if (!admin) {
+    logSecurityEvent({
+      type: 'LOGIN_FAILED',
+      ip: ipAddress || 'unknown',
+      userAgent: deviceInfo,
+      details: { email: dto.email, reason: 'user_not_found' }
+    })
     throw { status: 401, code: 'INVALID_CREDENTIALS', message: "Email yoki parol noto'g'ri" }
+  }
+
+  // Check if account is locked
+  // @ts-ignore
+  if (admin.lockedUntil && admin.lockedUntil > new Date()) {
+    // @ts-ignore
+    const mins = Math.ceil((admin.lockedUntil.getTime() - Date.now()) / 60000)
+    logSecurityEvent({
+      type: 'ACCOUNT_LOCKED',
+      userId: admin.id,
+      ip: ipAddress || 'unknown',
+      userAgent: deviceInfo,
+      details: { email: dto.email, remainingMins: mins }
+    })
+    throw {
+      status: 429,
+      code: 'ACCOUNT_LOCKED',
+      message: `Akkaunt ${mins} daqiqa bloklangan`
+    }
   }
 
   const valid = await bcrypt.compare(dto.password, admin.passwordHash)
   if (!valid) {
-    throw { status: 401, code: 'INVALID_CREDENTIALS', message: "Email yoki parol noto'g'ri" }
+    // @ts-ignore
+    const attempts = (admin.loginAttempts ?? 0) + 1
+    const shouldLock = attempts >= 5
+    await db.update(adminUsers).set({
+      // @ts-ignore
+      loginAttempts: attempts,
+      // @ts-ignore
+      lockedUntil: shouldLock ? new Date(Date.now() + 30 * 60 * 1000) : null
+    }).where(eq(adminUsers.id, admin.id))
+
+    logSecurityEvent({
+      type: shouldLock ? 'ACCOUNT_LOCKED' : 'LOGIN_FAILED',
+      userId: admin.id,
+      ip: ipAddress || 'unknown',
+      userAgent: deviceInfo,
+      details: { email: dto.email, attempts }
+    })
+
+    throw {
+      status: 401,
+      code: shouldLock ? 'ACCOUNT_LOCKED' : 'INVALID_CREDENTIALS',
+      message: shouldLock
+        ? 'Akkaunt 30 daqiqa bloklandi (5 marta xato parol)'
+        : `Noto'g'ri parol. ${5 - attempts} urinish qoldi`
+    }
   }
 
   // Get role permissions
@@ -33,8 +83,22 @@ export async function adminLogin(dto: AdminLoginDto, deviceInfo?: string, ipAddr
     permissions = perms.map((p) => `${p.resource}:${p.action}`)
   }
 
-  // Update last login
-  await db.update(adminUsers).set({ lastLoginAt: new Date() }).where(eq(adminUsers.id, admin.id))
+  // Update last login & reset attempts
+  await db.update(adminUsers).set({ 
+    // @ts-ignore
+    loginAttempts: 0,
+    // @ts-ignore
+    lockedUntil: null,
+    lastLoginAt: new Date() 
+  }).where(eq(adminUsers.id, admin.id))
+
+  logSecurityEvent({
+    type: 'LOGIN_SUCCESS',
+    userId: admin.id,
+    ip: ipAddress || 'unknown',
+    userAgent: deviceInfo,
+    details: { email: admin.email }
+  })
 
   const accessToken = signAccess({
     sub: admin.id,
