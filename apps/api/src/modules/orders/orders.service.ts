@@ -613,8 +613,20 @@ export async function startPacking(orderId: string, adminId: string) {
       }
 
       if (totalQty > 0) {
-         // average cost
-         await tx.update(orderItems).set({ costAtSaleKrw: totalCostKrw / BigInt(totalQty) }).where(eq(orderItems.id, item.id))
+         const avgCost = totalCostKrw / BigInt(totalQty)
+         await tx.update(orderItems).set({ costAtSaleKrw: avgCost }).where(eq(orderItems.id, item.id))
+
+         // Update COGS in analytics (since revenue was recognized at PAYMENT_CONFIRMED)
+         const confirmedDate = order.paymentConfirmedAt!.toISOString().split('T')[0]
+         await tx.update(dailySalesSummary)
+           .set({
+             cogsKrw: sql`${dailySalesSummary.cogsKrw} + ${avgCost * BigInt(item.quantity)}`
+           })
+           .where(and(
+             eq(dailySalesSummary.date, confirmedDate),
+             eq(dailySalesSummary.regionCode, order.deliveryRegion),
+             eq(dailySalesSummary.productId, item.productId)
+           ))
       }
     }
 
@@ -741,16 +753,48 @@ export async function refundOrder(orderId: string, adminId: string, dto: RefundO
 
     await tx.insert(orderStatusHistory).values({ orderId, fromStatus: 'DELIVERED', toStatus: 'REFUNDED', changedBy: adminId, note: dto.refundNote })
 
-    // Analytics reverse
+    // Stock Return & Analytics Reverse
     const items = await tx.select().from(orderItems).where(eq(orderItems.orderId, orderId))
-    const today = new Date().toISOString().split('T')[0]
+    const confirmedDate = order.paymentConfirmedAt!.toISOString().split('T')[0]
+
     for (const item of items) {
-      await tx.insert(dailySalesSummary).values({
-        date: today, regionCode: order.deliveryRegion, productId: item.productId, refundCount: 1, refundedRevenueKrw: item.subtotalSnapshot
-      }).onConflictDoUpdate({
-        target: [dailySalesSummary.date, dailySalesSummary.regionCode, dailySalesSummary.productId],
-        set: { refundCount: sql`${dailySalesSummary.refundCount} + 1`, refundedRevenueKrw: sql`${dailySalesSummary.refundedRevenueKrw} + ${item.subtotalSnapshot}` }
-      })
+      // 1. Stock Return
+      if (item.batchId) {
+        const [batch] = await tx.select().from(inventoryBatches).where(eq(inventoryBatches.id, item.batchId)).limit(1)
+        if (batch) {
+          const newQty = batch.currentQty + item.quantity
+          await tx.update(inventoryBatches).set({ currentQty: newQty }).where(eq(inventoryBatches.id, item.batchId))
+          
+          await tx.insert(stockMovements).values({
+            batchId: item.batchId,
+            productId: item.productId,
+            orderId: order.id,
+            movementType: 'RETURNED',
+            quantityDelta: item.quantity,
+            qtyBefore: batch.currentQty,
+            qtyAfter: newQty,
+            performedBy: adminId,
+            note: `Refund: ${order.orderNumber}`
+          })
+        }
+      }
+
+      // 2. Analytics Reverse
+      const cogs = (item.costAtSaleKrw || 0n) * BigInt(item.quantity)
+      
+      await tx.update(dailySalesSummary)
+        .set({
+          unitsSold: sql`${dailySalesSummary.unitsSold} - ${item.quantity}`,
+          revenueKrw: sql`${dailySalesSummary.revenueKrw} - ${item.subtotalSnapshot}`,
+          cogsKrw: sql`${dailySalesSummary.cogsKrw} - ${cogs}`,
+          refundCount: sql`${dailySalesSummary.refundCount} + 1`,
+          refundedRevenueKrw: sql`${dailySalesSummary.refundedRevenueKrw} + ${item.subtotalSnapshot}` // Reversing the revenue of this item
+        })
+        .where(and(
+          eq(dailySalesSummary.date, confirmedDate),
+          eq(dailySalesSummary.regionCode, order.deliveryRegion),
+          eq(dailySalesSummary.productId, item.productId)
+        ))
     }
 
     emit.orderStatusChanged({ orderId, orderNumber: order.orderNumber, fromStatus: 'DELIVERED', toStatus: 'REFUNDED', changedBy: adminId, note: dto.refundNote ?? null, changedAt: new Date().toISOString() })
@@ -846,6 +890,40 @@ export async function adminGetOrderDetail(orderId: string) {
 }
 
 // ─── Auto-cancel ─────────────────────────────────────────────────────────
+
+export async function reconcileDailySummary(): Promise<void> {
+  const today = new Date().toISOString().split('T')[0]
+  
+  const todayOrders = await db.select().from(orders).where(and(
+    sql`${orders.status} IN ('PAYMENT_CONFIRMED', 'PACKING', 'SHIPPED', 'DELIVERED')`,
+    sql`DATE(${orders.paymentConfirmedAt}) = ${today}`
+  ))
+
+  for (const order of todayOrders) {
+    const items = await db.select().from(orderItems).where(eq(orderItems.orderId, order.id))
+    const cargoShare = order.cargoFee / BigInt(items.length || 1)
+    const couponShare = order.discountAmount / BigInt(items.length || 1)
+
+    for (const item of items) {
+      const cogs = (item.costAtSaleKrw || 0n) * BigInt(item.quantity)
+      await db.insert(dailySalesSummary).values({
+        date: today, regionCode: order.deliveryRegion, productId: item.productId,
+        unitsSold: item.quantity, revenueKrw: item.subtotalSnapshot, cogsKrw: cogs,
+        cargoKrw: cargoShare, couponDiscountKrw: couponShare, orderCount: 1
+      }).onConflictDoUpdate({
+        target: [dailySalesSummary.date, dailySalesSummary.regionCode, dailySalesSummary.productId],
+        set: {
+          unitsSold: sql`${dailySalesSummary.unitsSold} + ${item.quantity}`,
+          revenueKrw: sql`${dailySalesSummary.revenueKrw} + ${item.subtotalSnapshot}`,
+          cogsKrw: sql`${dailySalesSummary.cogsKrw} + ${cogs}`,
+          cargoKrw: sql`${dailySalesSummary.cargoKrw} + ${cargoShare}`,
+          couponDiscountKrw: sql`${dailySalesSummary.couponDiscountKrw} + ${couponShare}`,
+          orderCount: sql`${dailySalesSummary.orderCount} + 1`
+        }
+      })
+    }
+  }
+}
 
 export async function cancelExpiredOrders(): Promise<number> {
   let count = 0

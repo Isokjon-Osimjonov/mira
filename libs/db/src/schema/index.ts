@@ -12,6 +12,7 @@ export * from './orders';
 export * from './coupons';
 export * from './settings';
 export * from './expenses';
+export * from './suppliers';
 export * from './telegram';
 export * from './social';
 export * from './audit';

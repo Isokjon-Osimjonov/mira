@@ -19,6 +19,7 @@ export const customers = pgTable('customers', {
   expoPushToken: varchar('expo_push_token', { length: 500 }),
   referralCode: varchar('referral_code', { length: 12 }).unique(),
   referredById: uuid('referred_by_id').references((): AnyPgColumn => customers.id, { onDelete: 'set null' }),
+  notes: text('notes'),
   deletedAt: timestamp('deleted_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),

@@ -38,7 +38,7 @@ export async function getStockSummary() {
 export async function createBatch(data: CreateBatchDto, adminId: string) {
   return await db.transaction(async (tx) => {
     // 1. Create batch
-    const [newBatch] = await tx
+    const batchResult = await tx
       .insert(inventoryBatches)
       .values({
         productId: data.productId,
@@ -51,6 +51,8 @@ export async function createBatch(data: CreateBatchDto, adminId: string) {
         notes: data.notes,
       })
       .returning()
+      
+    const newBatch = batchResult[0]
 
     // 2. Insert stock movement
     await tx.insert(stockMovements).values({

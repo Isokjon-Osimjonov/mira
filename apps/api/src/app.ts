@@ -20,11 +20,21 @@ import cartRouter from './modules/cart/cart.router'
 import { couponsAdminRouter } from './modules/coupons/coupons.router'
 import ordersRouter from './modules/orders/orders.router'
 import { ordersAdminRouter } from './modules/orders/orders-admin.router'
+import pickPackRouter from './modules/pick-pack/pick-pack.router'
 import { boxesRouter, boxesAdminRouter } from './modules/boxes/boxes.router'
 import { korShippingRouter, korShippingAdminRouter } from './modules/kor-shipping/kor-shipping.router'
 import wishlistRouter from './modules/wishlists/wishlists.router'
 import waitlistRouter from './modules/waitlists/waitlists.router'
 import notificationRouter from './modules/notifications/notifications.router'
+import rolesRouter        from './modules/roles/roles.router'
+import adminUsersRouter  from './modules/admin-users/admin-users.router'
+import customersRouter   from './modules/customers/customers.router'
+import suppliersRouter   from './modules/suppliers/suppliers.router'
+import purchaseOrdersRouter from './modules/purchase-orders/purchase-orders.router'
+import { expCategoriesRouter, expensesRouter } from './modules/expenses/expenses.router'
+import dashboardRouter from './modules/dashboard/dashboard.router'
+import reportsRouter   from './modules/reports/reports.router'
+import telegramRouter  from './modules/telegram/telegram.router'
 
 export function createApp() {
   const app = express()
@@ -75,9 +85,20 @@ export function createApp() {
   app.use('/api/v1/admin/settings',   settingsAdminRouter)
   app.use('/api/v1/admin/exchange-rates', exchangeRateAdminRouter)
   app.use('/api/v1/admin/coupons', couponsAdminRouter)
-  app.use('/api/v1/admin/orders', ordersAdminRouter)
-  app.use('/api/v1/admin/boxes', boxesAdminRouter)
+  app.use('/api/v1/admin/orders',  ordersAdminRouter)
+  app.use('/api/v1/admin/orders',  pickPackRouter)
+  app.use('/api/v1/admin/boxes',   boxesAdminRouter)
   app.use('/api/v1/admin/kor-shipping-tiers', korShippingAdminRouter)
+  app.use('/api/v1/admin/roles', rolesRouter)
+  app.use('/api/v1/admin/users', adminUsersRouter)
+  app.use('/api/v1/admin/customers', customersRouter)
+  app.use('/api/v1/admin/suppliers', suppliersRouter)
+  app.use('/api/v1/admin/purchase-orders', purchaseOrdersRouter)
+  app.use('/api/v1/admin/expense-categories', expCategoriesRouter)
+  app.use('/api/v1/admin/expenses', expensesRouter)
+  app.use('/api/v1/admin/dashboard', dashboardRouter)
+  app.use('/api/v1/admin/reports',   reportsRouter)
+  app.use('/api/v1/admin/telegram',  telegramRouter)
   
   app.use('/api/v1/boxes', boxesRouter)
   app.use('/api/v1/kor-shipping-tiers', korShippingRouter)

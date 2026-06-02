@@ -198,6 +198,10 @@ try {
 - **IDs**: `uuid().primaryKey().defaultRandom()`.
 - **Performance**: Use `.leftJoin()` or `tx.transaction()` for batching. Avoid looping queries.
 - **Inventory**: FIFO order via `ORDER BY created_at ASC` or `received_at ASC` on batches.
+- **Accounting**:
+  - Revenue Recognition: Cash basis, at `PAYMENT_CONFIRMED`.
+  - COGS Recognition: At `PAYMENT_CONFIRMED` (updated with actual costs at `PACKING`).
+  - Revenue Reversal: At `REFUNDED` status (includes stock return).
 
 ---
 

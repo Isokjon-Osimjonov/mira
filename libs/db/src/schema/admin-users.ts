@@ -1,3 +1,4 @@
+import type { AnyPgColumn } from 'drizzle-orm/pg-core';
 import {
   pgTable, uuid, varchar, text, boolean, timestamp, uniqueIndex, index, check,
 } from 'drizzle-orm/pg-core';
@@ -36,6 +37,7 @@ export const adminUsers = pgTable('admin_users', {
   isActive: boolean('is_active').default(true).notNull(),
   mustChangePassword: boolean('must_change_password').default(false).notNull(),
   lastLoginAt: timestamp('last_login_at', { withTimezone: true }),
+  createdBy: uuid('created_by').references((): AnyPgColumn => adminUsers.id, { onDelete: 'set null' }),
   deletedAt: timestamp('deleted_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
@@ -69,6 +71,11 @@ export const adminUsersRelations = relations(adminUsers, ({ one }) => ({
   role: one(roles, {
     fields: [adminUsers.roleId],
     references: [roles.id],
+  }),
+  creator: one(adminUsers, {
+    fields: [adminUsers.createdBy],
+    references: [adminUsers.id],
+    relationName: 'adminCreator',
   }),
 }));
 

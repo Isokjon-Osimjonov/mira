@@ -74,6 +74,7 @@ export const telegramPostStatusEnum = pgEnum('telegram_post_status', [
   'SCHEDULED',
   'SENT',
   'FAILED',
+  'ARCHIVED',
 ]);
 
 export const notificationTypeEnum = pgEnum('notification_type', [
