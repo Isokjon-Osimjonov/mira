@@ -110,6 +110,13 @@
 
 ## 🔄 Changelog
 
+### v0.2.4-dev (2026-06-02)
+- **AI Module Upgrade**: Integrated OpenAI GPT-4o Vision for product image analysis.
+  - fill-product-image: Automated metadata extraction from photos.
+  - generate-post-image: Mode B Telegram post generation directly from images.
+  - Hybrid AI strategy: Using GPT-4o for multi-modal tasks and Gemini for text-only tasks.
+  - Rate limiting (10/min) and Cloudinary URL validation for image analysis.
+
 ### v0.2.3-dev (2026-06-02)
 - **Security Hardening**: Implemented 12 production-grade security fixes.
   - Production error handler (stack trace masking)

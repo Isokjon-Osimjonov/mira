@@ -307,10 +307,3 @@ export async function updatePricing(id: string, data: UpdatePricingDto) {
     return { success: true }
   })
 }
-   eq(productRegionalConfigs.regionCode, config.regionCode)
-          )
-        )
-    }
-    return { success: true }
-  })
-}

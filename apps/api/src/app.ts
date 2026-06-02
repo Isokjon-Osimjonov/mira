@@ -42,6 +42,7 @@ import { expCategoriesRouter, expensesRouter } from './modules/expenses/expenses
 import dashboardRouter from './modules/dashboard/dashboard.router'
 import reportsRouter from './modules/reports/reports.router'
 import telegramRouter from './modules/telegram/telegram.router'
+import aiRouter from './modules/ai/ai.router'
 
 export function createApp() {
   const app = express()
@@ -138,6 +139,7 @@ export function createApp() {
   app.use('/api/v1/admin/dashboard', dashboardRouter)
   app.use('/api/v1/admin/reports', reportsRouter)
   app.use('/api/v1/admin/telegram', telegramRouter)
+  app.use('/api/v1/admin/ai', aiRouter)
 
   app.use('/api/v1/boxes', boxesRouter)
   app.use('/api/v1/kor-shipping-tiers', korShippingRouter)

@@ -34,6 +34,9 @@ const envSchema = z.object({
   EXCHANGE_RATE_API_KEY: z.string().optional(),
   EXCHANGE_RATE_API_URL: z.string().default('https://v6.exchangerate-api.com/v6'),
 
+  // ─── AI ────────────────────────────────────────────────
+  OPENAI_API_KEY: z.string().min(1, 'OPENAI_API_KEY required'),
+
   // ─── Eskiz SMS ─────────────────────────────────────────
   ESKIZ_EMAIL: z.string().optional(),
   ESKIZ_PASSWORD: z.string().optional(),

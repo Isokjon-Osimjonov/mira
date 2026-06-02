@@ -43,6 +43,32 @@ export const adminLimiter = rateLimit({
   message: json('Too many admin requests.', 'RATE_LIMITED'),
 })
 
+// AI: image analysis — 10 per minute
+export const imageLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 10,
+  message: {
+    data: null,
+    error: {
+      message: 'Rasm tahlil limiti: minutiga 10 ta',
+      code: 'RATE_LIMITED',
+    },
+  },
+})
+
+// AI: text generation — 20 per minute
+export const aiTextLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 20,
+  message: {
+    data: null,
+    error: {
+      message: 'AI matn tahlil limiti: minutiga 20 ta',
+      code: 'RATE_LIMITED',
+    },
+  },
+})
+
 // ─── Per-phone OTP rate limit ─────────────────────────────────
 const phoneMap = new Map<string, { count: number; resetAt: number }>()
 
