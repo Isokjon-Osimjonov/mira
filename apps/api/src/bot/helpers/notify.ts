@@ -51,18 +51,23 @@ export async function notifyPaymentSubmitted(data: {
 }
 
 // Low stock alert
-export async function notifyLowStock(data: {
+export async function notifyLowStock(params: {
   productName: string
   barcode: string
+  brandName: string
   currentQty: number
   threshold: number
 }): Promise<void> {
-  await sendAdminAlert(
-    `⚠️ <b>STOK KAMAYDI!</b>\n` +
-      `💄 ${data.productName}\n` +
-      `📊 Qoldi: ${data.currentQty} dona (limit: ${data.threshold})\n` +
-      `🔗 admin.miracosmetics.uz/inventory`
-  )
+  const msg =
+    `⚠️ <b>Kam qolgan mahsulot!</b>\n\n` +
+    `📦 <b>${params.productName}</b>\n` +
+    `🏷 Brend: ${params.brandName}\n` +
+    `🔢 Barcode: <code>${params.barcode}</code>\n` +
+    `📊 Joriy miqdor: <b>${params.currentQty} ta</b>\n` +
+    `⚡ Chegara: ${params.threshold} ta\n\n` +
+    `Zudlik bilan buyurtma bering!`
+
+  await sendAdminAlert(msg)
 }
 
 // Customer OTP via bot DM (already in auth handler)

@@ -48,7 +48,6 @@ export const createAddressSchema = baseAddressSchema.superRefine((data, ctx) => 
   }
 })
 
-// Use baseAddressSchema.partial() for updates to avoid refinement issues
 export const updateAddressSchema = baseAddressSchema.partial()
 
 export type CreateAddressDto = z.infer<typeof createAddressSchema>

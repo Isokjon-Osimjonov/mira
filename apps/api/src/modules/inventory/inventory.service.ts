@@ -8,9 +8,9 @@ import {
   adminUsers,
   expenses,
 } from '@mira/db'
-import { eq, and, sql, desc, asc, min, inArray, gte, lte } from 'drizzle-orm'
+import { eq, and, sql, desc, asc, min, inArray, gte, lte, isNotNull, gt } from 'drizzle-orm'
 import { emit } from '../../config/socket'
-import { notifyLowStock } from '../../bot/helpers/notify'
+import { notifyLowStock, sendAdminAlert } from '../../bot/helpers/notify'
 import type { CreateBatchDto, UpdateBatchDto } from './inventory.schema'
 
 export async function getStockSummary() {
@@ -38,6 +38,44 @@ export async function getStockSummary() {
     batchCount: Number(item.batchCount || 0),
     isLowStock: Number(item.totalQty || 0) <= threshold,
   }))
+}
+
+export async function checkLowStock(tx: any, productId: string) {
+  const [appSettings] = await tx.select().from(settings).limit(1)
+  const threshold = appSettings?.lowStockThreshold || 10
+
+  const [stock] = await tx
+    .select({
+      total: sql<number>`SUM(${inventoryBatches.currentQty})`,
+      count: sql<number>`COUNT(${inventoryBatches.id})`,
+    })
+    .from(inventoryBatches)
+    .where(eq(inventoryBatches.productId, productId))
+
+  const totalQty = Number(stock.total || 0)
+  const batchCount = Number(stock.count || 0)
+
+  if (totalQty <= threshold) {
+    const [product] = await tx.select().from(products).where(eq(products.id, productId)).limit(1)
+
+    if (product) {
+      emit.stockLow({
+        productId,
+        productName: product.name,
+        barcode: product.barcode,
+        currentQty: totalQty,
+        threshold,
+        batchCount,
+      })
+      await notifyLowStock({
+        productName: product.name,
+        barcode: product.barcode,
+        brandName: product.brandName,
+        currentQty: totalQty,
+        threshold,
+      }).catch(console.error)
+    }
+  }
 }
 
 export async function createBatch(data: CreateBatchDto, adminId: string) {
@@ -72,41 +110,7 @@ export async function createBatch(data: CreateBatchDto, adminId: string) {
     })
 
     // 3. Check low stock threshold
-    const [appSettings] = await tx.select().from(settings).limit(1)
-    const threshold = appSettings?.lowStockThreshold || 10
-
-    const [stock] = await tx
-      .select({
-        total: sql<number>`SUM(${inventoryBatches.currentQty})`,
-        count: sql<number>`COUNT(${inventoryBatches.id})`,
-      })
-      .from(inventoryBatches)
-      .where(eq(inventoryBatches.productId, data.productId))
-
-    const totalQty = Number(stock.total || 0)
-    const batchCount = Number(stock.count || 0)
-    const [product] = await tx
-      .select()
-      .from(products)
-      .where(eq(products.id, data.productId))
-      .limit(1)
-
-    if (totalQty <= threshold) {
-      emit.stockLow({
-        productId: data.productId,
-        productName: product.name,
-        barcode: product.barcode,
-        currentQty: totalQty,
-        threshold,
-        batchCount,
-      })
-      await notifyLowStock({
-        productName: product.name,
-        barcode: product.barcode,
-        currentQty: totalQty,
-        threshold,
-      })
-    }
+    await checkLowStock(tx, data.productId)
 
     return newBatch
   })
@@ -191,6 +195,8 @@ export async function updateBatch(id: string, data: UpdateBatchDto, adminId: str
       .set(updates)
       .where(eq(inventoryBatches.id, id))
       .returning()
+
+    await checkLowStock(tx, batch.productId)
 
     return updated
   })
@@ -277,6 +283,8 @@ export async function writeOffStock(params: {
       expense = exp
     }
 
+    await checkLowStock(tx, batch.productId)
+
     return { batch: { ...batch, currentQty: newQty }, movement, expense }
   })
 }
@@ -341,4 +349,66 @@ export async function getWriteOffHistory(params: {
       hasPrev: params.page > 1,
     },
   }
+}
+
+export async function checkExpiringBatches(): Promise<void> {
+  const thirtyDaysFromNow = new Date()
+  thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30)
+
+  const expiringBatches = await db
+    .select({
+      batchId: inventoryBatches.id,
+      batchRef: inventoryBatches.batchRef,
+      productId: inventoryBatches.productId,
+      productName: products.name,
+      brandName: products.brandName,
+      barcode: products.barcode,
+      currentQty: inventoryBatches.currentQty,
+      expiryDate: inventoryBatches.expiryDate,
+    })
+    .from(inventoryBatches)
+    .innerJoin(products, eq(inventoryBatches.productId, products.id))
+    .where(
+      and(
+        gt(inventoryBatches.currentQty, 0),
+        isNotNull(inventoryBatches.expiryDate),
+        lte(inventoryBatches.expiryDate, thirtyDaysFromNow.toISOString().split('T')[0]),
+        gte(inventoryBatches.expiryDate, new Date().toISOString().split('T')[0])
+      )
+    )
+
+  if (expiringBatches.length === 0) return
+
+  // Group by urgency
+  const urgent = expiringBatches.filter((b) => {
+    const days = Math.ceil((new Date(b.expiryDate!).getTime() - Date.now()) / 86400000)
+    return days <= 7
+  })
+  const warning = expiringBatches.filter((b) => {
+    const days = Math.ceil((new Date(b.expiryDate!).getTime() - Date.now()) / 86400000)
+    return days > 7 && days <= 30
+  })
+
+  // Build Telegram message
+  let msg = '⚠️ <b>Muddati yaqinlashayotgan mahsulotlar</b>\n\n'
+
+  if (urgent.length > 0) {
+    msg += '🔴 <b>7 kun ichida tugaydi:</b>\n'
+    for (const b of urgent) {
+      const days = Math.ceil((new Date(b.expiryDate!).getTime() - Date.now()) / 86400000)
+      msg += `• ${b.productName} — ${b.currentQty} ta — ${days} kun\n`
+    }
+    msg += '\n'
+  }
+
+  if (warning.length > 0) {
+    msg += '🟡 <b>30 kun ichida tugaydi:</b>\n'
+    for (const b of warning) {
+      const days = Math.ceil((new Date(b.expiryDate!).getTime() - Date.now()) / 86400000)
+      msg += `• ${b.productName} — ${b.currentQty} ta — ${days} kun\n`
+    }
+  }
+
+  // Send to admin Telegram group
+  await sendAdminAlert(msg)
 }

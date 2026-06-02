@@ -110,6 +110,15 @@
 
 ## 🔄 Changelog
 
+### v0.2.8-dev (2026-06-02)
+- **New Feature**: Customer Profile management (update name and photo with Cloudinary validation).
+- **New Feature**: Expo Push Token registration and per-device management.
+- **New Feature**: Customer Notification Settings (toggle order updates, stock alerts, promotions).
+- **New Feature**: Admin Self-service Password Change with complexity requirements and token revocation.
+- **Improvement**: `mustChangePassword` flag now correctly returned in Admin Auth responses.
+- **Automation**: Batch Expiry Alert Cron (daily 08:00 KST) with tiered urgency notifications.
+- **Verification**: Low Stock Alert system verified and integrated across all inventory movement points.
+
 ### v0.2.7-dev (2026-06-02)
 - **New Endpoint**: `GET /api/v1/admin/products/by-barcode/:barcode` for exact product lookup.
   - Returns product details, current stock levels, and regional pricing.

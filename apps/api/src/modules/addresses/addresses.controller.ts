@@ -1,7 +1,7 @@
 import type { Request, Response, NextFunction } from 'express'
 import * as service from './addresses.service'
 import { createAddressSchema, updateAddressSchema } from './addresses.schema'
-import type { CustomerJwtPayload } from '../../middleware/auth'
+import type { CustomerJwtPayload, AdminJwtPayload } from '../../middleware/auth'
 
 // ─── Customer Endpoints ──────────────────────────────────────────────────
 
@@ -63,8 +63,7 @@ export async function deleteAddress(req: Request, res: Response, next: NextFunct
 export async function searchJuso(req: Request, res: Response, next: NextFunction) {
   try {
     const q = req.query.q as string
-    if (!q) return res.json({ data: [], error: null })
-    const result = await service.searchJusoAddress(q)
+    const result = await service.searchJusoAddress(q || '')
     res.json({ data: result, error: null })
   } catch (err) {
     next(err)

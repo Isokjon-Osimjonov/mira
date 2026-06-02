@@ -23,7 +23,7 @@ export async function createAddress(customerId: string, data: CreateAddressDto) 
     throw {
       status: 400,
       code: 'ADDRESS_LIMIT_EXCEEDED',
-      message: "Manzillar soni 10 tadan oshishi mumkin emas",
+      message: 'Maksimal 10 ta manzil ruxsat etilgan',
     }
   }
 
@@ -44,7 +44,7 @@ export async function createAddress(customerId: string, data: CreateAddressDto) 
         ...data,
         customerId,
         isDefault: shouldBeDefault,
-      })
+      } as any)
       .returning()
 
     return created
@@ -72,7 +72,7 @@ export async function updateAddress(id: string, customerId: string, data: Update
 
     const [updated] = await tx
       .update(userAddresses)
-      .set({ ...data, updatedAt: new Date() })
+      .set({ ...data, updatedAt: new Date() } as any)
       .where(eq(userAddresses.id, id))
       .returning()
 
@@ -117,8 +117,7 @@ export async function deleteAddress(id: string, customerId: string) {
   if (address.customerId !== customerId)
     throw { status: 403, code: 'ADDRESS_UNAUTHORIZED', message: 'Ruxsat etilmagan' }
 
-  // Snapshot already copied to order, so we can just delete.
-  // The user's note said "OR just allow delete (snapshot already copied to order)".
+  // Snapshot already copied to order, safe to delete.
   await db.delete(userAddresses).where(eq(userAddresses.id, id))
   return { success: true }
 }

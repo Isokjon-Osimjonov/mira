@@ -13,5 +13,11 @@ router.post('/logout', ctrl.logout)
 
 // Protected
 router.get('/me', requireCustomer, ctrl.me)
+router.patch('/profile', requireCustomer, ctrl.updateProfile)
+router.post('/push-token', requireCustomer, ctrl.savePushToken)
+router.delete('/push-token', requireCustomer, ctrl.removePushToken)
+
+router.get('/notification-settings', requireCustomer, ctrl.getNotificationSettings)
+router.patch('/notification-settings', requireCustomer, ctrl.updateNotificationSettings)
 
 export default router

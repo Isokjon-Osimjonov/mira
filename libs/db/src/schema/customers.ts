@@ -64,6 +64,8 @@ export const userNotificationSettings = pgTable('user_notification_settings', {
   stockBack: boolean('stock_back').default(true).notNull(),
   priceDrop: boolean('price_drop').default(true).notNull(),
   promotions: boolean('promotions').default(false).notNull(),
+  pushEnabled: boolean('push_enabled').default(true).notNull(),
+  telegramEnabled: boolean('telegram_enabled').default(true).notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 }, (t) => ({
   customerIdIdx: uniqueIndex('user_notification_settings_customer_id_idx').on(t.customerId),

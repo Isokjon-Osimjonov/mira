@@ -11,6 +11,7 @@ import {
 import { eq, and, sql, desc, count, ilike, or } from 'drizzle-orm'
 import { emit } from '../../config/socket'
 import { notifyLowStock } from '../../bot/helpers/notify'
+import { checkLowStock } from '../inventory/inventory.service'
 import type {
   CreatePurchaseOrderDto,
   UpdatePurchaseOrderDto,
@@ -321,39 +322,8 @@ export async function receivePurchaseOrder(id: string, data: ReceivePODto, admin
       .returning()
 
     // Low stock check
-    const [appSettings] = await tx.select().from(settings).limit(1)
-    const threshold = appSettings?.lowStockThreshold || 10
-
     for (const productId of productsReceived) {
-      const [stockRes] = await tx
-        .select({ total: sql<number>`SUM(${inventoryBatches.currentQty})`.mapWith(Number) })
-        .from(inventoryBatches)
-        .where(eq(inventoryBatches.productId, productId))
-      const totalQty = stockRes?.total || 0
-
-      if (totalQty <= threshold) {
-        const [product] = await tx
-          .select()
-          .from(products)
-          .where(eq(products.id, productId))
-          .limit(1)
-        if (product) {
-          emit.stockLow({
-            productId,
-            productName: product.name,
-            barcode: product.barcode,
-            currentQty: totalQty,
-            threshold,
-            batchCount: 0,
-          })
-          await notifyLowStock({
-            productName: product.name,
-            barcode: product.barcode,
-            currentQty: totalQty,
-            threshold,
-          })
-        }
-      }
+      await checkLowStock(tx, productId)
     }
 
     return updated

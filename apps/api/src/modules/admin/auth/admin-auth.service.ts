@@ -123,6 +123,7 @@ export async function adminLogin(dto: AdminLoginDto, deviceInfo?: string, ipAddr
   return {
     accessToken,
     refreshToken,
+    mustChangePassword: admin.mustChangePassword,
     user: {
       id: admin.id,
       email: admin.email,
@@ -207,6 +208,7 @@ export async function refreshAdminToken(rawRefreshToken: string) {
   return {
     accessToken: newAccess,
     refreshToken: newRefresh,
+    mustChangePassword: admin.mustChangePassword,
     user: {
       id: admin.id,
       email: admin.email,
@@ -223,4 +225,40 @@ export async function adminLogout(rawRefreshToken: string): Promise<void> {
     .update(refreshTokens)
     .set({ isRevoked: true, revokedAt: new Date(), revokedReason: 'LOGOUT' })
     .where(eq(refreshTokens.token, tokenHash))
+}
+
+export async function changePassword(
+  adminId: string,
+  dto: { currentPassword: string; newPassword: string }
+) {
+  const [admin] = await db.select().from(adminUsers).where(eq(adminUsers.id, adminId)).limit(1)
+  if (!admin) throw { status: 404, message: 'Admin topilmadi' }
+
+  const valid = await bcrypt.compare(dto.currentPassword, admin.passwordHash)
+  if (!valid) throw { status: 401, code: 'INVALID_CREDENTIALS', message: "Joriy parol noto'g'ri" }
+
+  const hash = await bcrypt.hash(dto.newPassword, 12)
+
+  return await db.transaction(async (tx) => {
+    await tx
+      .update(adminUsers)
+      .set({
+        passwordHash: hash,
+        mustChangePassword: false,
+        updatedAt: new Date(),
+      })
+      .where(eq(adminUsers.id, adminId))
+
+    // Revoke all refresh tokens
+    await tx
+      .update(refreshTokens)
+      .set({
+        isRevoked: true,
+        revokedAt: new Date(),
+        revokedReason: 'SECURITY',
+      })
+      .where(eq(refreshTokens.adminUserId, adminId))
+
+    return { success: true }
+  })
 }

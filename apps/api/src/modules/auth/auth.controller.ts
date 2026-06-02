@@ -1,10 +1,16 @@
 import type { Request, Response } from 'express'
-import { RequestOtpSchema, VerifyOtpSchema } from './auth.schema'
+import {
+  RequestOtpSchema,
+  VerifyOtpSchema,
+  UpdateProfileSchema,
+  PushTokenSchema,
+} from './auth.schema'
 import * as AuthService from './auth.service'
 import { setRefreshCookie, clearRefreshCookie, getRefreshCookie } from '../../lib/cookie'
 import { db } from '../../config/db'
 import { customers } from '@mira/db'
 import { eq } from 'drizzle-orm'
+import type { CustomerJwtPayload } from '../../middleware/auth'
 
 const ok = <T>(res: Response, data: T, status = 200) =>
   res.status(status).json({ data, error: null })
@@ -103,4 +109,69 @@ export async function me(req: Request, res: Response) {
     referralCode: customer.referralCode,
     isVerified: customer.isVerified,
   })
+}
+
+// PATCH /auth/profile
+export async function updateProfile(req: Request, res: Response) {
+  const customer = req.user as CustomerJwtPayload
+  const parsed = UpdateProfileSchema.safeParse(req.body)
+  if (!parsed.success) {
+    return err(res, 400, parsed.error.issues[0].message, 'VALIDATION_ERROR')
+  }
+
+  try {
+    const result = await AuthService.updateProfile(customer.sub, parsed.data)
+    return ok(res, result)
+  } catch (e: any) {
+    return err(res, e.status ?? 500, e.message ?? 'Xatolik', e.code)
+  }
+}
+
+// POST /auth/push-token
+export async function savePushToken(req: Request, res: Response) {
+  const customer = req.user as CustomerJwtPayload
+  const parsed = PushTokenSchema.safeParse(req.body)
+  if (!parsed.success) {
+    return err(res, 400, parsed.error.issues[0].message, 'VALIDATION_ERROR')
+  }
+
+  try {
+    await AuthService.savePushToken(customer.sub, parsed.data.token)
+    return ok(res, { success: true })
+  } catch (e: any) {
+    return err(res, e.status ?? 500, e.message ?? 'Xatolik', e.code)
+  }
+}
+
+// DELETE /auth/push-token
+export async function removePushToken(req: Request, res: Response) {
+  const customer = req.user as CustomerJwtPayload
+  try {
+    await AuthService.removePushToken(customer.sub)
+    return ok(res, { success: true })
+  } catch (e: any) {
+    return err(res, e.status ?? 500, e.message ?? 'Xatolik', e.code)
+  }
+}
+
+// GET /auth/notification-settings
+export async function getNotificationSettings(req: Request, res: Response) {
+  const customer = req.user as CustomerJwtPayload
+  try {
+    const result = await AuthService.getNotificationSettings(customer.sub)
+    return ok(res, result)
+  } catch (e: any) {
+    return err(res, e.status ?? 500, e.message ?? 'Xatolik', e.code)
+  }
+}
+
+// PATCH /auth/notification-settings
+export async function updateNotificationSettings(req: Request, res: Response) {
+  const customer = req.user as CustomerJwtPayload
+  try {
+    const result = await AuthService.updateNotificationSettings(customer.sub, req.body)
+    return ok(res, result)
+  } catch (e: any) {
+    return err(res, e.status ?? 500, e.message ?? 'Xatolik', e.code)
+  }
 }

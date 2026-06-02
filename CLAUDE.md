@@ -112,6 +112,9 @@ Nothing that changes between environments or depends on business state may be ha
 - `ADDRESS_LIMIT_EXCEEDED`: 400 - max 10 addresses reached.
 - `ADDRESS_IN_USE`: 400 - address used in active order.
 - `JUSO_API_ERROR`: 502 - Korea address search failed.
+- `WRITE_OFF_QTY_EXCEEDED`: 400 - qty > batch.currentQty.
+- `BATCH_NOT_FOUND`: 404 - batch does not exist.
+- `INVALID_DISCOUNT`: 400 - discount > subtotal.
 
 ### Pick & Pack (`pick-pack.service.ts`)
 - `BOX_NOT_FOUND`: 404 - Box size does not exist.

@@ -7,6 +7,7 @@ import {
 } from '../modules/orders/orders.service'
 import { fetchAndSaveExchangeRate } from '../modules/exchange-rates/exchange-rates.service'
 import { sendScheduledPosts } from '../modules/telegram/telegram.service'
+import { checkExpiringBatches } from '../modules/inventory/inventory.service'
 
 export function initCronJobs(): void {
   if (env.NODE_ENV === 'test') return
@@ -80,6 +81,20 @@ export function initCronJobs(): void {
         await sendDeadlineReminders()
       } catch (err: any) {
         console.error('❌ Deadline reminder cron error:', err.message)
+      }
+    },
+    { timezone: 'Asia/Seoul' }
+  )
+
+  // 6. Expiry check — daily 08:00 KST
+  cron.schedule(
+    '0 8 * * *',
+    async () => {
+      try {
+        await checkExpiringBatches()
+        console.log('📅 Muddati tekshirildi')
+      } catch (err: any) {
+        console.error('❌ Expiry check cron error:', err.message)
       }
     },
     { timezone: 'Asia/Seoul' }

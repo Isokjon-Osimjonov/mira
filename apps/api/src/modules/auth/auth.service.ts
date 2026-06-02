@@ -5,8 +5,9 @@ import { generateToken, generateOtp, hashToken } from '../../lib/otp'
 import { checkPhoneRateLimit } from '../../middleware/rateLimiter'
 import { signAccess, signRefresh, verifyRefresh } from '../../lib/jwt'
 import { env } from '../../config/env'
-import type { RequestOtpDto, VerifyOtpDto } from './auth.schema'
+import type { RequestOtpDto, VerifyOtpDto, UpdateProfileDto } from './auth.schema'
 import { logSecurityEvent } from '../../lib/audit-log'
+import { isValidCloudinaryUrl } from '../../lib/validate-url'
 
 // Region from phone prefix
 function getRegion(phone: string): 'UZB' | 'KOR' {
@@ -335,4 +336,99 @@ export async function logoutCustomer(rawRefreshToken: string): Promise<void> {
     .update(refreshTokens)
     .set({ isRevoked: true, revokedAt: new Date(), revokedReason: 'LOGOUT' })
     .where(eq(refreshTokens.token, tokenHash))
+}
+
+// ─── Profile ──────────────────────────────────────────────────
+export async function updateProfile(customerId: string, data: UpdateProfileDto) {
+  if (data.profileImageUrl && !isValidCloudinaryUrl(data.profileImageUrl)) {
+    throw { status: 400, code: 'INVALID_URL', message: 'Faqat Cloudinary URL qabul qilinadi' }
+  }
+
+  const [updated] = await db
+    .update(customers)
+    .set({ ...data, updatedAt: new Date() })
+    .where(eq(customers.id, customerId))
+    .returning()
+
+  if (!updated) throw { status: 404, message: 'Foydalanuvchi topilmadi' }
+
+  return {
+    id: updated.id,
+    phone: updated.phone,
+    firstName: updated.firstName,
+    lastName: updated.lastName,
+    profileImageUrl: updated.profileImageUrl,
+    phoneRegion: updated.phoneRegion,
+  }
+}
+
+// ─── Push Token ───────────────────────────────────────────────
+export async function savePushToken(customerId: string, token: string) {
+  await db
+    .update(customers)
+    .set({ expoPushToken: token, updatedAt: new Date() })
+    .where(eq(customers.id, customerId))
+}
+
+export async function removePushToken(customerId: string) {
+  await db
+    .update(customers)
+    .set({ expoPushToken: null, updatedAt: new Date() })
+    .where(eq(customers.id, customerId))
+}
+
+// ─── Notification Settings ────────────────────────────────────
+export async function getNotificationSettings(customerId: string) {
+  const [settings] = await db
+    .select()
+    .from(userNotificationSettings)
+    .where(eq(userNotificationSettings.customerId, customerId))
+    .limit(1)
+
+  if (!settings) {
+    return {
+      orderUpdates: true,
+      promotions: false,
+      stockAlerts: true,
+      pushEnabled: true,
+      telegramEnabled: true,
+    }
+  }
+
+  return {
+    orderUpdates: settings.orderStatus,
+    promotions: settings.promotions,
+    stockAlerts: settings.stockBack,
+    pushEnabled: settings.pushEnabled,
+    telegramEnabled: settings.telegramEnabled,
+  }
+}
+
+export async function updateNotificationSettings(customerId: string, data: any) {
+  const updates: any = { updatedAt: new Date() }
+  if (data.orderUpdates !== undefined) updates.orderStatus = data.orderUpdates
+  if (data.promotions !== undefined) updates.promotions = data.promotions
+  if (data.stockAlerts !== undefined) updates.stockBack = data.stockAlerts
+  if (data.pushEnabled !== undefined) updates.pushEnabled = data.pushEnabled
+  if (data.telegramEnabled !== undefined) updates.telegramEnabled = data.telegramEnabled
+
+  const [updated] = await db
+    .insert(userNotificationSettings)
+    .values({
+      customerId,
+      ...updates,
+    })
+    .onConflictDoUpdate({
+      target: userNotificationSettings.customerId,
+      set: updates,
+    })
+    .returning()
+
+  return {
+    orderUpdates: updated.orderStatus,
+    promotions: updated.promotions,
+    stockAlerts: updated.stockBack,
+    pushEnabled: updated.pushEnabled,
+    telegramEnabled: updated.telegramEnabled,
+  }
 }
