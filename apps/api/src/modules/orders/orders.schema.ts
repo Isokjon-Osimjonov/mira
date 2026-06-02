@@ -16,8 +16,11 @@ export const uploadReceiptSchema = z.object({
 
 export const manualOrderSchema = z.object({
   customerId: z.string().uuid(),
-  addressId: z.string().uuid(),
+  addressId: z.string().uuid().optional(),
   paymentMethod: z.enum(['KOREAN_BANK', 'UZB_BANK', 'E9PAY']),
+  paymentMode: z.enum(['RECEIPT', 'IMMEDIATE']).default('RECEIPT'),
+  orderDiscountPct: z.number().int().min(0).max(100).optional(),
+  orderDiscountFlat: z.number().int().min(0).optional(),
   boxId: z.string().uuid().optional(),
   couponCode: z.string().trim().toUpperCase().optional(),
   adminNote: z.string().optional(),
@@ -30,7 +33,10 @@ export const manualOrderSchema = z.object({
       })
     )
     .min(1, "Kamida bitta mahsulot qo'shing"),
-})
+}).refine(
+  (d) => !(d.orderDiscountPct && d.orderDiscountFlat),
+  { message: 'Faqat bir tur chegirma tanlang (foiz yoki summa)', path: ['orderDiscountPct'] }
+)
 
 export const confirmPaymentSchema = z.object({
   note: z.string().optional(),

@@ -4,8 +4,10 @@ import {
   updateCustomerNotesSchema,
   blockCustomerSchema,
   assignCouponSchema,
+  createWalkInCustomerSchema,
 } from './customers.schema'
 import * as OrderService from '../orders/orders.service'
+import type { AdminJwtPayload } from '../../middleware/auth'
 
 export async function getCustomers(req: Request, res: Response) {
   try {
@@ -142,6 +144,23 @@ export async function assignCoupon(req: Request, res: Response) {
       return res
         .status(400)
         .json({ data: null, error: { message: 'Xato', code: 'VALIDATION_ERROR' } })
+    return res
+      .status(e.status ?? 500)
+      .json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
+  }
+}
+
+export async function createWalkInCustomer(req: Request, res: Response) {
+  try {
+    const admin = req.user as AdminJwtPayload
+    const validated = createWalkInCustomerSchema.parse(req.body)
+    const data = await service.createWalkInCustomer({ ...validated, createdBy: admin.sub })
+    return res.status(201).json({ data, error: null })
+  } catch (e: any) {
+    if (e.name === 'ZodError')
+      return res
+        .status(400)
+        .json({ data: null, error: { message: e.errors[0].message, code: 'VALIDATION_ERROR' } })
     return res
       .status(e.status ?? 500)
       .json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })

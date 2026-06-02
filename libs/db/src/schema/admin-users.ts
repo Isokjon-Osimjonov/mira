@@ -3,6 +3,7 @@ import {
   pgTable, uuid, varchar, text, boolean, timestamp, uniqueIndex, index, check, integer
 } from 'drizzle-orm/pg-core';
 import { relations, sql } from 'drizzle-orm';
+import { stockMovements } from './inventory';
 
 export const roles = pgTable('roles', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -69,7 +70,7 @@ export const rolePermissionsRelations = relations(rolePermissions, ({ one }) => 
   }),
 }));
 
-export const adminUsersRelations = relations(adminUsers, ({ one }) => ({
+export const adminUsersRelations = relations(adminUsers, ({ one, many }) => ({
   role: one(roles, {
     fields: [adminUsers.roleId],
     references: [roles.id],
@@ -79,6 +80,8 @@ export const adminUsersRelations = relations(adminUsers, ({ one }) => ({
     references: [adminUsers.id],
     relationName: 'adminCreator',
   }),
+  performedStockMovements: many(stockMovements, { relationName: 'stockPerformedBy' }),
+  writtenOffStockMovements: many(stockMovements, { relationName: 'stockWrittenOffBy' }),
 }));
 
 export type Role = typeof roles.$inferSelect;

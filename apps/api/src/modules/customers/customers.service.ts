@@ -12,10 +12,17 @@ import {
   notificationsLog,
   refreshTokens,
   products,
+  userNotificationSettings,
 } from '@mira/db'
 import { eq, and, sql, desc, count, sum, max, min, isNull, or, ilike, avg } from 'drizzle-orm'
 import { escapeLikeQuery } from '../../lib/sanitize'
-import type { UpdateCustomerNotesDto, BlockCustomerDto, AssignCouponDto } from './customers.schema'
+import { generateToken } from '../../lib/otp'
+import type {
+  UpdateCustomerNotesDto,
+  BlockCustomerDto,
+  AssignCouponDto,
+  CreateWalkInCustomerDto,
+} from './customers.schema'
 
 export async function getCustomers(query: {
   page?: number
@@ -42,7 +49,7 @@ export async function getCustomers(query: {
   if (query.dateTo) where = and(where, sql`${customers.createdAt} <= ${new Date(query.dateTo)}`)
 
   if (query.search) {
-    const s = `%${query.search}%`
+    const s = `%${escapeLikeQuery(query.search)}%`
     where = and(
       where,
       or(
@@ -57,8 +64,6 @@ export async function getCustomers(query: {
   // Sorting
   let orderBy: any = desc(customers.createdAt)
   if (query.sort === 'oldest') orderBy = customers.createdAt
-  // most_orders and most_spent would require joins and are harder to do with simple orderBy in Drizzle without subqueries/groups.
-  // We'll skip complex sort in main query for now or do it with subquery.
 
   const itemsQuery = await db
     .select({
@@ -352,4 +357,48 @@ export async function assignCoupon(customerId: string, couponId: string) {
     throw { status: 409, code: 'VALIDATION_ERROR', message: 'Kupon allaqachon biriktirilgan' }
 
   await db.insert(userCoupons).values({ customerId, couponId })
+}
+
+export async function createWalkInCustomer(params: {
+  firstName: string
+  lastName?: string
+  phone?: string
+  region: 'UZB' | 'KOR'
+  note?: string
+  createdBy: string
+}) {
+  if (params.phone) {
+    const [existing] = await db
+      .select()
+      .from(customers)
+      .where(eq(customers.phone, params.phone))
+      .limit(1)
+    if (existing) return existing
+  } else if (params.region === 'KOR') {
+    throw { status: 400, code: 'WALK_IN_PHONE_REQUIRED', message: 'KOR hududi uchun telefon raqami majburiy' }
+  }
+
+  const placeholder = `WI-${Date.now().toString().slice(-10)}-${Math.random().toString(36).slice(2, 5).toUpperCase()}`
+
+  return await db.transaction(async (tx) => {
+    const [customer] = await tx
+      .insert(customers)
+      .values({
+        phone: params.phone ?? placeholder,
+        phoneRegion: params.region,
+        firstName: params.firstName,
+        lastName: params.lastName ?? null,
+        source: 'WALK_IN',
+        isVerified: false,
+        notes: params.note ?? "Do'konga kelgan mijoz",
+        referralCode: generateToken().slice(0, 8).toUpperCase(),
+      })
+      .returning()
+
+    await tx.insert(userNotificationSettings).values({
+      customerId: customer.id,
+    })
+
+    return customer
+  })
 }

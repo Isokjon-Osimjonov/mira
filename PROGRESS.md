@@ -110,6 +110,18 @@
 
 ## 🔄 Changelog
 
+### v0.2.5-dev (2026-06-02)
+- **New Feature**: Stock Write-Off API (GIFT, SAMPLE, DAMAGED, EXPIRED, LOST, ADJUSTMENT).
+  - Integrated with Expenses module (auto-expense for damages).
+  - Gift tracking with recipient info.
+- **New Feature**: Immediate Payment Mode for Manual Orders.
+  - Bypasses reservation, deducts stock immediately (FIFO).
+  - Automatically recognizes revenue in daily analytics.
+  - Supports order-level discounts (% or flat).
+- **New Feature**: Walk-in Customer quick registration.
+  - Generates placeholder phone for UZB if missing.
+  - Tracks customer source (APP vs WALK_IN).
+
 ### v0.2.4-dev (2026-06-02)
 - **AI Module Upgrade**: Integrated OpenAI GPT-4o Vision for product image analysis.
   - fill-product-image: Automated metadata extraction from photos.

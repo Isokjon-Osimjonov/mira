@@ -6,8 +6,9 @@ import {
   products,
   settings,
   adminUsers,
+  expenses,
 } from '@mira/db'
-import { eq, and, sql, desc, asc, min } from 'drizzle-orm'
+import { eq, and, sql, desc, asc, min, inArray, gte, lte } from 'drizzle-orm'
 import { emit } from '../../config/socket'
 import { notifyLowStock } from '../../bot/helpers/notify'
 import type { CreateBatchDto, UpdateBatchDto } from './inventory.schema'
@@ -193,4 +194,151 @@ export async function updateBatch(id: string, data: UpdateBatchDto, adminId: str
 
     return updated
   })
+}
+
+export async function writeOffStock(params: {
+  batchId: string
+  quantity: number
+  type: 'GIFT' | 'SAMPLE' | 'DAMAGED' | 'EXPIRED' | 'LOST' | 'ADJUSTMENT'
+  reason?: string
+  recipientName?: string
+  recipientPhone?: string
+  createExpense: boolean
+  expenseCategoryId?: string
+  performedBy: string
+}) {
+  const [batch] = await db
+    .select()
+    .from(inventoryBatches)
+    .where(eq(inventoryBatches.id, params.batchId))
+    .limit(1)
+
+  if (!batch) throw { status: 404, code: 'BATCH_NOT_FOUND', message: 'Partiya topilmadi' }
+
+  // Qty validation
+  if (params.type !== 'ADJUSTMENT') {
+    if (params.quantity <= 0) throw { status: 400, message: "Miqdor musbat bo'lishi kerak" }
+    if (params.quantity > batch.currentQty) {
+      throw {
+        status: 400,
+        code: 'WRITE_OFF_QTY_EXCEEDED',
+        message: `Stokda faqat ${batch.currentQty} ta bor`,
+      }
+    }
+  }
+
+  const qtyDelta = params.type === 'ADJUSTMENT' ? params.quantity : -params.quantity
+  const newQty = batch.currentQty + qtyDelta
+
+  return await db.transaction(async (tx) => {
+    // 1. Update batch
+    await tx
+      .update(inventoryBatches)
+      .set({ currentQty: newQty, updatedAt: new Date() })
+      .where(eq(inventoryBatches.id, params.batchId))
+
+    // 2. Log movement
+    const [movement] = await tx
+      .insert(stockMovements)
+      .values({
+        batchId: params.batchId,
+        productId: batch.productId,
+        movementType: params.type as any,
+        quantityDelta: qtyDelta,
+        qtyBefore: batch.currentQty,
+        qtyAfter: newQty,
+        reason: params.reason ?? null,
+        recipientName: params.recipientName ?? null,
+        recipientPhone: params.recipientPhone ?? null,
+        writtenOffBy: params.performedBy,
+        performedBy: params.performedBy,
+      })
+      .returning()
+
+    // 3. Create expense
+    let expense = null
+    if (
+      params.createExpense &&
+      params.expenseCategoryId &&
+      params.type !== 'GIFT' &&
+      params.type !== 'ADJUSTMENT'
+    ) {
+      const expenseAmount = batch.costPrice * BigInt(Math.abs(params.quantity))
+      const [exp] = await tx
+        .insert(expenses)
+        .values({
+          categoryId: params.expenseCategoryId,
+          amountKrw: expenseAmount,
+          description: `Hisobdan chiqarish (${params.type}): ${params.reason ?? batch.productId}`,
+          expenseDate: new Date().toISOString().split('T')[0],
+          createdBy: params.performedBy,
+        })
+        .returning()
+      expense = exp
+    }
+
+    return { batch: { ...batch, currentQty: newQty }, movement, expense }
+  })
+}
+
+export async function getWriteOffHistory(params: {
+  productId?: string
+  type?: string
+  dateFrom?: string
+  dateTo?: string
+  page: number
+  limit: number
+}) {
+  const offset = (params.page - 1) * params.limit
+
+  let where = inArray(stockMovements.movementType, [
+    'GIFT',
+    'SAMPLE',
+    'DAMAGED',
+    'EXPIRED',
+    'LOST',
+    'ADJUSTMENT',
+  ] as any)
+
+  if (params.productId) where = and(where, eq(stockMovements.productId, params.productId)) as any
+  if (params.type) where = and(where, eq(stockMovements.movementType, params.type as any)) as any
+  if (params.dateFrom)
+    where = and(where, gte(stockMovements.createdAt, new Date(params.dateFrom))) as any
+  if (params.dateTo)
+    where = and(where, lte(stockMovements.createdAt, new Date(params.dateTo))) as any
+
+  const items = await db
+    .select({
+      id: stockMovements.id,
+      type: stockMovements.movementType,
+      quantityDelta: stockMovements.quantityDelta,
+      reason: stockMovements.reason,
+      recipientName: stockMovements.recipientName,
+      createdAt: stockMovements.createdAt,
+      product: { name: products.name, brandName: products.brandName },
+      batch: { batchRef: inventoryBatches.batchRef, costPrice: inventoryBatches.costPrice },
+      admin: { fullName: adminUsers.fullName },
+    })
+    .from(stockMovements)
+    .innerJoin(products, eq(stockMovements.productId, products.id))
+    .innerJoin(inventoryBatches, eq(stockMovements.batchId, inventoryBatches.id))
+    .leftJoin(adminUsers, eq(stockMovements.writtenOffBy, adminUsers.id))
+    .where(where)
+    .orderBy(desc(stockMovements.createdAt))
+    .limit(params.limit)
+    .offset(offset)
+
+  const [countRes] = await db.select({ count: sql<number>`count(*)` }).from(stockMovements).where(where)
+  const total = Number(countRes.count)
+
+  return {
+    items,
+    meta: {
+      page: params.page,
+      limit: params.limit,
+      total,
+      hasNext: offset + params.limit < total,
+      hasPrev: params.page > 1,
+    },
+  }
 }

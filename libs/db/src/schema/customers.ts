@@ -1,7 +1,7 @@
 import {
-  pgTable, uuid, varchar, bigint, boolean, timestamp, text, index, uniqueIndex,
+  pgTable, uuid, varchar, bigint, boolean, timestamp, text, index, uniqueIndex, check,
 } from 'drizzle-orm/pg-core';
-import { relations } from 'drizzle-orm';
+import { relations, sql } from 'drizzle-orm';
 import { regionEnum } from './enums';
 import type { AnyPgColumn } from 'drizzle-orm/pg-core';
 
@@ -14,6 +14,7 @@ export const customers = pgTable('customers', {
   firstName: varchar('first_name', { length: 100 }).notNull(),
   lastName: varchar('last_name', { length: 100 }),
   profileImageUrl: varchar('profile_image_url', { length: 500 }),
+  source: varchar('source', { length: 20 }).default('APP').notNull(),
   isActive: boolean('is_active').default(true).notNull(),
   isVerified: boolean('is_verified').default(false).notNull(),
   expoPushToken: varchar('expo_push_token', { length: 500 }),
@@ -29,6 +30,7 @@ export const customers = pgTable('customers', {
   referralCodeIdx: uniqueIndex('customers_referral_code_idx').on(t.referralCode),
   phoneRegionIdx: index('customers_phone_region_idx').on(t.phoneRegion),
   isActiveIdx: index('customers_is_active_idx').on(t.isActive),
+  sourceCheck: check('customers_source_check', sql`${t.source} IN ('APP', 'WALK_IN', 'MANUAL')`),
 }));
 
 export const userAddresses = pgTable('user_addresses', {

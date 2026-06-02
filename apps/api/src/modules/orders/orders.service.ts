@@ -182,8 +182,11 @@ export async function createOrder(params: {
   region: 'UZB' | 'KOR'
   source: 'STOREFRONT' | 'MANUAL'
   itemsInput: { productId: string; quantity: number; negotiatedPriceKrw?: number }[]
-  addressId: string
+  addressId?: string
   paymentMethod: 'KOREAN_BANK' | 'UZB_BANK' | 'E9PAY'
+  paymentMode?: 'RECEIPT' | 'IMMEDIATE'
+  orderDiscountPct?: number
+  orderDiscountFlat?: number
   boxId?: string
   couponCode?: string
   customerNote?: string
@@ -204,15 +207,23 @@ export async function createOrder(params: {
       .limit(1)
     if (!customer) throw { status: 404, code: 'NOT_FOUND', message: 'Mijoz topilmadi' }
 
-    const [address] = await tx
-      .select()
-      .from(userAddresses)
-      .where(
-        and(eq(userAddresses.id, params.addressId), eq(userAddresses.customerId, params.customerId))
-      )
-      .limit(1)
-    if (!address) throw { status: 400, code: 'NO_DELIVERY_ADDRESS', message: 'Manzil topilmadi' }
-    const deliveryRegion = address.regionCode
+    let deliveryRegion = params.region
+    let address: any = null
+
+    if (params.addressId) {
+      const [addr] = await tx
+        .select()
+        .from(userAddresses)
+        .where(
+          and(eq(userAddresses.id, params.addressId), eq(userAddresses.customerId, params.customerId))
+        )
+        .limit(1)
+      if (!addr) throw { status: 400, code: 'NO_DELIVERY_ADDRESS', message: 'Manzil topilmadi' }
+      address = addr
+      deliveryRegion = addr.regionCode
+    } else if (params.paymentMode !== 'IMMEDIATE') {
+      throw { status: 400, code: 'NO_DELIVERY_ADDRESS', message: 'Manzil tanlash majburiy' }
+    }
 
     const appSettings = await getSettings()
     const rate = await getLatestRate(tx)
@@ -298,14 +309,33 @@ export async function createOrder(params: {
 
     // 6. Totals
     const subtotal = itemsData.reduce((acc, item) => acc + item.subtotal, 0n)
-    let totalAmount = subtotal - discountAmount + cargoFeeKrw
+
+    let orderLevelDiscount = 0n
+    if (params.orderDiscountPct && params.orderDiscountPct > 0) {
+      orderLevelDiscount = (subtotal * BigInt(params.orderDiscountPct)) / 100n
+    } else if (params.orderDiscountFlat && params.orderDiscountFlat > 0) {
+      orderLevelDiscount = BigInt(params.orderDiscountFlat)
+      if (orderLevelDiscount > subtotal) {
+        throw {
+          status: 400,
+          code: 'INVALID_DISCOUNT',
+          message: "Chegirma summadan ko'p bo'lishi mumkin emas",
+        }
+      }
+    }
+
+    const totalDiscount = discountAmount + orderLevelDiscount
+    let totalAmount = subtotal - totalDiscount + cargoFeeKrw
     if (totalAmount < 0n) totalAmount = 0n
 
     // 7. Order Number
     const orderNumber = await getOrderSequence(tx)
 
     // 8. Create Order
-    const paymentDeadline = new Date(Date.now() + appSettings.paymentTimeoutMinutes * 60000)
+    const isImmediate = params.paymentMode === 'IMMEDIATE'
+    const paymentDeadline = isImmediate
+      ? null
+      : new Date(Date.now() + appSettings.paymentTimeoutMinutes * 60000)
 
     const [newOrder] = await tx
       .insert(orders)
@@ -314,10 +344,13 @@ export async function createOrder(params: {
         customerId: params.customerId,
         profileRegion: params.region,
         deliveryRegion,
-        status: 'PENDING_PAYMENT',
+        status: isImmediate ? 'PAYMENT_CONFIRMED' : 'PENDING_PAYMENT',
+        paymentMode: params.paymentMode ?? 'RECEIPT',
         orderSource: params.source,
         subtotal,
-        discountAmount,
+        discountAmount: totalDiscount,
+        orderDiscountPct: params.orderDiscountPct ?? null,
+        orderDiscountFlat: orderLevelDiscount > 0n ? orderLevelDiscount : null,
         cargoFee: cargoFeeKrw,
         totalAmount,
         currency: 'KRW',
@@ -333,25 +366,29 @@ export async function createOrder(params: {
         rateSnapshotId: rate.id,
         paymentMethod: params.paymentMethod,
         paymentDeadline,
-        deliveryFullName: address.recipientName,
-        deliveryPhone: address.phone,
-        deliveryAddressLine1:
-          address.regionCode === 'UZB'
+        paymentConfirmedAt: isImmediate ? new Date() : null,
+        paymentConfirmedBy: isImmediate ? params.adminId : null,
+        deliveryFullName: address?.recipientName ?? `${customer.firstName} ${customer.lastName || ''}`.trim(),
+        deliveryPhone: address?.phone ?? customer.phone,
+        deliveryAddressLine1: address
+          ? address.regionCode === 'UZB'
             ? `${address.uzbRegion}, ${address.uzbCity}`
-            : address.korRoadAddress,
-        deliveryAddressLine2:
-          address.regionCode === 'UZB'
+            : address.korRoadAddress
+          : "Do'kondan olib ketish",
+        deliveryAddressLine2: address
+          ? address.regionCode === 'UZB'
             ? `${address.uzbDistrict}, ${address.uzbStreet}`
-            : `${address.korDetail} ${address.korBuilding}`,
-        deliveryCity: address.regionCode === 'UZB' ? address.uzbCity : null,
-        deliveryPostalCode: address.regionCode === 'KOR' ? address.korPostalCode : null,
+            : `${address.korDetail} ${address.korBuilding}`
+          : null,
+        deliveryCity: address ? (address.regionCode === 'UZB' ? address.uzbCity : null) : null,
+        deliveryPostalCode: address ? (address.regionCode === 'KOR' ? address.korPostalCode : null) : null,
         customerNote: params.customerNote,
         adminNote: params.adminNote,
         createdBy: params.adminId,
       })
       .returning()
 
-    // 9 & 10. Items and Stock Reservations
+    // 9 & 10. Items and Stock Reservations/Deductions
     for (const item of itemsData) {
       const [orderItem] = await tx
         .insert(orderItems)
@@ -364,36 +401,87 @@ export async function createOrder(params: {
           negotiatedPriceKrw: item.product.negotiatedPriceKrw
             ? BigInt(item.product.negotiatedPriceKrw)
             : null,
+          isScanned: isImmediate,
+          scannedAt: isImmediate ? new Date() : null,
+          scannedBy: isImmediate ? params.adminId : null,
         })
         .returning()
 
-      // Reserve stock (FIFO)
-      let qtyToReserve = item.quantity
-      const batches = await tx
-        .select()
-        .from(inventoryBatches)
-        .where(
-          and(
-            eq(inventoryBatches.productId, item.product.id),
-            sql`${inventoryBatches.currentQty} > 0`
+      if (isImmediate) {
+        // Direct stock deduction (FIFO)
+        let qtyToDeduct = item.quantity
+        const batches = await tx
+          .select()
+          .from(inventoryBatches)
+          .where(
+            and(
+              eq(inventoryBatches.productId, item.product.id),
+              sql`${inventoryBatches.currentQty} > 0`
+            )
           )
-        )
-        .orderBy(asc(inventoryBatches.receivedAt))
+          .orderBy(asc(inventoryBatches.receivedAt))
 
-      for (const batch of batches) {
-        if (qtyToReserve <= 0) break
-        const take = Math.min(batch.currentQty, qtyToReserve)
-        await tx.insert(stockReservations).values({
-          orderId: newOrder.id,
-          customerId: params.customerId,
-          orderItemId: orderItem.id,
-          batchId: batch.id,
-          productId: item.product.id,
-          quantity: take,
-          status: 'ACTIVE',
-          expiresAt: paymentDeadline,
-        })
-        qtyToReserve -= take
+        for (const batch of batches) {
+          if (qtyToDeduct <= 0) break
+          const take = Math.min(batch.currentQty, qtyToDeduct)
+
+          await tx
+            .update(inventoryBatches)
+            .set({ currentQty: batch.currentQty - take, updatedAt: new Date() })
+            .where(eq(inventoryBatches.id, batch.id))
+
+          await tx.insert(stockMovements).values({
+            batchId: batch.id,
+            productId: item.product.id,
+            orderId: newOrder.id,
+            movementType: 'DEDUCTED',
+            quantityDelta: -take,
+            qtyBefore: batch.currentQty,
+            qtyAfter: batch.currentQty - take,
+            performedBy: params.adminId,
+            note: `Manual Order ${orderNumber} (Immediate)`,
+          })
+
+          // Update order item with batch info and cost (for first batch encountered)
+          await tx
+            .update(orderItems)
+            .set({
+              batchId: batch.id,
+              costAtSaleKrw: batch.costPrice,
+            })
+            .where(eq(orderItems.id, orderItem.id))
+
+          qtyToDeduct -= take
+        }
+      } else {
+        // Reserve stock (FIFO)
+        let qtyToReserve = item.quantity
+        const batches = await tx
+          .select()
+          .from(inventoryBatches)
+          .where(
+            and(
+              eq(inventoryBatches.productId, item.product.id),
+              sql`${inventoryBatches.currentQty} > 0`
+            )
+          )
+          .orderBy(asc(inventoryBatches.receivedAt))
+
+        for (const batch of batches) {
+          if (qtyToReserve <= 0) break
+          const take = Math.min(batch.currentQty, qtyToReserve)
+          await tx.insert(stockReservations).values({
+            orderId: newOrder.id,
+            customerId: params.customerId,
+            orderItemId: orderItem.id,
+            batchId: batch.id,
+            productId: item.product.id,
+            quantity: take,
+            status: 'ACTIVE',
+            expiresAt: paymentDeadline!,
+          })
+          qtyToReserve -= take
+        }
       }
     }
 
@@ -441,11 +529,54 @@ export async function createOrder(params: {
     await tx.insert(orderStatusHistory).values({
       orderId: newOrder.id,
       fromStatus: null,
-      toStatus: 'PENDING_PAYMENT',
+      toStatus: isImmediate ? 'PAYMENT_CONFIRMED' : 'PENDING_PAYMENT',
       changedBy: params.adminId,
     })
 
-    // 14. Emit & Notify
+    // 14. Analytics for Immediate Payment
+    if (isImmediate) {
+      const today = new Date().toISOString().split('T')[0]
+      const cargoShare = cargoFeeKrw / BigInt(itemsData.length || 1)
+      const discountShare = totalDiscount / BigInt(itemsData.length || 1)
+
+      for (const item of itemsData) {
+        // We'll use 0 for COGS since it's updated at PACKING, 
+        // but for IMMEDIATE we already updated batchId/costAtSaleKrw in step 10
+        const [oi] = await tx.select().from(orderItems).where(and(eq(orderItems.orderId, newOrder.id), eq(orderItems.productId, item.product.id))).limit(1)
+        const cogs = (oi?.costAtSaleKrw || 0n) * BigInt(item.quantity)
+
+        await tx
+          .insert(dailySalesSummary)
+          .values({
+            date: today,
+            regionCode: newOrder.deliveryRegion,
+            productId: item.product.id,
+            unitsSold: item.quantity,
+            revenueKrw: item.subtotal,
+            cogsKrw: cogs,
+            cargoKrw: cargoShare,
+            couponDiscountKrw: discountShare,
+            orderCount: 1,
+          })
+          .onConflictDoUpdate({
+            target: [
+              dailySalesSummary.date,
+              dailySalesSummary.regionCode,
+              dailySalesSummary.productId,
+            ],
+            set: {
+              unitsSold: sql`${dailySalesSummary.unitsSold} + ${item.quantity}`,
+              revenueKrw: sql`${dailySalesSummary.revenueKrw} + ${item.subtotal}`,
+              cogsKrw: sql`${dailySalesSummary.cogsKrw} + ${cogs}`,
+              cargoKrw: sql`${dailySalesSummary.cargoKrw} + ${cargoShare}`,
+              couponDiscountKrw: sql`${dailySalesSummary.couponDiscountKrw} + ${discountShare}`,
+              orderCount: sql`${dailySalesSummary.orderCount} + 1` as any,
+            },
+          })
+      }
+    }
+
+    // 15. Emit & Notify
     emit.orderNew({
       orderId: newOrder.id,
       orderNumber: newOrder.orderNumber,
@@ -456,31 +587,51 @@ export async function createOrder(params: {
       createdAt: newOrder.createdAt.toISOString(),
     })
 
-    await notifyNewOrder({
-      orderNumber: newOrder.orderNumber,
-      customerName: `${customer.firstName} ${customer.lastName || ''}`.trim(),
-      customerPhone: customer.phone,
-      region: newOrder.deliveryRegion,
-      totalAmount: Number(newOrder.totalAmount),
-      itemCount: itemsData.reduce((acc, i) => acc + i.quantity, 0),
-    })
+    if (!isImmediate) {
+      await notifyNewOrder({
+        orderNumber: newOrder.orderNumber,
+        customerName: `${customer.firstName} ${customer.lastName || ''}`.trim(),
+        customerPhone: customer.phone,
+        region: newOrder.deliveryRegion,
+        totalAmount: Number(newOrder.totalAmount),
+        itemCount: itemsData.reduce((acc, i) => acc + i.quantity, 0),
+      })
+    }
 
     const tokens = await getCustomerTokens(params.customerId)
-    await notifyCustomerFull({
-      customerId: params.customerId,
-      telegramId: tokens.telegramId,
-      expoPushToken: tokens.expoPushToken,
-      type: 'ORDER_STATUS',
-      channel: 'BOTH',
-      title: 'Buyurtma qabul qilindi! 🛍',
-      body: `#${orderNumber} — To'lovni ${appSettings.paymentTimeoutMinutes} daqiqa ichida yuklang`,
-      telegramMessage:
-        `✅ <b>Buyurtmangiz qabul qilindi!</b>\n\n` +
-        `📦 <b>#${orderNumber}</b>\n` +
-        `💰 ₩${Number(totalAmount).toLocaleString()}\n` +
-        `⏰ To'lovni <b>${appSettings.paymentTimeoutMinutes} daqiqa</b> ichida yuklang`,
-      data: { orderId: newOrder.id, type: 'ORDER_CREATED' },
-    })
+    if (isImmediate) {
+      await notifyCustomerFull({
+        customerId: params.customerId,
+        telegramId: tokens.telegramId,
+        expoPushToken: tokens.expoPushToken,
+        type: 'PAYMENT_CONFIRMED',
+        channel: 'BOTH',
+        title: 'Buyurtma tasdiqlandi! ✅',
+        body: `#${orderNumber} buyurtmangiz tayyorlanmoqda`,
+        telegramMessage:
+          `✅ <b>Buyurtmangiz qabul qilindi va to'landi!</b>\n\n` +
+          `📦 <b>#${orderNumber}</b>\n` +
+          `💰 ₩${Number(totalAmount).toLocaleString()}\n` +
+          `Buyurtmangiz tayyorlanmoqda...`,
+        data: { orderId: newOrder.id, type: 'PAYMENT_CONFIRMED' },
+      })
+    } else {
+      await notifyCustomerFull({
+        customerId: params.customerId,
+        telegramId: tokens.telegramId,
+        expoPushToken: tokens.expoPushToken,
+        type: 'ORDER_STATUS',
+        channel: 'BOTH',
+        title: 'Buyurtma qabul qilindi! 🛍',
+        body: `#${orderNumber} — To'lovni ${appSettings.paymentTimeoutMinutes} daqiqa ichida yuklang`,
+        telegramMessage:
+          `✅ <b>Buyurtmangiz qabul qilindi!</b>\n\n` +
+          `📦 <b>#${orderNumber}</b>\n` +
+          `💰 ₩${Number(totalAmount).toLocaleString()}\n` +
+          `⏰ To'lovni <b>${appSettings.paymentTimeoutMinutes} daqiqa</b> ichida yuklang`,
+        data: { orderId: newOrder.id, type: 'ORDER_CREATED' },
+      })
+    }
 
     return {
       order: {
@@ -596,7 +747,7 @@ export async function uploadReceipt(orderId: string, customerId: string, dto: Up
 
     const tokens = await getCustomerTokens(customerId)
     await notifyCustomerFull({
-      customerId,
+      customerId: customerId,
       telegramId: tokens.telegramId,
       expoPushToken: tokens.expoPushToken,
       type: 'ORDER_STATUS',
@@ -794,10 +945,10 @@ export async function confirmPayment(orderId: string, adminId: string, dto: Conf
     const items = await tx.select().from(orderItems).where(eq(orderItems.orderId, orderId))
     const today = new Date().toISOString().split('T')[0]
     const cargoShare = order.cargoFee / BigInt(items.length || 1)
-    const couponShare = order.discountAmount / BigInt(items.length || 1)
+    const discountShare = order.discountAmount / BigInt(items.length || 1)
 
     for (const item of items) {
-      const cogs = 0n
+      const cogs = (item.costAtSaleKrw || 0n) * BigInt(item.quantity)
 
       await tx
         .insert(dailySalesSummary)
@@ -809,7 +960,7 @@ export async function confirmPayment(orderId: string, adminId: string, dto: Conf
           revenueKrw: item.subtotalSnapshot,
           cogsKrw: cogs,
           cargoKrw: cargoShare,
-          couponDiscountKrw: couponShare,
+          couponDiscountKrw: discountShare,
           orderCount: 1,
         })
         .onConflictDoUpdate({
@@ -823,8 +974,8 @@ export async function confirmPayment(orderId: string, adminId: string, dto: Conf
             revenueKrw: sql`${dailySalesSummary.revenueKrw} + ${item.subtotalSnapshot}`,
             cogsKrw: sql`${dailySalesSummary.cogsKrw} + ${cogs}`,
             cargoKrw: sql`${dailySalesSummary.cargoKrw} + ${cargoShare}`,
-            couponDiscountKrw: sql`${dailySalesSummary.couponDiscountKrw} + ${couponShare}`,
-            orderCount: sql`${dailySalesSummary.orderCount} + 1`,
+            couponDiscountKrw: sql`${dailySalesSummary.couponDiscountKrw} + ${discountShare}`,
+            orderCount: sql`${dailySalesSummary.orderCount} + 1` as any,
           },
         })
     }
@@ -1375,11 +1526,14 @@ export async function refundOrder(orderId: string, adminId: string, dto: RefundO
 export async function adminCreateOrder(adminId: string, dto: ManualOrderDto) {
   return createOrder({
     customerId: dto.customerId,
-    region: 'UZB',
+    region: dto.paymentMethod === 'UZB_BANK' ? 'UZB' : 'KOR', // Simplified region detection
     source: 'MANUAL',
     itemsInput: dto.items,
     addressId: dto.addressId,
     paymentMethod: dto.paymentMethod,
+    paymentMode: dto.paymentMode,
+    orderDiscountPct: dto.orderDiscountPct,
+    orderDiscountFlat: dto.orderDiscountFlat,
     boxId: dto.boxId,
     couponCode: dto.couponCode,
     adminNote: dto.adminNote,
@@ -1565,7 +1719,7 @@ export async function reconcileDailySummary(): Promise<void> {
   for (const order of todayOrders) {
     const items = await db.select().from(orderItems).where(eq(orderItems.orderId, order.id))
     const cargoShare = order.cargoFee / BigInt(items.length || 1)
-    const couponShare = order.discountAmount / BigInt(items.length || 1)
+    const discountShare = order.discountAmount / BigInt(items.length || 1)
 
     for (const item of items) {
       const cogs = (item.costAtSaleKrw || 0n) * BigInt(item.quantity)
@@ -1579,7 +1733,7 @@ export async function reconcileDailySummary(): Promise<void> {
           revenueKrw: item.subtotalSnapshot,
           cogsKrw: cogs,
           cargoKrw: cargoShare,
-          couponDiscountKrw: couponShare,
+          couponDiscountKrw: discountShare,
           orderCount: 1,
         })
         .onConflictDoUpdate({
@@ -1593,8 +1747,8 @@ export async function reconcileDailySummary(): Promise<void> {
             revenueKrw: sql`${dailySalesSummary.revenueKrw} + ${item.subtotalSnapshot}`,
             cogsKrw: sql`${dailySalesSummary.cogsKrw} + ${cogs}`,
             cargoKrw: sql`${dailySalesSummary.cargoKrw} + ${cargoShare}`,
-            couponDiscountKrw: sql`${dailySalesSummary.couponDiscountKrw} + ${couponShare}`,
-            orderCount: sql`${dailySalesSummary.orderCount} + 1`,
+            couponDiscountKrw: sql`${dailySalesSummary.couponDiscountKrw} + ${discountShare}`,
+            orderCount: sql`${dailySalesSummary.orderCount} + 1` as any,
           },
         })
     }

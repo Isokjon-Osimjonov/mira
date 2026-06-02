@@ -98,6 +98,15 @@ Nothing that changes between environments or depends on business state may be ha
 - `ORDER_UNAUTHORIZED`: 403 - Order belongs to another customer.
 - `INVALID_STATUS_TRANSITION`: 400 - Status cannot move from A to B.
 - `PAYMENT_DEADLINE_EXCEEDED`: 400 - Order auto-canceled.
+- `INVALID_DISCOUNT`: 400 - discount > subtotal.
+
+### Inventory Domain (`inventory.service.ts`)
+- `BATCH_NOT_FOUND`: 404 - batch does not exist.
+- `WRITE_OFF_QTY_EXCEEDED`: 400 - qty > batch.currentQty.
+
+### Customer Domain (`customers.service.ts`)
+- `CUSTOMER_NOT_FOUND`: 404 - customer not found.
+- `WALK_IN_PHONE_REQUIRED`: 400 - KOR region needs phone.
 
 ### Pick & Pack (`pick-pack.service.ts`)
 - `BOX_NOT_FOUND`: 404 - Box size does not exist.
