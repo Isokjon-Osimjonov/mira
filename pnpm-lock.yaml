@@ -302,6 +302,9 @@ importers:
       exceljs:
         specifier: ^4.4.0
         version: 4.4.0
+      expo-server-sdk:
+        specifier: ^6.1.0
+        version: 6.1.0
       express:
         specifier: ^4.21.2
         version: 4.22.2
@@ -5860,6 +5863,9 @@ packages:
     engines: {node: '>=4'}
     hasBin: true
 
+  err-code@2.0.3:
+    resolution: {integrity: sha512-2bmlRpNKBxT/CRmPOlyISQpNj+qSeYvcym/uT0Jx2bMOlKLtSy1ZmLuVxSEKKyor/N5yhvp/ZiG1oE3DEYMSFA==}
+
   errno@0.1.8:
     resolution: {integrity: sha512-dJ6oBr5SQ1VSd9qkk7ByRgb/1SH4JZjCHSW/mr63/QcXO9zLVxvJ6Oy13nio03rxpSnVDDjFor75SjVeZWPW/A==}
     hasBin: true
@@ -6156,6 +6162,10 @@ packages:
     resolution: {integrity: sha512-lHnzvRajBu4u+P99+0GEMijQMFCOYpWRO4dWsXSuMt77+THPIGjzNvVKrGSl6mMrLsfVaKL8BpwYZLGlgA+zAw==}
     peerDependencies:
       expo: '*'
+
+  expo-server-sdk@6.1.0:
+    resolution: {integrity: sha512-ISuax1AQ7cpM5RAqcu8gVcoLL0ZKskJ5OLoMWmdITBe9nYjTucjdGyBq817YkIvTcj1pAUwx+9toUT7l/V7thA==}
+    engines: {node: '>=20'}
 
   expo-server@1.0.6:
     resolution: {integrity: sha512-vb5TBtskvEdzYuW79lATXutOEBfW5m6U4EFpNjCVZTnI7S//SAsLQkYEpn+EDfn84m6VQfzSGkIVR6YPaScKFA==}
@@ -8800,6 +8810,13 @@ packages:
   progress@2.0.3:
     resolution: {integrity: sha512-7PiHtLll5LdnKIMw100I+8xJXR5gW2QwWYkT6iJva0bXitZKa/XMrSbdmg3r2Xnaidz9Qumd0VPaMrZlF9V9sA==}
     engines: {node: '>=0.4.0'}
+
+  promise-limit@2.7.0:
+    resolution: {integrity: sha512-7nJ6v5lnJsXwGprnGXga4wx6d1POjvi5Qmf1ivTRxTjH4Z/9Czja/UCMLVmB9N93GeWOU93XaFaEt6jbuoagNw==}
+
+  promise-retry@2.0.1:
+    resolution: {integrity: sha512-y+WKFlBR8BGXnsNlIHFGPZmyDf3DFMoLhaflAnyZgV6rG6xu+JwesTo2Q9R6XwYmtmwAFCkAk3e35jEdoeh/3g==}
+    engines: {node: '>=10'}
 
   promise@7.3.1:
     resolution: {integrity: sha512-nolQXZ/4L+bP/UGlkfaIujX9BKxGwmQ9OT4mOt5yvy8iK1h3wqTEJCijzGANTCCl9nWjY41juyAn2K3Q1hLLTg==}
@@ -17335,6 +17352,8 @@ snapshots:
 
   envinfo@7.21.0: {}
 
+  err-code@2.0.3: {}
+
   errno@0.1.8:
     dependencies:
       prr: 1.0.1
@@ -17849,6 +17868,12 @@ snapshots:
   expo-secure-store@15.0.8(expo@54.0.34):
     dependencies:
       expo: 54.0.34(@babel/core@7.29.7)(@expo/metro-runtime@6.1.2)(expo-router@6.0.23)(react-native@0.81.5(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)(typescript@5.9.3)
+
+  expo-server-sdk@6.1.0:
+    dependencies:
+      promise-limit: 2.7.0
+      promise-retry: 2.0.1
+      undici: 7.24.7
 
   expo-server@1.0.6: {}
 
@@ -21436,6 +21461,13 @@ snapshots:
 
   progress@2.0.3: {}
 
+  promise-limit@2.7.0: {}
+
+  promise-retry@2.0.1:
+    dependencies:
+      err-code: 2.0.3
+      retry: 0.12.0
+
   promise@7.3.1:
     dependencies:
       asap: 2.0.6
@@ -22027,8 +22059,7 @@ snapshots:
       onetime: 5.1.2
       signal-exit: 3.0.7
 
-  retry@0.12.0:
-    optional: true
+  retry@0.12.0: {}
 
   retry@0.13.1: {}
 

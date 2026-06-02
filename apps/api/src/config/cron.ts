@@ -1,6 +1,6 @@
 import cron from 'node-cron'
 import { env } from './env'
-import { cancelExpiredOrders, reconcileDailySummary } from '../modules/orders/orders.service'
+import { cancelExpiredOrders, reconcileDailySummary, sendDeadlineReminders } from '../modules/orders/orders.service'
 import { fetchAndSaveExchangeRate } from '../modules/exchange-rates/exchange-rates.service'
 import { sendScheduledPosts } from '../modules/telegram/telegram.service'
 
@@ -19,8 +19,7 @@ export function initCronJobs(): void {
     }
   }, { timezone: 'Asia/Seoul' })
 
-  // 2. Exchange rate — daily 09:00 KST (00:00 UTC if server on UTC)
-  // But we force timezone Asia/Seoul in options.
+  // 2. Exchange rate — daily 09:00 KST
   cron.schedule('0 0 * * *', async () => {
     try {
       if (!env.EXCHANGE_RATE_API_KEY) return
@@ -50,6 +49,15 @@ export function initCronJobs(): void {
       console.log('📊 Kunlik hisobot tekshirildi')
     } catch (err: any) {
       console.error('❌ Reconciliation cron error:', err.message)
+    }
+  }, { timezone: 'Asia/Seoul' })
+
+  // 5. Deadline reminders — every minute
+  cron.schedule('* * * * *', async () => {
+    try {
+      await sendDeadlineReminders()
+    } catch (err: any) {
+      console.error('❌ Deadline reminder cron error:', err.message)
     }
   }, { timezone: 'Asia/Seoul' })
 

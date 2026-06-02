@@ -7,9 +7,9 @@ import {
   userAddresses, customers, couponRedemptions, userCoupons, coupons,
   settings, dailySalesSummary
 } from '@mira/db'
-import { eq, and, sql, desc, asc, isNull, or, ilike } from 'drizzle-orm'
+import { eq, and, sql, desc, asc, isNull, or, ilike, gte, lte } from 'drizzle-orm'
 import { emit } from '../../config/socket'
-import { notifyNewOrder, notifyPaymentSubmitted, notifyCustomer } from '../../bot/helpers/notify'
+import { notifyNewOrder, notifyPaymentSubmitted, notifyCustomer, notifyCustomerFull } from '../../bot/helpers/notify'
 import { validateCoupon } from '../coupons/coupons.service'
 import type {
   CheckoutDto, UploadReceiptDto, ManualOrderDto, ConfirmPaymentDto,
@@ -21,13 +21,24 @@ const VALID_TRANSITIONS: Record<string, string[]> = {
   PENDING_PAYMENT: ['PAYMENT_SUBMITTED', 'CANCELED'],
   PAYMENT_REJECTED: ['PAYMENT_SUBMITTED', 'CANCELED'],
   PAYMENT_SUBMITTED: ['PAYMENT_CONFIRMED', 'PAYMENT_REJECTED', 'CANCELED'],
-  PAYMENT_CONFIRMED: ['PACKING', 'CANCELED'], // Note: instructions say cancel up to PAYMENT_SUBMITTED, but also say 'If PAYMENT_CONFIRMED or later: cannot cancel (admin must refund)'. I'll enforce it in the function.
+  PAYMENT_CONFIRMED: ['PACKING', 'CANCELED'],
   PACKING: ['SHIPPED'],
   SHIPPED: ['DELIVERED'],
   DELIVERED: ['REFUNDED'],
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────
+
+async function getCustomerTokens(customerId: string) {
+  const [c] = await db.select({
+    telegramId:     customers.telegramId,
+    expoPushToken:  customers.expoPushToken,
+  })
+  .from(customers)
+  .where(eq(customers.id, customerId))
+  .limit(1)
+  return c ?? { telegramId: null, expoPushToken: null }
+}
 
 async function getLatestRate(tx: any) {
   const [rate] = await tx
@@ -317,6 +328,23 @@ export async function createOrder(params: {
       itemCount: itemsData.reduce((acc, i) => acc + i.quantity, 0)
     })
 
+    const tokens = await getCustomerTokens(params.customerId)
+    await notifyCustomerFull({
+      customerId:    params.customerId,
+      telegramId:    tokens.telegramId,
+      expoPushToken: tokens.expoPushToken,
+      type:     'ORDER_STATUS',
+      channel:  'BOTH',
+      title:    'Buyurtma qabul qilindi! 🛍',
+      body:     `#${orderNumber} — To'lovni ${appSettings.paymentTimeoutMinutes} daqiqa ichida yuklang`,
+      telegramMessage:
+        `✅ <b>Buyurtmangiz qabul qilindi!</b>\n\n` +
+        `📦 <b>#${orderNumber}</b>\n` +
+        `💰 ₩${Number(totalAmount).toLocaleString()}\n` +
+        `⏰ To'lovni <b>${appSettings.paymentTimeoutMinutes} daqiqa</b> ichida yuklang`,
+      data: { orderId: newOrder.id, type: 'ORDER_CREATED' }
+    })
+
     return {
       order: {
         id: newOrder.id,
@@ -407,9 +435,18 @@ export async function uploadReceipt(orderId: string, customerId: string, dto: Up
       paymentAmount: `${dto.paymentAmount} ${dto.paymentCurrency}`
     })
 
-    if (customer.telegramId) {
-      await notifyCustomer(customer.telegramId, `✅ To'lov kvitansiyasi yuklandi!\n📦 #${order.orderNumber}\nTez orada adminlarimiz tasdiqlashadi.`)
-    }
+    const tokens = await getCustomerTokens(customerId)
+    await notifyCustomerFull({
+      customerId,
+      telegramId:    tokens.telegramId,
+      expoPushToken: tokens.expoPushToken,
+      type:     'ORDER_STATUS',
+      channel:  'BOTH',
+      title:    'To\'lov yuborildi! 💳',
+      body:     `#${order.orderNumber} to'lovi qabul qilindi, tez orada tasdiqlanadi.`,
+      telegramMessage: `✅ <b>To'lov kvitansiyasi yuklandi!</b>\n📦 #${order.orderNumber}\nTez orada adminlarimiz tasdiqlashadi.`,
+      data: { orderId, type: 'PAYMENT_SUBMITTED' }
+    })
 
     return updated
   })
@@ -535,9 +572,49 @@ export async function confirmPayment(orderId: string, adminId: string, dto: Conf
       })
     }
 
+    // Analytics — Revenue recognition on cash basis (PAYMENT_CONFIRMED)
+    const items = await tx.select().from(orderItems).where(eq(orderItems.orderId, orderId))
+    const today = new Date().toISOString().split('T')[0]
+    const cargoShare = order.cargoFee / BigInt(items.length || 1)
+    const couponShare = order.discountAmount / BigInt(items.length || 1)
+
+    for (const item of items) {
+      const cogs = 0n 
+      
+      await tx.insert(dailySalesSummary).values({
+        date: today, regionCode: order.deliveryRegion, productId: item.productId,
+        unitsSold: item.quantity, revenueKrw: item.subtotalSnapshot, cogsKrw: cogs,
+        cargoKrw: cargoShare, couponDiscountKrw: couponShare, orderCount: 1
+      }).onConflictDoUpdate({
+        target: [dailySalesSummary.date, dailySalesSummary.regionCode, dailySalesSummary.productId],
+        set: {
+          unitsSold: sql`${dailySalesSummary.unitsSold} + ${item.quantity}`,
+          revenueKrw: sql`${dailySalesSummary.revenueKrw} + ${item.subtotalSnapshot}`,
+          cogsKrw: sql`${dailySalesSummary.cogsKrw} + ${cogs}`,
+          cargoKrw: sql`${dailySalesSummary.cargoKrw} + ${cargoShare}`,
+          couponDiscountKrw: sql`${dailySalesSummary.couponDiscountKrw} + ${couponShare}`,
+          orderCount: sql`${dailySalesSummary.orderCount} + 1`
+        }
+      })
+    }
+
+    const tokens = await getCustomerTokens(order.customerId)
+    await notifyCustomerFull({
+      customerId:    order.customerId,
+      telegramId:    tokens.telegramId,
+      expoPushToken: tokens.expoPushToken,
+      type:     'PAYMENT_CONFIRMED',
+      channel:  'BOTH',
+      title:    'To\'lov tasdiqlandi! ✅',
+      body:     `#${order.orderNumber} buyurtmangiz tayyorlanmoqda`,
+      telegramMessage:
+        `💚 <b>To'lovingiz tasdiqlandi!</b>\n\n` +
+        `📦 <b>#${order.orderNumber}</b>\n` +
+        `Buyurtmangiz tayyorlanmoqda...`,
+      data: { orderId: order.id, type: 'PAYMENT_CONFIRMED' }
+    })
+
     emit.paymentConfirmed({ orderId, orderNumber: order.orderNumber, confirmedBy: adminId, confirmedAt: new Date().toISOString() })
-    const [customer] = await tx.select().from(customers).where(eq(customers.id, order.customerId)).limit(1)
-    if (customer?.telegramId) await notifyCustomer(customer.telegramId, `💚 To'lovingiz tasdiqlandi!\n📦 #${order.orderNumber} tayyorlanmoqda`)
 
     return updated
   })
@@ -566,9 +643,24 @@ export async function rejectPayment(orderId: string, adminId: string, dto: Rejec
       orderId, fromStatus: 'PAYMENT_SUBMITTED', toStatus: 'PAYMENT_REJECTED', changedBy: adminId, note: dto.reason
     })
 
+    const tokens = await getCustomerTokens(order.customerId)
+    await notifyCustomerFull({
+      customerId:    order.customerId,
+      telegramId:    tokens.telegramId,
+      expoPushToken: tokens.expoPushToken,
+      type:     'PAYMENT_REJECTED',
+      channel:  'BOTH',
+      title:    'To\'lov rad etildi ❌',
+      body:     `Sabab: ${dto.reason}. Qayta yuklang.`,
+      telegramMessage:
+        `❌ <b>To'lov kvitansiyasi rad etildi</b>\n\n` +
+        `📦 <b>#${order.orderNumber}</b>\n` +
+        `💬 Sabab: ${dto.reason}\n` +
+        `🔄 Iltimos, qayta yuklang`,
+      data: { orderId: order.id, type: 'PAYMENT_REJECTED' }
+    })
+
     emit.paymentRejected({ orderId, orderNumber: order.orderNumber, rejectedBy: adminId, reason: dto.reason, rejectedAt: new Date().toISOString() })
-    const [customer] = await tx.select().from(customers).where(eq(customers.id, order.customerId)).limit(1)
-    if (customer?.telegramId) await notifyCustomer(customer.telegramId, `❌ To'lov kvitansiyasi rad etildi\n📦 #${order.orderNumber}\n💬 Sabab: ${dto.reason}\n🔄 Iltimos, qayta yuklang`)
 
     return updated
   })
@@ -634,6 +726,22 @@ export async function startPacking(orderId: string, adminId: string) {
     await tx.insert(orderStatusHistory).values({ orderId, fromStatus: 'PAYMENT_CONFIRMED', toStatus: 'PACKING', changedBy: adminId })
     emit.orderStatusChanged({ orderId, orderNumber: order.orderNumber, fromStatus: 'PAYMENT_CONFIRMED', toStatus: 'PACKING', changedBy: adminId, note: null, changedAt: new Date().toISOString() })
 
+    const tokens = await getCustomerTokens(order.customerId)
+    await notifyCustomerFull({
+      customerId:    order.customerId,
+      telegramId:    tokens.telegramId,
+      expoPushToken: tokens.expoPushToken,
+      type:     'ORDER_STATUS',
+      channel:  'BOTH',
+      title:    'Buyurtma tayyorlanmoqda 📦',
+      body:     `#${order.orderNumber} jo'natishga tayyorlanmoqda`,
+      telegramMessage:
+        `📦 <b>Buyurtmangiz tayyorlanmoqda!</b>\n\n` +
+        `#${order.orderNumber}\n` +
+        `Tez orada jo'natiladi...`,
+      data: { orderId: order.id, type: 'PACKING' }
+    })
+
     return updated
   })
 }
@@ -659,8 +767,23 @@ export async function shipOrder(orderId: string, adminId: string, dto: ShipOrder
     await tx.insert(orderStatusHistory).values({ orderId, fromStatus: 'PACKING', toStatus: 'SHIPPED', changedBy: adminId })
     emit.orderStatusChanged({ orderId, orderNumber: order.orderNumber, fromStatus: 'PACKING', toStatus: 'SHIPPED', changedBy: adminId, note: null, changedAt: new Date().toISOString() })
     
-    const [customer] = await tx.select().from(customers).where(eq(customers.id, order.customerId)).limit(1)
-    if (customer?.telegramId) await notifyCustomer(customer.telegramId, `🚀 Buyurtmangiz yo'lda!\n📦 #${order.orderNumber}${dto.trackingNumber ? `\n🔍 Kuzatuv raqami: ${dto.trackingNumber}` : ''}`)
+    const tokens = await getCustomerTokens(order.customerId)
+    await notifyCustomerFull({
+      customerId:    order.customerId,
+      telegramId:    tokens.telegramId,
+      expoPushToken: tokens.expoPushToken,
+      type:     'SHIPPED',
+      channel:  'BOTH',
+      title:    'Buyurtma jo\'natildi! 🚀',
+      body:     dto.trackingNumber
+        ? `#${order.orderNumber} — Kuzatuv: ${dto.trackingNumber}`
+        : `#${order.orderNumber} yo'lda`,
+      telegramMessage:
+        `🚀 <b>Buyurtmangiz jo'natildi!</b>\n\n` +
+        `📦 <b>#${order.orderNumber}</b>\n` +
+        (dto.trackingNumber ? `🔍 Kuzatuv raqami: <code>${dto.trackingNumber}</code>` : ''),
+      data: { orderId: order.id, type: 'SHIPPED' }
+    })
 
     return updated
   })
@@ -675,34 +798,23 @@ export async function deliverOrder(orderId: string, adminId: string) {
     const [updated] = await tx.update(orders).set({ status: 'DELIVERED', deliveredAt: new Date(), updatedAt: new Date() }).where(eq(orders.id, orderId)).returning()
     await tx.insert(orderStatusHistory).values({ orderId, fromStatus: 'SHIPPED', toStatus: 'DELIVERED', changedBy: adminId })
     
-    // Analytics
-    const items = await tx.select().from(orderItems).where(eq(orderItems.orderId, orderId))
-    const today = new Date().toISOString().split('T')[0]
-    const cargoShare = order.cargoFee / BigInt(items.length || 1)
-    const couponShare = order.discountAmount / BigInt(items.length || 1)
-
-    for (const item of items) {
-      const cogs = (item.costAtSaleKrw || 0n) * BigInt(item.quantity)
-      await tx.insert(dailySalesSummary).values({
-        date: today, regionCode: order.deliveryRegion, productId: item.productId,
-        unitsSold: item.quantity, revenueKrw: item.subtotalSnapshot, cogsKrw: cogs,
-        cargoKrw: cargoShare, couponDiscountKrw: couponShare, orderCount: 1
-      }).onConflictDoUpdate({
-        target: [dailySalesSummary.date, dailySalesSummary.regionCode, dailySalesSummary.productId],
-        set: {
-          unitsSold: sql`${dailySalesSummary.unitsSold} + ${item.quantity}`,
-          revenueKrw: sql`${dailySalesSummary.revenueKrw} + ${item.subtotalSnapshot}`,
-          cogsKrw: sql`${dailySalesSummary.cogsKrw} + ${cogs}`,
-          cargoKrw: sql`${dailySalesSummary.cargoKrw} + ${cargoShare}`,
-          couponDiscountKrw: sql`${dailySalesSummary.couponDiscountKrw} + ${couponShare}`,
-          orderCount: sql`${dailySalesSummary.orderCount} + 1`
-        }
-      })
-    }
-
     emit.orderStatusChanged({ orderId, orderNumber: order.orderNumber, fromStatus: 'SHIPPED', toStatus: 'DELIVERED', changedBy: adminId, note: null, changedAt: new Date().toISOString() })
-    const [customer] = await tx.select().from(customers).where(eq(customers.id, order.customerId)).limit(1)
-    if (customer?.telegramId) await notifyCustomer(customer.telegramId, `🎉 Buyurtmangiz yetib keldi!\n📦 #${order.orderNumber}\nXaridingizdan mamnun bo'lishingizni umid qilamiz 🌸`)
+    
+    const tokens = await getCustomerTokens(order.customerId)
+    await notifyCustomerFull({
+      customerId:    order.customerId,
+      telegramId:    tokens.telegramId,
+      expoPushToken: tokens.expoPushToken,
+      type:     'DELIVERED',
+      channel:  'BOTH',
+      title:    'Buyurtma yetib keldi! 🎉',
+      body:     `#${order.orderNumber} muvaffaqiyatli yetkazildi`,
+      telegramMessage:
+        `🎉 <b>Buyurtmangiz yetib keldi!</b>\n\n` +
+        `📦 <b>#${order.orderNumber}</b>\n` +
+        `Xaridingizdan mamnun bo'lishingizni umid qilamiz 🌸`,
+      data: { orderId: order.id, type: 'DELIVERED' }
+    })
 
     return updated
   })
@@ -723,10 +835,6 @@ export async function cancelOrder(orderId: string, adminId: string | null, reaso
     const reservations = await tx.select().from(stockReservations).where(and(eq(stockReservations.orderId, orderId), eq(stockReservations.status, 'ACTIVE')))
     for (const res of reservations) {
       await tx.update(stockReservations).set({ status: 'RELEASED' }).where(eq(stockReservations.id, res.id))
-      // It was never deducted from batch, so we don't ADD to batch.currentQty. We just release the reservation.
-      // Wait, instructions say: "Restore inventory: UPDATE inventory_batches SET current_qty += qty for each reservation".
-      // But my `checkout` flow didn't deduct from `currentQty`. It just inserted `stock_reservations`.
-      // Let's stick to my flow: no need to touch `inventory_batches` here.
       await tx.insert(stockMovements).values({
         batchId: res.batchId, productId: res.productId, orderId: order.id, movementType: 'RESERVATION_RELEASED',
         quantityDelta: 0, qtyBefore: 0, qtyAfter: 0, performedBy: adminId, note: 'Bekor qilingan buyurtma'
@@ -734,8 +842,22 @@ export async function cancelOrder(orderId: string, adminId: string | null, reaso
     }
 
     emit.orderStatusChanged({ orderId, orderNumber: order.orderNumber, fromStatus: order.status, toStatus: 'CANCELED', changedBy: adminId, note: reason ?? null, changedAt: new Date().toISOString() })
-    const [customer] = await tx.select().from(customers).where(eq(customers.id, order.customerId)).limit(1)
-    if (customer?.telegramId) await notifyCustomer(customer.telegramId, `❌ Buyurtma bekor qilindi\n📦 #${order.orderNumber}`)
+    
+    const tokens = await getCustomerTokens(order.customerId)
+    await notifyCustomerFull({
+      customerId:    order.customerId,
+      telegramId:    tokens.telegramId,
+      expoPushToken: tokens.expoPushToken,
+      type:     'ORDER_STATUS',
+      channel:  'BOTH',
+      title:    'Buyurtma bekor qilindi ❌',
+      body:     `#${order.orderNumber} bekor qilindi`,
+      telegramMessage:
+        `❌ <b>Buyurtma bekor qilindi</b>\n\n` +
+        `📦 <b>#${order.orderNumber}</b>` +
+        (reason ? `\n💬 ${reason}` : ''),
+      data: { orderId: order.id, type: 'CANCELED' }
+    })
 
     return updated
   })
@@ -808,7 +930,7 @@ export async function refundOrder(orderId: string, adminId: string, dto: RefundO
 export async function adminCreateOrder(adminId: string, dto: ManualOrderDto) {
   return createOrder({
     customerId: dto.customerId,
-    region: 'UZB', // Manual orders typically assume UZB or require fetching customer region. We'll fetch it inside createOrder or assume from address. Let's fetch customer region.
+    region: 'UZB',
     source: 'MANUAL',
     itemsInput: dto.items,
     addressId: dto.addressId,
@@ -867,7 +989,6 @@ export async function addOrderExpense(orderId: string, adminId: string, dto: Add
   return expense
 }
 
-// Admin get single order
 export async function adminGetOrderDetail(orderId: string) {
   const [order] = await db.select().from(orders).where(eq(orders.id, orderId)).limit(1)
   if (!order) throw { status: 404, code: 'ORDER_NOT_FOUND', message: 'Buyurtma topilmadi' }
@@ -889,7 +1010,59 @@ export async function adminGetOrderDetail(orderId: string) {
   return { ...order, customer, items, statusHistory, expenses }
 }
 
-// ─── Auto-cancel ─────────────────────────────────────────────────────────
+// ─── Automation ──────────────────────────────────────────────────────────
+
+export async function cancelExpiredOrders(): Promise<number> {
+  let count = 0
+  const expired = await db.select().from(orders).where(and(
+    sql`${orders.status} IN ('PENDING_PAYMENT', 'PAYMENT_REJECTED')`,
+    sql`${orders.paymentDeadline} < NOW()`
+  ))
+
+  for (const order of expired) {
+    try {
+      await cancelOrder(order.id, null, 'To\'lov muddati o\'tdi')
+      count++
+      emit.orderAutoCanceled({ orderId: order.id, orderNumber: order.orderNumber, reason: 'payment_deadline_expired', canceledAt: new Date().toISOString() })
+    } catch (e) { console.error(`Error auto-canceling order ${order.id}:`, e) }
+  }
+  return count
+}
+
+export async function sendDeadlineReminders(): Promise<void> {
+  const now = new Date()
+  const windowStart = new Date(now.getTime() + 9 * 60000)
+  const windowEnd = new Date(now.getTime() + 11 * 60000)
+
+  const pending = await db.select().from(orders).where(and(
+    sql`${orders.status} IN ('PENDING_PAYMENT', 'PAYMENT_REJECTED')`,
+    gte(orders.paymentDeadline, windowStart),
+    lte(orders.paymentDeadline, windowEnd)
+  ))
+
+  for (const order of pending) {
+    try {
+      const tokens = await getCustomerTokens(order.customerId)
+      await notifyCustomerFull({
+        customerId:    order.customerId,
+        telegramId:    tokens.telegramId,
+        expoPushToken: tokens.expoPushToken,
+        type:     'ORDER_STATUS',
+        channel:  'BOTH',
+        title:    '⚠️ 10 daqiqa qoldi!',
+        body:     `#${order.orderNumber} — Tez to'lov yuklang!`,
+        telegramMessage:
+          `⚠️ <b>Diqqat!</b>\n\n` +
+          `📦 <b>#${order.orderNumber}</b>\n` +
+          `To'lovni yuklashga <b>10 daqiqa</b> qoldi!\n` +
+          `Aks holda buyurtma bekor qilinadi.`,
+        data: { orderId: order.id, type: 'DEADLINE_REMINDER' }
+      })
+    } catch (e) {
+      console.error(`Error sending deadline reminder for order ${order.id}:`, e)
+    }
+  }
+}
 
 export async function reconcileDailySummary(): Promise<void> {
   const today = new Date().toISOString().split('T')[0]
@@ -923,21 +1096,4 @@ export async function reconcileDailySummary(): Promise<void> {
       })
     }
   }
-}
-
-export async function cancelExpiredOrders(): Promise<number> {
-  let count = 0
-  const expired = await db.select().from(orders).where(and(
-    sql`${orders.status} IN ('PENDING_PAYMENT', 'PAYMENT_REJECTED')`,
-    sql`${orders.paymentDeadline} < NOW()`
-  ))
-
-  for (const order of expired) {
-    try {
-      await cancelOrder(order.id, null, 'To\'lov muddati o\'tdi')
-      count++
-      emit.orderAutoCanceled({ orderId: order.id, orderNumber: order.orderNumber, reason: 'payment_deadline_expired', canceledAt: new Date().toISOString() })
-    } catch (e) { console.error(`Error auto-canceling order ${order.id}:`, e) }
-  }
-  return count
 }
