@@ -1,6 +1,6 @@
 import { db } from '../../config/db'
 import { authTokens, customers, refreshTokens, userNotificationSettings } from '@mira/db'
-import { eq, and, gt, lt } from 'drizzle-orm'
+import { eq, and, gt, lt, ne, sql } from 'drizzle-orm'
 import { generateToken, generateOtp, hashToken } from '../../lib/otp'
 import { checkPhoneRateLimit } from '../../middleware/rateLimiter'
 import { signAccess, signRefresh, verifyRefresh } from '../../lib/jwt'
@@ -103,48 +103,75 @@ export async function verifyOtp(dto: VerifyOtpDto, deviceInfo?: string, ipAddres
     }
   }
 
-  // Check if this telegram_id is already linked to different phone
-  if (authToken.telegramId) {
-    const [tgConflict] = await db
-      .select({ id: customers.id, phone: customers.phone })
-      .from(customers)
-      .where(eq(customers.telegramId, Number(authToken.telegramId)))
-      .limit(1)
-
-    if (tgConflict && tgConflict.phone !== authToken.phone) {
-      throw {
-        status: 400,
-        code: 'TELEGRAM_ALREADY_LINKED',
-        message:
-          'Bu Telegram akkaunt boshqa raqamga bog\'langan. ' +
-          `Avvalgi raqam: ${tgConflict.phone.slice(0, 6)}***`,
-      }
-    }
-  }
+  const newTelegramId = authToken.telegramId ? Number(authToken.telegramId) : null
 
   return await db.transaction(async (tx) => {
     // ✅ OTP correct — mark token as used
     await tx.update(authTokens).set({ used: true }).where(eq(authTokens.id, authToken.id))
 
-    const region = getRegion(authToken.phone)
-
-    // Find or create customer
-    let [customer] = await tx
+    // STEP 1: Find existing customer by phone
+    const [existingCustomer] = await tx
       .select()
       .from(customers)
       .where(eq(customers.phone, authToken.phone))
       .limit(1)
 
-    const isNewCustomer = !customer
+    // STEP 2: Check telegramId conflict
+    // Only block if ANOTHER customer (different phone) owns this telegramId
+    if (newTelegramId) {
+      const [tgConflict] = await tx
+        .select({ id: customers.id, phone: customers.phone })
+        .from(customers)
+        .where(
+          and(
+            eq(customers.telegramId, newTelegramId),
+            // Allow if it's the same customer
+            existingCustomer ? ne(customers.id, existingCustomer.id) : sql`true`
+          )
+        )
+        .limit(1)
 
-    if (!customer) {
-      // New customer
+      if (tgConflict) {
+        throw {
+          status: 400,
+          code: 'TELEGRAM_ALREADY_LINKED',
+          message:
+            `Bu Telegram akkaunt boshqa raqamga bog'langan. ` +
+            `Avvalgi raqam: ${tgConflict.phone.slice(0, 6)}***`,
+        }
+      }
+    }
+
+    let customer: any
+    let isNewCustomer = false
+
+    if (existingCustomer) {
+      // STEP 3A: EXISTING CUSTOMER — update telegramId if changed
+      const telegramChanged = newTelegramId && existingCustomer.telegramId !== newTelegramId
+
+      if (telegramChanged) {
+        await tx
+          .update(customers)
+          .set({
+            telegramId: newTelegramId,
+            isVerified: true,
+            updatedAt: new Date(),
+          })
+          .where(eq(customers.id, existingCustomer.id))
+
+        existingCustomer.telegramId = newTelegramId
+      }
+
+      customer = existingCustomer
+      isNewCustomer = false
+    } else {
+      // STEP 3B: NEW CUSTOMER — create account
       const [created] = await tx
         .insert(customers)
         .values({
           phone: authToken.phone,
-          phoneRegion: region,
-          telegramId: authToken.telegramId ? Number(authToken.telegramId) : null,
+          phoneRegion: getRegion(authToken.phone),
+          telegramId: newTelegramId,
           firstName: 'Foydalanuvchi',
           isVerified: true,
           referralCode: generateToken().slice(0, 8).toUpperCase(),
@@ -157,18 +184,7 @@ export async function verifyOtp(dto: VerifyOtpDto, deviceInfo?: string, ipAddres
       })
 
       customer = created
-    } else {
-      // Update telegram_id if not set
-      if (!customer.telegramId) {
-        await tx
-          .update(customers)
-          .set({
-            telegramId: authToken.telegramId ? Number(authToken.telegramId) : null,
-            isVerified: true,
-          })
-          .where(eq(customers.id, customer.id))
-        customer.telegramId = authToken.telegramId
-      }
+      isNewCustomer = true
     }
 
     // Generate tokens

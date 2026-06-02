@@ -110,6 +110,10 @@
 
 ## 🔄 Changelog
 
+### v0.2.2-dev (2026-06-02)
+- **Bug Fix**: Context-aware `telegramId` update logic in `verifyOtp`. Now correctly handles Telegram account switching for existing customers while blocking cross-user conflicts.
+- **Bug Fix**: Improved OTP transaction atomicity by including token consumption within the same unit of work.
+
 ### v0.2.1-dev (2026-06-02)
 - **Bug Fix**: Implemented `TELEGRAM_ALREADY_LINKED` check to prevent Telegram ID hijacking across phone numbers.
 - **Bug Fix**: Wrapped `verifyOtp` logic in a DB transaction for atomicity (prevents token wastage on failure).
