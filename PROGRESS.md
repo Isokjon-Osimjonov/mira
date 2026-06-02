@@ -110,6 +110,14 @@
 
 ## 🔄 Changelog
 
+### v0.2.6-dev (2026-06-02)
+- **New Module**: Addresses API (Customer + Admin).
+  - Multi-region support (UZB + KOR formats).
+  - Juso API integration for Korean address search.
+  - Limit: max 10 addresses per customer.
+  - Default address management.
+  - CRUD for both customers (self) and admins (for customers).
+
 ### v0.2.5-dev (2026-06-02)
 - **New Feature**: Stock Write-Off API (GIFT, SAMPLE, DAMAGED, EXPIRED, LOST, ADJUSTMENT).
   - Integrated with Expenses module (auto-expense for damages).

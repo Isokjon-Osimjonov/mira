@@ -37,6 +37,9 @@ const envSchema = z.object({
   // ─── AI ────────────────────────────────────────────────
   OPENAI_API_KEY: z.string().min(1, 'OPENAI_API_KEY required'),
 
+  // ─── Juso API ──────────────────────────────────────────
+  JUSO_API_KEY: z.string().default('TESTJUSOGOKR'),
+
   // ─── Eskiz SMS ─────────────────────────────────────────
   ESKIZ_EMAIL: z.string().optional(),
   ESKIZ_PASSWORD: z.string().optional(),

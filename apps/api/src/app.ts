@@ -43,6 +43,8 @@ import dashboardRouter from './modules/dashboard/dashboard.router'
 import reportsRouter from './modules/reports/reports.router'
 import telegramRouter from './modules/telegram/telegram.router'
 import aiRouter from './modules/ai/ai.router'
+import addressesRouter from './modules/addresses/addresses.router'
+import customerAddressRouter from './modules/addresses/addresses-admin.router'
 
 export function createApp() {
   const app = express()
@@ -113,6 +115,7 @@ export function createApp() {
   // Customer specific
   app.use('/api/v1/cart', cartRouter)
   app.use('/api/v1/orders', ordersRouter)
+  app.use('/api/v1/addresses', addressesRouter)
   app.use('/api/v1/wishlists', wishlistRouter)
   app.use('/api/v1/waitlists', waitlistRouter)
   app.use('/api/v1/notifications', notificationRouter)
@@ -132,6 +135,7 @@ export function createApp() {
   app.use('/api/v1/admin/roles', rolesRouter)
   app.use('/api/v1/admin/users', adminUsersRouter)
   app.use('/api/v1/admin/customers', customersRouter)
+  app.use('/api/v1/admin/customers', customerAddressRouter)
   app.use('/api/v1/admin/suppliers', suppliersRouter)
   app.use('/api/v1/admin/purchase-orders', purchaseOrdersRouter)
   app.use('/api/v1/admin/expense-categories', expCategoriesRouter)

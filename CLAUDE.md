@@ -107,6 +107,11 @@ Nothing that changes between environments or depends on business state may be ha
 ### Customer Domain (`customers.service.ts`)
 - `CUSTOMER_NOT_FOUND`: 404 - customer not found.
 - `WALK_IN_PHONE_REQUIRED`: 400 - KOR region needs phone.
+- `ADDRESS_NOT_FOUND`: 404 - address not found.
+- `ADDRESS_UNAUTHORIZED`: 403 - address belongs to different customer.
+- `ADDRESS_LIMIT_EXCEEDED`: 400 - max 10 addresses reached.
+- `ADDRESS_IN_USE`: 400 - address used in active order.
+- `JUSO_API_ERROR`: 502 - Korea address search failed.
 
 ### Pick & Pack (`pick-pack.service.ts`)
 - `BOX_NOT_FOUND`: 404 - Box size does not exist.
