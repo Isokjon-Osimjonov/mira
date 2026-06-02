@@ -110,6 +110,10 @@
 
 ## 🔄 Changelog
 
+### v0.2.1-dev (2026-06-02)
+- **Bug Fix**: Implemented `TELEGRAM_ALREADY_LINKED` check to prevent Telegram ID hijacking across phone numbers.
+- **Bug Fix**: Wrapped `verifyOtp` logic in a DB transaction for atomicity (prevents token wastage on failure).
+
 ### v0.2.0-dev (2026-06-02)
 - Complete Backend API implementation (22 modules)
 - Verified with 34 functional endpoint tests

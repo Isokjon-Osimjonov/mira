@@ -103,90 +103,111 @@ export async function verifyOtp(dto: VerifyOtpDto, deviceInfo?: string, ipAddres
     }
   }
 
-  // ✅ OTP correct — mark token as used
-  await db.update(authTokens).set({ used: true }).where(eq(authTokens.id, authToken.id))
+  // Check if this telegram_id is already linked to different phone
+  if (authToken.telegramId) {
+    const [tgConflict] = await db
+      .select({ id: customers.id, phone: customers.phone })
+      .from(customers)
+      .where(eq(customers.telegramId, Number(authToken.telegramId)))
+      .limit(1)
 
-  const region = getRegion(authToken.phone)
-
-  // Find or create customer
-  let [customer] = await db
-    .select()
-    .from(customers)
-    .where(eq(customers.phone, authToken.phone))
-    .limit(1)
-
-  const isNewCustomer = !customer
-
-  if (!customer) {
-    // New customer
-    const [created] = await db
-      .insert(customers)
-      .values({
-        phone: authToken.phone,
-        phoneRegion: region,
-        telegramId: authToken.telegramId ? Number(authToken.telegramId) : null,
-        firstName: 'Foydalanuvchi',
-        isVerified: true,
-        referralCode: generateToken().slice(0, 8).toUpperCase(),
-      })
-      .returning()
-
-    // Create default notification settings
-    await db.insert(userNotificationSettings).values({
-      customerId: created.id,
-    })
-
-    customer = created
-  } else {
-    // Update telegram_id if not set
-    if (!customer.telegramId) {
-      await db
-        .update(customers)
-        .set({
-          telegramId: authToken.telegramId ? Number(authToken.telegramId) : null,
-          isVerified: true,
-        })
-        .where(eq(customers.id, customer.id))
-      customer.telegramId = authToken.telegramId
+    if (tgConflict && tgConflict.phone !== authToken.phone) {
+      throw {
+        status: 400,
+        code: 'TELEGRAM_ALREADY_LINKED',
+        message:
+          'Bu Telegram akkaunt boshqa raqamga bog\'langan. ' +
+          `Avvalgi raqam: ${tgConflict.phone.slice(0, 6)}***`,
+      }
     }
   }
 
-  // Generate tokens
-  const accessToken = signAccess({
-    sub: customer.id,
-    type: 'customer',
-    phone: customer.phone,
-    region: customer.phoneRegion as 'UZB' | 'KOR',
-  })
-  const refreshTokenValue = signRefresh({ sub: customer.id, type: 'customer' })
-  const refreshTokenHash = hashToken(refreshTokenValue)
+  return await db.transaction(async (tx) => {
+    // ✅ OTP correct — mark token as used
+    await tx.update(authTokens).set({ used: true }).where(eq(authTokens.id, authToken.id))
 
-  // Save refresh token
-  const familyId = generateToken().slice(0, 32)
-  await db.insert(refreshTokens).values({
-    token: refreshTokenHash,
-    customerId: customer.id,
-    familyId,
-    deviceInfo: deviceInfo ?? null,
-    ipAddress: ipAddress ?? null,
-    expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-  })
+    const region = getRegion(authToken.phone)
 
-  return {
-    accessToken,
-    refreshToken: refreshTokenValue, // raw (not hashed) — sent as cookie
-    isNewCustomer,
-    customer: {
-      id: customer.id,
+    // Find or create customer
+    let [customer] = await tx
+      .select()
+      .from(customers)
+      .where(eq(customers.phone, authToken.phone))
+      .limit(1)
+
+    const isNewCustomer = !customer
+
+    if (!customer) {
+      // New customer
+      const [created] = await tx
+        .insert(customers)
+        .values({
+          phone: authToken.phone,
+          phoneRegion: region,
+          telegramId: authToken.telegramId ? Number(authToken.telegramId) : null,
+          firstName: 'Foydalanuvchi',
+          isVerified: true,
+          referralCode: generateToken().slice(0, 8).toUpperCase(),
+        })
+        .returning()
+
+      // Create default notification settings
+      await tx.insert(userNotificationSettings).values({
+        customerId: created.id,
+      })
+
+      customer = created
+    } else {
+      // Update telegram_id if not set
+      if (!customer.telegramId) {
+        await tx
+          .update(customers)
+          .set({
+            telegramId: authToken.telegramId ? Number(authToken.telegramId) : null,
+            isVerified: true,
+          })
+          .where(eq(customers.id, customer.id))
+        customer.telegramId = authToken.telegramId
+      }
+    }
+
+    // Generate tokens
+    const accessToken = signAccess({
+      sub: customer.id,
+      type: 'customer',
       phone: customer.phone,
-      phoneRegion: customer.phoneRegion,
-      firstName: customer.firstName,
-      lastName: customer.lastName,
-      telegramId: customer.telegramId?.toString() ?? null,
-      profileImageUrl: customer.profileImageUrl,
-      referralCode: customer.referralCode,
-    },
-  }
+      region: customer.phoneRegion as 'UZB' | 'KOR',
+    })
+    const refreshTokenValue = signRefresh({ sub: customer.id, type: 'customer' })
+    const refreshTokenHash = hashToken(refreshTokenValue)
+
+    // Save refresh token
+    const familyId = generateToken().slice(0, 32)
+    await tx.insert(refreshTokens).values({
+      token: refreshTokenHash,
+      customerId: customer.id,
+      familyId,
+      deviceInfo: deviceInfo ?? null,
+      ipAddress: ipAddress ?? null,
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    })
+
+    return {
+      accessToken,
+      refreshToken: refreshTokenValue, // raw (not hashed) — sent as cookie
+      isNewCustomer,
+      customer: {
+        id: customer.id,
+        phone: customer.phone,
+        phoneRegion: customer.phoneRegion,
+        firstName: customer.firstName,
+        lastName: customer.lastName,
+        telegramId: customer.telegramId?.toString() ?? null,
+        profileImageUrl: customer.profileImageUrl,
+        referralCode: customer.referralCode,
+      },
+    }
+  })
 }
 
 // ─── Refresh ──────────────────────────────────────────────────
