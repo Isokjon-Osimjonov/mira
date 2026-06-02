@@ -15,7 +15,7 @@ export const CreateProductSchema = z.object({
   sku: z.string().min(1, 'SKU kiriting'),
   name: z.string().min(1, 'Nomini kiriting'),
   brandName: z.string().min(1, 'Brend nomini kiriting'),
-  categoryId: z.string().uuid('Kategoriya ID noto\'g\'ri'),
+  categoryId: z.string().uuid("Kategoriya ID noto'g'ri"),
   descriptionUz: z.string().optional().nullable(),
   howToUseUz: z.string().optional().nullable(),
   ingredients: z.array(z.string()).default([]),
@@ -34,14 +34,16 @@ export const CreateProductSchema = z.object({
 export const UpdateProductSchema = CreateProductSchema.partial()
 
 export const UpdatePricingSchema = z.object({
-  configs: z.array(RegionalConfigSchema.pick({
-    regionCode: true,
-    retailPrice: true,
-    wholesalePrice: true,
-    minWholesaleQty: true,
-    minOrderQty: true,
-    isAvailable: true,
-  }))
+  configs: z.array(
+    RegionalConfigSchema.pick({
+      regionCode: true,
+      retailPrice: true,
+      wholesalePrice: true,
+      minWholesaleQty: true,
+      minOrderQty: true,
+      isAvailable: true,
+    })
+  ),
 })
 
 export type CreateProductDto = z.infer<typeof CreateProductSchema>

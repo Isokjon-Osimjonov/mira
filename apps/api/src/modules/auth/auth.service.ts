@@ -1,8 +1,5 @@
 import { db } from '../../config/db'
-import {
-  authTokens, customers, refreshTokens,
-  userNotificationSettings,
-} from '@mira/db'
+import { authTokens, customers, refreshTokens, userNotificationSettings } from '@mira/db'
 import { eq, and, gt, lt } from 'drizzle-orm'
 import { generateToken, generateOtp, hashToken } from '../../lib/otp'
 import { checkPhoneRateLimit } from '../../middleware/rateLimiter'
@@ -13,7 +10,7 @@ import type { RequestOtpDto, VerifyOtpDto } from './auth.schema'
 // Region from phone prefix
 function getRegion(phone: string): 'UZB' | 'KOR' {
   if (phone.startsWith('+998')) return 'UZB'
-  if (phone.startsWith('+82'))  return 'KOR'
+  if (phone.startsWith('+82')) return 'KOR'
   return 'UZB'
 }
 
@@ -28,21 +25,20 @@ export async function requestOtp(dto: RequestOtpDto) {
 
   // Per-phone rate limit (max 3 per 10 min)
   if (!checkPhoneRateLimit(phone)) {
-    throw { status: 429, code: 'PHONE_RATE_LIMITED', message: 'Bu raqam uchun juda ko\'p urinildi. 10 daqiqadan keyin qayta urinib ko\'ring' }
+    throw {
+      status: 429,
+      code: 'PHONE_RATE_LIMITED',
+      message: "Bu raqam uchun juda ko'p urinildi. 10 daqiqadan keyin qayta urinib ko'ring",
+    }
   }
 
   // Clean up expired tokens for this phone
   await db
     .delete(authTokens)
-    .where(
-      and(
-        eq(authTokens.phone, phone),
-        lt(authTokens.expiresAt, new Date())
-      )
-    )
+    .where(and(eq(authTokens.phone, phone), lt(authTokens.expiresAt, new Date())))
 
   // Generate token (deep link) + OTP (set by bot after /start)
-  const token   = generateToken()
+  const token = generateToken()
   const expires = new Date(Date.now() + 5 * 60 * 1000) // 5 minutes
 
   await db.insert(authTokens).values({
@@ -52,7 +48,7 @@ export async function requestOtp(dto: RequestOtpDto) {
   })
 
   return {
-    deepLink:  buildDeepLink(token),
+    deepLink: buildDeepLink(token),
     expiresIn: 300, // seconds
   }
 }
@@ -75,17 +71,21 @@ export async function verifyOtp(dto: VerifyOtpDto, deviceInfo?: string, ipAddres
     .limit(1)
 
   if (!authToken) {
-    throw { status: 400, code: 'TOKEN_INVALID', message: 'Token topilmadi yoki muddati o\'tgan' }
+    throw { status: 400, code: 'TOKEN_INVALID', message: "Token topilmadi yoki muddati o'tgan" }
   }
 
   // Max attempts check
   if ((authToken.attempts ?? 0) >= 3) {
-    throw { status: 429, code: 'MAX_ATTEMPTS', message: 'Urinishlar soni tugadi. Qayta so\'rang' }
+    throw { status: 429, code: 'MAX_ATTEMPTS', message: "Urinishlar soni tugadi. Qayta so'rang" }
   }
 
   // OTP not yet set (bot hasn't processed yet)
   if (!authToken.otp || !authToken.telegramId) {
-    throw { status: 400, code: 'OTP_NOT_READY', message: 'Telegram botni oching va kod kutib turing' }
+    throw {
+      status: 400,
+      code: 'OTP_NOT_READY',
+      message: 'Telegram botni oching va kod kutib turing',
+    }
   }
 
   // Wrong OTP — increment attempts
@@ -97,17 +97,14 @@ export async function verifyOtp(dto: VerifyOtpDto, deviceInfo?: string, ipAddres
 
     const remaining = 3 - ((authToken.attempts ?? 0) + 1)
     throw {
-      status:  400,
-      code:    'OTP_INVALID',
+      status: 400,
+      code: 'OTP_INVALID',
       message: `Noto'g'ri kod. ${remaining} ta urinish qoldi`,
     }
   }
 
   // ✅ OTP correct — mark token as used
-  await db
-    .update(authTokens)
-    .set({ used: true })
-    .where(eq(authTokens.id, authToken.id))
+  await db.update(authTokens).set({ used: true }).where(eq(authTokens.id, authToken.id))
 
   const region = getRegion(authToken.phone)
 
@@ -125,10 +122,10 @@ export async function verifyOtp(dto: VerifyOtpDto, deviceInfo?: string, ipAddres
     const [created] = await db
       .insert(customers)
       .values({
-        phone:      authToken.phone,
+        phone: authToken.phone,
         phoneRegion: region,
         telegramId: authToken.telegramId ? Number(authToken.telegramId) : null,
-        firstName:  'Foydalanuvchi',
+        firstName: 'Foydalanuvchi',
         isVerified: true,
         referralCode: generateToken().slice(0, 8).toUpperCase(),
       })
@@ -145,46 +142,49 @@ export async function verifyOtp(dto: VerifyOtpDto, deviceInfo?: string, ipAddres
     if (!customer.telegramId) {
       await db
         .update(customers)
-        .set({ telegramId: authToken.telegramId ? Number(authToken.telegramId) : null, isVerified: true })
+        .set({
+          telegramId: authToken.telegramId ? Number(authToken.telegramId) : null,
+          isVerified: true,
+        })
         .where(eq(customers.id, customer.id))
       customer.telegramId = authToken.telegramId
     }
   }
 
   // Generate tokens
-  const accessToken  = signAccess({
-    sub:    customer.id,
-    type:   'customer',
-    phone:  customer.phone,
+  const accessToken = signAccess({
+    sub: customer.id,
+    type: 'customer',
+    phone: customer.phone,
     region: customer.phoneRegion as 'UZB' | 'KOR',
   })
   const refreshTokenValue = signRefresh({ sub: customer.id, type: 'customer' })
-  const refreshTokenHash  = hashToken(refreshTokenValue)
+  const refreshTokenHash = hashToken(refreshTokenValue)
 
   // Save refresh token
   const familyId = generateToken().slice(0, 32)
   await db.insert(refreshTokens).values({
-    token:      refreshTokenHash,
+    token: refreshTokenHash,
     customerId: customer.id,
     familyId,
     deviceInfo: deviceInfo ?? null,
-    ipAddress:  ipAddress ?? null,
-    expiresAt:  new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    ipAddress: ipAddress ?? null,
+    expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
   })
 
   return {
     accessToken,
-    refreshToken: refreshTokenValue,  // raw (not hashed) — sent as cookie
+    refreshToken: refreshTokenValue, // raw (not hashed) — sent as cookie
     isNewCustomer,
     customer: {
-      id:             customer.id,
-      phone:          customer.phone,
-      phoneRegion:    customer.phoneRegion,
-      firstName:      customer.firstName,
-      lastName:       customer.lastName,
-      telegramId:     customer.telegramId?.toString() ?? null,
+      id: customer.id,
+      phone: customer.phone,
+      phoneRegion: customer.phoneRegion,
+      firstName: customer.firstName,
+      lastName: customer.lastName,
+      telegramId: customer.telegramId?.toString() ?? null,
       profileImageUrl: customer.profileImageUrl,
-      referralCode:   customer.referralCode,
+      referralCode: customer.referralCode,
     },
   }
 }
@@ -228,11 +228,7 @@ export async function refreshCustomerToken(rawRefreshToken: string) {
   }
 
   // Get customer
-  const [customer] = await db
-    .select()
-    .from(customers)
-    .where(eq(customers.id, payload.sub))
-    .limit(1)
+  const [customer] = await db.select().from(customers).where(eq(customers.id, payload.sub)).limit(1)
 
   if (!customer || !customer.isActive) {
     throw { status: 401, code: 'CUSTOMER_INACTIVE', message: 'Foydalanuvchi topilmadi' }
@@ -244,33 +240,33 @@ export async function refreshCustomerToken(rawRefreshToken: string) {
     .set({ isRevoked: true, revokedAt: new Date(), revokedReason: 'ROTATION' })
     .where(eq(refreshTokens.id, stored.id))
 
-  const newAccessToken  = signAccess({
-    sub:    customer.id,
-    type:   'customer',
-    phone:  customer.phone,
+  const newAccessToken = signAccess({
+    sub: customer.id,
+    type: 'customer',
+    phone: customer.phone,
     region: customer.phoneRegion as 'UZB' | 'KOR',
   })
   const newRefreshToken = signRefresh({ sub: customer.id, type: 'customer' })
-  const newHash         = hashToken(newRefreshToken)
+  const newHash = hashToken(newRefreshToken)
 
   await db.insert(refreshTokens).values({
-    token:      newHash,
+    token: newHash,
     customerId: customer.id,
-    familyId:   stored.familyId,
+    familyId: stored.familyId,
     deviceInfo: stored.deviceInfo,
-    ipAddress:  stored.ipAddress,
-    expiresAt:  new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    ipAddress: stored.ipAddress,
+    expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
   })
 
   return {
-    accessToken:  newAccessToken,
+    accessToken: newAccessToken,
     refreshToken: newRefreshToken,
     customer: {
-      id:          customer.id,
-      phone:       customer.phone,
+      id: customer.id,
+      phone: customer.phone,
       phoneRegion: customer.phoneRegion,
-      firstName:   customer.firstName,
-      lastName:    customer.lastName,
+      firstName: customer.firstName,
+      lastName: customer.lastName,
     },
   }
 }

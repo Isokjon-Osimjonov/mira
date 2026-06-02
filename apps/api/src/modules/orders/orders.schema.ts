@@ -2,7 +2,7 @@ import { z } from 'zod'
 
 export const checkoutSchema = z.object({
   addressId: z.string().uuid('Manzilni tanlang'),
-  paymentMethod: z.enum(['KOREAN_BANK', 'UZB_BANK', 'E9PAY'], { message: 'To\'lov turini tanlang' }),
+  paymentMethod: z.enum(['KOREAN_BANK', 'UZB_BANK', 'E9PAY'], { message: "To'lov turini tanlang" }),
   boxId: z.string().uuid().optional(),
   couponCode: z.string().trim().toUpperCase().optional(),
   customerNote: z.string().optional(),
@@ -10,7 +10,7 @@ export const checkoutSchema = z.object({
 
 export const uploadReceiptSchema = z.object({
   receiptUrl: z.string().url('Kvitansiya rasmi yaroqsiz'),
-  paymentAmount: z.coerce.number().positive('To\'lov summasini kiriting'),
+  paymentAmount: z.coerce.number().positive("To'lov summasini kiriting"),
   paymentCurrency: z.enum(['KRW', 'UZS']),
 })
 
@@ -21,11 +21,15 @@ export const manualOrderSchema = z.object({
   boxId: z.string().uuid().optional(),
   couponCode: z.string().trim().toUpperCase().optional(),
   adminNote: z.string().optional(),
-  items: z.array(z.object({
-    productId: z.string().uuid(),
-    quantity: z.number().int().positive(),
-    negotiatedPriceKrw: z.coerce.number().min(0).optional(),
-  })).min(1, 'Kamida bitta mahsulot qo\'shing'),
+  items: z
+    .array(
+      z.object({
+        productId: z.string().uuid(),
+        quantity: z.number().int().positive(),
+        negotiatedPriceKrw: z.coerce.number().min(0).optional(),
+      })
+    )
+    .min(1, "Kamida bitta mahsulot qo'shing"),
 })
 
 export const confirmPaymentSchema = z.object({

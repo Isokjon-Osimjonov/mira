@@ -12,10 +12,7 @@ export async function getActiveTiers() {
 }
 
 export async function getAllTiers() {
-  return await db
-    .select()
-    .from(korShippingTiers)
-    .orderBy(asc(korShippingTiers.sortOrder))
+  return await db.select().from(korShippingTiers).orderBy(asc(korShippingTiers.sortOrder))
 }
 
 export async function createTier(data: CreateTierDto) {
@@ -26,9 +23,13 @@ export async function createTier(data: CreateTierDto) {
       .from(korShippingTiers)
       .where(isNull(korShippingTiers.maxOrderKrw))
       .limit(1)
-    
+
     if (existing) {
-      throw { status: 400, code: 'TIER_OVERLAP', message: 'Faqat bitta "unlimited" (maxOrderKrw=null) tier bo\'lishi mumkin.' }
+      throw {
+        status: 400,
+        code: 'TIER_OVERLAP',
+        message: 'Faqat bitta "unlimited" (maxOrderKrw=null) tier bo\'lishi mumkin.',
+      }
     }
   }
 
@@ -40,7 +41,7 @@ export async function createTier(data: CreateTierDto) {
       cargoFeeKrw: BigInt(data.cargoFeeKrw),
     } as any)
     .returning()
-  
+
   return newTier
 }
 
@@ -51,14 +52,19 @@ export async function updateTier(id: string, data: UpdateTierDto) {
       .from(korShippingTiers)
       .where(and(isNull(korShippingTiers.maxOrderKrw), not(eq(korShippingTiers.id, id))))
       .limit(1)
-    
+
     if (existing) {
-      throw { status: 400, code: 'TIER_OVERLAP', message: 'Faqat bitta "unlimited" tier bo\'lishi mumkin.' }
+      throw {
+        status: 400,
+        code: 'TIER_OVERLAP',
+        message: 'Faqat bitta "unlimited" tier bo\'lishi mumkin.',
+      }
     }
   }
 
   const updates: any = { ...data, updatedAt: new Date() }
-  if (data.maxOrderKrw !== undefined) updates.maxOrderKrw = data.maxOrderKrw !== null ? BigInt(data.maxOrderKrw) : null
+  if (data.maxOrderKrw !== undefined)
+    updates.maxOrderKrw = data.maxOrderKrw !== null ? BigInt(data.maxOrderKrw) : null
   if (data.cargoFeeKrw !== undefined) updates.cargoFeeKrw = BigInt(data.cargoFeeKrw)
 
   const [updated] = await db
@@ -66,7 +72,7 @@ export async function updateTier(id: string, data: UpdateTierDto) {
     .set(updates)
     .where(eq(korShippingTiers.id, id))
     .returning()
-  
+
   if (!updated) throw { status: 404, code: 'TIER_NOT_FOUND', message: 'Tier topilmadi' }
   return updated
 }

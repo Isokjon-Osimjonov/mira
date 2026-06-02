@@ -18,14 +18,14 @@ export async function getActiveBoxes() {
 }
 
 export async function getAllBoxes() {
-  return await db
-    .select()
-    .from(boxes)
-    .orderBy(asc(boxes.sortOrder))
+  return await db.select().from(boxes).orderBy(asc(boxes.sortOrder))
 }
 
 export async function createBox(data: CreateBoxDto) {
-  const [newBox] = await db.insert(boxes).values(data as any).returning()
+  const [newBox] = await db
+    .insert(boxes)
+    .values(data as any)
+    .returning()
   return newBox
 }
 
@@ -35,7 +35,7 @@ export async function updateBox(id: string, data: UpdateBoxDto) {
     .set({ ...data, updatedAt: new Date() } as any)
     .where(eq(boxes.id, id))
     .returning()
-  
+
   if (!updated) throw { status: 404, code: 'BOX_NOT_FOUND', message: 'Quti topilmadi' }
   return updated
 }
@@ -49,7 +49,11 @@ export async function deleteBox(id: string) {
     .limit(1)
 
   if (Number(usage?.count || 0) > 0) {
-    throw { status: 400, code: 'BOX_IN_USE', message: 'Bu quti buyurtmalarda ishlatilgan. O\'chirib bo\'lmaydi.' }
+    throw {
+      status: 400,
+      code: 'BOX_IN_USE',
+      message: "Bu quti buyurtmalarda ishlatilgan. O'chirib bo'lmaydi.",
+    }
   }
 
   const [deleted] = await db.delete(boxes).where(eq(boxes.id, id)).returning()

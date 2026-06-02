@@ -11,10 +11,12 @@ function socketAuthMiddleware(socket: Socket, next: (err?: Error) => void) {
   if (!token) return next(new Error('Authentication required'))
   try {
     const payload = jwt.verify(token, env.JWT_SECRET) as any
-    if (payload.type !== 'admin') return next(new Error('Admin only'));
-    (socket as any).adminId = payload.sub
+    if (payload.type !== 'admin') return next(new Error('Admin only'))
+    ;(socket as any).adminId = payload.sub
     next()
-  } catch { next(new Error('Invalid token')) }
+  } catch {
+    next(new Error('Invalid token'))
+  }
 }
 
 export function initSocket(server: HttpServer): Server {
@@ -43,8 +45,7 @@ export function getIO(): Server {
 }
 
 export const emit = {
-  orderNew: (data: SocketEvents['order:new']) =>
-    getIO().to('admins').emit('order:new', data),
+  orderNew: (data: SocketEvents['order:new']) => getIO().to('admins').emit('order:new', data),
   orderStatusChanged: (data: SocketEvents['order:status_changed']) =>
     getIO().to('admins').emit('order:status_changed', data),
   orderAutoCanceled: (data: SocketEvents['order:auto_canceled']) =>
@@ -55,16 +56,12 @@ export const emit = {
     getIO().to('admins').emit('payment:confirmed', data),
   paymentRejected: (data: SocketEvents['payment:rejected']) =>
     getIO().to('admins').emit('payment:rejected', data),
-  stockLow: (data: SocketEvents['stock:low']) =>
-    getIO().to('admins').emit('stock:low', data),
-  stockOut: (data: SocketEvents['stock:out']) =>
-    getIO().to('admins').emit('stock:out', data),
-  stockBack: (data: SocketEvents['stock:back']) =>
-    getIO().to('admins').emit('stock:back', data),
+  stockLow: (data: SocketEvents['stock:low']) => getIO().to('admins').emit('stock:low', data),
+  stockOut: (data: SocketEvents['stock:out']) => getIO().to('admins').emit('stock:out', data),
+  stockBack: (data: SocketEvents['stock:back']) => getIO().to('admins').emit('stock:back', data),
   exchangeRateUpdated: (data: SocketEvents['exchange_rate:updated']) =>
     getIO().to('admins').emit('exchange_rate:updated', data),
-  settingsUpdated: () =>
-    getIO().to('admins').emit('settings:updated', {}),
+  settingsUpdated: () => getIO().to('admins').emit('settings:updated', {}),
   notificationCount: (data: SocketEvents['notification:count']) =>
     getIO().to('admins').emit('notification:count', data),
 }

@@ -18,7 +18,7 @@ export async function getPackStatus(orderId: string) {
       quantity: orderItems.quantity,
       isScanned: orderItems.isScanned,
       scannedAt: orderItems.scannedAt,
-      scannedBy: adminUsers.fullName
+      scannedBy: adminUsers.fullName,
     })
     .from(orderItems)
     .innerJoin(products, eq(orderItems.productId, products.id))
@@ -36,7 +36,7 @@ export async function getPackStatus(orderId: string) {
     totalItems,
     scannedItems,
     allScanned,
-    items
+    items,
   }
 }
 
@@ -45,7 +45,12 @@ export async function scanBarcode(orderId: string, adminId: string, dto: ScanBar
     // 1. Get order
     const [order] = await tx.select().from(orders).where(eq(orders.id, orderId)).limit(1)
     if (!order) throw { status: 404, code: 'ORDER_NOT_FOUND', message: 'Buyurtma topilmadi' }
-    if (order.status !== 'PACKING') throw { status: 400, code: 'ORDER_NOT_IN_PACKING', message: 'Faqat PACKING holatidagi buyurtmalarni skanerlash mumkin' }
+    if (order.status !== 'PACKING')
+      throw {
+        status: 400,
+        code: 'ORDER_NOT_IN_PACKING',
+        message: 'Faqat PACKING holatidagi buyurtmalarni skanerlash mumkin',
+      }
 
     // 2. Get items
     const items = await tx
@@ -58,115 +63,189 @@ export async function scanBarcode(orderId: string, adminId: string, dto: ScanBar
     let matchedRow: any = null
 
     if (dto.orderItemId) {
-      matchedRow = items.find(i => i.item.id === dto.orderItemId)
-      if (!matchedRow) throw { status: 404, code: 'ORDER_ITEM_NOT_FOUND', message: 'Mahsulot topilmadi' }
+      matchedRow = items.find((i) => i.item.id === dto.orderItemId)
+      if (!matchedRow)
+        throw { status: 404, code: 'ORDER_ITEM_NOT_FOUND', message: 'Mahsulot topilmadi' }
       if (matchedRow.product.barcode.trim().toLowerCase() !== barcodeInput) {
-         // Audit mismatch even if specific ID was targeted
-         await tx.insert(pickPackAudit).values({
-           orderId, orderItemId: matchedRow.item.id, performedBy: adminId,
-           action: 'SCAN_MISMATCH', result: 'ERROR',
-           scanInput: dto.barcodeInput, expectedBarcode: matchedRow.product.barcode
-         })
-         throw { status: 400, code: 'SCAN_MISMATCH', message: `Barcode mos kelmadi: ${dto.barcodeInput}` }
+        // Audit mismatch even if specific ID was targeted
+        await tx.insert(pickPackAudit).values({
+          orderId,
+          orderItemId: matchedRow.item.id,
+          performedBy: adminId,
+          action: 'SCAN_MISMATCH',
+          result: 'ERROR',
+          scanInput: dto.barcodeInput,
+          expectedBarcode: matchedRow.product.barcode,
+        })
+        throw {
+          status: 400,
+          code: 'SCAN_MISMATCH',
+          message: `Barcode mos kelmadi: ${dto.barcodeInput}`,
+        }
       }
     } else {
-      matchedRow = items.find(i => !i.item.isScanned && i.product.barcode.trim().toLowerCase() === barcodeInput)
+      matchedRow = items.find(
+        (i) => !i.item.isScanned && i.product.barcode.trim().toLowerCase() === barcodeInput
+      )
     }
 
     // 4. Mismatch
     if (!matchedRow) {
-       // Check if barcode exists in any item but already scanned
-       const alreadyScanned = items.find(i => i.item.isScanned && i.product.barcode.trim().toLowerCase() === barcodeInput)
-       if (alreadyScanned) throw { status: 400, code: 'ITEM_ALREADY_SCANNED', message: 'Ushbu mahsulot allaqachon skanerdan o\'tgan' }
+      // Check if barcode exists in any item but already scanned
+      const alreadyScanned = items.find(
+        (i) => i.item.isScanned && i.product.barcode.trim().toLowerCase() === barcodeInput
+      )
+      if (alreadyScanned)
+        throw {
+          status: 400,
+          code: 'ITEM_ALREADY_SCANNED',
+          message: "Ushbu mahsulot allaqachon skanerdan o'tgan",
+        }
 
-       // Real mismatch
-       await tx.insert(pickPackAudit).values({
-         orderId, 
-         orderItemId: items[0]?.item.id, // Link to first item just for FK if needed, or maybe audit table allows null orderItemId? 
-         // Looking at schema: orderItemId is NOT NULL. This is a problem for unknown barcodes.
-         // Let's use first item id as placeholder or throw error.
-         // Actually, I'll update audit logic to handle this if possible or just use a dummy id if needed.
-         // Given schema constraints, I'll use items[0].id.
-         performedBy: adminId,
-         action: 'SCAN_MISMATCH', result: 'ERROR',
-         scanInput: dto.barcodeInput
-       })
-       throw { status: 400, code: 'SCAN_MISMATCH', message: `Barcode topilmadi: ${dto.barcodeInput}` }
+      // Real mismatch
+      await tx.insert(pickPackAudit).values({
+        orderId,
+        orderItemId: items[0]?.item.id, // Link to first item just for FK if needed, or maybe audit table allows null orderItemId?
+        // Looking at schema: orderItemId is NOT NULL. This is a problem for unknown barcodes.
+        // Let's use first item id as placeholder or throw error.
+        // Actually, I'll update audit logic to handle this if possible or just use a dummy id if needed.
+        // Given schema constraints, I'll use items[0].id.
+        performedBy: adminId,
+        action: 'SCAN_MISMATCH',
+        result: 'ERROR',
+        scanInput: dto.barcodeInput,
+      })
+      throw {
+        status: 400,
+        code: 'SCAN_MISMATCH',
+        message: `Barcode topilmadi: ${dto.barcodeInput}`,
+      }
     }
 
-    if (matchedRow.item.isScanned) throw { status: 400, code: 'ITEM_ALREADY_SCANNED', message: 'Ushbu mahsulot allaqachon skanerdan o\'tgan' }
+    if (matchedRow.item.isScanned)
+      throw {
+        status: 400,
+        code: 'ITEM_ALREADY_SCANNED',
+        message: "Ushbu mahsulot allaqachon skanerdan o'tgan",
+      }
 
     // 6. Success
     await tx.insert(pickPackAudit).values({
-      orderId, orderItemId: matchedRow.item.id, performedBy: adminId,
-      action: 'SCAN_SUCCESS', result: 'OK',
-      scanInput: dto.barcodeInput, expectedBarcode: matchedRow.product.barcode
+      orderId,
+      orderItemId: matchedRow.item.id,
+      performedBy: adminId,
+      action: 'SCAN_SUCCESS',
+      result: 'OK',
+      scanInput: dto.barcodeInput,
+      expectedBarcode: matchedRow.product.barcode,
     })
 
-    await tx.update(orderItems).set({
-      isScanned: true, scannedAt: new Date(), scannedBy: adminId
-    }).where(eq(orderItems.id, matchedRow.item.id))
+    await tx
+      .update(orderItems)
+      .set({
+        isScanned: true,
+        scannedAt: new Date(),
+        scannedBy: adminId,
+      })
+      .where(eq(orderItems.id, matchedRow.item.id))
 
     // 7. Check all scanned
     const updatedStatus = await getPackStatusInTx(tx, orderId)
     if (updatedStatus.allScanned) {
       await tx.insert(pickPackAudit).values({
-        orderId, orderItemId: matchedRow.item.id, performedBy: adminId,
-        action: 'ORDER_PACKED', result: 'OK'
+        orderId,
+        orderItemId: matchedRow.item.id,
+        performedBy: adminId,
+        action: 'ORDER_PACKED',
+        result: 'OK',
       })
 
       const [admin] = await tx.select().from(adminUsers).where(eq(adminUsers.id, adminId)).limit(1)
       emit.orderStatusChanged({
-        orderId, orderNumber: order.orderNumber,
-        fromStatus: 'PACKING', toStatus: 'PACKING',
+        orderId,
+        orderNumber: order.orderNumber,
+        fromStatus: 'PACKING',
+        toStatus: 'PACKING',
         changedBy: admin?.fullName || 'Admin',
-        note: 'Barcha mahsulotlar skanerdan o\'tdi',
-        changedAt: new Date().toISOString()
+        note: "Barcha mahsulotlar skanerdan o'tdi",
+        changedAt: new Date().toISOString(),
       })
     }
 
     return {
       ...updatedStatus,
       justScannedItemId: matchedRow.item.id,
-      message: `${updatedStatus.scannedItems} dan ${updatedStatus.totalItems} ta skanerdan o'tdi`
+      message: `${updatedStatus.scannedItems} dan ${updatedStatus.totalItems} ta skanerdan o'tdi`,
     }
   })
 }
 
-export async function manualConfirm(orderId: string, itemId: string, adminId: string, dto: ManualConfirmDto) {
+export async function manualConfirm(
+  orderId: string,
+  itemId: string,
+  adminId: string,
+  dto: ManualConfirmDto
+) {
   return await db.transaction(async (tx) => {
     const [order] = await tx.select().from(orders).where(eq(orders.id, orderId)).limit(1)
     if (!order) throw { status: 404, code: 'ORDER_NOT_FOUND', message: 'Buyurtma topilmadi' }
-    if (order.status !== 'PACKING') throw { status: 400, code: 'ORDER_NOT_IN_PACKING', message: 'Faqat PACKING holatidagi buyurtmalarni tasdiqlash mumkin' }
+    if (order.status !== 'PACKING')
+      throw {
+        status: 400,
+        code: 'ORDER_NOT_IN_PACKING',
+        message: 'Faqat PACKING holatidagi buyurtmalarni tasdiqlash mumkin',
+      }
 
-    const [item] = await tx.select().from(orderItems).where(and(eq(orderItems.id, itemId), eq(orderItems.orderId, orderId))).limit(1)
+    const [item] = await tx
+      .select()
+      .from(orderItems)
+      .where(and(eq(orderItems.id, itemId), eq(orderItems.orderId, orderId)))
+      .limit(1)
     if (!item) throw { status: 404, code: 'ORDER_ITEM_NOT_FOUND', message: 'Mahsulot topilmadi' }
-    if (item.isScanned) throw { status: 400, code: 'ITEM_ALREADY_SCANNED', message: 'Ushbu mahsulot allaqachon tasdiqlangan' }
+    if (item.isScanned)
+      throw {
+        status: 400,
+        code: 'ITEM_ALREADY_SCANNED',
+        message: 'Ushbu mahsulot allaqachon tasdiqlangan',
+      }
 
     await tx.insert(pickPackAudit).values({
-      orderId, orderItemId: itemId, performedBy: adminId,
-      action: 'MANUAL_FALLBACK', result: 'OK',
-      note: dto.note || 'Qo\'lda tasdiqlandi'
+      orderId,
+      orderItemId: itemId,
+      performedBy: adminId,
+      action: 'MANUAL_FALLBACK',
+      result: 'OK',
+      note: dto.note || "Qo'lda tasdiqlandi",
     })
 
-    await tx.update(orderItems).set({
-      isScanned: true, scannedAt: new Date(), scannedBy: adminId
-    }).where(eq(orderItems.id, itemId))
+    await tx
+      .update(orderItems)
+      .set({
+        isScanned: true,
+        scannedAt: new Date(),
+        scannedBy: adminId,
+      })
+      .where(eq(orderItems.id, itemId))
 
     const updatedStatus = await getPackStatusInTx(tx, orderId)
     if (updatedStatus.allScanned) {
-       await tx.insert(pickPackAudit).values({
-        orderId, orderItemId: itemId, performedBy: adminId,
-        action: 'ORDER_PACKED', result: 'OK'
+      await tx.insert(pickPackAudit).values({
+        orderId,
+        orderItemId: itemId,
+        performedBy: adminId,
+        action: 'ORDER_PACKED',
+        result: 'OK',
       })
 
       const [admin] = await tx.select().from(adminUsers).where(eq(adminUsers.id, adminId)).limit(1)
       emit.orderStatusChanged({
-        orderId, orderNumber: order.orderNumber,
-        fromStatus: 'PACKING', toStatus: 'PACKING',
+        orderId,
+        orderNumber: order.orderNumber,
+        fromStatus: 'PACKING',
+        toStatus: 'PACKING',
         changedBy: admin?.fullName || 'Admin',
-        note: 'Barcha mahsulotlar skanerdan o\'tdi',
-        changedAt: new Date().toISOString()
+        note: "Barcha mahsulotlar skanerdan o'tdi",
+        changedAt: new Date().toISOString(),
       })
     }
 
@@ -184,7 +263,7 @@ export async function getScanHistory(orderId: string) {
       expectedBarcode: pickPackAudit.expectedBarcode,
       performedByName: adminUsers.fullName,
       note: pickPackAudit.note,
-      createdAt: pickPackAudit.createdAt
+      createdAt: pickPackAudit.createdAt,
     })
     .from(pickPackAudit)
     .innerJoin(adminUsers, eq(pickPackAudit.performedBy, adminUsers.id))
@@ -207,7 +286,7 @@ async function getPackStatusInTx(tx: any, orderId: string) {
       quantity: orderItems.quantity,
       isScanned: orderItems.isScanned,
       scannedAt: orderItems.scannedAt,
-      scannedBy: adminUsers.fullName
+      scannedBy: adminUsers.fullName,
     })
     .from(orderItems)
     .innerJoin(products, eq(orderItems.productId, products.id))
@@ -225,6 +304,6 @@ async function getPackStatusInTx(tx: any, orderId: string) {
     totalItems,
     scannedItems,
     allScanned,
-    items
+    items,
   }
 }

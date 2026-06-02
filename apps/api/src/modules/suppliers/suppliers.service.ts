@@ -3,7 +3,12 @@ import { suppliers, purchaseOrders } from '@mira/db'
 import { eq, and, sql, desc, count, ilike, or } from 'drizzle-orm'
 import type { CreateSupplierDto, UpdateSupplierDto } from './suppliers.schema'
 
-export async function getSuppliers(query: { page?: number, limit?: number, isActive?: boolean, search?: string }) {
+export async function getSuppliers(query: {
+  page?: number
+  limit?: number
+  isActive?: boolean
+  search?: string
+}) {
   const page = query.page || 1
   const limit = query.limit || 20
   const offset = (page - 1) * limit
@@ -14,17 +19,23 @@ export async function getSuppliers(query: { page?: number, limit?: number, isAct
   }
   if (query.search) {
     const s = `%${query.search}%`
-    where = and(where, or(
-      ilike(suppliers.name, s),
-      ilike(suppliers.contactName, s),
-      ilike(suppliers.contactEmail, s)
-    ))
+    where = and(
+      where,
+      or(
+        ilike(suppliers.name, s),
+        ilike(suppliers.contactName, s),
+        ilike(suppliers.contactEmail, s)
+      )
+    )
   }
 
   const itemsQuery = await db
     .select({
       supplier: suppliers,
-      orderCount: sql<number>`(SELECT COUNT(*) FROM purchase_orders WHERE supplier_id = ${suppliers.id})`.mapWith(Number)
+      orderCount:
+        sql<number>`(SELECT COUNT(*) FROM purchase_orders WHERE supplier_id = ${suppliers.id})`.mapWith(
+          Number
+        ),
     })
     .from(suppliers)
     .where(where)
@@ -35,9 +46,9 @@ export async function getSuppliers(query: { page?: number, limit?: number, isAct
   const [countRes] = await db.select({ count: count() }).from(suppliers).where(where)
   const total = Number(countRes?.count || 0)
 
-  const items = itemsQuery.map(row => ({
+  const items = itemsQuery.map((row) => ({
     ...row.supplier,
-    orderCount: row.orderCount
+    orderCount: row.orderCount,
   }))
 
   return { items, meta: { page, limit, total, hasNext: offset + limit < total, hasPrev: page > 1 } }
@@ -45,7 +56,8 @@ export async function getSuppliers(query: { page?: number, limit?: number, isAct
 
 export async function getSupplierById(id: string) {
   const [supplier] = await db.select().from(suppliers).where(eq(suppliers.id, id)).limit(1)
-  if (!supplier) throw { status: 404, code: 'SUPPLIER_NOT_FOUND', message: 'Yetkazib beruvchi topilmadi' }
+  if (!supplier)
+    throw { status: 404, code: 'SUPPLIER_NOT_FOUND', message: 'Yetkazib beruvchi topilmadi' }
 
   const recentOrders = await db
     .select()
@@ -54,11 +66,17 @@ export async function getSupplierById(id: string) {
     .orderBy(desc(purchaseOrders.createdAt))
     .limit(5)
 
-  return { ...supplier, recentOrders: recentOrders.map(o => ({ ...o, totalCostKrw: Number(o.totalCostKrw) })) }
+  return {
+    ...supplier,
+    recentOrders: recentOrders.map((o) => ({ ...o, totalCostKrw: Number(o.totalCostKrw) })),
+  }
 }
 
 export async function createSupplier(data: CreateSupplierDto) {
-  const [created] = await db.insert(suppliers).values(data as any).returning()
+  const [created] = await db
+    .insert(suppliers)
+    .values(data as any)
+    .returning()
   return created
 }
 
@@ -68,8 +86,9 @@ export async function updateSupplier(id: string, data: UpdateSupplierDto) {
     .set({ ...data, updatedAt: new Date() } as any)
     .where(eq(suppliers.id, id))
     .returning()
-  
-  if (!updated) throw { status: 404, code: 'SUPPLIER_NOT_FOUND', message: 'Yetkazib beruvchi topilmadi' }
+
+  if (!updated)
+    throw { status: 404, code: 'SUPPLIER_NOT_FOUND', message: 'Yetkazib beruvchi topilmadi' }
   return updated
 }
 
@@ -80,10 +99,15 @@ export async function deleteSupplier(id: string) {
     .where(eq(purchaseOrders.supplierId, id))
 
   if (Number(orderCountRes?.count || 0) > 0) {
-    throw { status: 400, code: 'SUPPLIER_HAS_ORDERS', message: 'Bu yetkazib beruvchining buyurtmalari bor. O\'chirib bo\'lmaydi.' }
+    throw {
+      status: 400,
+      code: 'SUPPLIER_HAS_ORDERS',
+      message: "Bu yetkazib beruvchining buyurtmalari bor. O'chirib bo'lmaydi.",
+    }
   }
 
   const [deleted] = await db.delete(suppliers).where(eq(suppliers.id, id)).returning()
-  if (!deleted) throw { status: 404, code: 'SUPPLIER_NOT_FOUND', message: 'Yetkazib beruvchi topilmadi' }
+  if (!deleted)
+    throw { status: 404, code: 'SUPPLIER_NOT_FOUND', message: 'Yetkazib beruvchi topilmadi' }
   return deleted
 }

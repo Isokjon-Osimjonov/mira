@@ -12,11 +12,11 @@ export async function getLatestExchangeRate() {
     .from(exchangeRateSnapshots)
     .orderBy(desc(exchangeRateSnapshots.createdAt))
     .limit(1)
-    
+
   if (!latest) {
     throw { status: 404, code: 'EXCHANGE_RATE_NOT_FOUND', message: 'Valyuta kursi topilmadi' }
   }
-  
+
   return {
     krwToUzs: latest.krwToUzs,
     usdToKrw: latest.usdToKrw,
@@ -36,9 +36,9 @@ export async function getExchangeRateHistory() {
 
 export async function createManualExchangeRate(dto: CreateExchangeRateDto, adminId: string) {
   const { uzbCargoUsdPerKg } = await getSettings()
-  
+
   const cargoRateKrwPerKg = Math.round(uzbCargoUsdPerKg * dto.usdToKrw)
-  
+
   const [created] = await db
     .insert(exchangeRateSnapshots)
     .values({
@@ -50,30 +50,30 @@ export async function createManualExchangeRate(dto: CreateExchangeRateDto, admin
       createdBy: adminId,
     })
     .returning()
-    
+
   return created
 }
 
 export async function fetchAndSaveExchangeRate() {
   if (!env.EXCHANGE_RATE_API_KEY) {
-    throw { 
-      status: 400, 
-      code: 'API_KEY_MISSING', 
-      message: 'Exchange rate API key sozlanmagan' 
+    throw {
+      status: 400,
+      code: 'API_KEY_MISSING',
+      message: 'Exchange rate API key sozlanmagan',
     }
   }
 
   const url = `${env.EXCHANGE_RATE_API_URL}/${env.EXCHANGE_RATE_API_KEY}/latest/KRW`
-  
+
   try {
     const { data } = await axios.get(url)
-    
+
     const krwToUzs = Number(data.conversion_rates.UZS.toFixed(2))
     const usdToKrw = Math.round(1 / data.conversion_rates.USD)
-    
+
     const { uzbCargoUsdPerKg } = await getSettings()
     const cargoRateKrwPerKg = Math.round(uzbCargoUsdPerKg * usdToKrw)
-    
+
     const [created] = await db
       .insert(exchangeRateSnapshots)
       .values({
@@ -84,11 +84,15 @@ export async function fetchAndSaveExchangeRate() {
         createdBy: null,
       })
       .returning()
-      
+
     return created
   } catch (error: any) {
     if (axios.isAxiosError(error)) {
-      throw { status: 502, code: 'API_GATEWAY_ERROR', message: 'Valyuta kursi provayderidan xatolik qaytdi' }
+      throw {
+        status: 502,
+        code: 'API_GATEWAY_ERROR',
+        message: 'Valyuta kursi provayderidan xatolik qaytdi',
+      }
     }
     throw error
   }

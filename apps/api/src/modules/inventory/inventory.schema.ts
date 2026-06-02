@@ -1,9 +1,9 @@
 import { z } from 'zod'
 
 export const CreateBatchSchema = z.object({
-  productId: z.string().uuid('Mahsulot ID noto\'g\'ri'),
+  productId: z.string().uuid("Mahsulot ID noto'g'ri"),
   batchRef: z.string().optional().nullable(),
-  initialQty: z.number().int().positive('Miqdor musbat bo\'lishi kerak'),
+  initialQty: z.number().int().positive("Miqdor musbat bo'lishi kerak"),
   costPrice: z.coerce.string(),
   costCurrency: z.string().default('KRW'),
   expiryDate: z.string().optional().nullable(), // ISO date string

@@ -14,7 +14,7 @@ export async function getCart(customerId: string, regionCode: 'UZB' | 'KOR') {
       regionCode,
       items: [],
       summary: { itemCount: 0, subtotal: 0n, currency: 'KRW' },
-      autoApplyCoupons: []
+      autoApplyCoupons: [],
     }
   }
 
@@ -43,7 +43,10 @@ export async function getCart(customerId: string, regionCode: 'UZB' | 'KOR') {
         currency: productRegionalConfigs.currency,
         isAvailable: productRegionalConfigs.isAvailable,
       },
-      stockAvailable: sql<number>`COALESCE((SELECT SUM(current_qty) FROM inventory_batches WHERE product_id = ${products.id}), 0)`.mapWith(Number),
+      stockAvailable:
+        sql<number>`COALESCE((SELECT SUM(current_qty) FROM inventory_batches WHERE product_id = ${products.id}), 0)`.mapWith(
+          Number
+        ),
     })
     .from(cartItems)
     .innerJoin(products, eq(cartItems.productId, products.id))
@@ -60,7 +63,7 @@ export async function getCart(customerId: string, regionCode: 'UZB' | 'KOR') {
   let itemCount = 0
   let currency = 'KRW'
 
-  const processedItems = items.map(row => {
+  const processedItems = items.map((row) => {
     // If the product is not active or deleted, we still return it but it might need to be filtered out at checkout
     const qty = row.quantity
     const config = row.regionalConfig
@@ -97,11 +100,15 @@ export async function getCart(customerId: string, regionCode: 'UZB' | 'KOR') {
     regionCode,
     items: processedItems,
     summary: { itemCount, subtotal, currency },
-    autoApplyCoupons: []
+    autoApplyCoupons: [],
   }
 }
 
-async function validateAndCalcPrice(productId: string, regionCode: 'UZB' | 'KOR', quantity: number) {
+async function validateAndCalcPrice(
+  productId: string,
+  regionCode: 'UZB' | 'KOR',
+  quantity: number
+) {
   // 1. Verify product
   const [product] = await db.select().from(products).where(eq(products.id, productId)).limit(1)
   if (!product || product.deletedAt !== null) {
@@ -115,11 +122,20 @@ async function validateAndCalcPrice(productId: string, regionCode: 'UZB' | 'KOR'
   const [config] = await db
     .select()
     .from(productRegionalConfigs)
-    .where(and(eq(productRegionalConfigs.productId, productId), eq(productRegionalConfigs.regionCode, regionCode)))
+    .where(
+      and(
+        eq(productRegionalConfigs.productId, productId),
+        eq(productRegionalConfigs.regionCode, regionCode)
+      )
+    )
     .limit(1)
-    
+
   if (!config || !config.isAvailable) {
-    throw { status: 400, code: 'PRODUCT_NO_REGIONAL_CONFIG', message: 'Mahsulot ushbu hududda mavjud emas' }
+    throw {
+      status: 400,
+      code: 'PRODUCT_NO_REGIONAL_CONFIG',
+      message: 'Mahsulot ushbu hududda mavjud emas',
+    }
   }
 
   // 3. Check stock
@@ -127,15 +143,19 @@ async function validateAndCalcPrice(productId: string, regionCode: 'UZB' | 'KOR'
     .select({ total: sql<number>`SUM(${inventoryBatches.currentQty})`.mapWith(Number) })
     .from(inventoryBatches)
     .where(eq(inventoryBatches.productId, productId))
-  
+
   const stockAvailable = stockResult[0]?.total || 0
 
   // 4 & 5. Quantities
   if (quantity > stockAvailable) {
-    throw { status: 400, code: 'INSUFFICIENT_STOCK', message: 'Omborda yetarli mahsulot yo\'q' }
+    throw { status: 400, code: 'INSUFFICIENT_STOCK', message: "Omborda yetarli mahsulot yo'q" }
   }
   if (quantity < config.minOrderQty) {
-    throw { status: 400, code: 'INVALID_QUANTITY', message: `Minimal buyurtma miqdori: ${config.minOrderQty}` }
+    throw {
+      status: 400,
+      code: 'INVALID_QUANTITY',
+      message: `Minimal buyurtma miqdori: ${config.minOrderQty}`,
+    }
   }
 
   const isWholesale = quantity >= config.minWholesaleQty
@@ -165,26 +185,33 @@ export async function addItem(customerId: string, regionCode: 'UZB' | 'KOR', dto
     if (existingItem) {
       const newQty = existingItem.quantity + dto.quantity
       // Re-validate stock for new quantity
-      const { unitPrice: newUnitPrice } = await validateAndCalcPrice(dto.productId, regionCode, newQty)
-      
+      const { unitPrice: newUnitPrice } = await validateAndCalcPrice(
+        dto.productId,
+        regionCode,
+        newQty
+      )
+
       await tx
         .update(cartItems)
         .set({ quantity: newQty, priceSnapshot: newUnitPrice, updatedAt: new Date() })
         .where(eq(cartItems.id, existingItem.id))
     } else {
-      await tx
-        .insert(cartItems)
-        .values({
-          cartId: cart.id,
-          productId: dto.productId,
-          quantity: dto.quantity,
-          priceSnapshot: unitPrice,
-        })
+      await tx.insert(cartItems).values({
+        cartId: cart.id,
+        productId: dto.productId,
+        quantity: dto.quantity,
+        priceSnapshot: unitPrice,
+      })
     }
   })
 }
 
-export async function updateItemQuantity(customerId: string, regionCode: 'UZB' | 'KOR', itemId: string, quantity: number) {
+export async function updateItemQuantity(
+  customerId: string,
+  regionCode: 'UZB' | 'KOR',
+  itemId: string,
+  quantity: number
+) {
   return await db.transaction(async (tx) => {
     // SECURITY: verify ownership
     const item = await tx
@@ -193,7 +220,7 @@ export async function updateItemQuantity(customerId: string, regionCode: 'UZB' |
       .innerJoin(carts, eq(cartItems.cartId, carts.id))
       .where(eq(cartItems.id, itemId))
       .limit(1)
-      .then(res => res[0])
+      .then((res) => res[0])
 
     if (!item) {
       throw { status: 404, code: 'CART_ITEM_NOT_FOUND', message: 'Savatda mahsulot topilmadi' }
@@ -208,7 +235,7 @@ export async function updateItemQuantity(customerId: string, regionCode: 'UZB' |
     }
 
     const { unitPrice } = await validateAndCalcPrice(item.cartItem.productId, regionCode, quantity)
-    
+
     await tx
       .update(cartItems)
       .set({ quantity, priceSnapshot: unitPrice, updatedAt: new Date() })
@@ -224,7 +251,7 @@ export async function deleteItem(customerId: string, itemId: string) {
       .innerJoin(carts, eq(cartItems.cartId, carts.id))
       .where(eq(cartItems.id, itemId))
       .limit(1)
-      .then(res => res[0])
+      .then((res) => res[0])
 
     if (!item) {
       throw { status: 404, code: 'CART_ITEM_NOT_FOUND', message: 'Savatda mahsulot topilmadi' }
@@ -244,11 +271,15 @@ export async function clearCart(customerId: string) {
   }
 }
 
-export async function validateCartCoupon(customerId: string, regionCode: 'UZB' | 'KOR', code: string) {
+export async function validateCartCoupon(
+  customerId: string,
+  regionCode: 'UZB' | 'KOR',
+  code: string
+) {
   const cartData = await getCart(customerId, regionCode)
-  
+
   // Create an array mapping for validateCoupon matching the expected interface
-  const cartItemsMapped = cartData.items.map(item => ({
+  const cartItemsMapped = cartData.items.map((item) => ({
     productId: item.productId,
     categoryId: item.categoryId,
     brandName: item.brandName,
@@ -266,7 +297,7 @@ export async function validateCartCoupon(customerId: string, regionCode: 'UZB' |
     cartSubtotal: cartData.summary.subtotal,
     orderCount: 0, // Should realistically query orders table, but passed 0 as instructed for now
   })
-  
+
   return {
     valid: true,
     coupon: {

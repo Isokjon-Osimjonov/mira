@@ -53,18 +53,30 @@ export async function validateCoupon(params: {
 
   // 5. Region Mismatch
   if (coupon.regionCode && coupon.regionCode !== params.region) {
-    throw { status: 400, code: 'COUPON_REGION_MISMATCH', message: 'Kupon ushbu hududda amal qilmaydi' }
+    throw {
+      status: 400,
+      code: 'COUPON_REGION_MISMATCH',
+      message: 'Kupon ushbu hududda amal qilmaydi',
+    }
   }
 
   // 6. Max Uses Reached
   if (coupon.maxUsesTotal !== null && coupon.usageCount >= coupon.maxUsesTotal) {
-    throw { status: 400, code: 'COUPON_MAX_USES_REACHED', message: 'Kupondan foydalanish limiti tugagan' }
+    throw {
+      status: 400,
+      code: 'COUPON_MAX_USES_REACHED',
+      message: 'Kupondan foydalanish limiti tugagan',
+    }
   }
 
   // 7. Target Customer
   if (coupon.targetCustomerIds && coupon.targetCustomerIds.length > 0) {
     if (!coupon.targetCustomerIds.includes(params.customerId)) {
-      throw { status: 400, code: 'COUPON_NOT_ELIGIBLE_CUSTOMER', message: 'Siz ushbu kupondan foydalana olmaysiz' }
+      throw {
+        status: 400,
+        code: 'COUPON_NOT_ELIGIBLE_CUSTOMER',
+        message: 'Siz ushbu kupondan foydalana olmaysiz',
+      }
     }
   }
 
@@ -73,22 +85,41 @@ export async function validateCoupon(params: {
     const [redemptionCount] = await db
       .select({ count: sql<number>`count(*)` })
       .from(couponRedemptions)
-      .where(and(eq(couponRedemptions.couponId, coupon.id), eq(couponRedemptions.customerId, params.customerId)))
-      
+      .where(
+        and(
+          eq(couponRedemptions.couponId, coupon.id),
+          eq(couponRedemptions.customerId, params.customerId)
+        )
+      )
+
     const [userCouponCount] = await db
       .select({ count: sql<number>`count(*)` })
       .from(userCoupons)
-      .where(and(eq(userCoupons.couponId, coupon.id), eq(userCoupons.customerId, params.customerId), eq(userCoupons.isUsed, true)))
+      .where(
+        and(
+          eq(userCoupons.couponId, coupon.id),
+          eq(userCoupons.customerId, params.customerId),
+          eq(userCoupons.isUsed, true)
+        )
+      )
 
     if (Number(redemptionCount?.count || 0) > 0 || Number(userCouponCount?.count || 0) > 0) {
-      throw { status: 400, code: 'COUPON_ONE_PER_CUSTOMER', message: 'Siz allaqachon ushbu kupondan foydalangansiz' }
+      throw {
+        status: 400,
+        code: 'COUPON_ONE_PER_CUSTOMER',
+        message: 'Siz allaqachon ushbu kupondan foydalangansiz',
+      }
     }
   }
 
   // 9. First Order Only
   const orderCount = params.orderCount ?? 0
   if (coupon.firstOrderOnly && orderCount > 0) {
-    throw { status: 400, code: 'COUPON_FIRST_ORDER_ONLY', message: 'Ushbu kupon faqat birinchi buyurtma uchun' }
+    throw {
+      status: 400,
+      code: 'COUPON_FIRST_ORDER_ONLY',
+      message: 'Ushbu kupon faqat birinchi buyurtma uchun',
+    }
   }
 
   // 10. Calculate Eligible Subtotal & totalQty
@@ -121,19 +152,31 @@ export async function validateCoupon(params: {
   }
 
   if (eligibleSubtotal === 0n) {
-     // If the cart has no eligible items based on scope
-     throw { status: 400, code: 'COUPON_MIN_ORDER_NOT_MET', message: 'Savatda ushbu kupon uchun mos mahsulotlar yo\'q' }
+    // If the cart has no eligible items based on scope
+    throw {
+      status: 400,
+      code: 'COUPON_MIN_ORDER_NOT_MET',
+      message: "Savatda ushbu kupon uchun mos mahsulotlar yo'q",
+    }
   }
 
   // 11. Min Order Amount / KRW
   const minRequiredKrw = coupon.minOrderKrw ?? coupon.minOrderAmount
   if (minRequiredKrw && eligibleSubtotal < minRequiredKrw) {
-    throw { status: 400, code: 'COUPON_MIN_ORDER_NOT_MET', message: 'Buyurtma summasi kupon uchun yetarli emas' }
+    throw {
+      status: 400,
+      code: 'COUPON_MIN_ORDER_NOT_MET',
+      message: 'Buyurtma summasi kupon uchun yetarli emas',
+    }
   }
 
   // 12. Min Order Qty
   if (coupon.minOrderQty && totalQty < coupon.minOrderQty) {
-    throw { status: 400, code: 'COUPON_MIN_QTY_NOT_MET', message: 'Mahsulotlar soni kupon uchun yetarli emas' }
+    throw {
+      status: 400,
+      code: 'COUPON_MIN_QTY_NOT_MET',
+      message: 'Mahsulotlar soni kupon uchun yetarli emas',
+    }
   }
 
   // 13. Calculate Discount Amount
@@ -159,13 +202,18 @@ export async function validateCoupon(params: {
   return {
     coupon,
     discountAmount,
-    eligibleSubtotal
+    eligibleSubtotal,
   }
 }
 
 // Admin Methods
 
-export async function getCoupons(query: { page?: number, limit?: number, search?: string, status?: string }) {
+export async function getCoupons(query: {
+  page?: number
+  limit?: number
+  search?: string
+  status?: string
+}) {
   const page = query.page || 1
   const limit = query.limit || 20
   const offset = (page - 1) * limit
@@ -175,10 +223,10 @@ export async function getCoupons(query: { page?: number, limit?: number, search?
     where = and(where, eq(coupons.status, query.status as any)) as any
   }
   if (query.search) {
-    where = and(where, or(
-      ilike(coupons.code, `%${query.search}%`),
-      ilike(coupons.name, `%${query.search}%`)
-    )) as any
+    where = and(
+      where,
+      or(ilike(coupons.code, `%${query.search}%`), ilike(coupons.name, `%${query.search}%`))
+    ) as any
   }
 
   const items = await db
@@ -209,12 +257,16 @@ export async function getCoupons(query: { page?: number, limit?: number, search?
 
   return {
     items,
-    meta: { page, limit, total, hasNext: offset + limit < total, hasPrev: page > 1 }
+    meta: { page, limit, total, hasNext: offset + limit < total, hasPrev: page > 1 },
   }
 }
 
 export async function getCouponById(id: string) {
-  const [coupon] = await db.select().from(coupons).where(and(eq(coupons.id, id), isNull(coupons.deletedAt))).limit(1)
+  const [coupon] = await db
+    .select()
+    .from(coupons)
+    .where(and(eq(coupons.id, id), isNull(coupons.deletedAt)))
+    .limit(1)
   if (!coupon) throw { status: 404, code: 'COUPON_NOT_FOUND', message: 'Kupon topilmadi' }
 
   const redemptions = await db
@@ -248,11 +300,15 @@ export async function createCoupon(data: CreateCouponDto, adminId: string) {
 
   const cleanData: any = { ...data }
   if (data.value !== undefined) cleanData.value = BigInt(data.value)
-  if (data.valueKrw !== undefined && data.valueKrw !== null) cleanData.valueKrw = BigInt(data.valueKrw)
-  if (data.maxDiscountCap !== undefined && data.maxDiscountCap !== null) cleanData.maxDiscountCap = BigInt(data.maxDiscountCap)
-  if (data.maxDiscountKrw !== undefined && data.maxDiscountKrw !== null) cleanData.maxDiscountKrw = BigInt(data.maxDiscountKrw)
+  if (data.valueKrw !== undefined && data.valueKrw !== null)
+    cleanData.valueKrw = BigInt(data.valueKrw)
+  if (data.maxDiscountCap !== undefined && data.maxDiscountCap !== null)
+    cleanData.maxDiscountCap = BigInt(data.maxDiscountCap)
+  if (data.maxDiscountKrw !== undefined && data.maxDiscountKrw !== null)
+    cleanData.maxDiscountKrw = BigInt(data.maxDiscountKrw)
   if (data.minOrderAmount !== undefined) cleanData.minOrderAmount = BigInt(data.minOrderAmount)
-  if (data.minOrderKrw !== undefined && data.minOrderKrw !== null) cleanData.minOrderKrw = BigInt(data.minOrderKrw)
+  if (data.minOrderKrw !== undefined && data.minOrderKrw !== null)
+    cleanData.minOrderKrw = BigInt(data.minOrderKrw)
   if (data.startsAt) cleanData.startsAt = new Date(data.startsAt)
   if (data.expiresAt) cleanData.expiresAt = new Date(data.expiresAt)
 
@@ -269,20 +325,32 @@ export async function updateCoupon(id: string, data: UpdateCouponDto) {
     throw { status: 404, code: 'COUPON_NOT_FOUND', message: 'Kupon topilmadi' }
   }
   if (coupon.status === 'ARCHIVED') {
-    throw { status: 400, code: 'COUPON_ARCHIVED', message: 'Arxivlangan kuponni tahrirlab bo\'lmaydi' }
+    throw {
+      status: 400,
+      code: 'COUPON_ARCHIVED',
+      message: "Arxivlangan kuponni tahrirlab bo'lmaydi",
+    }
   }
 
   const cleanData: any = { ...data }
   if (data.value !== undefined) cleanData.value = BigInt(data.value)
-  if (data.valueKrw !== undefined && data.valueKrw !== null) cleanData.valueKrw = BigInt(data.valueKrw)
-  if (data.maxDiscountCap !== undefined && data.maxDiscountCap !== null) cleanData.maxDiscountCap = BigInt(data.maxDiscountCap)
-  if (data.maxDiscountKrw !== undefined && data.maxDiscountKrw !== null) cleanData.maxDiscountKrw = BigInt(data.maxDiscountKrw)
+  if (data.valueKrw !== undefined && data.valueKrw !== null)
+    cleanData.valueKrw = BigInt(data.valueKrw)
+  if (data.maxDiscountCap !== undefined && data.maxDiscountCap !== null)
+    cleanData.maxDiscountCap = BigInt(data.maxDiscountCap)
+  if (data.maxDiscountKrw !== undefined && data.maxDiscountKrw !== null)
+    cleanData.maxDiscountKrw = BigInt(data.maxDiscountKrw)
   if (data.minOrderAmount !== undefined) cleanData.minOrderAmount = BigInt(data.minOrderAmount)
-  if (data.minOrderKrw !== undefined && data.minOrderKrw !== null) cleanData.minOrderKrw = BigInt(data.minOrderKrw)
+  if (data.minOrderKrw !== undefined && data.minOrderKrw !== null)
+    cleanData.minOrderKrw = BigInt(data.minOrderKrw)
   if (data.startsAt) cleanData.startsAt = new Date(data.startsAt)
   if (data.expiresAt) cleanData.expiresAt = new Date(data.expiresAt)
 
-  const [updated] = await db.update(coupons).set({ ...cleanData, updatedAt: new Date() }).where(eq(coupons.id, id)).returning()
+  const [updated] = await db
+    .update(coupons)
+    .set({ ...cleanData, updatedAt: new Date() })
+    .where(eq(coupons.id, id))
+    .returning()
   return updated
 }
 
@@ -292,20 +360,32 @@ export async function updateCouponStatus(id: string, status: 'ACTIVE' | 'PAUSED'
     throw { status: 404, code: 'COUPON_NOT_FOUND', message: 'Kupon topilmadi' }
   }
   if (coupon.status === 'ARCHIVED') {
-    throw { status: 400, code: 'COUPON_ARCHIVED', message: 'Arxivlangan kuponni qayta faollashtirib bo\'lmaydi' }
+    throw {
+      status: 400,
+      code: 'COUPON_ARCHIVED',
+      message: "Arxivlangan kuponni qayta faollashtirib bo'lmaydi",
+    }
   }
 
-  const [updated] = await db.update(coupons).set({ status, updatedAt: new Date() }).where(eq(coupons.id, id)).returning()
+  const [updated] = await db
+    .update(coupons)
+    .set({ status, updatedAt: new Date() })
+    .where(eq(coupons.id, id))
+    .returning()
   return updated
 }
 
 export async function deleteCoupon(id: string) {
-  const [deleted] = await db.update(coupons).set({ deletedAt: new Date(), status: 'ARCHIVED', updatedAt: new Date() }).where(eq(coupons.id, id)).returning()
+  const [deleted] = await db
+    .update(coupons)
+    .set({ deletedAt: new Date(), status: 'ARCHIVED', updatedAt: new Date() })
+    .where(eq(coupons.id, id))
+    .returning()
   if (!deleted) throw { status: 404, code: 'COUPON_NOT_FOUND', message: 'Kupon topilmadi' }
   return deleted
 }
 
-export async function getCouponRedemptions(id: string, query: { page?: number, limit?: number }) {
+export async function getCouponRedemptions(id: string, query: { page?: number; limit?: number }) {
   const page = query.page || 1
   const limit = query.limit || 20
   const offset = (page - 1) * limit
@@ -337,6 +417,6 @@ export async function getCouponRedemptions(id: string, query: { page?: number, l
 
   return {
     items,
-    meta: { page, limit, total, hasNext: offset + limit < total, hasPrev: page > 1 }
+    meta: { page, limit, total, hasNext: offset + limit < total, hasPrev: page > 1 },
   }
 }

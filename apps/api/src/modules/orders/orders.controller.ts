@@ -1,9 +1,15 @@
 import type { Request, Response } from 'express'
 import * as service from './orders.service'
 import {
-  checkoutSchema, uploadReceiptSchema, manualOrderSchema,
-  confirmPaymentSchema, rejectPaymentSchema, shipOrderSchema,
-  cancelOrderSchema, refundOrderSchema, addExpenseSchema
+  checkoutSchema,
+  uploadReceiptSchema,
+  manualOrderSchema,
+  confirmPaymentSchema,
+  rejectPaymentSchema,
+  shipOrderSchema,
+  cancelOrderSchema,
+  refundOrderSchema,
+  addExpenseSchema,
 } from './orders.schema'
 
 // ─── Customer Endpoints ──────────────────────────────────────────────────
@@ -19,17 +25,24 @@ export async function checkout(req: Request, res: Response) {
     const safeData = {
       order: {
         ...data.order,
-        totalAmount: Number(data.order.totalAmount)
+        totalAmount: Number(data.order.totalAmount),
       },
-      paymentInfo: data.paymentInfo
+      paymentInfo: data.paymentInfo,
     }
-    
+
     return res.json({ data: safeData, error: null })
   } catch (e: any) {
     if (e.name === 'ZodError') {
-      return res.status(400).json({ data: null, error: { message: 'Ma\'lumotlar noto\'g\'ri', code: 'VALIDATION_ERROR', details: e.errors } })
+      return res
+        .status(400)
+        .json({
+          data: null,
+          error: { message: "Ma'lumotlar noto'g'ri", code: 'VALIDATION_ERROR', details: e.errors },
+        })
     }
-    return res.status(e.status ?? 500).json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
+    return res
+      .status(e.status ?? 500)
+      .json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
   }
 }
 
@@ -44,7 +57,9 @@ export async function getCustomerOrders(req: Request, res: Response) {
 
     return res.json({ data: result.items, meta: result.meta, error: null })
   } catch (e: any) {
-    return res.status(e.status ?? 500).json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
+    return res
+      .status(e.status ?? 500)
+      .json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
   }
 }
 
@@ -65,16 +80,18 @@ export async function getCustomerOrderDetail(req: Request, res: Response) {
       deliveryFeeActual: data.deliveryFeeActual ? Number(data.deliveryFeeActual) : null,
       refundAmount: data.refundAmount ? Number(data.refundAmount) : null,
       boxPriceSnapshot: data.boxPriceSnapshot ? Number(data.boxPriceSnapshot) : null,
-      items: data.items.map(item => ({
+      items: data.items.map((item) => ({
         ...item,
         unitPriceSnapshot: Number(item.unitPriceSnapshot),
-        subtotalSnapshot: Number(item.subtotalSnapshot)
-      }))
+        subtotalSnapshot: Number(item.subtotalSnapshot),
+      })),
     }
 
     return res.json({ data: safeData, error: null })
   } catch (e: any) {
-    return res.status(e.status ?? 500).json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
+    return res
+      .status(e.status ?? 500)
+      .json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
   }
 }
 
@@ -87,9 +104,16 @@ export async function uploadReceipt(req: Request, res: Response) {
     return res.json({ data: { id: data.id, status: data.status }, error: null })
   } catch (e: any) {
     if (e.name === 'ZodError') {
-      return res.status(400).json({ data: null, error: { message: 'Ma\'lumotlar noto\'g\'ri', code: 'VALIDATION_ERROR', details: e.errors } })
+      return res
+        .status(400)
+        .json({
+          data: null,
+          error: { message: "Ma'lumotlar noto'g'ri", code: 'VALIDATION_ERROR', details: e.errors },
+        })
     }
-    return res.status(e.status ?? 500).json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
+    return res
+      .status(e.status ?? 500)
+      .json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
   }
 }
 
@@ -106,7 +130,9 @@ export async function adminGetOrders(req: Request, res: Response) {
     const result = await service.adminGetOrders({ page, limit, status, region, search })
     return res.json({ data: result.items, meta: result.meta, error: null })
   } catch (e: any) {
-    return res.status(e.status ?? 500).json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
+    return res
+      .status(e.status ?? 500)
+      .json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
   }
 }
 
@@ -126,21 +152,23 @@ export async function adminGetOrderDetail(req: Request, res: Response) {
       deliveryFeeActual: data.deliveryFeeActual ? Number(data.deliveryFeeActual) : null,
       refundAmount: data.refundAmount ? Number(data.refundAmount) : null,
       boxPriceSnapshot: data.boxPriceSnapshot ? Number(data.boxPriceSnapshot) : null,
-      items: data.items.map(item => ({
+      items: data.items.map((item) => ({
         ...item,
         unitPriceSnapshot: Number(item.unitPriceSnapshot),
         subtotalSnapshot: Number(item.subtotalSnapshot),
-        costAtSaleKrw: item.costAtSaleKrw ? Number(item.costAtSaleKrw) : null
+        costAtSaleKrw: item.costAtSaleKrw ? Number(item.costAtSaleKrw) : null,
       })),
-      expenses: data.expenses.map(exp => ({
+      expenses: data.expenses.map((exp) => ({
         ...exp,
-        amountKrw: Number(exp.amountKrw)
-      }))
+        amountKrw: Number(exp.amountKrw),
+      })),
     }
 
     return res.json({ data: safeData, error: null })
   } catch (e: any) {
-    return res.status(e.status ?? 500).json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
+    return res
+      .status(e.status ?? 500)
+      .json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
   }
 }
 
@@ -154,17 +182,24 @@ export async function adminCreateOrder(req: Request, res: Response) {
     const safeData = {
       order: {
         ...data.order,
-        totalAmount: Number(data.order.totalAmount)
+        totalAmount: Number(data.order.totalAmount),
       },
-      paymentInfo: data.paymentInfo
+      paymentInfo: data.paymentInfo,
     }
-    
+
     return res.json({ data: safeData, error: null })
   } catch (e: any) {
     if (e.name === 'ZodError') {
-      return res.status(400).json({ data: null, error: { message: 'Ma\'lumotlar noto\'g\'ri', code: 'VALIDATION_ERROR', details: e.errors } })
+      return res
+        .status(400)
+        .json({
+          data: null,
+          error: { message: "Ma'lumotlar noto'g'ri", code: 'VALIDATION_ERROR', details: e.errors },
+        })
     }
-    return res.status(e.status ?? 500).json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
+    return res
+      .status(e.status ?? 500)
+      .json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
   }
 }
 
@@ -175,8 +210,16 @@ export async function confirmPayment(req: Request, res: Response) {
     const data = await service.confirmPayment(req.params.id, adminId, validated)
     return res.json({ data: { id: data.id, status: data.status }, error: null })
   } catch (e: any) {
-    if (e.name === 'ZodError') return res.status(400).json({ data: null, error: { message: 'Xato', code: 'VALIDATION_ERROR', details: e.errors } })
-    return res.status(e.status ?? 500).json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
+    if (e.name === 'ZodError')
+      return res
+        .status(400)
+        .json({
+          data: null,
+          error: { message: 'Xato', code: 'VALIDATION_ERROR', details: e.errors },
+        })
+    return res
+      .status(e.status ?? 500)
+      .json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
   }
 }
 
@@ -187,8 +230,16 @@ export async function rejectPayment(req: Request, res: Response) {
     const data = await service.rejectPayment(req.params.id, adminId, validated)
     return res.json({ data: { id: data.id, status: data.status }, error: null })
   } catch (e: any) {
-    if (e.name === 'ZodError') return res.status(400).json({ data: null, error: { message: 'Xato', code: 'VALIDATION_ERROR', details: e.errors } })
-    return res.status(e.status ?? 500).json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
+    if (e.name === 'ZodError')
+      return res
+        .status(400)
+        .json({
+          data: null,
+          error: { message: 'Xato', code: 'VALIDATION_ERROR', details: e.errors },
+        })
+    return res
+      .status(e.status ?? 500)
+      .json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
   }
 }
 
@@ -198,7 +249,9 @@ export async function startPacking(req: Request, res: Response) {
     const data = await service.startPacking(req.params.id, adminId)
     return res.json({ data: { id: data.id, status: data.status }, error: null })
   } catch (e: any) {
-    return res.status(e.status ?? 500).json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
+    return res
+      .status(e.status ?? 500)
+      .json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
   }
 }
 
@@ -209,8 +262,16 @@ export async function shipOrder(req: Request, res: Response) {
     const data = await service.shipOrder(req.params.id, adminId, validated)
     return res.json({ data: { id: data.id, status: data.status }, error: null })
   } catch (e: any) {
-    if (e.name === 'ZodError') return res.status(400).json({ data: null, error: { message: 'Xato', code: 'VALIDATION_ERROR', details: e.errors } })
-    return res.status(e.status ?? 500).json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
+    if (e.name === 'ZodError')
+      return res
+        .status(400)
+        .json({
+          data: null,
+          error: { message: 'Xato', code: 'VALIDATION_ERROR', details: e.errors },
+        })
+    return res
+      .status(e.status ?? 500)
+      .json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
   }
 }
 
@@ -220,7 +281,9 @@ export async function deliverOrder(req: Request, res: Response) {
     const data = await service.deliverOrder(req.params.id, adminId)
     return res.json({ data: { id: data.id, status: data.status }, error: null })
   } catch (e: any) {
-    return res.status(e.status ?? 500).json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
+    return res
+      .status(e.status ?? 500)
+      .json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
   }
 }
 
@@ -231,8 +294,16 @@ export async function cancelOrder(req: Request, res: Response) {
     const data = await service.cancelOrder(req.params.id, adminId, validated.reason)
     return res.json({ data: { id: data.id, status: data.status }, error: null })
   } catch (e: any) {
-    if (e.name === 'ZodError') return res.status(400).json({ data: null, error: { message: 'Xato', code: 'VALIDATION_ERROR', details: e.errors } })
-    return res.status(e.status ?? 500).json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
+    if (e.name === 'ZodError')
+      return res
+        .status(400)
+        .json({
+          data: null,
+          error: { message: 'Xato', code: 'VALIDATION_ERROR', details: e.errors },
+        })
+    return res
+      .status(e.status ?? 500)
+      .json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
   }
 }
 
@@ -243,23 +314,33 @@ export async function refundOrder(req: Request, res: Response) {
     const data = await service.refundOrder(req.params.id, adminId, validated)
     return res.json({ data: { id: data.id, status: data.status }, error: null })
   } catch (e: any) {
-    if (e.name === 'ZodError') return res.status(400).json({ data: null, error: { message: 'Xato', code: 'VALIDATION_ERROR', details: e.errors } })
-    return res.status(e.status ?? 500).json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
+    if (e.name === 'ZodError')
+      return res
+        .status(400)
+        .json({
+          data: null,
+          error: { message: 'Xato', code: 'VALIDATION_ERROR', details: e.errors },
+        })
+    return res
+      .status(e.status ?? 500)
+      .json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
   }
 }
 
 export async function getOrderExpenses(req: Request, res: Response) {
   try {
     const data = await service.getOrderExpenses(req.params.id)
-    
+
     const safeData = {
-      expenses: data.expenses.map(exp => ({ ...exp, amountKrw: Number(exp.amountKrw) })),
-      profitSummary: data.profitSummary
+      expenses: data.expenses.map((exp) => ({ ...exp, amountKrw: Number(exp.amountKrw) })),
+      profitSummary: data.profitSummary,
     }
 
     return res.json({ data: safeData, error: null })
   } catch (e: any) {
-    return res.status(e.status ?? 500).json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
+    return res
+      .status(e.status ?? 500)
+      .json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
   }
 }
 
@@ -268,11 +349,19 @@ export async function addOrderExpense(req: Request, res: Response) {
     const validated = addExpenseSchema.parse(req.body)
     const adminId = (req.user as any).sub
     const data = await service.addOrderExpense(req.params.id, adminId, validated)
-    
+
     const safeData = { ...data, amountKrw: Number(data.amountKrw) }
     return res.json({ data: safeData, error: null })
   } catch (e: any) {
-    if (e.name === 'ZodError') return res.status(400).json({ data: null, error: { message: 'Xato', code: 'VALIDATION_ERROR', details: e.errors } })
-    return res.status(e.status ?? 500).json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
+    if (e.name === 'ZodError')
+      return res
+        .status(400)
+        .json({
+          data: null,
+          error: { message: 'Xato', code: 'VALIDATION_ERROR', details: e.errors },
+        })
+    return res
+      .status(e.status ?? 500)
+      .json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
   }
 }

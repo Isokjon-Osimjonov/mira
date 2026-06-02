@@ -3,7 +3,7 @@ import { AdminLoginSchema } from './admin-auth.schema'
 import * as Service from './admin-auth.service'
 import { setRefreshCookie, clearRefreshCookie, getRefreshCookie } from '../../../lib/cookie'
 
-const ok  = <T>(res: Response, data: T, status = 200) =>
+const ok = <T>(res: Response, data: T, status = 200) =>
   res.status(status).json({ data, error: null })
 const err = (res: Response, status: number, message: string, code?: string) =>
   res.status(status).json({ data: null, error: { message, code } })
@@ -15,7 +15,7 @@ export async function login(req: Request, res: Response) {
   }
   try {
     const device = req.headers['user-agent']
-    const ip     = (req.headers['x-forwarded-for'] as string)?.split(',')[0] ?? req.ip
+    const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0] ?? req.ip
     const result = await Service.adminLogin(parsed.data, device, ip)
     setRefreshCookie(res, result.refreshToken)
     return ok(res, { accessToken: result.accessToken, user: result.user })

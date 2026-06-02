@@ -6,7 +6,7 @@ export async function getWishlist(customerId: string, regionCode: 'UZB' | 'KOR')
   const stockSq = db
     .select({
       productId: inventoryBatches.productId,
-      totalStock: sql<number>`SUM(${inventoryBatches.currentQty})`.as('total_stock')
+      totalStock: sql<number>`SUM(${inventoryBatches.currentQty})`.as('total_stock'),
     })
     .from(inventoryBatches)
     .groupBy(inventoryBatches.productId)
@@ -24,10 +24,13 @@ export async function getWishlist(customerId: string, regionCode: 'UZB' | 'KOR')
     })
     .from(wishlists)
     .innerJoin(products, eq(wishlists.productId, products.id))
-    .innerJoin(productRegionalConfigs, and(
-      eq(productRegionalConfigs.productId, products.id),
-      eq(productRegionalConfigs.regionCode, regionCode)
-    ))
+    .innerJoin(
+      productRegionalConfigs,
+      and(
+        eq(productRegionalConfigs.productId, products.id),
+        eq(productRegionalConfigs.regionCode, regionCode)
+      )
+    )
     .leftJoin(stockSq, eq(products.id, stockSq.productId))
     .where(and(eq(wishlists.customerId, customerId), isNull(products.deletedAt)))
 
@@ -41,7 +44,7 @@ export async function addToWishlist(customerId: string, productId: string) {
     .from(products)
     .where(and(eq(products.id, productId), eq(products.isActive, true), isNull(products.deletedAt)))
     .limit(1)
-  
+
   if (!product) throw { status: 404, code: 'PRODUCT_NOT_FOUND', message: 'Mahsulot topilmadi' }
 
   // Check if already in wishlist
@@ -50,8 +53,13 @@ export async function addToWishlist(customerId: string, productId: string) {
     .from(wishlists)
     .where(and(eq(wishlists.customerId, customerId), eq(wishlists.productId, productId)))
     .limit(1)
-  
-  if (existing) throw { status: 409, code: 'WISHLIST_ALREADY_EXISTS', message: 'Mahsulot allaqachon wishlistda' }
+
+  if (existing)
+    throw {
+      status: 409,
+      code: 'WISHLIST_ALREADY_EXISTS',
+      message: 'Mahsulot allaqachon wishlistda',
+    }
 
   const [created] = await db.insert(wishlists).values({ customerId, productId }).returning()
   return created
@@ -62,7 +70,8 @@ export async function removeFromWishlist(customerId: string, productId: string) 
     .delete(wishlists)
     .where(and(eq(wishlists.customerId, customerId), eq(wishlists.productId, productId)))
     .returning()
-  
-  if (!deleted) throw { status: 404, code: 'WISHLIST_NOT_FOUND', message: 'Mahsulot wishlistda topilmadi' }
+
+  if (!deleted)
+    throw { status: 404, code: 'WISHLIST_NOT_FOUND', message: 'Mahsulot wishlistda topilmadi' }
   return deleted
 }

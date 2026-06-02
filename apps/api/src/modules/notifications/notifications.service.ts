@@ -3,7 +3,10 @@ import { notificationsLog, customers } from '@mira/db'
 import { eq, and, sql, desc, isNull, inArray } from 'drizzle-orm'
 import { notifyCustomer } from '../../bot/helpers/notify'
 
-export async function getNotifications(customerId: string, query: { page?: number, limit?: number, unreadOnly?: boolean }) {
+export async function getNotifications(
+  customerId: string,
+  query: { page?: number; limit?: number; unreadOnly?: boolean }
+) {
   const page = query.page || 1
   const limit = query.limit || 20
   const offset = (page - 1) * limit
@@ -25,7 +28,7 @@ export async function getNotifications(customerId: string, query: { page?: numbe
     .select({ count: sql<number>`count(*)` })
     .from(notificationsLog)
     .where(where)
-  
+
   const [unreadRes] = await db
     .select({ count: sql<number>`count(*)` })
     .from(notificationsLog)
@@ -34,12 +37,12 @@ export async function getNotifications(customerId: string, query: { page?: numbe
   const total = Number(countRes.count)
 
   return {
-    items: items.map(item => ({
+    items: items.map((item) => ({
       ...item,
-      orderId: item.data && (item.data as any).orderId ? (item.data as any).orderId : item.orderId
+      orderId: item.data && (item.data as any).orderId ? (item.data as any).orderId : item.orderId,
     })),
     unreadCount: Number(unreadRes.count),
-    meta: { page, limit, total, hasNext: offset + limit < total, hasPrev: page > 1 }
+    meta: { page, limit, total, hasNext: offset + limit < total, hasPrev: page > 1 },
   }
 }
 
@@ -48,7 +51,7 @@ export async function getUnreadCount(customerId: string) {
     .select({ count: sql<number>`count(*)` })
     .from(notificationsLog)
     .where(and(eq(notificationsLog.customerId, customerId), isNull(notificationsLog.readAt)))
-  
+
   return Number(res?.count || 0)
 }
 
@@ -56,10 +59,13 @@ export async function markAsRead(customerId: string, notificationId: string) {
   const [updated] = await db
     .update(notificationsLog)
     .set({ readAt: new Date() })
-    .where(and(eq(notificationsLog.id, notificationId), eq(notificationsLog.customerId, customerId)))
+    .where(
+      and(eq(notificationsLog.id, notificationId), eq(notificationsLog.customerId, customerId))
+    )
     .returning()
-  
-  if (!updated) throw { status: 404, code: 'NOTIFICATION_NOT_FOUND', message: 'Bildirishnoma topilmadi' }
+
+  if (!updated)
+    throw { status: 404, code: 'NOTIFICATION_NOT_FOUND', message: 'Bildirishnoma topilmadi' }
   return updated
 }
 
@@ -82,8 +88,11 @@ export async function sendManualNotification(data: {
   if (data.customerIds && data.customerIds.length > 0) {
     targetCustomerIds = data.customerIds
   } else {
-    const all = await db.select({ id: customers.id }).from(customers).where(eq(customers.isActive, true))
-    targetCustomerIds = all.map(c => c.id)
+    const all = await db
+      .select({ id: customers.id })
+      .from(customers)
+      .where(eq(customers.isActive, true))
+    targetCustomerIds = all.map((c) => c.id)
   }
 
   let sentCount = 0
@@ -102,14 +111,18 @@ export async function sendManualNotification(data: {
 
     // If Telegram
     if (data.channel === 'TELEGRAM' || data.channel === 'BOTH') {
-      const [customer] = await db.select({ telegramId: customers.telegramId }).from(customers).where(eq(customers.id, cid)).limit(1)
+      const [customer] = await db
+        .select({ telegramId: customers.telegramId })
+        .from(customers)
+        .where(eq(customers.id, cid))
+        .limit(1)
       if (customer?.telegramId) {
         await notifyCustomer(customer.telegramId, `<b>${data.title}</b>\n\n${data.body}`)
       }
     }
-    
+
     // Push notification logic would go here (Firebase/Expo)
-    
+
     sentCount++
   }
 

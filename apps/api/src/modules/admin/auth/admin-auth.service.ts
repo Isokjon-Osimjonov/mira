@@ -10,21 +10,16 @@ export async function adminLogin(dto: AdminLoginDto, deviceInfo?: string, ipAddr
   const [admin] = await db
     .select()
     .from(adminUsers)
-    .where(
-      and(
-        eq(adminUsers.email, dto.email),
-        eq(adminUsers.isActive, true)
-      )
-    )
+    .where(and(eq(adminUsers.email, dto.email), eq(adminUsers.isActive, true)))
     .limit(1)
 
   if (!admin) {
-    throw { status: 401, code: 'INVALID_CREDENTIALS', message: 'Email yoki parol noto\'g\'ri' }
+    throw { status: 401, code: 'INVALID_CREDENTIALS', message: "Email yoki parol noto'g'ri" }
   }
 
   const valid = await bcrypt.compare(dto.password, admin.passwordHash)
   if (!valid) {
-    throw { status: 401, code: 'INVALID_CREDENTIALS', message: 'Email yoki parol noto\'g\'ri' }
+    throw { status: 401, code: 'INVALID_CREDENTIALS', message: "Email yoki parol noto'g'ri" }
   }
 
   // Get role permissions
@@ -35,44 +30,41 @@ export async function adminLogin(dto: AdminLoginDto, deviceInfo?: string, ipAddr
       .from(rolePermissions)
       .where(eq(rolePermissions.roleId, admin.roleId))
 
-    permissions = perms.map(p => `${p.resource}:${p.action}`)
+    permissions = perms.map((p) => `${p.resource}:${p.action}`)
   }
 
   // Update last login
-  await db
-    .update(adminUsers)
-    .set({ lastLoginAt: new Date() })
-    .where(eq(adminUsers.id, admin.id))
+  await db.update(adminUsers).set({ lastLoginAt: new Date() }).where(eq(adminUsers.id, admin.id))
 
-  const accessToken  = signAccess({
-    sub:         admin.id,
-    type:        'admin',
-    email:       admin.email,
-    roleId:      admin.roleId ?? null,
+  const accessToken = signAccess({
+    sub: admin.id,
+    type: 'admin',
+    email: admin.email,
+    roleId: admin.roleId ?? null,
     isSuperAdmin: admin.isSuperAdmin ?? false,
   })
   const refreshToken = signRefresh({ sub: admin.id, type: 'admin' })
-  const tokenHash    = hashToken(refreshToken)
-  const familyId     = generateToken().slice(0, 32)
+  const tokenHash = hashToken(refreshToken)
+  const familyId = generateToken().slice(0, 32)
 
   await db.insert(refreshTokens).values({
-    token:       tokenHash,
+    token: tokenHash,
     adminUserId: admin.id,
     familyId,
-    deviceInfo:  deviceInfo ?? null,
-    ipAddress:   ipAddress ?? null,
-    expiresAt:   new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    deviceInfo: deviceInfo ?? null,
+    ipAddress: ipAddress ?? null,
+    expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
   })
 
   return {
     accessToken,
     refreshToken,
     user: {
-      id:          admin.id,
-      email:       admin.email,
-      fullName:    admin.fullName,
+      id: admin.id,
+      email: admin.email,
+      fullName: admin.fullName,
       isSuperAdmin: admin.isSuperAdmin ?? false,
-      role:        admin.roleId ? { id: admin.roleId, permissions } : null,
+      role: admin.roleId ? { id: admin.roleId, permissions } : null,
     },
   }
 }
@@ -90,7 +82,7 @@ export async function refreshAdminToken(rawRefreshToken: string) {
   }
 
   const tokenHash = hashToken(rawRefreshToken)
-  const [stored]  = await db
+  const [stored] = await db
     .select()
     .from(refreshTokens)
     .where(
@@ -120,20 +112,22 @@ export async function refreshAdminToken(rawRefreshToken: string) {
     .set({ isRevoked: true, revokedAt: new Date(), revokedReason: 'ROTATION' })
     .where(eq(refreshTokens.id, stored.id))
 
-  const newAccess  = signAccess({
-    sub: admin.id, type: 'admin',
-    email: admin.email, roleId: admin.roleId ?? null,
+  const newAccess = signAccess({
+    sub: admin.id,
+    type: 'admin',
+    email: admin.email,
+    roleId: admin.roleId ?? null,
     isSuperAdmin: admin.isSuperAdmin ?? false,
   })
   const newRefresh = signRefresh({ sub: admin.id, type: 'admin' })
 
   await db.insert(refreshTokens).values({
-    token:       hashToken(newRefresh),
+    token: hashToken(newRefresh),
     adminUserId: admin.id,
-    familyId:    stored.familyId,
-    deviceInfo:  stored.deviceInfo,
-    ipAddress:   stored.ipAddress,
-    expiresAt:   new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    familyId: stored.familyId,
+    deviceInfo: stored.deviceInfo,
+    ipAddress: stored.ipAddress,
+    expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
   })
 
   // Get permissions
@@ -143,18 +137,18 @@ export async function refreshAdminToken(rawRefreshToken: string) {
       .select({ resource: rolePermissions.resource, action: rolePermissions.action })
       .from(rolePermissions)
       .where(eq(rolePermissions.roleId, admin.roleId))
-    permissions = perms.map(p => `${p.resource}:${p.action}`)
+    permissions = perms.map((p) => `${p.resource}:${p.action}`)
   }
 
   return {
     accessToken: newAccess,
     refreshToken: newRefresh,
     user: {
-      id:          admin.id,
-      email:       admin.email,
-      fullName:    admin.fullName,
+      id: admin.id,
+      email: admin.email,
+      fullName: admin.fullName,
       isSuperAdmin: admin.isSuperAdmin ?? false,
-      role:        admin.roleId ? { id: admin.roleId, permissions } : null,
+      role: admin.roleId ? { id: admin.roleId, permissions } : null,
     },
   }
 }

@@ -1,13 +1,13 @@
 import { createServer } from 'http'
-import { createApp }   from './app'
-import { initSocket }  from './config/socket'
-import { pool }        from './config/db'
-import { env }         from './config/env'
-import { startBot }    from './bot/bot'
+import { createApp } from './app'
+import { initSocket } from './config/socket'
+import { pool } from './config/db'
+import { env } from './config/env'
+import { startBot } from './bot/bot'
 import { initCronJobs } from './config/cron'
 
 async function bootstrap() {
-  const app        = createApp()
+  const app = createApp()
   const httpServer = createServer(app)
 
   initSocket(httpServer)
@@ -33,7 +33,7 @@ async function bootstrap() {
   }
 
   process.on('SIGTERM', () => shutdown('SIGTERM'))
-  process.on('SIGINT',  () => shutdown('SIGINT'))
+  process.on('SIGINT', () => shutdown('SIGINT'))
 }
 
 bootstrap().catch((err) => {

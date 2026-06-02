@@ -13,7 +13,7 @@ export async function getProducts(req: Request, res: Response, next: NextFunctio
       region: (region as 'UZB' | 'KOR') || 'UZB',
       sort: sort as string,
       q: q as string,
-      isAdmin: false
+      isAdmin: false,
     })
     res.json({ data: result.items, meta: result.meta, error: null })
   } catch (err) {
@@ -51,7 +51,7 @@ export async function getProductsByCategorySlug(req: Request, res: Response, nex
       brand: brand as string,
       region: (region as 'UZB' | 'KOR') || 'UZB',
       sort: sort as string,
-      q: q as string
+      q: q as string,
     })
     res.json({ data: result.items, meta: result.meta, error: null })
   } catch (err) {
@@ -71,7 +71,7 @@ export async function getProductsAdmin(req: Request, res: Response, next: NextFu
       region: (region as 'UZB' | 'KOR') || 'UZB',
       sort: sort as string,
       q: q as string,
-      isAdmin: true
+      isAdmin: true,
     })
     res.json({ data: result.items, meta: result.meta, error: null })
   } catch (err) {

@@ -9,20 +9,22 @@ export async function sendPushNotification(params: {
   data?: Record<string, unknown>
 }): Promise<void> {
   const { token, title, body, data } = params
-  
+
   // Validate token format
   if (!token || !Expo.isExpoPushToken(token)) return
-  
+
   try {
-    const messages = [{
-      to: token,
-      sound: 'default' as const,
-      title,
-      body,
-      data: data ?? {},
-      badge: 1,
-    }]
-    
+    const messages = [
+      {
+        to: token,
+        sound: 'default' as const,
+        title,
+        body,
+        data: data ?? {},
+        badge: 1,
+      },
+    ]
+
     const chunks = expo.chunkPushNotifications(messages)
     for (const chunk of chunks) {
       await expo.sendPushNotificationsAsync(chunk)

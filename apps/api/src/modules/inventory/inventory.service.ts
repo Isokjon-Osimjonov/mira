@@ -1,7 +1,11 @@
 import { db } from '../../config/db'
-import { 
-  inventoryBatches, stockMovements, batchAdjustments, 
-  products, settings, adminUsers 
+import {
+  inventoryBatches,
+  stockMovements,
+  batchAdjustments,
+  products,
+  settings,
+  adminUsers,
 } from '@mira/db'
 import { eq, and, sql, desc, asc, min } from 'drizzle-orm'
 import { emit } from '../../config/socket'
@@ -20,18 +24,18 @@ export async function getStockSummary() {
       brandName: products.brandName,
       totalQty: sql<number>`SUM(${inventoryBatches.currentQty})`,
       batchCount: sql<number>`COUNT(${inventoryBatches.id})`,
-      nearestExpiryDate: min(inventoryBatches.expiryDate)
+      nearestExpiryDate: min(inventoryBatches.expiryDate),
     })
     .from(products)
     .leftJoin(inventoryBatches, eq(products.id, inventoryBatches.productId))
     .groupBy(products.id)
     .orderBy(products.name)
 
-  return summary.map(item => ({
+  return summary.map((item) => ({
     ...item,
     totalQty: Number(item.totalQty || 0),
     batchCount: Number(item.batchCount || 0),
-    isLowStock: Number(item.totalQty || 0) <= threshold
+    isLowStock: Number(item.totalQty || 0) <= threshold,
   }))
 }
 
@@ -51,7 +55,7 @@ export async function createBatch(data: CreateBatchDto, adminId: string) {
         notes: data.notes,
       })
       .returning()
-      
+
     const newBatch = batchResult[0]
 
     // 2. Insert stock movement
@@ -63,7 +67,7 @@ export async function createBatch(data: CreateBatchDto, adminId: string) {
       qtyBefore: 0,
       qtyAfter: data.initialQty,
       performedBy: adminId,
-      note: 'Yangi partiya qabul qilindi'
+      note: 'Yangi partiya qabul qilindi',
     })
 
     // 3. Check low stock threshold
@@ -71,16 +75,20 @@ export async function createBatch(data: CreateBatchDto, adminId: string) {
     const threshold = appSettings?.lowStockThreshold || 10
 
     const [stock] = await tx
-      .select({ 
+      .select({
         total: sql<number>`SUM(${inventoryBatches.currentQty})`,
-        count: sql<number>`COUNT(${inventoryBatches.id})`
+        count: sql<number>`COUNT(${inventoryBatches.id})`,
       })
       .from(inventoryBatches)
       .where(eq(inventoryBatches.productId, data.productId))
 
     const totalQty = Number(stock.total || 0)
     const batchCount = Number(stock.count || 0)
-    const [product] = await tx.select().from(products).where(eq(products.id, data.productId)).limit(1)
+    const [product] = await tx
+      .select()
+      .from(products)
+      .where(eq(products.id, data.productId))
+      .limit(1)
 
     if (totalQty <= threshold) {
       emit.stockLow({
@@ -89,13 +97,13 @@ export async function createBatch(data: CreateBatchDto, adminId: string) {
         barcode: product.barcode,
         currentQty: totalQty,
         threshold,
-        batchCount
+        batchCount,
       })
       await notifyLowStock({
         productName: product.name,
         barcode: product.barcode,
         currentQty: totalQty,
-        threshold
+        threshold,
       })
     }
 
@@ -122,18 +130,18 @@ export async function updateBatch(id: string, data: UpdateBatchDto, adminId: str
     if (!batch) throw { status: 404, message: 'Partiya topilmadi' }
 
     const updates: any = { updatedAt: new Date() }
-    
+
     // Log adjustments and movements
     if (data.currentQty !== undefined && data.currentQty !== batch.currentQty) {
       const delta = data.currentQty - batch.currentQty
-      
+
       await tx.insert(batchAdjustments).values({
         batchId: id,
         adminId,
         fieldChanged: 'current_qty',
         oldValue: batch.currentQty.toString(),
         newValue: data.currentQty.toString(),
-        reason: data.reason
+        reason: data.reason,
       })
 
       await tx.insert(stockMovements).values({
@@ -144,7 +152,7 @@ export async function updateBatch(id: string, data: UpdateBatchDto, adminId: str
         qtyBefore: batch.currentQty,
         qtyAfter: data.currentQty,
         performedBy: adminId,
-        note: data.reason
+        note: data.reason,
       })
 
       updates.currentQty = data.currentQty
@@ -157,7 +165,7 @@ export async function updateBatch(id: string, data: UpdateBatchDto, adminId: str
         fieldChanged: 'expiry_date',
         oldValue: batch.expiryDate || 'null',
         newValue: data.expiryDate || 'null',
-        reason: data.reason
+        reason: data.reason,
       })
       updates.expiryDate = data.expiryDate
     }
@@ -171,7 +179,7 @@ export async function updateBatch(id: string, data: UpdateBatchDto, adminId: str
           fieldChanged: 'cost_price',
           oldValue: batch.costPrice.toString(),
           newValue: data.costPrice,
-          reason: data.reason
+          reason: data.reason,
         })
         updates.costPrice = newCost
       }

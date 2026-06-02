@@ -1,5 +1,12 @@
 import { db } from '../../config/db'
-import { products, productRegionalConfigs, inventoryBatches, exchangeRateSnapshots, categories, cartItems } from '@mira/db'
+import {
+  products,
+  productRegionalConfigs,
+  inventoryBatches,
+  exchangeRateSnapshots,
+  categories,
+  cartItems,
+} from '@mira/db'
 import { eq, and, isNull, sql, desc, asc, ilike, or, inArray } from 'drizzle-orm'
 import type { CreateProductDto, UpdateProductDto, UpdatePricingDto } from './products.schema'
 
@@ -41,19 +48,22 @@ export async function getProducts(query: {
     where = and(where, eq(products.brandName, query.brand))
   }
   if (query.q) {
-    where = gardens(where, or(
-      ilike(products.name, `%${query.q}%`),
-      ilike(products.barcode, `%${query.q}%`),
-      ilike(products.sku, `%${query.q}%`),
-      ilike(products.brandName, `%${query.q}%`)
-    ))
+    where = gardens(
+      where,
+      or(
+        ilike(products.name, `%${query.q}%`),
+        ilike(products.barcode, `%${query.q}%`),
+        ilike(products.sku, `%${query.q}%`),
+        ilike(products.brandName, `%${query.q}%`)
+      )
+    )
   }
 
   // Stock subquery
   const stockSq = db
     .select({
       productId: inventoryBatches.productId,
-      totalStock: sql<number>`SUM(${inventoryBatches.currentQty})`.as('total_stock')
+      totalStock: sql<number>`SUM(${inventoryBatches.currentQty})`.as('total_stock'),
     })
     .from(inventoryBatches)
     .groupBy(inventoryBatches.productId)
@@ -76,14 +86,17 @@ export async function getProducts(query: {
         wholesalePrice: productRegionalConfigs.wholesalePrice,
         currency: productRegionalConfigs.currency,
         isAvailable: productRegionalConfigs.isAvailable,
-      }
+      },
     })
     .from(products)
     .leftJoin(stockSq, eq(products.id, stockSq.productId))
-    .leftJoin(productRegionalConfigs, and(
-      eq(products.id, productRegionalConfigs.productId),
-      eq(productRegionalConfigs.regionCode, query.region || 'UZB')
-    ))
+    .leftJoin(
+      productRegionalConfigs,
+      and(
+        eq(products.id, productRegionalConfigs.productId),
+        eq(productRegionalConfigs.regionCode, query.region || 'UZB')
+      )
+    )
     .where(where)
 
   // Count
@@ -99,24 +112,23 @@ export async function getProducts(query: {
   if (query.sort === 'newest') orderBy = desc(products.createdAt)
   if (query.sort === 'popular') orderBy = desc(products.sortOrder)
 
-  const items = await baseQuery
-    .orderBy(orderBy)
-    .limit(limit)
-    .offset(offset)
+  const items = await baseQuery.orderBy(orderBy).limit(limit).offset(offset)
 
-  const processedItems = items.map(item => {
+  const processedItems = items.map((item) => {
     const retailPriceKrw = Number(item.regionalConfig?.retailPrice || 0)
     const wholesalePriceKrw = Number(item.regionalConfig?.wholesalePrice || 0)
-    
+
     return {
       ...item,
-      regionalConfig: item.regionalConfig ? {
-        ...item.regionalConfig,
-        retailPriceKrw,
-        wholesalePriceKrw,
-        retailPriceUzs: Math.round((retailPriceKrw * krwToUzs) / 100) * 100,
-        wholesalePriceUzs: Math.round((wholesalePriceKrw * krwToUzs) / 100) * 100,
-      } : null
+      regionalConfig: item.regionalConfig
+        ? {
+            ...item.regionalConfig,
+            retailPriceKrw,
+            wholesalePriceKrw,
+            retailPriceUzs: Math.round((retailPriceKrw * krwToUzs) / 100) * 100,
+            wholesalePriceUzs: Math.round((wholesalePriceKrw * krwToUzs) / 100) * 100,
+          }
+        : null,
     }
   })
 
@@ -126,8 +138,8 @@ export async function getProducts(query: {
       total: Number(totalCount.count),
       page,
       limit,
-      totalPages: Math.ceil(Number(totalCount.count) / limit)
-    }
+      totalPages: Math.ceil(Number(totalCount.count) / limit),
+    },
   }
 }
 
@@ -140,11 +152,7 @@ export async function getProductById(id: string, region: 'UZB' | 'KOR' = 'UZB') 
   const rate = await getLatestExchangeRate()
   const krwToUzs = rate?.krwToUzs || 0
 
-  const [product] = await db
-    .select()
-    .from(products)
-    .where(eq(products.id, id))
-    .limit(1)
+  const [product] = await db.select().from(products).where(eq(products.id, id)).limit(1)
 
   if (!product) throw { status: 404, message: 'Mahsulot topilmadi' }
 
@@ -158,7 +166,7 @@ export async function getProductById(id: string, region: 'UZB' | 'KOR' = 'UZB') 
     .from(inventoryBatches)
     .where(eq(inventoryBatches.productId, id))
 
-  const processedConfigs = configs.map(c => {
+  const processedConfigs = configs.map((c) => {
     const retailPriceKrw = Number(c.retailPrice)
     const wholesalePriceKrw = Number(c.wholesalePrice)
     return {
@@ -174,7 +182,7 @@ export async function getProductById(id: string, region: 'UZB' | 'KOR' = 'UZB') 
     ...product,
     totalStock: Number(stock[0]?.total || 0),
     regionalConfigs: processedConfigs,
-    exchangeRate: rate
+    exchangeRate: rate,
   }
 }
 
@@ -184,16 +192,12 @@ export async function getBrands() {
     .from(products)
     .where(and(eq(products.isActive, true), isNull(products.deletedAt)))
     .orderBy(products.brandName)
-  
-  return result.map(r => r.brandName)
+
+  return result.map((r) => r.brandName)
 }
 
 export async function getProductsByCategorySlug(slug: string, query: any) {
-  const [category] = await db
-    .select()
-    .from(categories)
-    .where(eq(categories.slug, slug))
-    .limit(1)
+  const [category] = await db.select().from(categories).where(eq(categories.slug, slug)).limit(1)
 
   if (!category) throw { status: 404, message: 'Kategoriya topilmadi' }
 
@@ -210,17 +214,20 @@ export async function createProduct(data: CreateProductDto) {
       .from(products)
       .where(or(eq(products.barcode, data.barcode), eq(products.sku, data.sku)))
       .limit(1)
-    
+
     if (existing) {
       throw { status: 400, message: 'Bunday barkod yoki SKU ga ega mahsulot mavjud' }
     }
 
-    const [newProduct] = await tx.insert(products).values(productData as any).returning()
+    const [newProduct] = await tx
+      .insert(products)
+      .values(productData as any)
+      .returning()
 
     // Create regional configs
     const regions: ('UZB' | 'KOR')[] = ['UZB', 'KOR']
     for (const region of regions) {
-      const config = regionalConfigs?.find(c => c.regionCode === region)
+      const config = regionalConfigs?.find((c) => c.regionCode === region)
       await tx.insert(productRegionalConfigs).values({
         productId: newProduct.id,
         regionCode: region,
@@ -239,13 +246,13 @@ export async function createProduct(data: CreateProductDto) {
 
 export async function updateProduct(id: string, data: UpdateProductDto) {
   const { regionalConfigs, ...productData } = data
-  
+
   const [updated] = await db
     .update(products)
     .set({ ...productData, updatedAt: new Date() } as any)
     .where(eq(products.id, id))
     .returning()
-  
+
   if (!updated) throw { status: 404, message: 'Mahsulot topilmadi' }
   return updated
 }
@@ -257,9 +264,9 @@ export async function deleteProduct(id: string) {
       .set({ deletedAt: new Date(), updatedAt: new Date() })
       .where(eq(products.id, id))
       .returning()
-    
+
     if (!deleted) throw { status: 404, message: 'Mahsulot topilmadi' }
-    
+
     // Clear cart items rule
     await tx.delete(cartItems).where(eq(cartItems.productId, id))
 
@@ -278,12 +285,14 @@ export async function updatePricing(id: string, data: UpdatePricingDto) {
           minWholesaleQty: config.minWholesaleQty,
           minOrderQty: config.minOrderQty,
           isAvailable: config.isAvailable,
-          updatedAt: new Date()
+          updatedAt: new Date(),
         })
-        .where(and(
-          eq(productRegionalConfigs.productId, id),
-          eq(productRegionalConfigs.regionCode, config.regionCode)
-        ))
+        .where(
+          and(
+            eq(productRegionalConfigs.productId, id),
+            eq(productRegionalConfigs.regionCode, config.regionCode)
+          )
+        )
     }
     return { success: true }
   })

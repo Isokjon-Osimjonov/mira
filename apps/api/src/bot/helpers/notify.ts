@@ -26,12 +26,12 @@ export async function notifyNewOrder(data: {
 }): Promise<void> {
   await sendAdminAlert(
     `🛒 <b>YANGI BUYURTMA!</b>\n` +
-    `━━━━━━━━━━━━━━━━━━━━\n` +
-    `📦 <b>${data.orderNumber}</b>\n` +
-    `👤 ${data.customerName} ${data.customerPhone}\n` +
-    `🌍 ${data.region} | ${data.itemCount} ta mahsulot\n` +
-    `💰 ₩${data.totalAmount.toLocaleString()}\n` +
-    `⏰ To'lov kutilmoqda`
+      `━━━━━━━━━━━━━━━━━━━━\n` +
+      `📦 <b>${data.orderNumber}</b>\n` +
+      `👤 ${data.customerName} ${data.customerPhone}\n` +
+      `🌍 ${data.region} | ${data.itemCount} ta mahsulot\n` +
+      `💰 ₩${data.totalAmount.toLocaleString()}\n` +
+      `⏰ To'lov kutilmoqda`
   )
 }
 
@@ -44,9 +44,9 @@ export async function notifyPaymentSubmitted(data: {
 }): Promise<void> {
   await sendAdminAlert(
     `💳 <b>TO'LOV YUKLANDI!</b>\n` +
-    `📦 ${data.orderNumber} — ${data.customerName}\n` +
-    `🏦 ${data.paymentMethod}: ${data.paymentAmount}\n` +
-    `✅ Tekshiring: admin.miracosmetics.uz`
+      `📦 ${data.orderNumber} — ${data.customerName}\n` +
+      `🏦 ${data.paymentMethod}: ${data.paymentAmount}\n` +
+      `✅ Tekshiring: admin.miracosmetics.uz`
   )
 }
 
@@ -59,9 +59,9 @@ export async function notifyLowStock(data: {
 }): Promise<void> {
   await sendAdminAlert(
     `⚠️ <b>STOK KAMAYDI!</b>\n` +
-    `💄 ${data.productName}\n` +
-    `📊 Qoldi: ${data.currentQty} dona (limit: ${data.threshold})\n` +
-    `🔗 admin.miracosmetics.uz/inventory`
+      `💄 ${data.productName}\n` +
+      `📊 Qoldi: ${data.currentQty} dona (limit: ${data.threshold})\n` +
+      `🔗 admin.miracosmetics.uz/inventory`
   )
 }
 
@@ -76,27 +76,33 @@ export async function notifyCustomer(telegramId: number, message: string): Promi
 }
 
 interface NotifyCustomerParams {
-  customerId:     string
-  telegramId?:    number | bigint | null
+  customerId: string
+  telegramId?: number | bigint | null
   expoPushToken?: string | null
-  type:           string   // one of notificationTypeEnum values
-  channel:        'TELEGRAM' | 'PUSH' | 'BOTH'
-  title:          string   // shown in push notification
-  body:           string   // shown in push notification
+  type: string // one of notificationTypeEnum values
+  channel: 'TELEGRAM' | 'PUSH' | 'BOTH'
+  title: string // shown in push notification
+  body: string // shown in push notification
   telegramMessage?: string // HTML formatted for Telegram (if different from body)
-  data?: {               // for mobile deep linking
-    orderId?:    string
-    productId?:  string
-    type?:       string
+  data?: {
+    // for mobile deep linking
+    orderId?: string
+    productId?: string
+    type?: string
   }
 }
 
-export async function notifyCustomerFull(
-  params: NotifyCustomerParams
-): Promise<void> {
+export async function notifyCustomerFull(params: NotifyCustomerParams): Promise<void> {
   const {
-    customerId, telegramId, expoPushToken,
-    type, channel, title, body, telegramMessage, data
+    customerId,
+    telegramId,
+    expoPushToken,
+    type,
+    channel,
+    title,
+    body,
+    telegramMessage,
+    data,
   } = params
 
   let telegramSent = false
@@ -105,9 +111,7 @@ export async function notifyCustomerFull(
   // 1. Telegram DM (if telegramId exists and channel includes TELEGRAM)
   if (telegramId && (channel === 'TELEGRAM' || channel === 'BOTH')) {
     try {
-      const tgId = typeof telegramId === 'bigint'
-        ? Number(telegramId)
-        : telegramId
+      const tgId = typeof telegramId === 'bigint' ? Number(telegramId) : telegramId
       await notifyCustomer(tgId, telegramMessage ?? body)
       telegramSent = true
     } catch (err: any) {
@@ -122,22 +126,20 @@ export async function notifyCustomerFull(
   }
 
   // 3. Always log in notifications_log (for in-app notification center)
-  const actualChannel = telegramSent && pushSent ? 'BOTH'
-    : telegramSent ? 'TELEGRAM'
-    : pushSent ? 'PUSH'
-    : 'PUSH'  // default
+  const actualChannel =
+    telegramSent && pushSent ? 'BOTH' : telegramSent ? 'TELEGRAM' : pushSent ? 'PUSH' : 'PUSH' // default
 
   try {
     await db.insert(notificationsLog).values({
       customerId,
       type: type as any,
-      channel:  actualChannel,
+      channel: actualChannel,
       title,
       body,
-      data:     data ?? null,
-      orderId:  data?.orderId ?? null,
-      status:   'SENT',
-      sentAt:   new Date(),
+      data: data ?? null,
+      orderId: data?.orderId ?? null,
+      status: 'SENT',
+      sentAt: new Date(),
     })
   } catch (err: any) {
     console.error('Notification log failed:', err.message)

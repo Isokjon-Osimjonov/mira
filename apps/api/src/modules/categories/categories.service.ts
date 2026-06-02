@@ -33,11 +33,11 @@ export async function updateCategory(id: string, data: UpdateCategoryDto) {
     .set({ ...data, updatedAt: new Date() })
     .where(eq(categories.id, id))
     .returning()
-  
+
   if (!updatedCategory) {
     throw { status: 404, message: 'Kategoriya topilmadi' }
   }
-  
+
   return updatedCategory
 }
 
@@ -49,7 +49,7 @@ export async function deleteCategory(id: string) {
     .where(and(eq(products.categoryId, id), isNull(products.deletedAt)))
 
   if (Number(productCount.val) > 0) {
-    throw { status: 400, message: 'Kategoriyada mahsulotlar bor, o\'chirish mumkin emas' }
+    throw { status: 400, message: "Kategoriyada mahsulotlar bor, o'chirish mumkin emas" }
   }
 
   // Check if has children
@@ -59,7 +59,7 @@ export async function deleteCategory(id: string) {
     .where(and(eq(categories.parentId, id), isNull(categories.deletedAt)))
 
   if (Number(childCount.val) > 0) {
-    throw { status: 400, message: 'Kategoriyada ost-kategoriyalar bor, o\'chirish mumkin emas' }
+    throw { status: 400, message: "Kategoriyada ost-kategoriyalar bor, o'chirish mumkin emas" }
   }
 
   const [deletedCategory] = await db

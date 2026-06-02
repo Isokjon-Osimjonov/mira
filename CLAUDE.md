@@ -297,3 +297,26 @@ const router = Router();
 router.post('/', ctrl.handle);
 export default router;
 ```
+
+---
+
+## ══ PROGRESS TRACKING RULE (MANDATORY) ══
+
+After EVERY task completion, Gemini MUST:
+
+1. Update PROGRESS.md:
+   - Move completed items from "Pending" → "Completed"
+   - Update "In Progress" section
+   - Add entry to Changelog
+   - Update "Last updated" date at top
+
+2. Update format:
+   ✅ Completed: [x] Task name
+   🚧 In Progress: [ ] Task name
+   📋 Pending: [ ] Task name
+
+3. Commit message must include:
+   "docs: update PROGRESS.md"
+
+This rule applies to ALL future Gemini sessions.
+PROGRESS.md is the single source of project truth.

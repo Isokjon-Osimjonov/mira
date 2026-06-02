@@ -1,14 +1,30 @@
 import { db } from '../../config/db'
 import {
-  purchaseOrders, purchaseOrderItems, suppliers, products,
-  inventoryBatches, stockMovements, settings
+  purchaseOrders,
+  purchaseOrderItems,
+  suppliers,
+  products,
+  inventoryBatches,
+  stockMovements,
+  settings,
 } from '@mira/db'
 import { eq, and, sql, desc, count, ilike, or } from 'drizzle-orm'
 import { emit } from '../../config/socket'
 import { notifyLowStock } from '../../bot/helpers/notify'
-import type { CreatePurchaseOrderDto, UpdatePurchaseOrderDto, ReceivePODto } from './purchase-orders.schema'
+import type {
+  CreatePurchaseOrderDto,
+  UpdatePurchaseOrderDto,
+  ReceivePODto,
+} from './purchase-orders.schema'
 
-export async function getPurchaseOrders(query: { page?: number, limit?: number, status?: string, supplierId?: string, dateFrom?: string, dateTo?: string }) {
+export async function getPurchaseOrders(query: {
+  page?: number
+  limit?: number
+  status?: string
+  supplierId?: string
+  dateFrom?: string
+  dateTo?: string
+}) {
   const page = query.page || 1
   const limit = query.limit || 20
   const offset = (page - 1) * limit
@@ -23,7 +39,10 @@ export async function getPurchaseOrders(query: { page?: number, limit?: number, 
     .select({
       order: purchaseOrders,
       supplierName: suppliers.name,
-      itemCount: sql<number>`(SELECT SUM(quantity_ordered) FROM purchase_order_items WHERE purchase_order_id = ${purchaseOrders.id})`.mapWith(Number)
+      itemCount:
+        sql<number>`(SELECT SUM(quantity_ordered) FROM purchase_order_items WHERE purchase_order_id = ${purchaseOrders.id})`.mapWith(
+          Number
+        ),
     })
     .from(purchaseOrders)
     .innerJoin(suppliers, eq(purchaseOrders.supplierId, suppliers.id))
@@ -35,11 +54,11 @@ export async function getPurchaseOrders(query: { page?: number, limit?: number, 
   const [countRes] = await db.select({ count: count() }).from(purchaseOrders).where(where)
   const total = Number(countRes?.count || 0)
 
-  const items = itemsQuery.map(row => ({
+  const items = itemsQuery.map((row) => ({
     ...row.order,
     totalCostKrw: Number(row.order.totalCostKrw),
     supplierName: row.supplierName,
-    itemCount: row.itemCount
+    itemCount: row.itemCount,
   }))
 
   return { items, meta: { page, limit, total, hasNext: offset + limit < total, hasPrev: page > 1 } }
@@ -49,13 +68,17 @@ export async function getPurchaseOrderById(id: string) {
   const [order] = await db.select().from(purchaseOrders).where(eq(purchaseOrders.id, id)).limit(1)
   if (!order) throw { status: 404, code: 'PO_NOT_FOUND', message: 'Xarid buyurtmasi topilmadi' }
 
-  const [supplier] = await db.select().from(suppliers).where(eq(suppliers.id, order.supplierId)).limit(1)
+  const [supplier] = await db
+    .select()
+    .from(suppliers)
+    .where(eq(suppliers.id, order.supplierId))
+    .limit(1)
 
   const items = await db
     .select({
       item: purchaseOrderItems,
       productName: products.name,
-      barcode: products.barcode
+      barcode: products.barcode,
     })
     .from(purchaseOrderItems)
     .innerJoin(products, eq(purchaseOrderItems.productId, products.id))
@@ -65,13 +88,13 @@ export async function getPurchaseOrderById(id: string) {
     ...order,
     totalCostKrw: Number(order.totalCostKrw),
     supplier,
-    items: items.map(i => ({
+    items: items.map((i) => ({
       ...i.item,
       unitCostKrw: Number(i.item.unitCostKrw),
       totalCostKrw: Number(i.item.totalCostKrw),
       productName: i.productName,
-      barcode: i.barcode
-    }))
+      barcode: i.barcode,
+    })),
   }
 }
 
@@ -94,24 +117,27 @@ export async function createPurchaseOrder(data: CreatePurchaseOrderDto, adminId:
     }
 
     // 3. Create Order
-    const [newOrder] = await tx.insert(purchaseOrders).values({
-      orderNumber,
-      supplierId: data.supplierId,
-      orderDate: data.orderDate,
-      expectedDeliveryDate: data.expectedDeliveryDate,
-      notes: data.notes,
-      totalCostKrw,
-      status: 'DRAFT',
-      createdBy: adminId
-    }).returning()
+    const [newOrder] = await tx
+      .insert(purchaseOrders)
+      .values({
+        orderNumber,
+        supplierId: data.supplierId,
+        orderDate: data.orderDate,
+        expectedDeliveryDate: data.expectedDeliveryDate,
+        notes: data.notes,
+        totalCostKrw,
+        status: 'DRAFT',
+        createdBy: adminId,
+      })
+      .returning()
 
     // 4. Create Items
-    const itemsToInsert = data.items.map(item => ({
+    const itemsToInsert = data.items.map((item) => ({
       purchaseOrderId: newOrder.id,
       productId: item.productId,
       quantityOrdered: item.quantityOrdered,
       unitCostKrw: BigInt(item.unitCostKrw),
-      totalCostKrw: BigInt(item.quantityOrdered) * BigInt(item.unitCostKrw)
+      totalCostKrw: BigInt(item.quantityOrdered) * BigInt(item.unitCostKrw),
     }))
 
     await tx.insert(purchaseOrderItems).values(itemsToInsert)
@@ -124,16 +150,21 @@ export async function updatePurchaseOrder(id: string, data: UpdatePurchaseOrderD
   return await db.transaction(async (tx) => {
     const [order] = await tx.select().from(purchaseOrders).where(eq(purchaseOrders.id, id)).limit(1)
     if (!order) throw { status: 404, code: 'PO_NOT_FOUND', message: 'Xarid buyurtmasi topilmadi' }
-    if (order.status !== 'DRAFT') throw { status: 400, code: 'PO_CANNOT_MODIFY', message: 'Faqat DRAFT holatidagi buyurtmalarni o\'zgartirish mumkin' }
+    if (order.status !== 'DRAFT')
+      throw {
+        status: 400,
+        code: 'PO_CANNOT_MODIFY',
+        message: "Faqat DRAFT holatidagi buyurtmalarni o'zgartirish mumkin",
+      }
 
     let totalCostKrw = order.totalCostKrw
 
     if (data.items && data.items.length > 0) {
       // Replace items
       await tx.delete(purchaseOrderItems).where(eq(purchaseOrderItems.purchaseOrderId, id))
-      
+
       totalCostKrw = 0n
-      const itemsToInsert = data.items.map(item => {
+      const itemsToInsert = data.items.map((item) => {
         const itemTotal = BigInt(item.quantityOrdered) * BigInt(item.unitCostKrw)
         totalCostKrw += itemTotal
         return {
@@ -141,7 +172,7 @@ export async function updatePurchaseOrder(id: string, data: UpdatePurchaseOrderD
           productId: item.productId,
           quantityOrdered: item.quantityOrdered,
           unitCostKrw: BigInt(item.unitCostKrw),
-          totalCostKrw: itemTotal
+          totalCostKrw: itemTotal,
         }
       })
       await tx.insert(purchaseOrderItems).values(itemsToInsert)
@@ -150,11 +181,16 @@ export async function updatePurchaseOrder(id: string, data: UpdatePurchaseOrderD
     const updates: any = { updatedAt: new Date() }
     if (data.supplierId) updates.supplierId = data.supplierId
     if (data.orderDate) updates.orderDate = data.orderDate
-    if (data.expectedDeliveryDate !== undefined) updates.expectedDeliveryDate = data.expectedDeliveryDate
+    if (data.expectedDeliveryDate !== undefined)
+      updates.expectedDeliveryDate = data.expectedDeliveryDate
     if (data.notes !== undefined) updates.notes = data.notes
     updates.totalCostKrw = totalCostKrw
 
-    const [updated] = await tx.update(purchaseOrders).set(updates).where(eq(purchaseOrders.id, id)).returning()
+    const [updated] = await tx
+      .update(purchaseOrders)
+      .set(updates)
+      .where(eq(purchaseOrders.id, id))
+      .returning()
     return updated
   })
 }
@@ -164,15 +200,23 @@ export async function updatePurchaseOrderStatus(id: string, status: 'ORDERED' | 
   if (!order) throw { status: 404, code: 'PO_NOT_FOUND', message: 'Xarid buyurtmasi topilmadi' }
 
   const validTransitions: Record<string, string[]> = {
-    'DRAFT': ['ORDERED', 'CANCELED'],
-    'ORDERED': ['CANCELED']
+    DRAFT: ['ORDERED', 'CANCELED'],
+    ORDERED: ['CANCELED'],
   }
 
   if (!validTransitions[order.status]?.includes(status)) {
-    throw { status: 400, code: 'PO_INVALID_STATUS_TRANSITION', message: 'Noto\'g\'ri holat o\'zgarishi' }
+    throw {
+      status: 400,
+      code: 'PO_INVALID_STATUS_TRANSITION',
+      message: "Noto'g'ri holat o'zgarishi",
+    }
   }
 
-  const [updated] = await db.update(purchaseOrders).set({ status, updatedAt: new Date() }).where(eq(purchaseOrders.id, id)).returning()
+  const [updated] = await db
+    .update(purchaseOrders)
+    .set({ status, updatedAt: new Date() })
+    .where(eq(purchaseOrders.id, id))
+    .returning()
   return updated
 }
 
@@ -181,7 +225,11 @@ export async function receivePurchaseOrder(id: string, data: ReceivePODto, admin
     const [order] = await tx.select().from(purchaseOrders).where(eq(purchaseOrders.id, id)).limit(1)
     if (!order) throw { status: 404, code: 'PO_NOT_FOUND', message: 'Xarid buyurtmasi topilmadi' }
     if (!['ORDERED', 'PARTIAL'].includes(order.status)) {
-      throw { status: 400, code: 'PO_INVALID_STATUS_TRANSITION', message: 'Faqat ORDERED yoki PARTIAL holatidagi buyurtmalarni qabul qilish mumkin' }
+      throw {
+        status: 400,
+        code: 'PO_INVALID_STATUS_TRANSITION',
+        message: 'Faqat ORDERED yoki PARTIAL holatidagi buyurtmalarni qabul qilish mumkin',
+      }
     }
 
     const productsReceived = new Set<string>()
@@ -189,28 +237,47 @@ export async function receivePurchaseOrder(id: string, data: ReceivePODto, admin
     for (const inputItem of data.items) {
       if (inputItem.quantityReceived <= 0) continue
 
-      const [item] = await tx.select().from(purchaseOrderItems).where(and(eq(purchaseOrderItems.id, inputItem.purchaseOrderItemId), eq(purchaseOrderItems.purchaseOrderId, id))).limit(1)
-      if (!item) throw { status: 404, code: 'PO_ITEM_NOT_FOUND', message: 'Buyurtma qismi topilmadi' }
+      const [item] = await tx
+        .select()
+        .from(purchaseOrderItems)
+        .where(
+          and(
+            eq(purchaseOrderItems.id, inputItem.purchaseOrderItemId),
+            eq(purchaseOrderItems.purchaseOrderId, id)
+          )
+        )
+        .limit(1)
+      if (!item)
+        throw { status: 404, code: 'PO_ITEM_NOT_FOUND', message: 'Buyurtma qismi topilmadi' }
 
       // 1. Update received quantity
       const newQtyReceived = item.quantityReceived + inputItem.quantityReceived
-      await tx.update(purchaseOrderItems).set({ quantityReceived: newQtyReceived, updatedAt: new Date() }).where(eq(purchaseOrderItems.id, item.id))
+      await tx
+        .update(purchaseOrderItems)
+        .set({ quantityReceived: newQtyReceived, updatedAt: new Date() })
+        .where(eq(purchaseOrderItems.id, item.id))
 
       // 2. Create inventory batch
-      const [newBatch] = await tx.insert(inventoryBatches).values({
-        productId: item.productId,
-        batchRef: order.orderNumber,
-        initialQty: inputItem.quantityReceived,
-        currentQty: inputItem.quantityReceived,
-        costPrice: item.unitCostKrw,
-        costCurrency: 'KRW',
-        expiryDate: inputItem.expiryDate,
-        receivedAt: new Date(data.actualDeliveryDate), // Using JS Date for timestamp
-        purchaseOrderItemId: item.id
-      }).returning()
+      const [newBatch] = await tx
+        .insert(inventoryBatches)
+        .values({
+          productId: item.productId,
+          batchRef: order.orderNumber,
+          initialQty: inputItem.quantityReceived,
+          currentQty: inputItem.quantityReceived,
+          costPrice: item.unitCostKrw,
+          costCurrency: 'KRW',
+          expiryDate: inputItem.expiryDate,
+          receivedAt: new Date(data.actualDeliveryDate), // Using JS Date for timestamp
+          purchaseOrderItemId: item.id,
+        })
+        .returning()
 
       // 3. Update PO item with latest batchId
-      await tx.update(purchaseOrderItems).set({ batchId: newBatch.id }).where(eq(purchaseOrderItems.id, item.id))
+      await tx
+        .update(purchaseOrderItems)
+        .set({ batchId: newBatch.id })
+        .where(eq(purchaseOrderItems.id, item.id))
 
       // 4. Stock Movement
       await tx.insert(stockMovements).values({
@@ -221,14 +288,17 @@ export async function receivePurchaseOrder(id: string, data: ReceivePODto, admin
         qtyBefore: 0,
         qtyAfter: inputItem.quantityReceived,
         performedBy: adminId,
-        note: `PO qabul qilindi: ${order.orderNumber}`
+        note: `PO qabul qilindi: ${order.orderNumber}`,
       })
 
       productsReceived.add(item.productId)
     }
 
     // Determine new status
-    const allItems = await tx.select().from(purchaseOrderItems).where(eq(purchaseOrderItems.purchaseOrderId, id))
+    const allItems = await tx
+      .select()
+      .from(purchaseOrderItems)
+      .where(eq(purchaseOrderItems.purchaseOrderId, id))
     let allFullyReceived = true
     let newTotalCostKrw = 0n
 
@@ -239,26 +309,49 @@ export async function receivePurchaseOrder(id: string, data: ReceivePODto, admin
 
     const newStatus = allFullyReceived ? 'RECEIVED' : 'PARTIAL'
 
-    const [updated] = await tx.update(purchaseOrders).set({
-      status: newStatus,
-      actualDeliveryDate: data.actualDeliveryDate,
-      totalCostKrw: newTotalCostKrw,
-      updatedAt: new Date()
-    }).where(eq(purchaseOrders.id, id)).returning()
+    const [updated] = await tx
+      .update(purchaseOrders)
+      .set({
+        status: newStatus,
+        actualDeliveryDate: data.actualDeliveryDate,
+        totalCostKrw: newTotalCostKrw,
+        updatedAt: new Date(),
+      })
+      .where(eq(purchaseOrders.id, id))
+      .returning()
 
     // Low stock check
     const [appSettings] = await tx.select().from(settings).limit(1)
     const threshold = appSettings?.lowStockThreshold || 10
 
     for (const productId of productsReceived) {
-      const [stockRes] = await tx.select({ total: sql<number>`SUM(${inventoryBatches.currentQty})`.mapWith(Number) }).from(inventoryBatches).where(eq(inventoryBatches.productId, productId))
+      const [stockRes] = await tx
+        .select({ total: sql<number>`SUM(${inventoryBatches.currentQty})`.mapWith(Number) })
+        .from(inventoryBatches)
+        .where(eq(inventoryBatches.productId, productId))
       const totalQty = stockRes?.total || 0
 
       if (totalQty <= threshold) {
-        const [product] = await tx.select().from(products).where(eq(products.id, productId)).limit(1)
+        const [product] = await tx
+          .select()
+          .from(products)
+          .where(eq(products.id, productId))
+          .limit(1)
         if (product) {
-          emit.stockLow({ productId, productName: product.name, barcode: product.barcode, currentQty: totalQty, threshold, batchCount: 0 })
-          await notifyLowStock({ productName: product.name, barcode: product.barcode, currentQty: totalQty, threshold })
+          emit.stockLow({
+            productId,
+            productName: product.name,
+            barcode: product.barcode,
+            currentQty: totalQty,
+            threshold,
+            batchCount: 0,
+          })
+          await notifyLowStock({
+            productName: product.name,
+            barcode: product.barcode,
+            currentQty: totalQty,
+            threshold,
+          })
         }
       }
     }
@@ -270,7 +363,12 @@ export async function receivePurchaseOrder(id: string, data: ReceivePODto, admin
 export async function deletePurchaseOrder(id: string) {
   const [order] = await db.select().from(purchaseOrders).where(eq(purchaseOrders.id, id)).limit(1)
   if (!order) throw { status: 404, code: 'PO_NOT_FOUND', message: 'Xarid buyurtmasi topilmadi' }
-  if (order.status !== 'DRAFT') throw { status: 400, code: 'PO_CANNOT_MODIFY', message: 'Faqat DRAFT holatidagi buyurtmalarni o\'chirish mumkin' }
+  if (order.status !== 'DRAFT')
+    throw {
+      status: 400,
+      code: 'PO_CANNOT_MODIFY',
+      message: "Faqat DRAFT holatidagi buyurtmalarni o'chirish mumkin",
+    }
 
   const [deleted] = await db.delete(purchaseOrders).where(eq(purchaseOrders.id, id)).returning()
   return deleted

@@ -32,16 +32,18 @@ export async function getPublicSettings() {
 
 export async function updateSettings(data: UpdateSettingsDto) {
   const current = await getSettings()
-  
+
   // Clean data to exclude protected fields
   const cleanData: any = { ...data }
   delete cleanData.id
   delete cleanData.lockColumn
   delete cleanData.createdAt
-  
+
   // BigInt conversion for specific fields
-  if (data.standardShippingFeeKrw !== undefined) cleanData.standardShippingFeeKrw = BigInt(data.standardShippingFeeKrw)
-  if (data.freeShippingThresholdKrw !== undefined) cleanData.freeShippingThresholdKrw = BigInt(data.freeShippingThresholdKrw)
+  if (data.standardShippingFeeKrw !== undefined)
+    cleanData.standardShippingFeeKrw = BigInt(data.standardShippingFeeKrw)
+  if (data.freeShippingThresholdKrw !== undefined)
+    cleanData.freeShippingThresholdKrw = BigInt(data.freeShippingThresholdKrw)
   if (data.minOrderUzbKrw !== undefined) cleanData.minOrderUzbKrw = BigInt(data.minOrderUzbKrw)
   if (data.minOrderKorKrw !== undefined) cleanData.minOrderKorKrw = BigInt(data.minOrderKorKrw)
 
@@ -50,6 +52,6 @@ export async function updateSettings(data: UpdateSettingsDto) {
     .set({ ...cleanData, updatedAt: new Date() })
     .where(eq(settings.id, current.id))
     .returning()
-    
+
   return updated
 }

@@ -1,6 +1,11 @@
 import type { Request, Response } from 'express'
 import * as service from './telegram.service'
-import { createChannelSchema, updateChannelSchema, createPostSchema, updatePostSchema } from './telegram.schema'
+import {
+  createChannelSchema,
+  updateChannelSchema,
+  createPostSchema,
+  updatePostSchema,
+} from './telegram.schema'
 
 // ─── Channels ────────────────────────────────────────────────────────────
 
@@ -10,7 +15,9 @@ export async function getChannels(req: Request, res: Response) {
     const data = await service.getChannels({ isActive })
     return res.json({ data, error: null })
   } catch (e: any) {
-    return res.status(e.status ?? 500).json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
+    return res
+      .status(e.status ?? 500)
+      .json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
   }
 }
 
@@ -21,8 +28,16 @@ export async function createChannel(req: Request, res: Response) {
     const data = await service.createChannel(validated, adminId)
     return res.json({ data, error: null })
   } catch (e: any) {
-    if (e.name === 'ZodError') return res.status(400).json({ data: null, error: { message: 'Ma\'lumotlar noto\'g\'ri', code: 'VALIDATION_ERROR', details: e.errors } })
-    return res.status(e.status ?? 500).json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
+    if (e.name === 'ZodError')
+      return res
+        .status(400)
+        .json({
+          data: null,
+          error: { message: "Ma'lumotlar noto'g'ri", code: 'VALIDATION_ERROR', details: e.errors },
+        })
+    return res
+      .status(e.status ?? 500)
+      .json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
   }
 }
 
@@ -32,8 +47,16 @@ export async function updateChannel(req: Request, res: Response) {
     const data = await service.updateChannel(req.params.id, validated)
     return res.json({ data, error: null })
   } catch (e: any) {
-    if (e.name === 'ZodError') return res.status(400).json({ data: null, error: { message: 'Ma\'lumotlar noto\'g\'ri', code: 'VALIDATION_ERROR', details: e.errors } })
-    return res.status(e.status ?? 500).json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
+    if (e.name === 'ZodError')
+      return res
+        .status(400)
+        .json({
+          data: null,
+          error: { message: "Ma'lumotlar noto'g'ri", code: 'VALIDATION_ERROR', details: e.errors },
+        })
+    return res
+      .status(e.status ?? 500)
+      .json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
   }
 }
 
@@ -42,7 +65,9 @@ export async function deleteChannel(req: Request, res: Response) {
     const data = await service.deleteChannel(req.params.id)
     return res.json({ data: { id: data.id }, error: null })
   } catch (e: any) {
-    return res.status(e.status ?? 500).json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
+    return res
+      .status(e.status ?? 500)
+      .json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
   }
 }
 
@@ -51,7 +76,9 @@ export async function testChannel(req: Request, res: Response) {
     const data = await service.testChannel(req.params.id)
     return res.json({ data, error: null })
   } catch (e: any) {
-    return res.status(e.status ?? 500).json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
+    return res
+      .status(e.status ?? 500)
+      .json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
   }
 }
 
@@ -68,7 +95,9 @@ export async function getPosts(req: Request, res: Response) {
     const result = await service.getPosts({ page, limit, status, dateFrom, dateTo })
     return res.json({ data: result.items, meta: result.meta, error: null })
   } catch (e: any) {
-    return res.status(e.status ?? 500).json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
+    return res
+      .status(e.status ?? 500)
+      .json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
   }
 }
 
@@ -77,7 +106,9 @@ export async function getPostById(req: Request, res: Response) {
     const data = await service.getPostById(req.params.id)
     return res.json({ data, error: null })
   } catch (e: any) {
-    return res.status(e.status ?? 500).json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
+    return res
+      .status(e.status ?? 500)
+      .json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
   }
 }
 
@@ -86,7 +117,7 @@ export async function createPost(req: Request, res: Response) {
     const validated = createPostSchema.parse(req.body)
     const adminId = (req.user as any).sub
     const data = await service.createPost(validated, adminId)
-    
+
     // If immediate, trigger send
     const scheduledAt = validated.scheduledAt ? new Date(validated.scheduledAt) : null
     if (!scheduledAt || scheduledAt <= new Date()) {
@@ -95,8 +126,16 @@ export async function createPost(req: Request, res: Response) {
 
     return res.json({ data, error: null })
   } catch (e: any) {
-    if (e.name === 'ZodError') return res.status(400).json({ data: null, error: { message: 'Ma\'lumotlar noto\'g\'ri', code: 'VALIDATION_ERROR', details: e.errors } })
-    return res.status(e.status ?? 500).json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
+    if (e.name === 'ZodError')
+      return res
+        .status(400)
+        .json({
+          data: null,
+          error: { message: "Ma'lumotlar noto'g'ri", code: 'VALIDATION_ERROR', details: e.errors },
+        })
+    return res
+      .status(e.status ?? 500)
+      .json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
   }
 }
 
@@ -106,8 +145,16 @@ export async function updatePost(req: Request, res: Response) {
     const data = await service.updatePost(req.params.id, validated)
     return res.json({ data, error: null })
   } catch (e: any) {
-    if (e.name === 'ZodError') return res.status(400).json({ data: null, error: { message: 'Ma\'lumotlar noto\'g\'ri', code: 'VALIDATION_ERROR', details: e.errors } })
-    return res.status(e.status ?? 500).json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
+    if (e.name === 'ZodError')
+      return res
+        .status(400)
+        .json({
+          data: null,
+          error: { message: "Ma'lumotlar noto'g'ri", code: 'VALIDATION_ERROR', details: e.errors },
+        })
+    return res
+      .status(e.status ?? 500)
+      .json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
   }
 }
 
@@ -116,7 +163,9 @@ export async function deletePost(req: Request, res: Response) {
     const data = await service.deletePost(req.params.id)
     return res.json({ data: { id: data.id, status: data.status }, error: null })
   } catch (e: any) {
-    return res.status(e.status ?? 500).json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
+    return res
+      .status(e.status ?? 500)
+      .json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
   }
 }
 
@@ -125,6 +174,8 @@ export async function manualSendPost(req: Request, res: Response) {
     await service.sendPost(req.params.id)
     return res.json({ data: { success: true }, error: null })
   } catch (e: any) {
-    return res.status(e.status ?? 500).json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
+    return res
+      .status(e.status ?? 500)
+      .json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
   }
 }

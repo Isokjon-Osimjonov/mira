@@ -10,14 +10,10 @@ import bcrypt from 'bcryptjs'
 import { pool } from '../config/db'
 
 async function seedAdmin() {
-  const email    = 'admin@miracosmetics.uz'
+  const email = 'admin@miracosmetics.uz'
   const password = 'MiraAdmin2026!'
 
-  const [existing] = await db
-    .select()
-    .from(adminUsers)
-    .where(eq(adminUsers.email, email))
-    .limit(1)
+  const [existing] = await db.select().from(adminUsers).where(eq(adminUsers.email, email)).limit(1)
 
   if (existing) {
     console.log('✅ Admin already exists:', email)
@@ -30,9 +26,9 @@ async function seedAdmin() {
   await db.insert(adminUsers).values({
     email,
     passwordHash: hash,
-    fullName:     'Super Admin',
+    fullName: 'Super Admin',
     isSuperAdmin: true,
-    isActive:     true,
+    isActive: true,
   })
 
   console.log('✅ Admin created:')

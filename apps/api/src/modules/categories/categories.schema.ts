@@ -3,8 +3,8 @@ import { z } from 'zod'
 export const CreateCategorySchema = z.object({
   name: z.string().min(1, 'Nomini kiriting'),
   slug: z.string().min(1, 'Slugni kiriting'),
-  imageUrl: z.string().url('Rasm URL noto\'g\'ri').optional().nullable(),
-  parentId: z.string().uuid('Parent ID noto\'g\'ri formatda').optional().nullable(),
+  imageUrl: z.string().url("Rasm URL noto'g'ri").optional().nullable(),
+  parentId: z.string().uuid("Parent ID noto'g'ri formatda").optional().nullable(),
   sortOrder: z.number().int().default(0),
   isActive: z.boolean().default(true),
 })
