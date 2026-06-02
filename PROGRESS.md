@@ -1,7 +1,7 @@
 # 🪞 Mira Cosmetics — Project Progress
 
 > Last updated: 2026-06-02
-> Version: 0.2.0-dev
+> Version: 0.3.0-dev
 > Sprint: #7 — Dashboard & Marketing
 
 ---
@@ -112,18 +112,13 @@
 
 ## 🔄 Changelog
 
-### v0.2.9-dev (2026-06-02)
-- **Final Backend Completion**:
-  - Customer order cancellation flow with stock release.
-  - Customer refund request system with admin alerts.
-  - Waitlist stock notification engine (Push + Telegram).
-  - Product image management: reorder and Cloudinary validation.
-  - Dynamic Order Invoice PDF generation using `pdfkit`.
-  - Customer order search and status filtering.
-  - Public `brands` endpoint with region filtering.
-  - Product-specific stock movement history for audit.
-  - Automated and manual database backups via Telegram.
-  - Extended admin order search (order number + phone).
+### v0.3.0-dev (2026-06-02)
+- **Redesigned Invoices**: Complete overhaul of the PDF invoice generation.
+  - Premium, NuraSkin-inspired clean layout with pink branding.
+  - Async image loading for product thumbnails (rounded 36x36).
+  - Detailed financial breakdown: coupon discounts, manual order discounts, and cargo fees.
+  - Automatic dual-currency support (KRW/UZS) for Uzbekistan region.
+  - Placeholder visuals for products without images.
 
 ### v0.2.9-dev (2026-06-02)
 - **Backend Verification & Stabilization**:

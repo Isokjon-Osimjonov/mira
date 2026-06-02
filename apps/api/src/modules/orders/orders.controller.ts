@@ -1,4 +1,16 @@
-import type { Request, Response } from 'express'
+import type { Request, Response, NextFunction } from 'express'
+import { db } from '../../config/db'
+import {
+  orders,
+  orderItems,
+  products,
+  productRegionalConfigs,
+  customers,
+  exchangeRateSnapshots,
+  couponRedemptions,
+  coupons,
+} from '@mira/db'
+import { eq, and, sql } from 'drizzle-orm'
 import * as service from './orders.service'
 import {
   checkoutSchema,
@@ -12,6 +24,8 @@ import {
   addExpenseSchema,
   requestRefundSchema,
 } from './orders.schema'
+import type { CustomerJwtPayload, AdminJwtPayload } from '../../middleware/auth'
+
 
 // ─── Customer Endpoints ──────────────────────────────────────────────────
 
@@ -157,13 +171,111 @@ export async function downloadInvoice(req: Request, res: Response) {
     const isAdmin = (req.user as any).type === 'admin'
     const userId = (req.user as any).sub
 
-    const data = await service.getInvoiceData(orderId, userId, isAdmin)
+    const [order] = await db.select().from(orders).where(eq(orders.id, orderId)).limit(1)
+    if (!order) throw { status: 404, code: 'ORDER_NOT_FOUND', message: 'Topilmadi' }
+
+    if (!isAdmin && order.customerId !== userId) {
+      throw { status: 403, code: 'ORDER_UNAUTHORIZED', message: "Ruxsat yo'q" }
+    }
+
+    const items = await db
+      .select({
+        product: {
+          name: products.name,
+          brandName: products.brandName,
+          barcode: products.barcode,
+          sku: products.sku,
+          imageUrls: products.imageUrls,
+        },
+        quantity: orderItems.quantity,
+        unitPriceSnapshot: orderItems.unitPriceSnapshot,
+        subtotalSnapshot: orderItems.subtotalSnapshot,
+        isWholesale: sql<boolean>`${orderItems.quantity} >= ${productRegionalConfigs.minWholesaleQty}`,
+      })
+      .from(orderItems)
+      .innerJoin(products, eq(orderItems.productId, products.id))
+      .innerJoin(
+        productRegionalConfigs,
+        and(
+          eq(productRegionalConfigs.productId, orderItems.productId),
+          eq(productRegionalConfigs.regionCode, order.deliveryRegion as any)
+        )
+      )
+      .where(eq(orderItems.orderId, orderId))
+
+    const [customer] = await db.select().from(customers).where(eq(customers.id, order.customerId))
+
+    const [rate] = await db
+      .select()
+      .from(exchangeRateSnapshots)
+      .where(eq(exchangeRateSnapshots.id, order.rateSnapshotId!))
+      .limit(1)
+
+    // Get coupon code if used
+    const [redemption] = await db
+      .select({ code: coupons.code })
+      .from(couponRedemptions)
+      .innerJoin(coupons, eq(coupons.id, couponRedemptions.couponId))
+      .where(eq(couponRedemptions.orderId, order.id))
+      .limit(1)
+
+    const invoiceItems = items.map((item) => ({
+      productName: item.product.name,
+      brandName: item.product.brandName,
+      barcode: item.product.barcode,
+      sku: item.product.sku ?? '',
+      quantity: item.quantity,
+      unitPrice: item.unitPriceSnapshot,
+      subtotal: item.subtotalSnapshot,
+      isWholesale: item.isWholesale ?? false,
+      hasCoupon: (order.discountAmount ?? 0n) > 0n,
+      imageUrl: item.product.imageUrls?.[0] ?? undefined,
+    }))
+
     const { generateInvoicePDF } = await import('../../lib/invoice')
-    generateInvoicePDF(data, res)
+    await generateInvoicePDF(
+      {
+        order: {
+          orderNumber: order.orderNumber,
+          createdAt: order.createdAt,
+          paymentConfirmedAt: order.paymentConfirmedAt ?? undefined,
+          status: order.status,
+          subtotal: order.subtotal ?? order.totalAmount,
+          couponDiscount: order.discountAmount ?? 0n,
+          orderDiscount: BigInt(order.orderDiscountFlat ?? 0),
+          orderDiscountPct: order.orderDiscountPct ?? undefined,
+          cargoFee: order.cargoFee ?? 0n,
+          totalAmount: order.totalAmount,
+          couponCode: redemption?.code ?? undefined,
+          regionCode: order.deliveryRegion ?? 'KOR',
+        },
+        items: invoiceItems,
+        customer: {
+          firstName: customer.firstName,
+          lastName: customer.lastName,
+          phone: customer.phone,
+        },
+        delivery: {
+          fullName: order.deliveryFullName ?? customer.firstName,
+          phone: order.deliveryPhone ?? customer.phone,
+          addressLine1: order.deliveryAddressLine1 ?? '',
+          addressLine2: order.deliveryAddressLine2,
+          city: order.deliveryCity,
+          province: null, // Not snapshotted in orders table
+          postalCode: order.deliveryPostalCode,
+          regionCode: order.deliveryRegion ?? 'KOR',
+        },
+        exchangeRate: rate ? { krwToUzs: rate.krwToUzs } : undefined,
+      },
+      res
+    )
   } catch (e: any) {
-    return res
-      .status(e.status ?? 500)
-      .json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
+    if (!res.headersSent) {
+      res.status(e.status ?? 500).json({
+        data: null,
+        error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' },
+      })
+    }
   }
 }
 
