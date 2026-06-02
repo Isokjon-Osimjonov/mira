@@ -113,6 +113,8 @@ export interface SocketEvents {
     updatedAt:     string
   }
 
+  'settings:updated': {}
+
   // ── SYSTEM ──────────────────────────────────────────────────
 
   'admin:connected': {

@@ -52,7 +52,7 @@ authHandlers.command('start', async (ctx) => {
       .limit(1)
 
     const greeting = existing
-      ? `Yana xush kelibsiz, <b>${existing.firstName}</b>! 👋`
+      ? `Xush kelibsiz, <b>${existing.firstName}</b>! 👋`
       : `Xush kelibsiz! 🌸`
 
     await ctx.reply(

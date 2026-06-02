@@ -10,6 +10,21 @@ import { apiLimiter } from './middleware/rateLimiter'
 // Routers
 import authRouter      from './modules/auth/auth.router'
 import adminAuthRouter from './modules/admin/auth/admin-auth.router'
+import { categoryRouter, categoryAdminRouter } from './modules/categories/categories.router'
+import { productRouter,  productAdminRouter  } from './modules/products/products.router'
+import inventoryRouter from './modules/inventory/inventory.router'
+import uploadRouter    from './modules/upload/upload.router'
+import { settingsRouter, settingsAdminRouter } from './modules/settings/settings.router'
+import { exchangeRateRouter, exchangeRateAdminRouter } from './modules/exchange-rates/exchange-rates.router'
+import cartRouter from './modules/cart/cart.router'
+import { couponsAdminRouter } from './modules/coupons/coupons.router'
+import ordersRouter from './modules/orders/orders.router'
+import { ordersAdminRouter } from './modules/orders/orders-admin.router'
+import { boxesRouter, boxesAdminRouter } from './modules/boxes/boxes.router'
+import { korShippingRouter, korShippingAdminRouter } from './modules/kor-shipping/kor-shipping.router'
+import wishlistRouter from './modules/wishlists/wishlists.router'
+import waitlistRouter from './modules/waitlists/waitlists.router'
+import notificationRouter from './modules/notifications/notifications.router'
 
 export function createApp() {
   const app = express()
@@ -38,6 +53,34 @@ export function createApp() {
   // Auth routes
   app.use('/api/v1/auth',       authRouter)
   app.use('/api/v1/admin/auth', adminAuthRouter)
+
+  // Public Products & Categories
+  app.use('/api/v1/categories', categoryRouter)
+  app.use('/api/v1/products',   productRouter)
+  app.use('/api/v1/settings',   settingsRouter)
+  app.use('/api/v1/exchange-rates', exchangeRateRouter)
+  
+  // Customer specific
+  app.use('/api/v1/cart', cartRouter)
+  app.use('/api/v1/orders', ordersRouter)
+  app.use('/api/v1/wishlists', wishlistRouter)
+  app.use('/api/v1/waitlists', waitlistRouter)
+  app.use('/api/v1/notifications', notificationRouter)
+  
+  // Admin specific
+  app.use('/api/v1/admin/categories', categoryAdminRouter)
+  app.use('/api/v1/admin/products',   productAdminRouter)
+  app.use('/api/v1/admin/inventory',  inventoryRouter)
+  app.use('/api/v1/admin/upload',     uploadRouter)
+  app.use('/api/v1/admin/settings',   settingsAdminRouter)
+  app.use('/api/v1/admin/exchange-rates', exchangeRateAdminRouter)
+  app.use('/api/v1/admin/coupons', couponsAdminRouter)
+  app.use('/api/v1/admin/orders', ordersAdminRouter)
+  app.use('/api/v1/admin/boxes', boxesAdminRouter)
+  app.use('/api/v1/admin/kor-shipping-tiers', korShippingAdminRouter)
+  
+  app.use('/api/v1/boxes', boxesRouter)
+  app.use('/api/v1/kor-shipping-tiers', korShippingRouter)
 
   // 404
   app.use((_req, res) => {
