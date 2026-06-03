@@ -62,7 +62,7 @@ export async function getProductsByCategorySlug(req: Request, res: Response, nex
 // Admin
 export async function getProductsAdmin(req: Request, res: Response, next: NextFunction) {
   try {
-    const { page, limit, category, brand, region, sort, q } = req.query
+    const { page, limit, category, brand, region, sort, q, isActive } = req.query
     const result = await service.getProducts({
       page: page ? Number(page) : undefined,
       limit: limit ? Number(limit) : undefined,
@@ -71,6 +71,7 @@ export async function getProductsAdmin(req: Request, res: Response, next: NextFu
       region: (region as 'UZB' | 'KOR') || 'UZB',
       sort: sort as string,
       q: q as string,
+      isActive: isActive as string,
       isAdmin: true,
     })
     res.json({ data: result.items, meta: result.meta, error: null })

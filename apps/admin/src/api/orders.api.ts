@@ -1,14 +1,15 @@
 import { api } from '../lib/api'
 import type { ApiResponse, OrderListItem, PaginationMeta } from '../types'
+import { useAuthStore } from '../stores/auth.store'
 
 export interface OrdersParams {
-  page?:    number
-  limit?:   number
-  status?:  string
-  region?:  string
-  search?:  string
+  page?: number
+  limit?: number
+  status?: string
+  region?: string
+  search?: string
   dateFrom?: string
-  dateTo?:  string
+  dateTo?: string
 }
 
 export const ordersApi = {
@@ -24,24 +25,42 @@ export const ordersApi = {
     return res.data
   },
 
-  updateStatus: async (id: string, payload: {
-    status: string
-    note?: string
-  }) => {
+  updateStatus: async (
+    id: string,
+    payload: {
+      status: string
+      trackingNumber?: string
+      note?: string
+    }
+  ) => {
     const res = await api.patch(`/admin/orders/${id}/status`, payload)
     return res.data
   },
 
-  confirmPayment: async (id: string, payload: {
-    confirmed: boolean
-    note?: string
-  }) => {
-    const res = await api.post(`/admin/orders/${id}/confirm-payment`, payload)
+  confirmPayment: async (id: string, confirmed: boolean, note?: string) => {
+    const res = await api.post(`/admin/orders/${id}/confirm-payment`, { confirmed, note })
     return res.data
   },
 
-  downloadInvoice: (id: string, token: string) =>
-    `${import.meta.env.VITE_API_URL}/api/v1/admin/orders/${id}/invoice?token=${token}`,
+  getStatusCounts: async () => {
+    const res = await api.get('/admin/orders/status-counts')
+    return res.data.data as Record<string, number>
+  },
+
+  downloadInvoice: async (id: string): Promise<void> => {
+    const res = await api.get(`/admin/orders/${id}/invoice`, {
+      responseType: 'blob',
+      headers: { Accept: 'application/pdf' },
+    })
+    // Create blob URL and trigger download
+    const blob = new Blob([res.data], { type: 'application/pdf' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `invoice-${id}.pdf`
+    link.click()
+    URL.revokeObjectURL(url)
+  },
 
   createManual: async (payload: unknown) => {
     const res = await api.post('/admin/orders/manual', payload)

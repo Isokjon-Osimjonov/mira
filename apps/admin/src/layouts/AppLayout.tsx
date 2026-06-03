@@ -50,22 +50,18 @@ export function AppLayout() {
   // Session validation (once on mount)
   useEffect(() => {
     let cancelled = false
-    api.get('/admin/auth/me')
-      .then(res => {
+    api
+      .get('/admin/auth/me')
+      .then((res) => {
         if (!cancelled) useAuthStore.getState().setUser(res.data.data)
       })
-      .catch(err => {
-        if (!cancelled) {
-          const code = err?.response?.data?.error?.code
-          if (code === 'REFRESH_INVALID' || code === 'TOKEN_EXPIRED') {
-            useAuthStore.getState().logout()
-            toast.error('Sessiya muddati tugadi. Qayta kiring.')
-            navigate({ to: '/login' })
-          }
-        }
+      .catch((_err) => {
+        // Errors are handled by the central api.ts interceptors
       })
-    return () => { cancelled = true }
-  }, [navigate])
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   // Get current page info
   const basePath = '/' + location.pathname.split('/')[1]

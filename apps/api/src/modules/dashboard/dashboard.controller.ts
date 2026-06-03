@@ -3,35 +3,9 @@ import * as service from './dashboard.service'
 
 export async function getOverview(req: Request, res: Response) {
   try {
-    const period = (req.query.period as service.Period) || 'this_month'
-    const dateFrom = req.query.dateFrom as string
-    const dateTo = req.query.dateTo as string
-
-    const data = await service.getOverview(period, dateFrom, dateTo)
-
-    const safeData = {
-      ...data,
-      revenue: {
-        gross: Number(data.revenue.gross),
-        refunds: Number(data.revenue.refunds),
-        net: Number(data.revenue.net),
-      },
-      profit: {
-        cogs: Number(data.profit.cogs),
-        grossProfit: Number(data.profit.grossProfit),
-        grossMarginPct: data.profit.grossMarginPct,
-        expenses: Number(data.profit.expenses),
-        netProfit: Number(data.profit.netProfit),
-        netMarginPct: data.profit.netMarginPct,
-      },
-      pendingPayments: {
-        ...data.pendingPayments,
-        totalAmount: Number(data.pendingPayments.totalAmount),
-      },
-      inventoryValue: Number(data.inventoryValue),
-    }
-
-    return res.json({ data: safeData, error: null })
+    const period = (req.query.period as any) || '7d'
+    const data = await service.getOverview(period)
+    return res.json({ data, error: null })
   } catch (e: any) {
     return res
       .status(e.status ?? 500)
@@ -39,27 +13,11 @@ export async function getOverview(req: Request, res: Response) {
   }
 }
 
-export async function getRevenueChart(req: Request, res: Response) {
+export async function getRevenue(req: Request, res: Response) {
   try {
-    const period = (req.query.period as service.Period) || 'this_month'
-    const dateFrom = req.query.dateFrom as string
-    const dateTo = req.query.dateTo as string
-    const region = req.query.region as string
-
-    const data = await service.getRevenueChart(period, dateFrom, dateTo, region)
-
-    const safeData = {
-      ...data,
-      summary: {
-        totalRevenue: Number(data.summary.totalRevenue),
-        uzbRevenue: Number(data.summary.uzbRevenue),
-        korRevenue: Number(data.summary.korRevenue),
-        uzbPct: data.summary.uzbPct,
-        korPct: data.summary.korPct,
-      },
-    }
-
-    return res.json({ data: safeData, error: null })
+    const period = (req.query.period as any) || '7d'
+    const data = await service.getRevenue(period)
+    return res.json({ data, error: null })
   } catch (e: any) {
     return res
       .status(e.status ?? 500)
@@ -67,38 +25,23 @@ export async function getRevenueChart(req: Request, res: Response) {
   }
 }
 
-export async function getPLReport(req: Request, res: Response) {
+export async function getOrdersByStatus(req: Request, res: Response) {
   try {
-    const period = (req.query.period as service.Period) || 'this_month'
-    const dateFrom = req.query.dateFrom as string
-    const dateTo = req.query.dateTo as string
+    const period = (req.query.period as any) || '7d'
+    const data = await service.getOrdersByStatus(period)
+    return res.json({ data, error: null })
+  } catch (e: any) {
+    return res
+      .status(e.status ?? 500)
+      .json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
+  }
+}
 
-    const data = await service.getPLReport(period, dateFrom, dateTo)
-
-    const safeData = {
-      ...data,
-      revenue: {
-        gross: Number(data.revenue.gross),
-        refunds: Number(data.revenue.refunds),
-        net: Number(data.revenue.net),
-      },
-      cogs: Number(data.cogs),
-      grossProfit: Number(data.grossProfit),
-      expenses: {
-        ...data.expenses,
-        cargo: Number(data.expenses.cargo),
-        coupons: Number(data.expenses.coupons),
-        general: Number(data.expenses.general),
-        total: Number(data.expenses.total),
-        byCategory: data.expenses.byCategory.map((c) => ({
-          ...c,
-          amount: Number(c.amount),
-        })),
-      },
-      netProfit: Number(data.netProfit),
-    }
-
-    return res.json({ data: safeData, error: null })
+export async function getPL(req: Request, res: Response) {
+  try {
+    const period = (req.query.period as any) || '7d'
+    const data = await service.getPL(period)
+    return res.json({ data, error: null })
   } catch (e: any) {
     return res
       .status(e.status ?? 500)
@@ -197,18 +140,7 @@ export async function getBrandPerformance(req: Request, res: Response) {
 export async function getInventoryHealth(_req: Request, res: Response) {
   try {
     const data = await service.getInventoryHealth()
-
-    const safeData = {
-      ...data,
-      totalValue: Number(data.totalValue),
-      products: data.products.map((p) => ({
-        ...p,
-        inventoryValue: Number(p.inventoryValue),
-        avgCostPrice: Number(p.avgCostPrice),
-      })),
-    }
-
-    return res.json({ data: safeData, error: null })
+    return res.json({ data, error: null })
   } catch (e: any) {
     return res
       .status(e.status ?? 500)

@@ -39,6 +39,7 @@ export const manualOrderSchema = z.object({
 )
 
 export const confirmPaymentSchema = z.object({
+  confirmed: z.boolean(),
   note: z.string().optional(),
 })
 

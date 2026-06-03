@@ -17,7 +17,10 @@ router.post(
   async (req, res, next) => {
     try {
       z.object({
-        searchQuery: z.string().min(1),
+        productId: z.string().uuid().optional(),
+        productName: z.string().optional(),
+        barcode: z.string().optional(),
+        imageUrl: z.string().url().optional(),
         categoryName: z.string().optional(),
         additionalInfo: z.string().max(300).optional(),
       }).parse(req.body)

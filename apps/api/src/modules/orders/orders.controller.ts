@@ -79,6 +79,17 @@ export async function getCustomerOrders(req: Request, res: Response) {
   }
 }
 
+export async function getStatusCounts(_req: Request, res: Response) {
+  try {
+    const data = await service.getOrderStatusCounts()
+    return res.json({ data, error: null })
+  } catch (e: any) {
+    return res
+      .status(e.status ?? 500)
+      .json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
+  }
+}
+
 export async function getCustomerOrderDetail(req: Request, res: Response) {
   try {
     const customerId = (req.user as any).sub
@@ -301,32 +312,21 @@ export async function adminGetOrders(req: Request, res: Response) {
 export async function adminGetOrderDetail(req: Request, res: Response) {
   try {
     const data = await service.adminGetOrderDetail(req.params.id)
+    return res.json({ data, error: null })
+  } catch (e: any) {
+    return res
+      .status(e.status ?? 500)
+      .json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
+  }
+}
 
-    const safeData = {
-      ...data,
-      subtotal: Number(data.subtotal),
-      discountAmount: Number(data.discountAmount),
-      cargoFee: Number(data.cargoFee),
-      totalAmount: Number(data.totalAmount),
-      paymentAmount: data.paymentAmount ? Number(data.paymentAmount) : null,
-      paymentAmountUzs: data.paymentAmountUzs ? Number(data.paymentAmountUzs) : null,
-      deliveryFeeCharged: Number(data.deliveryFeeCharged),
-      deliveryFeeActual: data.deliveryFeeActual ? Number(data.deliveryFeeActual) : null,
-      refundAmount: data.refundAmount ? Number(data.refundAmount) : null,
-      boxPriceSnapshot: data.boxPriceSnapshot ? Number(data.boxPriceSnapshot) : null,
-      items: data.items.map((item) => ({
-        ...item,
-        unitPriceSnapshot: Number(item.unitPriceSnapshot),
-        subtotalSnapshot: Number(item.subtotalSnapshot),
-        costAtSaleKrw: item.costAtSaleKrw ? Number(item.costAtSaleKrw) : null,
-      })),
-      expenses: data.expenses.map((exp) => ({
-        ...exp,
-        amountKrw: Number(exp.amountKrw),
-      })),
-    }
-
-    return res.json({ data: safeData, error: null })
+export async function adminUpdateStatus(req: Request, res: Response) {
+  try {
+    const { id } = req.params
+    const adminId = (req.user as any).sub
+    const payload = req.body // { status, note, trackingNumber }
+    const data = await service.adminUpdateStatus(id, adminId, payload)
+    return res.json({ data, error: null })
   } catch (e: any) {
     return res
       .status(e.status ?? 500)
@@ -352,12 +352,10 @@ export async function adminCreateOrder(req: Request, res: Response) {
     return res.json({ data: safeData, error: null })
   } catch (e: any) {
     if (e.name === 'ZodError') {
-      return res
-        .status(400)
-        .json({
-          data: null,
-          error: { message: "Ma'lumotlar noto'g'ri", code: 'VALIDATION_ERROR', details: e.errors },
-        })
+      return res.status(400).json({
+        data: null,
+        error: { message: "Ma'lumotlar noto'g'ri", code: 'VALIDATION_ERROR', details: e.errors },
+      })
     }
     return res
       .status(e.status ?? 500)
@@ -370,7 +368,7 @@ export async function confirmPayment(req: Request, res: Response) {
     const validated = confirmPaymentSchema.parse(req.body)
     const adminId = (req.user as any).sub
     const data = await service.confirmPayment(req.params.id, adminId, validated)
-    return res.json({ data: { id: data.id, status: data.status }, error: null })
+    return res.json({ data, error: null })
   } catch (e: any) {
     if (e.name === 'ZodError')
       return res

@@ -5,11 +5,16 @@ import { requirePermission } from '../../middleware/auth'
 const adminRouter = Router()
 
 adminRouter.get('/', requirePermission('orders', 'read'), ctrl.adminGetOrders)
+adminRouter.get('/status-counts', requirePermission('orders', 'read'), ctrl.getStatusCounts)
 adminRouter.get('/:id', requirePermission('orders', 'read'), ctrl.adminGetOrderDetail)
+
 adminRouter.get('/:id/invoice', requirePermission('orders', 'read'), ctrl.downloadInvoice)
+
 adminRouter.post('/', requirePermission('orders', 'write'), ctrl.adminCreateOrder)
 
-adminRouter.patch('/:id/confirm-payment', requirePermission('orders', 'write'), ctrl.confirmPayment)
+adminRouter.patch('/:id/status', requirePermission('orders', 'write'), ctrl.adminUpdateStatus)
+adminRouter.post('/:id/confirm-payment', requirePermission('orders', 'write'), ctrl.confirmPayment)
+
 adminRouter.patch('/:id/reject-payment', requirePermission('orders', 'write'), ctrl.rejectPayment)
 adminRouter.patch('/:id/start-packing', requirePermission('orders', 'write'), ctrl.startPacking)
 adminRouter.patch('/:id/ship', requirePermission('orders', 'write'), ctrl.shipOrder)

@@ -31,6 +31,7 @@ export async function getProducts(query: {
   region?: 'UZB' | 'KOR'
   sort?: string
   q?: string
+  isActive?: boolean | string
   isAdmin?: boolean
 }) {
   const page = query.page || 1
@@ -43,6 +44,9 @@ export async function getProducts(query: {
   let where = and(isNull(products.deletedAt))
   if (!query.isAdmin) {
     where = and(where, eq(products.isActive, true))
+  } else if (query.isActive !== undefined) {
+    const active = typeof query.isActive === 'string' ? query.isActive === 'true' : query.isActive
+    where = and(where, eq(products.isActive, active))
   }
 
   if (query.category) {

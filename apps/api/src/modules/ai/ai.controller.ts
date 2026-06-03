@@ -7,8 +7,7 @@ import * as service from './ai.service'
  */
 export async function fillProduct(req: Request, res: Response) {
   try {
-    const { searchQuery, categoryName, additionalInfo } = req.body
-    const result = await service.generateProductContent(searchQuery, categoryName, additionalInfo)
+    const result = await service.generateProductContent(req.body)
     res.json({ data: result, error: null })
   } catch (e: any) {
     res.status(e.status ?? 500).json({

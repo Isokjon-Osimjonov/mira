@@ -23,7 +23,7 @@ import {
   settings,
   dailySalesSummary,
 } from '@mira/db'
-import { eq, and, sql, desc, asc, isNull, or, ilike, gte, lte } from 'drizzle-orm'
+import { eq, and, sql, desc, asc, isNull, or, ilike, gte, lte, count } from 'drizzle-orm'
 import { escapeLikeQuery } from '../../lib/sanitize'
 import { emit } from '../../config/socket'
 import {
@@ -1037,6 +1037,7 @@ export async function adminGetOrders(query: {
   const total = Number(countRes.count)
 
   const items = itemsQuery.map((row) => ({
+    id: row.order.id,
     orderNumber: row.order.orderNumber,
     status: row.order.status,
     region: row.order.deliveryRegion,
@@ -1051,7 +1052,77 @@ export async function adminGetOrders(query: {
   return { items, meta: { page, limit, total, hasNext: offset + limit < total, hasPrev: page > 1 } }
 }
 
-export async function confirmPayment(orderId: string, adminId: string, dto: ConfirmPaymentDto) {
+export async function getOrderStatusCounts() {
+  const results = await db
+    .select({
+      status: orders.status,
+      count: count(),
+    })
+    .from(orders)
+    .groupBy(orders.status)
+
+  // Convert to object for easy frontend use
+  const counts: Record<string, number> = {}
+  for (const row of results) {
+    counts[row.status] = Number(row.count)
+  }
+  return counts
+}
+
+export async function adminUpdateStatus(
+  orderId: string,
+  adminId: string,
+  payload: { status: string; note?: string; trackingNumber?: string }
+) {
+  return await db.transaction(async (tx) => {
+    const [order] = await tx.select().from(orders).where(eq(orders.id, orderId)).limit(1)
+    if (!order) throw { status: 404, code: 'ORDER_NOT_FOUND', message: 'Buyurtma topilmadi' }
+
+    // Basic transition check
+    const allowed = VALID_TRANSITIONS[order.status] || []
+    if (!allowed.includes(payload.status)) {
+      throw { status: 400, code: 'INVALID_STATUS_TRANSITION', message: "Bu holatga o'tib bo'lmaydi" }
+    }
+
+    const updates: any = {
+      status: payload.status,
+      updatedAt: new Date(),
+    }
+    if (payload.trackingNumber) updates.trackingNumber = payload.trackingNumber
+
+    const [updated] = await tx.update(orders).set(updates).where(eq(orders.id, orderId)).returning()
+
+    await tx.insert(orderStatusHistory).values({
+      orderId,
+      fromStatus: order.status,
+      toStatus: payload.status as any,
+      changedBy: adminId,
+      note: payload.note,
+    })
+
+    emit.orderStatusChanged({
+      orderId,
+      orderNumber: order.orderNumber,
+      fromStatus: order.status,
+      toStatus: payload.status as any,
+      changedBy: adminId,
+      note: payload.note || null,
+      changedAt: new Date().toISOString(),
+    })
+
+    return updated
+  })
+}
+
+export async function confirmPayment(
+  orderId: string,
+  adminId: string,
+  dto: ConfirmPaymentDto
+) {
+  if (!dto.confirmed) {
+    return rejectPayment(orderId, adminId, { reason: dto.note || "To'lov rad etildi" })
+  }
+
   return await db.transaction(async (tx) => {
     const [order] = await tx.select().from(orders).where(eq(orders.id, orderId)).limit(1)
     if (!order) throw { status: 404, code: 'ORDER_NOT_FOUND', message: 'Buyurtma topilmadi' }
@@ -1763,14 +1834,25 @@ export async function adminGetOrderDetail(orderId: string) {
   const items = await db
     .select({
       id: orderItems.id,
+      productId: orderItems.productId,
+      productName: products.name,
+      brandName: products.brandName,
+      barcode: products.barcode,
+      imageUrls: products.imageUrls,
       quantity: orderItems.quantity,
-      unitPriceSnapshot: orderItems.unitPriceSnapshot,
-      subtotalSnapshot: orderItems.subtotalSnapshot,
-      costAtSaleKrw: orderItems.costAtSaleKrw,
-      product: { id: products.id, name: products.name, imageUrls: products.imageUrls },
+      unitPrice: orderItems.unitPriceSnapshot,
+      subtotal: orderItems.subtotalSnapshot,
+      isWholesale: sql<boolean>`${orderItems.quantity} >= ${productRegionalConfigs.minWholesaleQty}`,
     })
     .from(orderItems)
     .innerJoin(products, eq(orderItems.productId, products.id))
+    .innerJoin(
+      productRegionalConfigs,
+      and(
+        eq(productRegionalConfigs.productId, orderItems.productId),
+        eq(productRegionalConfigs.regionCode, order.deliveryRegion as any)
+      )
+    )
     .where(eq(orderItems.orderId, orderId))
 
   const statusHistory = await db
@@ -1778,13 +1860,62 @@ export async function adminGetOrderDetail(orderId: string) {
     .from(orderStatusHistory)
     .where(eq(orderStatusHistory.orderId, orderId))
     .orderBy(asc(orderStatusHistory.createdAt))
-  const expenses = await db
+
+  const expensesList = await db
     .select()
     .from(orderExpenses)
     .where(eq(orderExpenses.orderId, orderId))
     .orderBy(asc(orderExpenses.createdAt))
 
-  return { ...order, customer, items, statusHistory, expenses }
+  return {
+    id: order.id,
+    orderNumber: order.orderNumber,
+    status: order.status,
+    createdAt: order.createdAt,
+    paymentDeadline: order.paymentDeadline,
+    deliveryRegion: order.deliveryRegion,
+
+    // Customer
+    customerName: `${customer?.firstName || ''} ${customer?.lastName || ''}`.trim(),
+    customerPhone: customer?.phone,
+
+    // Delivery
+    deliveryFullName: order.deliveryFullName,
+    deliveryPhone: order.deliveryPhone,
+    deliveryAddressLine1: order.deliveryAddressLine1,
+    deliveryAddressLine2: order.deliveryAddressLine2,
+    deliveryCity: order.deliveryCity,
+    deliveryProvince: null, // If not in DB
+    deliveryPostalCode: order.deliveryPostalCode,
+
+    // Financial
+    subtotal: Number(order.subtotal || 0),
+    discountAmount: Number(order.discountAmount || 0),
+    cargoFee: Number(order.cargoFee || 0),
+    totalAmount: Number(order.totalAmount || 0),
+    couponCode: order.couponCode,
+
+    // Receipt
+    receiptUrl: order.paymentReceiptUrl,
+
+    // Items
+    items: items.map((item) => ({
+      id: item.id,
+      productId: item.productId,
+      productName: item.productName,
+      brandName: item.brandName,
+      barcode: item.barcode,
+      imageUrl: (item.imageUrls as string[])?.[0] || null,
+      quantity: item.quantity,
+      unitPrice: Number(item.unitPrice),
+      subtotal: Number(item.subtotal),
+      isWholesale: item.isWholesale,
+    })),
+
+    // History & Expenses
+    statusHistory,
+    expenses: expensesList.map((e) => ({ ...e, amountKrw: Number(e.amountKrw) })),
+  }
 }
 
 export async function getInvoiceData(orderId: string, userId: string, isAdmin: boolean) {

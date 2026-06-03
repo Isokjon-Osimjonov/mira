@@ -2,6 +2,10 @@ import { createRouter, createRoute, createRootRoute, redirect } from '@tanstack/
 import { useAuthStore } from './stores/auth.store'
 import { AppLayout } from './layouts/AppLayout'
 import { LoginPage } from './pages/auth/LoginPage'
+import { DashboardPage } from './pages/dashboard/DashboardPage'
+import { ProductsPage } from './pages/products/ProductsPage'
+import { OrdersPage } from './pages/orders/OrdersPage'
+import { OrderDetailPage } from './pages/orders/OrderDetailPage'
 import { BoxesPage } from './pages/boxes/BoxesPage'
 import { NotFoundPage } from './pages/NotFoundPage'
 import { ErrorBoundary } from './components/ErrorBoundary'
@@ -60,9 +64,19 @@ const dashboardRoute = createRoute({
   path: '/dashboard',
   component: () => (
     <ErrorBoundary>
-      <div>Dashboard Placeholder</div>
+      <DashboardPage />
     </ErrorBoundary>
   )
+})
+
+const productsRoute = createRoute({
+  getParentRoute: () => protectedRoute,
+  path: '/products',
+  component: () => (
+    <ErrorBoundary>
+      <ProductsPage />
+    </ErrorBoundary>
+  ),
 })
 
 const boxesRoute = createRoute({
@@ -73,6 +87,29 @@ const boxesRoute = createRoute({
       <BoxesPage />
     </ErrorBoundary>
   )
+})
+
+const ordersRoute = createRoute({
+  getParentRoute: () => protectedRoute,
+  path: '/orders',
+  component: () => (
+    <ErrorBoundary>
+      <OrdersPage />
+    </ErrorBoundary>
+  ),
+})
+
+const orderDetailRoute = createRoute({
+  getParentRoute: () => protectedRoute,
+  path: '/orders/$id',
+  component: function OrderDetail() {
+    const { id } = orderDetailRoute.useParams()
+    return (
+      <ErrorBoundary>
+        <OrderDetailPage id={id} />
+      </ErrorBoundary>
+    )
+  },
 })
 
 const indexRoute = createRoute({
@@ -98,7 +135,10 @@ const routeTree = rootRoute.addChildren([
   protectedRoute.addChildren([
     indexRoute,
     dashboardRoute,
+    productsRoute,
     boxesRoute,
+    ordersRoute,
+    orderDetailRoute,
     // Add other routes here as they are created
   ]),
   notFoundRoute

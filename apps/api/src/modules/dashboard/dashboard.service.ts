@@ -124,16 +124,20 @@ export type Period =
   | 'this_month'
   | 'last_month'
   | 'this_year'
+  | '7d'
+  | '30d'
+  | 'month'
   | 'custom'
 
-export const REVENUE_STATUSES = ['PAYMENT_CONFIRMED', 'PACKING', 'SHIPPED', 'DELIVERED']
+export const REVENUE_STATUSES: ("PAYMENT_CONFIRMED" | "PACKING" | "SHIPPED" | "DELIVERED")[] = 
+  ['PAYMENT_CONFIRMED', 'PACKING', 'SHIPPED', 'DELIVERED']
 
 // ─── Helpers ─────────────────────────────────────────────────────────────
 
 export function getPeriodDates(period: Period, dateFrom?: string, dateTo?: string) {
   const now = new Date()
   let startDate: Date
-  let endDate: Date
+  let endDate: Date = endOfDay(now)
 
   switch (period) {
     case 'today':
@@ -155,6 +159,7 @@ export function getPeriodDates(period: Period, dateFrom?: string, dateTo?: strin
       endDate = endOfWeek(lastWeek, { weekStartsOn: 1 })
       break
     case 'this_month':
+    case 'month':
       startDate = startOfMonth(now)
       endDate = endOfMonth(now)
       break
@@ -166,6 +171,12 @@ export function getPeriodDates(period: Period, dateFrom?: string, dateTo?: strin
     case 'this_year':
       startDate = startOfYear(now)
       endDate = endOfYear(now)
+      break
+    case '7d':
+      startDate = startOfDay(subDays(now, 6))
+      break
+    case '30d':
+      startDate = startOfDay(subDays(now, 29))
       break
     case 'custom':
       if (!dateFrom || !dateTo)
@@ -190,67 +201,194 @@ function getPreviousPeriodDates(startDate: Date, endDate: Date) {
 
 // ─── Overview ────────────────────────────────────────────────────────────
 
-export async function getOverview(period: Period, dateFrom?: string, dateTo?: string) {
-  const { startDate, endDate } = getPeriodDates(period, dateFrom, dateTo)
+export async function getOverview(period: Period) {
+  const { startDate, endDate } = getPeriodDates(period)
+  const { startDate: prevStart, endDate: prevEnd } = getPreviousPeriodDates(startDate, endDate)
 
-  // 1. Revenue & Orders
-  const [revenueStats] = await db
+  // 1. Today vs Yesterday
+  const today = startOfDay(new Date())
+  const yesterday = subDays(today, 1)
+
+  const [todayRev] = await db
     .select({
-      gross: sql<string>`COALESCE(SUM(${orders.totalAmount}), '0')`,
-      refunds: sql<string>`COALESCE(SUM(${orders.refundAmount}), '0')`,
-      total: count(orders.id),
+      revenue: sql<string>`COALESCE(SUM(${orders.totalAmount} - ${orders.refundAmount}), '0')`,
+    })
+    .from(orders)
+    .where(
+      and(
+        gte(orders.paymentConfirmedAt, today),
+        lte(orders.paymentConfirmedAt, endOfDay(today)),
+        inArray(orders.status, REVENUE_STATUSES)
+      )
+    )
+
+  const [yestRev] = await db
+    .select({
+      revenue: sql<string>`COALESCE(SUM(${orders.totalAmount} - ${orders.refundAmount}), '0')`,
+    })
+    .from(orders)
+    .where(
+      and(
+        gte(orders.paymentConfirmedAt, startOfDay(yesterday)),
+        lte(orders.paymentConfirmedAt, endOfDay(yesterday)),
+        inArray(orders.status, REVENUE_STATUSES)
+      )
+    )
+
+  const todayRevenue = Number(todayRev.revenue)
+  const yestRevenue = Number(yestRev.revenue)
+  const todayRevenueChange =
+    yestRevenue > 0 ? Math.round(((todayRevenue - yestRevenue) / yestRevenue) * 100) : 0
+
+  // 2. Period vs Previous Period
+  const [periodRev] = await db
+    .select({
+      revenue: sql<string>`COALESCE(SUM(${orders.totalAmount} - ${orders.refundAmount}), '0')`,
+      count: count(orders.id),
     })
     .from(orders)
     .where(
       and(
         gte(orders.paymentConfirmedAt, startDate),
         lte(orders.paymentConfirmedAt, endDate),
-        sql`${orders.status} IN ('PAYMENT_CONFIRMED', 'PACKING', 'SHIPPED', 'DELIVERED')`
+        inArray(orders.status, REVENUE_STATUSES)
       )
     )
 
-  const grossRevenue = BigInt(revenueStats.gross || '0')
-  const totalRefunds = BigInt(revenueStats.refunds || '0')
-  const netRevenue = grossRevenue - totalRefunds
-
-  const [orderStatusCounts] = await db
+  const [prevRev] = await db
     .select({
-      pending: sql<string>`COUNT(*) FILTER (WHERE ${orders.status} IN ('PENDING_PAYMENT', 'PAYMENT_REJECTED'))`,
-      processing: sql<string>`COUNT(*) FILTER (WHERE ${orders.status} IN ('PAYMENT_SUBMITTED', 'PAYMENT_CONFIRMED', 'PACKING'))`,
-      shipping: sql<string>`COUNT(*) FILTER (WHERE ${orders.status} = 'SHIPPED')`,
-      delivered: sql<string>`COUNT(*) FILTER (WHERE ${orders.status} = 'DELIVERED')`,
-      canceled: sql<string>`COUNT(*) FILTER (WHERE ${orders.status} = 'CANCELED')`,
-      refunded: sql<string>`COUNT(*) FILTER (WHERE ${orders.status} = 'REFUNDED')`,
+      revenue: sql<string>`COALESCE(SUM(${orders.totalAmount} - ${orders.refundAmount}), '0')`,
     })
+    .from(orders)
+    .where(
+      and(
+        gte(orders.paymentConfirmedAt, prevStart),
+        lte(orders.paymentConfirmedAt, prevEnd),
+        inArray(orders.status, REVENUE_STATUSES)
+      )
+    )
+
+  const periodRevenue = Number(periodRev.revenue)
+  const previousRevenue = Number(prevRev.revenue)
+  const periodRevenueChange =
+    previousRevenue > 0 ? Math.round(((periodRevenue - previousRevenue) / previousRevenue) * 100) : 0
+
+  // 3. Pending & Total
+  const [pending] = await db
+    .select({ count: count() })
+    .from(orders)
+    .where(inArray(orders.status, ['PENDING_PAYMENT', 'PAYMENT_SUBMITTED']))
+
+  const [totalInPeriod] = await db
+    .select({ count: count() })
     .from(orders)
     .where(and(gte(orders.createdAt, startDate), lte(orders.createdAt, endDate)))
 
-  // 2. Customers
-  const [totalCustomers] = await db
-    .select({ count: count() })
-    .from(customers)
-    .where(and(eq(customers.isActive, true), isNull(customers.deletedAt)))
-  const [newCustomers] = await db
-    .select({ count: count() })
-    .from(customers)
-    .where(and(gte(customers.createdAt, startDate), lte(customers.createdAt, endDate)))
+  return {
+    todayRevenue,
+    todayRevenueChange,
+    periodRevenue,
+    periodRevenueChange,
+    pendingOrders: Number(pending?.count || 0),
+    totalOrders: Number(totalInPeriod?.count || 0),
+  }
+}
+// ─── Charts ──────────────────────────────────────────────────────────────
 
-  const returningCountRes = await db.execute(sql`
-    SELECT COUNT(*) as count FROM (
-      SELECT customer_id FROM orders 
-      WHERE status IN ('PAYMENT_CONFIRMED', 'PACKING', 'SHIPPED', 'DELIVERED')
-      GROUP BY customer_id HAVING COUNT(*) >= 2
-    ) as sub
-  `)
-  const returningCount = Number(
-    (returningCountRes as any).rows?.[0]?.count || (returningCountRes as any)[0]?.count || 0
-  )
+export async function getRevenue(period: Period) {
+  const { startDate, endDate } = getPeriodDates(period)
+  const startStr = format(startDate, 'yyyy-MM-dd')
+  const endStr = format(endDate, 'yyyy-MM-dd')
 
-  // 3. Profit & Expenses
+  const rows = await db
+    .select({
+      date: dailySalesSummary.date,
+      revenue: sum(dailySalesSummary.revenueKrw),
+    })
+    .from(dailySalesSummary)
+    .where(and(gte(dailySalesSummary.date, startStr), lte(dailySalesSummary.date, endStr)))
+    .groupBy(dailySalesSummary.date)
+    .orderBy(asc(dailySalesSummary.date))
+
+  const daily: { date: string; revenue: number }[] = []
+  let current = new Date(startDate)
+  while (current <= endDate) {
+    const key = format(current, 'yyyy-MM-dd')
+    const row = rows.find((r) => r.date === key)
+    daily.push({
+      date: key,
+      revenue: Number(row?.revenue || 0),
+    })
+    current.setDate(current.getDate() + 1)
+  }
+
+  return { daily }
+}
+
+export async function getOrdersByStatus(period: Period) {
+  const { startDate, endDate } = getPeriodDates(period)
+
+  const rows = await db
+    .select({
+      status: orders.status,
+      count: count(),
+    })
+    .from(orders)
+    .where(and(gte(orders.createdAt, startDate), lte(orders.createdAt, endDate)))
+    .groupBy(orders.status)
+
+  return rows.map((r) => ({
+    status: r.status,
+    count: Number(r.count),
+  }))
+}
+
+// ─── P&L Report ──────────────────────────────────────────────────────────
+
+export async function getPL(period: Period) {
+  return getPLReport(period)
+}
+
+export async function getPLReport(period: Period, dateFrom?: string, dateTo?: string) {
+  const { startDate, endDate } = getPeriodDates(period, dateFrom, dateTo)
+  const { startDate: prevStart, endDate: prevEnd } = getPreviousPeriodDates(startDate, endDate)
+
+  const [revenueStats] = await db
+    .select({
+      gross: sql<string>`COALESCE(SUM(${orders.totalAmount}), '0')`,
+      refunds: sql<string>`COALESCE(SUM(${orders.refundAmount}), '0')`,
+    })
+    .from(orders)
+    .where(
+      and(
+        gte(orders.paymentConfirmedAt, startDate),
+        lte(orders.paymentConfirmedAt, endDate),
+        inArray(orders.status, REVENUE_STATUSES)
+      )
+    )
+
+  const [prevRev] = await db
+    .select({
+      net: sql<string>`COALESCE(SUM(${orders.totalAmount} - ${orders.refundAmount}), '0')`,
+    })
+    .from(orders)
+    .where(
+      and(
+        gte(orders.paymentConfirmedAt, prevStart),
+        lte(orders.paymentConfirmedAt, prevEnd),
+        inArray(orders.status, REVENUE_STATUSES)
+      )
+    )
+
+  const grossRevenue = BigInt(revenueStats?.gross || '0')
+  const totalRefunds = BigInt(revenueStats?.refunds || '0')
+  const netRevenue = grossRevenue - totalRefunds
+
   const [summaryData] = await db
     .select({
-      revenue: sql<string>`SUM(${dailySalesSummary.revenueKrw})`,
-      cogs: sql<string>`SUM(${dailySalesSummary.cogsKrw})`,
+      cogs: sql<string>`COALESCE(SUM(${dailySalesSummary.cogsKrw}), '0')`,
+      cargo: sql<string>`COALESCE(SUM(${dailySalesSummary.cargoKrw}), '0')`,
+      coupons: sql<string>`COALESCE(SUM(${dailySalesSummary.couponDiscountKrw}), '0')`,
     })
     .from(dailySalesSummary)
     .where(
@@ -261,7 +399,7 @@ export async function getOverview(period: Period, dateFrom?: string, dateTo?: st
     )
 
   const [expensesTotal] = await db
-    .select({ total: sql<string>`SUM(${expenses.amountKrw})` })
+    .select({ total: sql<string>`COALESCE(SUM(${expenses.amountKrw}), '0')` })
     .from(expenses)
     .where(
       and(
@@ -270,178 +408,11 @@ export async function getOverview(period: Period, dateFrom?: string, dateTo?: st
       )
     )
 
-  const cogs = BigInt(summaryData?.cogs || '0')
-  const grossProfit = netRevenue - cogs
-  const grossMarginPct = netRevenue > 0n ? Number((grossProfit * 10000n) / netRevenue) / 100 : 0
-
-  const generalExpenses = BigInt(expensesTotal?.total || '0')
-  const netProfit = grossProfit - generalExpenses
-  const netMarginPct = netRevenue > 0n ? Number((netProfit * 10000n) / netRevenue) / 100 : 0
-
-  // 4. Pending Payments
-  const [pendingPayments] = await db
-    .select({
-      count: count(),
-      totalAmount: sql<string>`SUM(${orders.totalAmount})`,
-    })
-    .from(orders)
-    .where(eq(orders.status, 'PAYMENT_SUBMITTED'))
-
-  // 5. Inventory Value
-  const [inventoryValue] = await db
-    .select({
-      value: sql<string>`SUM(${inventoryBatches.costPrice} * ${inventoryBatches.currentQty})`,
-    })
-    .from(inventoryBatches)
-
-  return {
-    revenue: {
-      gross: grossRevenue,
-      refunds: totalRefunds,
-      net: netRevenue,
-    },
-    orders: {
-      total: Number(revenueStats.total || 0),
-      pending: Number(orderStatusCounts.pending || 0),
-      processing: Number(orderStatusCounts.processing || 0),
-      shipping: Number(orderStatusCounts.shipping || 0),
-      delivered: Number(orderStatusCounts.delivered || 0),
-      canceled: Number(orderStatusCounts.canceled || 0),
-      refunded: Number(orderStatusCounts.refunded || 0),
-    },
-    customers: {
-      total: Number(totalCustomers?.count || 0),
-      new: Number(newCustomers?.count || 0),
-      returning: returningCount,
-    },
-    profit: {
-      cogs,
-      grossProfit,
-      grossMarginPct,
-      expenses: generalExpenses,
-      netProfit,
-      netMarginPct,
-    },
-    pendingPayments: {
-      count: Number(pendingPayments?.count || 0),
-      totalAmount: BigInt(pendingPayments?.totalAmount || '0'),
-    },
-    inventoryValue: BigInt(inventoryValue?.value || '0'),
-  }
-}
-// ─── Charts ──────────────────────────────────────────────────────────────
-
-export async function getRevenueChart(
-  period: Period,
-  dateFrom?: string,
-  dateTo?: string,
-  region?: string
-) {
-  const { startDate, endDate } = getPeriodDates(period, dateFrom, dateTo)
-  const startStr = format(startDate, 'yyyy-MM-dd')
-  const endStr = format(endDate, 'yyyy-MM-dd')
-
-  const rows = await db
-    .select({
-      date: dailySalesSummary.date,
-      region: dailySalesSummary.regionCode,
-      revenue: sum(dailySalesSummary.revenueKrw),
-    })
-    .from(dailySalesSummary)
-    .where(
-      and(
-        gte(dailySalesSummary.date, startStr),
-        lte(dailySalesSummary.date, endStr),
-        region ? eq(dailySalesSummary.regionCode, region) : undefined
-      )
-    )
-    .groupBy(dailySalesSummary.date, dailySalesSummary.regionCode)
-    .orderBy(asc(dailySalesSummary.date))
-
-  const dateMap: Record<string, { total: number; uzb: number; kor: number }> = {}
-
-  // Fill all dates in range with 0
-  let current = new Date(startDate)
-  while (current <= endDate) {
-    const key = format(current, 'yyyy-MM-dd')
-    dateMap[key] = { total: 0, uzb: 0, kor: 0 }
-    current.setDate(current.getDate() + 1)
-  }
-
-  let totalRevenue = 0n
-  let uzbRevenue = 0n
-  let korRevenue = 0n
-
-  rows.forEach((row) => {
-    const d = row.date
-    const rev = BigInt(row.revenue || 0)
-    if (dateMap[d]) {
-      dateMap[d].total += Number(rev)
-      if (row.region === 'UZB') {
-        dateMap[d].uzb += Number(rev)
-        uzbRevenue += rev
-      } else if (row.region === 'KOR') {
-        dateMap[d].kor += Number(rev)
-        korRevenue += rev
-      }
-      totalRevenue += rev
-    }
-  })
-
-  const labels = Object.keys(dateMap).sort()
-  const datasets = {
-    total: labels.map((l) => dateMap[l].total),
-    uzb: labels.map((l) => dateMap[l].uzb),
-    kor: labels.map((l) => dateMap[l].kor),
-  }
-
-  return {
-    labels,
-    datasets,
-    summary: {
-      totalRevenue,
-      uzbRevenue,
-      korRevenue,
-      uzbPct: totalRevenue > 0n ? Number((uzbRevenue * 10000n) / totalRevenue) / 100 : 0,
-      korPct: totalRevenue > 0n ? Number((korRevenue * 10000n) / totalRevenue) / 100 : 0,
-    },
-  }
-}
-
-// ─── P&L Report ──────────────────────────────────────────────────────────
-
-export async function getPLReport(period: Period, dateFrom?: string, dateTo?: string) {
-  const { startDate, endDate } = getPeriodDates(period, dateFrom, dateTo)
-  const { startDate: prevStart, endDate: prevEnd } = getPreviousPeriodDates(startDate, endDate)
-
-  const currentData = await getOverview(period, dateFrom, dateTo)
-
-  // Need to get previous overview to compare
-  const prevPeriodType = period === 'custom' ? 'custom' : period // Simplified
-  const prevData = await getOverview(
-    'custom',
-    format(prevStart, 'yyyy-MM-dd'),
-    format(prevEnd, 'yyyy-MM-dd')
-  )
-
-  const [dailyAggs] = await db
-    .select({
-      cargo: sum(dailySalesSummary.cargoKrw),
-      coupons: sum(dailySalesSummary.couponDiscountKrw),
-    })
-    .from(dailySalesSummary)
-    .where(
-      and(
-        gte(dailySalesSummary.date, format(startDate, 'yyyy-MM-dd')),
-        lte(dailySalesSummary.date, format(endDate, 'yyyy-MM-dd'))
-      )
-    )
-
   const expensesByCategory = await db
     .select({
       categoryName: expenseCategories.name,
       categoryIcon: expenseCategories.icon,
-      amount: sum(expenses.amountKrw),
+      amount: sql<string>`COALESCE(SUM(${expenses.amountKrw}), '0')`,
     })
     .from(expenses)
     .innerJoin(expenseCategories, eq(expenses.categoryId, expenseCategories.id))
@@ -453,30 +424,28 @@ export async function getPLReport(period: Period, dateFrom?: string, dateTo?: st
     )
     .groupBy(expenseCategories.name, expenseCategories.icon)
 
-  const cargo = BigInt(dailyAggs?.cargo || 0)
-  const couponsAmt = BigInt(dailyAggs?.coupons || 0)
-  const generalExpenses = currentData.profit.expenses
+  const cogs = BigInt(summaryData?.cogs || '0')
+  const cargo = BigInt(summaryData?.cargo || '0')
+  const couponsAmt = BigInt(summaryData?.coupons || '0')
+  const generalExpenses = BigInt(expensesTotal?.total || '0')
   const totalExpenses = cargo + couponsAmt + generalExpenses
 
+  const grossProfit = netRevenue - cogs
+  const grossMarginPct = netRevenue > 0n ? Number((grossProfit * 10000n) / netRevenue) / 100 : 0
+
+  const netProfit = grossProfit - totalExpenses
+  const netMarginPct = netRevenue > 0n ? Number((netProfit * 10000n) / netRevenue) / 100 : 0
+
+  const prevNet = BigInt(prevRev?.net || '0')
   const revenueDeltaPct =
-    prevData.revenue.net > 0n
-      ? Number(((currentData.revenue.net - prevData.revenue.net) * 10000n) / prevData.revenue.net) /
-        100
-      : 0
-  const profitDeltaPct =
-    prevData.profit.netProfit !== 0n
-      ? Number(
-          ((currentData.profit.netProfit - prevData.profit.netProfit) * 10000n) /
-            (prevData.profit.netProfit > 0n ? prevData.profit.netProfit : 1n)
-        ) / 100
-      : 0
+    prevNet > 0n ? Number(((netRevenue - prevNet) * 10000n) / prevNet) / 100 : 0
 
   return {
     period: { startDate, endDate },
-    revenue: currentData.revenue,
-    cogs: currentData.profit.cogs,
-    grossProfit: currentData.profit.grossProfit,
-    grossMarginPct: currentData.profit.grossMarginPct,
+    revenue: { gross: grossRevenue, refunds: totalRefunds, net: netRevenue },
+    cogs,
+    grossProfit,
+    grossMarginPct,
     expenses: {
       cargo,
       coupons: couponsAmt,
@@ -492,12 +461,92 @@ export async function getPLReport(period: Period, dateFrom?: string, dateTo?: st
       })),
       total: totalExpenses,
     },
-    netProfit: currentData.profit.netProfit,
-    netMarginPct: currentData.profit.netMarginPct,
-    comparison: {
-      revenueDeltaPct,
-      profitDeltaPct,
-    },
+    netProfit,
+    netMarginPct,
+    comparison: { revenueDeltaPct },
+  }
+}
+
+// ─── Inventory ───────────────────────────────────────────────────────────
+
+export async function getInventoryHealth() {
+  const [appSettings] = await db.select().from(settings).limit(1)
+  const threshold = appSettings?.lowStockThreshold || 10
+
+  const allProducts = await db
+    .select({
+      id: products.id,
+      name: products.name,
+      brandName: products.brandName,
+      imageUrls: products.imageUrls,
+      isActive: products.isActive,
+      barcode: products.barcode,
+    })
+    .from(products)
+    .where(isNull(products.deletedAt))
+
+  let totalValue = 0n
+  let totalUnits = 0
+  let lowStockCount = 0
+  const productData: any[] = []
+  const lowStockItems: any[] = []
+
+  for (const p of allProducts) {
+    const batches = await db
+      .select()
+      .from(inventoryBatches)
+      .where(eq(inventoryBatches.productId, p.id))
+
+    const totalQty = batches.reduce((acc, b) => acc + b.currentQty, 0)
+    const invValue = batches.reduce((acc, b) => acc + b.costPrice * BigInt(b.currentQty), 0n)
+    const avgCost = batches.length > 0 ? invValue / BigInt(totalQty || 1) : 0n
+
+    const nearestExpiry = batches.reduce((min: Date | null, b) => {
+      if (!b.expiryDate) return min
+      const d = new Date(b.expiryDate)
+      return !min || d < min ? d : min
+    }, null)
+
+    totalValue += invValue
+    totalUnits += totalQty
+
+    let status: 'ok' | 'low' | 'out' = 'ok'
+    if (totalQty === 0) status = 'out'
+    else if (totalQty <= threshold) {
+      status = 'low'
+      lowStockCount++
+      lowStockItems.push({
+        productId: p.id,
+        productName: p.name,
+        brandName: p.brandName,
+        imageUrl: (p.imageUrls as string[])?.[0] || null,
+        availableStock: totalQty,
+      })
+    }
+
+    productData.push({
+      productId: p.id,
+      productName: p.name,
+      brandName: p.brandName,
+      barcode: p.barcode,
+      totalQty,
+      inventoryValue: invValue,
+      avgCostPrice: avgCost,
+      batchCount: batches.length,
+      nearestExpiry,
+      status,
+    })
+  }
+
+  return {
+    totalProducts: allProducts.length,
+    activeProducts: allProducts.filter((p) => p.isActive).length,
+    totalValue,
+    totalValueKrw: Number(totalValue), // For dashboard
+    totalUnits,
+    lowStockCount,
+    lowStockItems: lowStockItems.sort((a, b) => a.availableStock - b.availableStock).slice(0, 10),
+    products: productData, // For reports
   }
 }
 
@@ -649,11 +698,11 @@ export async function getProductPerformance(query: {
 
       if (!product) return null
 
-      const unitsSold = Number(row.unitsSold || 0)
-      const revenue = BigInt(row.revenueKrw || 0)
-      const cogs = BigInt(row.cogsKrw || 0)
+      const soldQty = Number(row.unitsSold || 0)
+      const revenue = Number(row.revenueKrw || 0)
+      const cogs = Number(row.cogsKrw || 0)
       const grossProfit = revenue - cogs
-      const marginPct = revenue > 0n ? Number((grossProfit * 10000n) / revenue) / 100 : 0
+      const marginPct = revenue > 0 ? (grossProfit / revenue) * 100 : 0
       const refundCount = Number(row.refundCount || 0)
 
       const [stock] = await db
@@ -668,16 +717,16 @@ export async function getProductPerformance(query: {
         brandName: product.brandName,
         categoryName: product.categoryName,
         imageUrl: (product.imageUrls as string[])?.[0] || null,
-        unitsSold,
+        soldQty,
         revenueKrw: revenue,
         cogsKrw: cogs,
         grossProfit,
         marginPct,
         refundCount,
-        refundRate: unitsSold > 0 ? (refundCount / unitsSold) * 100 : 0,
+        refundRate: soldQty > 0 ? (refundCount / soldQty) * 100 : 0,
         currentStock,
-        stockVelocity: unitsSold / days,
-        isDead: unitsSold === 0 && currentStock > 0,
+        stockVelocity: soldQty / days,
+        isDead: soldQty === 0 && currentStock > 0,
       }
     })
   )
@@ -748,111 +797,6 @@ export async function getBrandPerformance(period: Period, dateFrom?: string, dat
   )
 
   return items.sort((a, b) => Number(b.revenueKrw - a.revenueKrw))
-}
-
-// ─── Inventory ───────────────────────────────────────────────────────────
-
-export async function getInventoryHealth() {
-  const [appSettings] = await db.select().from(settings).limit(1)
-  const threshold = appSettings?.lowStockThreshold || 10
-
-  const allProducts = await db
-    .select({
-      id: products.id,
-      name: products.name,
-      brandName: products.brandName,
-      barcode: products.barcode,
-    })
-    .from(products)
-    .where(isNull(products.deletedAt))
-
-  let totalValue = 0n
-  let totalUnits = 0
-  let lowStockCount = 0
-  let outOfStockCount = 0
-  let deadStockCount = 0
-
-  const now = new Date()
-  const thirtyDaysAgo = subDays(now, 30)
-  const thirtyDaysAgoStr = format(thirtyDaysAgo, 'yyyy-MM-dd')
-
-  const productData = await Promise.all(
-    allProducts.map(async (p) => {
-      const batches = await db
-        .select()
-        .from(inventoryBatches)
-        .where(eq(inventoryBatches.productId, p.id))
-
-      const totalQty = batches.reduce((acc, b) => acc + b.currentQty, 0)
-      const invValue = batches.reduce((acc, b) => acc + b.costPrice * BigInt(b.currentQty), 0n)
-      const avgCost = batches.length > 0 ? invValue / BigInt(totalQty || 1) : 0n
-
-      const nearestExpiry = batches.reduce((min: Date | null, b) => {
-        if (!b.expiryDate) return min
-        const d = new Date(b.expiryDate)
-        return !min || d < min ? d : min
-      }, null)
-
-      // Last sale
-      const [lastSale] = await db
-        .select({ date: dailySalesSummary.date })
-        .from(dailySalesSummary)
-        .where(eq(dailySalesSummary.productId, p.id))
-        .orderBy(desc(dailySalesSummary.date))
-        .limit(1)
-
-      // Velocity (last 30 days)
-      const [velocityRow] = await db
-        .select({ units: sum(dailySalesSummary.unitsSold) })
-        .from(dailySalesSummary)
-        .where(
-          and(eq(dailySalesSummary.productId, p.id), gte(dailySalesSummary.date, thirtyDaysAgoStr))
-        )
-      const unitsLast30 = Number(velocityRow?.units || 0)
-      const velocity = unitsLast30 / 30
-
-      totalValue += invValue
-      totalUnits += totalQty
-      if (totalQty === 0) outOfStockCount++
-      else if (totalQty <= threshold) lowStockCount++
-
-      const isDead = totalQty > 0 && unitsLast30 === 0
-      if (isDead) deadStockCount++
-
-      let status: 'ok' | 'low' | 'out' | 'dead' | 'expiring_soon' = 'ok'
-      if (totalQty === 0) status = 'out'
-      else if (nearestExpiry && nearestExpiry.getTime() < now.getTime() + 30 * 24 * 60 * 60 * 1000)
-        status = 'expiring_soon'
-      else if (totalQty <= threshold) status = 'low'
-      else if (isDead) status = 'dead'
-
-      return {
-        productId: p.id,
-        productName: p.name,
-        brandName: p.brandName,
-        barcode: p.barcode,
-        totalQty,
-        inventoryValue: invValue,
-        avgCostPrice: avgCost,
-        batchCount: batches.length,
-        nearestExpiry,
-        lastSaleDate: lastSale?.date || null,
-        stockVelocity: velocity,
-        daysRemaining: velocity > 0 ? Math.floor(totalQty / velocity) : null,
-        status,
-      }
-    })
-  )
-
-  return {
-    totalValue,
-    totalUnits,
-    productCount: allProducts.length,
-    lowStockCount,
-    outOfStockCount,
-    deadStockCount,
-    products: productData,
-  }
 }
 
 // ─── Customers ───────────────────────────────────────────────────────────

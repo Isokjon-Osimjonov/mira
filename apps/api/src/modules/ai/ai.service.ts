@@ -1,5 +1,6 @@
 import { openai, VISION_MODEL } from '../../config/openai'
 import { isValidCloudinaryUrl } from '../../lib/validate-url'
+import { env } from '../../config/env'
 
 export interface ProductImageAnalysisOutput {
   name: string
@@ -28,16 +29,134 @@ export interface TelegramPostImageInput {
 // ─── EXISTING FUNCTIONS ───────────────────────────────────────
 
 /**
- * EXISTING: Gemini-powered product content generation (text-only)
+ * AI-powered product content generation using OpenAI GPT-4o
  */
-export async function generateProductContent(
-  searchQuery: string,
-  categoryName?: string,
+export async function generateProductContent(input: {
+  productId?: string
+  productName?: string
+  barcode?: string
+  imageUrl?: string
+  categoryName?: string
   additionalInfo?: string
-): Promise<ProductImageAnalysisOutput> {
-  // Skeleton implementation for Gemini (text-only)
-  // In a real scenario, this would use Google Generative AI
-  throw new Error('Gemini text-only generation not implemented or configuration missing')
+}): Promise<ProductImageAnalysisOutput> {
+  if (!env.OPENAI_API_KEY) {
+    throw {
+      status: 500,
+      code: 'AI_NOT_CONFIGURED',
+      message: 'OpenAI API kaliti sozlanmagan',
+    }
+  }
+
+  let productName = input.productName
+  let barcode = input.barcode
+  let imageUrl = input.imageUrl
+
+  // If productId provided, fetch existing data
+  if (input.productId) {
+    const { products } = await import('@mira/db')
+    const { eq } = await import('drizzle-orm')
+    const { db } = await import('../../config/db')
+
+    const [existing] = await db
+      .select()
+      .from(products)
+      .where(eq(products.id, input.productId))
+      .limit(1)
+
+    if (existing) {
+      if (!productName) productName = existing.name
+      if (!barcode) barcode = existing.barcode
+      if (!imageUrl && existing.imageUrls?.length) {
+        imageUrl = (existing.imageUrls as string[])[0]
+      }
+    }
+  }
+
+  const systemPrompt = `
+Sen Koreya kosmetikasi ekspertisan. Mahsulot haqidagi ma'lumotlar asosida (nomi, barcode, rasm URL) mahsulot haqida to'liq tavsif va detallarni ber.
+FAQAT JSON formatda javob ber — boshqa hech narsa yo'q.
+  `.trim()
+
+  let userPrompt = `
+Ushbu kosmetik mahsulotni tahlil qil va quyidagi ma'lumotlarni ber:
+${productName ? `Nomi: ${productName}` : ''}
+${barcode ? `Barcode: ${barcode}` : ''}
+${input.categoryName ? `Kategoriya: ${input.categoryName}` : ''}
+${input.additionalInfo ? `Qo'shimcha: ${input.additionalInfo}` : ''}
+
+QOIDALAR:
+1. name: mahsulotning to'liq rasmiy nomi (inglizcha, original)
+2. brandName: brend rasmiy nomi
+3. descriptionUz: 2-3 paragraf, O'zbek tilida (lotin alifbosi), marketing tili
+4. ingredients: mahsulotga xos asosiy faol moddalar (INCI nomida, inglizcha array)
+5. skinTypes: faqat: ["oily","dry","combination","sensitive","normal","all"] (array)
+6. benefits: 3-6 ta foyda O'zbek tilida (array)
+7. howToUseUz: O'zbek tilida ketma-ket qadamlar
+8. volume: hajm ("150ml", "50g" kabi)
+9. weightGrams: faqat raqam (grammda, masalan: 150)
+
+JSON:
+{
+  "name": "...",
+  "brandName": "...",
+  "descriptionUz": "...",
+  "ingredients": ["...", "..."],
+  "skinTypes": ["...", "..."],
+  "benefits": ["...", "..."],
+  "howToUseUz": "1. ...\n2. ...",
+  "volume": "...",
+  "weightGrams": 0
+}
+  `.trim()
+
+  try {
+    const messages: any[] = [{ role: 'system', content: systemPrompt }]
+
+    if (imageUrl) {
+      messages.push({
+        role: 'user',
+        content: [
+          { type: 'text', text: userPrompt },
+          {
+            type: 'image_url',
+            image_url: { url: imageUrl, detail: 'high' },
+          },
+        ],
+      })
+    } else {
+      messages.push({ role: 'user', content: userPrompt })
+    }
+
+    const response = await openai.chat.completions.create({
+      model: VISION_MODEL,
+      messages,
+      max_tokens: 2000,
+      response_format: { type: 'json_object' },
+    })
+
+    const content = response.choices[0]?.message?.content
+    if (!content) {
+      console.error('[AI Service] Empty response from OpenAI')
+      throw new Error('OpenAI empty response')
+    }
+
+    try {
+      return JSON.parse(content)
+    } catch (parseErr) {
+      console.error('[AI Service] JSON Parse Error:', parseErr, '\nContent:', content)
+      throw new Error('AI returned invalid JSON')
+    }
+  } catch (err: any) {
+    console.error('[AI Service] Error generating product content:', err)
+    if (err.status === 429) {
+      throw { status: 429, code: 'AI_QUOTA_EXCEEDED', message: 'OpenAI limit oshdi.' }
+    }
+    throw {
+      status: 500,
+      code: 'AI_GENERATION_FAILED',
+      message: err.message || "AI ma'lumot yarata olmadi. Qayta urining.",
+    }
+  }
 }
 
 /**

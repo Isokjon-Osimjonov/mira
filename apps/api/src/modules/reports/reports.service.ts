@@ -381,7 +381,7 @@ export async function generateInventoryReport() {
       total: Number(p.inventoryValue),
       batches: p.batchCount,
       expiry: p.nearestExpiry ? new Date(p.nearestExpiry) : '-',
-      status: statusMap[p.status] || p.status,
+      status: (statusMap as any)[p.status] || p.status,
     })
     row.getCell(6).numFmt = FORMATS.KRW
     row.getCell(7).numFmt = FORMATS.KRW
