@@ -185,11 +185,11 @@ export async function createPost(data: CreatePostDto, adminId: string) {
   if (channels.length === 0)
     throw { status: 400, message: "Hech bo'lmaganda bitta faol kanalni tanlang" }
 
-  return await db.transaction(async (tx) => {
+  const newPost = await db.transaction(async (tx) => {
     const scheduledAt = data.scheduledAt ? new Date(data.scheduledAt) : null
     const isImmediate = !scheduledAt || scheduledAt <= new Date()
 
-    const [newPost] = await tx
+    const [post] = await tx
       .insert(telegramPosts)
       .values({
         title: data.title,
@@ -203,22 +203,28 @@ export async function createPost(data: CreatePostDto, adminId: string) {
       .returning()
 
     const postChannelsToInsert = data.channelIds.map((cid) => ({
-      postId: newPost.id,
+      postId: post.id,
       channelId: cid,
       status: 'PENDING',
     }))
 
     await tx.insert(telegramPostChannels).values(postChannelsToInsert as any)
 
-    if (isImmediate) {
-      // Immediate send is async but we don't wait for completion to return 200
-      // Actually, instructions say "Immediately call sendPost(postId)"
-      // I'll call it within the service return so the user sees progress or gets an initial response
-      // But we must commit transaction first.
-    }
-
-    return newPost
+    return post
   })
+
+  if (newPost.scheduledAt && newPost.status === 'SCHEDULED') {
+    const { scheduleTelegramPost } = await import('../../config/queues')
+    await scheduleTelegramPost(newPost.id, newPost.scheduledAt).catch((e) =>
+      console.error('Failed to schedule telegram post:', e)
+    )
+  } else {
+    // If immediate, you can trigger sendPost here or leave it to cron if you prefer.
+    // For immediate behavior, trigger it directly:
+    sendPost(newPost.id).catch(console.error)
+  }
+
+  return newPost
 }
 
 export async function updatePost(id: string, data: UpdatePostDto) {

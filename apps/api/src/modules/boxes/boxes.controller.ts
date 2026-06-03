@@ -5,7 +5,7 @@ import { createBoxSchema, updateBoxSchema } from './boxes.schema'
 export async function getActiveBoxes(_req: Request, res: Response) {
   try {
     const items = await service.getActiveBoxes()
-    const safeData = items.map((box) => ({
+    const safeData = items.map((box: any) => ({
       ...box,
       maxWeightKg: parseFloat(Number(box.maxWeightKg).toFixed(3)),
       boxWeightKg: parseFloat(Number(box.boxWeightKg).toFixed(3)),
@@ -22,7 +22,7 @@ export async function getActiveBoxes(_req: Request, res: Response) {
 export async function getAllBoxes(_req: Request, res: Response) {
   try {
     const items = await service.getAllBoxes()
-    const safeData = items.map((box) => ({
+    const safeData = items.map((box: any) => ({
       ...box,
       maxWeightKg: parseFloat(Number(box.maxWeightKg).toFixed(3)),
       boxWeightKg: parseFloat(Number(box.boxWeightKg).toFixed(3)),

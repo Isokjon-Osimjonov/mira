@@ -2,13 +2,22 @@ import { db } from '../../config/db'
 import { korShippingTiers } from '@mira/db'
 import { eq, asc, isNull, and, not } from 'drizzle-orm'
 import type { CreateTierDto, UpdateTierDto } from './kor-shipping.schema'
+import { cacheGet, cacheSet, cacheDelete, CACHE_TTL } from '../../lib/cache'
+
+const CACHE_KEY = 'korshipping:active'
 
 export async function getActiveTiers() {
-  return await db
+  const cached = await cacheGet<any>(CACHE_KEY)
+  if (cached) return cached
+
+  const result = await db
     .select()
     .from(korShippingTiers)
     .where(eq(korShippingTiers.isActive, true))
     .orderBy(asc(korShippingTiers.sortOrder))
+
+  await cacheSet(CACHE_KEY, result, CACHE_TTL.KOR_SHIPPING)
+  return result
 }
 
 export async function getAllTiers() {
@@ -42,6 +51,7 @@ export async function createTier(data: CreateTierDto) {
     } as any)
     .returning()
 
+  await cacheDelete(CACHE_KEY)
   return newTier
 }
 
@@ -74,11 +84,13 @@ export async function updateTier(id: string, data: UpdateTierDto) {
     .returning()
 
   if (!updated) throw { status: 404, code: 'TIER_NOT_FOUND', message: 'Tier topilmadi' }
+  await cacheDelete(CACHE_KEY)
   return updated
 }
 
 export async function deleteTier(id: string) {
   const [deleted] = await db.delete(korShippingTiers).where(eq(korShippingTiers.id, id)).returning()
   if (!deleted) throw { status: 404, code: 'TIER_NOT_FOUND', message: 'Tier topilmadi' }
+  await cacheDelete(CACHE_KEY)
   return deleted
 }

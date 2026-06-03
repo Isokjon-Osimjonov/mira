@@ -3,6 +3,7 @@ import { execSync } from 'child_process'
 import * as fs from 'fs'
 import { InputFile } from 'grammy'
 import { env } from './env'
+import { logger } from './logger'
 import {
   cancelExpiredOrders,
   reconcileDailySummary,
@@ -24,10 +25,10 @@ export function initCronJobs(): void {
       try {
         const count = await cancelExpiredOrders()
         if (count > 0) {
-          console.log(`🕐 Auto-cancel: ${count} ta buyurtma bekor qilindi`)
+          logger.info(`Auto-cancel: ${count} ta buyurtma bekor qilindi`)
         }
       } catch (err: any) {
-        console.error('❌ Auto-cancel cron error:', err.message)
+        logger.error({ err: err.message }, 'Auto-cancel cron error')
       }
     },
     { timezone: 'Asia/Seoul' }
@@ -40,9 +41,9 @@ export function initCronJobs(): void {
       try {
         if (!env.EXCHANGE_RATE_API_KEY) return
         const rate = await fetchAndSaveExchangeRate()
-        console.log(`💱 Kurs yangilandi: 1 KRW = ${rate.krwToUzs} UZS`)
+        logger.info(`Kurs yangilandi: 1 KRW = ${rate.krwToUzs} UZS`)
       } catch (err: any) {
-        console.error('❌ Exchange rate cron error:', err.message)
+        logger.error({ err: err.message }, 'Exchange rate cron error')
       }
     },
     { timezone: 'Asia/Seoul' }
@@ -55,10 +56,10 @@ export function initCronJobs(): void {
       try {
         const count = await sendScheduledPosts()
         if (count > 0) {
-          console.log(`📢 ${count} ta post yuborildi`)
+          logger.info(`${count} ta post yuborildi`)
         }
       } catch (err: any) {
-        console.error('❌ Telegram posts cron error:', err.message)
+        logger.error({ err: err.message }, 'Telegram posts cron error')
       }
     },
     { timezone: 'Asia/Seoul' }
@@ -70,9 +71,9 @@ export function initCronJobs(): void {
     async () => {
       try {
         await reconcileDailySummary()
-        console.log('📊 Kunlik hisobot tekshirildi')
+        logger.info('Kunlik hisobot tekshirildi')
       } catch (err: any) {
-        console.error('❌ Reconciliation cron error:', err.message)
+        logger.error({ err: err.message }, 'Reconciliation cron error')
       }
     },
     { timezone: 'Asia/Seoul' }
@@ -85,7 +86,7 @@ export function initCronJobs(): void {
       try {
         await sendDeadlineReminders()
       } catch (err: any) {
-        console.error('❌ Deadline reminder cron error:', err.message)
+        logger.error({ err: err.message }, 'Deadline reminder cron error')
       }
     },
     { timezone: 'Asia/Seoul' }
@@ -97,9 +98,9 @@ export function initCronJobs(): void {
     async () => {
       try {
         await checkExpiringBatches()
-        console.log('📅 Muddati tekshirildi')
+        logger.info('Muddati tekshirildi')
       } catch (err: any) {
-        console.error('❌ Expiry check cron error:', err.message)
+        logger.error({ err: err.message }, 'Expiry check cron error')
       }
     },
     { timezone: 'Asia/Seoul' }
@@ -112,13 +113,13 @@ export function initCronJobs(): void {
       try {
         await backupDatabase()
       } catch (err: any) {
-        console.error('❌ Backup cron error:', err.message)
+        logger.error({ err: err.message }, 'Backup cron error')
       }
     },
     { timezone: 'Asia/Seoul' }
   )
 
-  console.log('⏰ Cron jobs started')
+  logger.info('Cron jobs started')
 }
 
 export async function backupDatabase(): Promise<void> {
@@ -146,9 +147,9 @@ export async function backupDatabase(): Promise<void> {
 
     // Cleanup
     fs.unlinkSync(gzPath)
-    console.log(`✅ Backup yuborildi: ${sizeMB} MB`)
+    logger.info(`Backup yuborildi: ${sizeMB} MB`)
   } catch (err: any) {
-    console.error('❌ Backup error:', err.message)
+    logger.error({ err: err.message }, 'Backup error')
     await sendAdminAlert(`❌ DB backup xatolik: ${err.message}`)
   }
 }

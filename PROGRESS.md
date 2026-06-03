@@ -112,6 +112,18 @@
 
 ## 🔄 Changelog
 
+### v0.3.1-dev (2026-06-03)
+- **Production Hardening**: Complete infrastructure upgrade.
+  - Pino structured logging (replaces console.log).
+  - Redis caching (settings, rates, categories, brands).
+  - BullMQ queues (notifications, deadlines, posts) with Bull Board UI.
+  - Sentry error tracking integration.
+  - Database connection pooling (pg.Pool).
+  - Query timeout configuration.
+  - Enhanced health check (DB + Redis status).
+  - Morgan HTTP request logging mapped to Pino.
+  - Graceful shutdown handlers for all services.
+
 ### v0.3.0-dev (2026-06-02)
 - **Redesigned Invoices**: Complete overhaul of the PDF invoice generation.
   - Premium, NuraSkin-inspired clean layout with pink branding.

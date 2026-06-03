@@ -5,7 +5,7 @@ import { createTierSchema, updateTierSchema } from './kor-shipping.schema'
 export async function getActiveTiers(_req: Request, res: Response) {
   try {
     const items = await service.getActiveTiers()
-    const safeData = items.map((t) => ({
+    const safeData = items.map((t: any) => ({
       ...t,
       maxOrderKrw: t.maxOrderKrw ? Number(t.maxOrderKrw) : null,
       cargoFeeKrw: Number(t.cargoFeeKrw),
@@ -21,7 +21,7 @@ export async function getActiveTiers(_req: Request, res: Response) {
 export async function getAllTiers(_req: Request, res: Response) {
   try {
     const items = await service.getAllTiers()
-    const safeData = items.map((t) => ({
+    const safeData = items.map((t: any) => ({
       ...t,
       maxOrderKrw: t.maxOrderKrw ? Number(t.maxOrderKrw) : null,
       cargoFeeKrw: Number(t.cargoFeeKrw),

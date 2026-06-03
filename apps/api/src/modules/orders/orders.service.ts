@@ -34,6 +34,7 @@ import {
   sendAdminAlert,
 } from '../../bot/helpers/notify'
 import { validateCoupon } from '../coupons/coupons.service'
+import { schedulePaymentDeadline, paymentDeadlineQueue } from '../../config/queues'
 import type {
   CheckoutDto,
   UploadReceiptDto,
@@ -47,6 +48,7 @@ import type {
 } from './orders.schema'
 import { getSettings } from '../settings/settings.service'
 import { isValidCloudinaryUrl } from '../../lib/validate-url'
+import { orderLogger } from '../../config/logger'
 
 const VALID_TRANSITIONS: Record<string, string[]> = {
   PENDING_PAYMENT: ['PAYMENT_SUBMITTED', 'CANCELED'],
@@ -174,6 +176,32 @@ async function fetchOrderItemsForCheckout(
   }
 
   return orderItemsData
+}
+
+export async function sendOrderDeadlineReminder(orderId: string): Promise<void> {
+  const [order] = await db.select().from(orders).where(eq(orders.id, orderId)).limit(1)
+  if (!order || !['PENDING_PAYMENT', 'PAYMENT_REJECTED'].includes(order.status)) return
+
+  try {
+    const tokens = await getCustomerTokens(order.customerId)
+    await notifyCustomerFull({
+      customerId: order.customerId,
+      telegramId: tokens.telegramId,
+      expoPushToken: tokens.expoPushToken,
+      type: 'ORDER_STATUS',
+      channel: 'BOTH',
+      title: '⚠️ 10 daqiqa qoldi!',
+      body: `#${order.orderNumber} — Tez to'lov yuklang!`,
+      telegramMessage:
+        `⚠️ <b>Diqqat!</b>\n\n` +
+        `📦 <b>#${order.orderNumber}</b>\n` +
+        `To'lovni yuklashga <b>10 daqiqa</b> qoldi!\n` +
+        `Aks holda buyurtma bekor qilinadi.`,
+      data: { orderId: order.id, type: 'DEADLINE_REMINDER' },
+    })
+  } catch (e: any) {
+    orderLogger.error({ err: e.message, orderId: order.id }, 'Error sending deadline reminder')
+  }
 }
 
 // ─── Core Checkout Function ─────────────────────────────────────────────
@@ -631,6 +659,12 @@ export async function createOrder(params: {
           `💰 ₩${Number(totalAmount).toLocaleString()}\n` +
           `⏰ To'lovni <b>${appSettings.paymentTimeoutMinutes} daqiqa</b> ichida yuklang`,
         data: { orderId: newOrder.id, type: 'ORDER_CREATED' },
+      })
+    }
+
+    if (paymentDeadline) {
+      await schedulePaymentDeadline(newOrder.id, paymentDeadline).catch((err) => {
+        orderLogger.error({ err: err.message, orderId: newOrder.id }, 'Failed to schedule deadline')
       })
     }
 
@@ -1187,6 +1221,10 @@ export async function rejectPayment(orderId: string, adminId: string, dto: Rejec
       reason: dto.reason,
       rejectedAt: new Date().toISOString(),
     })
+
+    await paymentDeadlineQueue.remove(`reminder-${orderId}`).catch(() => {})
+    await paymentDeadlineQueue.remove(`cancel-${orderId}`).catch(() => {})
+    await schedulePaymentDeadline(orderId, newDeadline).catch(() => {})
 
     return updated
   })
@@ -1851,8 +1889,8 @@ export async function cancelExpiredOrders(): Promise<number> {
         reason: 'payment_deadline_expired',
         canceledAt: new Date().toISOString(),
       })
-    } catch (e) {
-      console.error(`Error auto-canceling order ${order.id}:`, e)
+    } catch (e: any) {
+      orderLogger.error({ err: e.message, orderId: order.id }, 'Error auto-canceling order')
     }
   }
   return count
@@ -1892,8 +1930,8 @@ export async function sendDeadlineReminders(): Promise<void> {
           `Aks holda buyurtma bekor qilinadi.`,
         data: { orderId: order.id, type: 'DEADLINE_REMINDER' },
       })
-    } catch (e) {
-      console.error(`Error sending deadline reminder for order ${order.id}:`, e)
+    } catch (e: any) {
+      orderLogger.error({ err: e.message, orderId: order.id }, 'Error sending deadline reminder')
     }
   }
 }

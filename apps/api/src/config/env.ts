@@ -48,6 +48,15 @@ const envSchema = z.object({
   ADMIN_URL: z.string().default('http://localhost:3000'),
   CORS_ORIGINS: z.string().default('http://localhost:3000'),
   SOCKET_CORS_ORIGINS: z.string().default('http://localhost:3000'),
+
+  // ─── Observability & Performance ───────────────────────
+  REDIS_URL: z.string().default('redis://localhost:6379'),
+  SENTRY_DSN: z.string().optional(),
+  LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
+  DB_POOL_MAX: z.coerce.number().default(20),
+  DB_POOL_IDLE_MS: z.coerce.number().default(30000),
+  DB_TIMEOUT_MS: z.coerce.number().default(30000),
+  ADMIN_QUEUE_KEY: z.string().min(16).default('mira-queue-secret-key'),
 })
 
 const parsed = envSchema.safeParse(process.env)

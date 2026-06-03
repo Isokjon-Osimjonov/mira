@@ -5,8 +5,14 @@ import axios from 'axios'
 import { env } from '../../config/env'
 import type { CreateExchangeRateDto } from './exchange-rates.schema'
 import { getSettings } from '../settings/settings.service'
+import { cacheGet, cacheSet, cacheDelete, CACHE_TTL } from '../../lib/cache'
+
+const CACHE_KEY = 'exchange_rate:latest'
 
 export async function getLatestExchangeRate() {
+  const cached = await cacheGet<any>(CACHE_KEY)
+  if (cached) return { ...cached, createdAt: new Date(cached.createdAt) }
+
   const [latest] = await db
     .select()
     .from(exchangeRateSnapshots)
@@ -17,13 +23,16 @@ export async function getLatestExchangeRate() {
     throw { status: 404, code: 'EXCHANGE_RATE_NOT_FOUND', message: 'Valyuta kursi topilmadi' }
   }
 
-  return {
+  const result = {
     krwToUzs: latest.krwToUzs,
     usdToKrw: latest.usdToKrw,
     cargoRateKrwPerKg: latest.cargoRateKrwPerKg,
     createdAt: latest.createdAt,
     source: latest.source,
   }
+
+  await cacheSet(CACHE_KEY, result, CACHE_TTL.EXCHANGE_RATE)
+  return result
 }
 
 export async function getExchangeRateHistory() {
@@ -51,6 +60,7 @@ export async function createManualExchangeRate(dto: CreateExchangeRateDto, admin
     })
     .returning()
 
+  await cacheDelete(CACHE_KEY)
   return created
 }
 
@@ -103,6 +113,7 @@ export async function fetchAndSaveExchangeRate() {
       })
       .returning()
 
+    await cacheDelete(CACHE_KEY)
     return created
   } catch (error: any) {
     if (axios.isAxiosError(error)) {

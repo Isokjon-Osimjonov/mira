@@ -7,6 +7,13 @@ import { env } from './config/env'
 import { errorHandler } from './middleware/errorHandler'
 import { apiLimiter, speedLimiter } from './middleware/rateLimiter'
 import { sanitizeInputs } from './middleware/sanitize'
+import { logger } from './config/logger'
+import { checkDbHealth, pool } from './config/db'
+import { getRedis } from './config/redis'
+import { createBullBoard } from '@bull-board/api'
+import { BullMQAdapter } from '@bull-board/api/bullMQAdapter'
+import { ExpressAdapter } from '@bull-board/express'
+import { notificationQueue, paymentDeadlineQueue, telegramPostQueue } from './config/queues'
 
 // Routers
 import authRouter from './modules/auth/auth.router'
@@ -92,16 +99,88 @@ export function createApp() {
     return Number(this)
   }
 
-  app.use(morgan(env.NODE_ENV === 'development' ? 'dev' : 'combined'))
+  // Morgan → pino integration
+  const morganStream = {
+    write: (message: string) => {
+      logger.info({ http: message.trim() }, 'HTTP request')
+    },
+  }
+
+  if (env.NODE_ENV === 'development') {
+    app.use(morgan('dev'))
+  } else {
+    // Production: JSON structured
+    app.use(morgan(':method :url :status :res[content-length] - :response-time ms', { stream: morganStream }))
+  }
+  
   app.use('/api', apiLimiter)
 
-  // Health check
-  app.get('/health', (_req, res) => {
-    res.json({
-      data: { status: 'ok', env: env.NODE_ENV, uptime: Math.round(process.uptime()) },
+  // Enhanced Health check
+  app.get('/health', async (_req, res) => {
+    const [dbOk, redisOk] = await Promise.all([
+      checkDbHealth(),
+      (async () => {
+        const redis = getRedis()
+        if (!redis) return 'disabled'
+        try {
+          const start = Date.now()
+          await redis.ping()
+          return `ok (${Date.now() - start}ms)`
+        } catch {
+          return 'down'
+        }
+      })(),
+    ])
+
+    const status = !dbOk ? 'down' : redisOk === 'down' ? 'degraded' : 'ok'
+
+    res.status(status === 'down' ? 503 : 200).json({
+      data: {
+        status,
+        version: 'v0.3.0',
+        uptime: Math.floor(process.uptime()),
+        env: env.NODE_ENV,
+        timestamp: new Date().toISOString(),
+        services: {
+          database: {
+            status: dbOk ? 'ok' : 'down',
+            poolSize: pool.totalCount,
+            idleCount: pool.idleCount,
+            waitingCount: pool.waitingCount,
+          },
+          redis: { status: redisOk },
+          bot: { status: 'ok', username: env.BOT_USERNAME },
+        },
+      },
       error: null,
     })
   })
+
+  // Bull Board
+  const serverAdapter = new ExpressAdapter()
+  serverAdapter.setBasePath('/admin/queues')
+
+  createBullBoard({
+    queues: [
+      new BullMQAdapter(notificationQueue),
+      new BullMQAdapter(paymentDeadlineQueue),
+      new BullMQAdapter(telegramPostQueue),
+    ],
+    serverAdapter,
+  })
+
+  // Protected route — admin only
+  app.use(
+    '/admin/queues',
+    (req, res, next) => {
+      const token = req.headers['x-admin-key'] || req.query.key
+      if (token !== env.ADMIN_QUEUE_KEY) {
+        return res.status(401).json({ error: 'Unauthorized' })
+      }
+      next()
+    },
+    serverAdapter.getRouter()
+  )
 
   // Auth routes
   app.use('/api/v1/auth', authRouter)

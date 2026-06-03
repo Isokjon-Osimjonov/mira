@@ -2,9 +2,15 @@ import { db } from '../../config/db'
 import { boxes, orders } from '@mira/db'
 import { eq, asc, sql } from 'drizzle-orm'
 import type { CreateBoxDto, UpdateBoxDto } from './boxes.schema'
+import { cacheGet, cacheSet, cacheDelete, CACHE_TTL } from '../../lib/cache'
+
+const CACHE_KEY = 'boxes:active'
 
 export async function getActiveBoxes() {
-  return await db
+  const cached = await cacheGet<any>(CACHE_KEY)
+  if (cached) return cached
+
+  const result = await db
     .select({
       id: boxes.id,
       name: boxes.name,
@@ -15,6 +21,9 @@ export async function getActiveBoxes() {
     .from(boxes)
     .where(eq(boxes.isActive, true))
     .orderBy(asc(boxes.sortOrder))
+
+  await cacheSet(CACHE_KEY, result, CACHE_TTL.BOXES)
+  return result
 }
 
 export async function getAllBoxes() {
@@ -26,6 +35,7 @@ export async function createBox(data: CreateBoxDto) {
     .insert(boxes)
     .values(data as any)
     .returning()
+  await cacheDelete(CACHE_KEY)
   return newBox
 }
 
@@ -37,6 +47,7 @@ export async function updateBox(id: string, data: UpdateBoxDto) {
     .returning()
 
   if (!updated) throw { status: 404, code: 'BOX_NOT_FOUND', message: 'Quti topilmadi' }
+  await cacheDelete(CACHE_KEY)
   return updated
 }
 
@@ -58,5 +69,6 @@ export async function deleteBox(id: string) {
 
   const [deleted] = await db.delete(boxes).where(eq(boxes.id, id)).returning()
   if (!deleted) throw { status: 404, code: 'BOX_NOT_FOUND', message: 'Quti topilmadi' }
+  await cacheDelete(CACHE_KEY)
   return deleted
 }

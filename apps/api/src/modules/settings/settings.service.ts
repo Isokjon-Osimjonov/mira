@@ -2,14 +2,22 @@ import { db } from '../../config/db'
 import { settings } from '@mira/db'
 import { eq } from 'drizzle-orm'
 import type { UpdateSettingsDto } from './settings.schema'
+import { cacheGet, cacheSet, cacheDelete, CACHE_TTL } from '../../lib/cache'
+
+const CACHE_KEY = 'settings:singleton'
 
 export async function getSettings() {
+  const cached = await cacheGet<any>(CACHE_KEY)
+  if (cached) return cached
+
   const [row] = await db.select().from(settings).limit(1)
   if (!row) {
     // This should ideally be seeded, but if not found, we might need a default row
     // for now we assume it exists as per singleton requirement
     throw { status: 500, code: 'SETTINGS_NOT_FOUND', message: 'Tizim sozlamalari topilmadi' }
   }
+
+  await cacheSet(CACHE_KEY, row, CACHE_TTL.SETTINGS)
   return row
 }
 
@@ -53,5 +61,6 @@ export async function updateSettings(data: UpdateSettingsDto) {
     .where(eq(settings.id, current.id))
     .returning()
 
+  await cacheDelete(CACHE_KEY)
   return updated
 }

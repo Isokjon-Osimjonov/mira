@@ -11,6 +11,7 @@ import { eq, and, isNull, sql, desc, asc, ilike, or, inArray } from 'drizzle-orm
 import { escapeLikeQuery } from '../../lib/sanitize'
 import { validateSort } from '../../lib/sort-whitelist'
 import { isValidCloudinaryUrl } from '../../lib/validate-url'
+import { cacheGet, cacheSet, CACHE_TTL } from '../../lib/cache'
 import type { CreateProductDto, UpdateProductDto, UpdatePricingDto } from './products.schema'
 
 export async function getLatestExchangeRate() {
@@ -192,13 +193,19 @@ export async function getProductById(id: string, region: 'UZB' | 'KOR' = 'UZB') 
 }
 
 export async function getBrands() {
+  const CACHE_KEY = 'products:brands'
+  const cached = await cacheGet<string[]>(CACHE_KEY)
+  if (cached) return cached
+
   const result = await db
     .selectDistinct({ brandName: products.brandName })
     .from(products)
     .where(and(eq(products.isActive, true), isNull(products.deletedAt)))
     .orderBy(products.brandName)
 
-  return result.map((r) => r.brandName)
+  const brands = result.map((r) => r.brandName)
+  await cacheSet(CACHE_KEY, brands, CACHE_TTL.BRANDS)
+  return brands
 }
 
 export async function getProductsByCategorySlug(slug: string, query: any) {
