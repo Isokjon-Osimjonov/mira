@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Plus, Search, Sparkles, Pencil, Trash2, X } from 'lucide-react'
+import { Plus, Search, Sparkles, Pencil, Trash2, X, RotateCcw } from 'lucide-react'
 import { toast } from 'sonner'
 import { productsApi, categoriesApi, brandsApi } from '../../api/products.api'
 import { QK } from '../../constants/query-keys'
@@ -33,10 +33,9 @@ export function ProductsPage() {
   const canWrite = useAuthStore((s) => s.canWrite)
 
   // Filters
+  const [activeTab, setActiveTab] = useState<'active' | 'inactive' | 'deleted'>('active')
   const [search, setSearch] = useState('')
   const [categoryId, setCategoryId] = useState('')
-  const [brandId, setBrandId] = useState('')
-  const [isActive, setIsActive] = useState<'all' | 'true' | 'false'>('all')
   const [page, setPage] = useState(1)
   const [debSearch, setDebSearch] = useState('')
 
@@ -54,7 +53,7 @@ export function ProductsPage() {
 
   useEffect(() => {
     setPage(1)
-  }, [debSearch, categoryId, brandId, isActive])
+  }, [debSearch, categoryId, activeTab])
 
   // Queries
   const { data, isLoading } = useQuery({
@@ -63,30 +62,24 @@ export function ProductsPage() {
       limit: LIMIT,
       q: debSearch || undefined,
       category: categoryId === '_all' || !categoryId ? undefined : categoryId,
-      brand: brandId === '_all' || !brandId ? undefined : brandId,
-      isActive: isActive === 'all' ? undefined : isActive === 'true',
-    }),
+      isActive: activeTab === 'active' ? true : activeTab === 'inactive' ? false : undefined,
+      showDeleted: activeTab === 'deleted',
+    } as any),
     queryFn: () =>
       productsApi.list({
         page,
         limit: LIMIT,
         q: debSearch || undefined,
         category: categoryId === '_all' || !categoryId ? undefined : categoryId,
-        brand: brandId === '_all' || !brandId ? undefined : brandId,
-        isActive: isActive === 'all' ? undefined : isActive === 'true',
-      }),
+        isActive: activeTab === 'active' ? true : activeTab === 'inactive' ? false : undefined,
+        showDeleted: activeTab === 'deleted',
+      } as any),
     staleTime: 30_000,
   })
 
   const { data: categories } = useQuery({
     queryKey: QK.CATEGORIES,
     queryFn: categoriesApi.getTree,
-    staleTime: Infinity,
-  })
-
-  const { data: brands } = useQuery({
-    queryKey: QK.BRANDS,
-    queryFn: brandsApi.list,
     staleTime: Infinity,
   })
 
@@ -97,6 +90,18 @@ export function ProductsPage() {
       toast.success("Mahsulot o'chirildi")
       qc.invalidateQueries({ queryKey: ['products'] })
       setDeleteTarget(null)
+    },
+    onError: (err: any) => {
+      toast.error(getErrorMessage(err?.errorCode ?? ''))
+    },
+  })
+
+  // Restore mutation
+  const restoreMutation = useMutation({
+    mutationFn: (id: string) => productsApi.restore(id),
+    onSuccess: () => {
+      toast.success('Mahsulot tiklandi')
+      qc.invalidateQueries({ queryKey: ['products'] })
     },
     onError: (err: any) => {
       toast.error(getErrorMessage(err?.errorCode ?? ''))
@@ -118,6 +123,17 @@ export function ProductsPage() {
     },
     onSettled: () => setAiLoadingId(null),
   })
+
+  const handleEdit = async (p: any) => {
+    try {
+      const res = await productsApi.getById(p.id)
+      setEditProduct(res.data)
+      setSheetOpen(true)
+    } catch {
+      setEditProduct(p)
+      setSheetOpen(true)
+    }
+  }
 
   const products = data?.data ?? []
   const meta = data?.meta
@@ -155,6 +171,26 @@ export function ProductsPage() {
             <span className="hidden sm:inline">Yangi mahsulot</span>
           </Button>
         )}
+      </div>
+
+      {/* Tabs */}
+      <div className="flex gap-1 bg-gray-100 rounded-lg p-0.5 w-fit">
+        {[
+          { value: 'active', label: 'Aktiv' },
+          { value: 'inactive', label: 'Nofaol' },
+          { value: 'deleted', label: "O'chirilgan" },
+        ].map((tab) => (
+          <button
+            key={tab.value}
+            onClick={() => setActiveTab(tab.value as any)}
+            className={cn(
+              'text-xs py-1.5 px-4 rounded-md transition-all font-medium',
+              activeTab === tab.value ? 'bg-white shadow-sm text-gray-900' : 'text-muted-foreground'
+            )}
+          >
+            {tab.label}
+          </button>
+        ))}
       </div>
 
       {/* Filters */}
@@ -202,46 +238,14 @@ export function ProductsPage() {
           </SelectContent>
         </Select>
 
-        <Select value={brandId || '_all'} onValueChange={(v) => setBrandId(v === '_all' ? '' : v)}>
-          <SelectTrigger
-            className="w-[130px] h-9 text-sm
-                                    rounded-lg border-[0.5px]"
-          >
-            <SelectValue placeholder="Brend" />
-          </SelectTrigger>
-          <SelectContent className="rounded-xl max-h-64">
-            <SelectItem value="_all">Barchasi</SelectItem>
-            {(brands ?? []).map((b: any) => (
-              <SelectItem key={b} value={b}>
-                {b}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <Select value={isActive} onValueChange={(v) => setIsActive(v as any)}>
-          <SelectTrigger
-            className="w-[110px] h-9 text-sm
-                                    rounded-lg border-[0.5px]"
-          >
-            <SelectValue placeholder="Holat" />
-          </SelectTrigger>
-          <SelectContent className="rounded-xl">
-            <SelectItem value="all">Barchasi</SelectItem>
-            <SelectItem value="true">Aktiv</SelectItem>
-            <SelectItem value="false">Nofaol</SelectItem>
-          </SelectContent>
-        </Select>
-
-        {(search || categoryId || brandId || isActive !== 'all') && (
+        {(search || categoryId || activeTab !== 'active') && (
           <Button
             variant="outline"
             size="sm"
             onClick={() => {
               setSearch('')
               setCategoryId('')
-              setBrandId('')
-              setIsActive('all')
+              setActiveTab('active')
             }}
             className="h-9 rounded-lg text-xs gap-1
                        border-[0.5px]"
@@ -263,7 +267,7 @@ export function ProductsPage() {
           <EmptyState
             message="Mahsulotlar topilmadi"
             description={
-              search || categoryId || brandId
+              search || categoryId
                 ? "Filtrlarni o'zgartirib ko'ring"
                 : "Birinchi mahsulotni qo'shing"
             }
@@ -314,7 +318,7 @@ export function ProductsPage() {
                                    font-medium text-muted-foreground
                                    hidden lg:table-cell"
                     >
-                      UZB narx
+                      UZS ekvivalent
                     </th>
                     <th
                       className="px-4 py-3 text-center text-xs
@@ -406,15 +410,13 @@ export function ProductsPage() {
                         </p>
                       </td>
 
-                      {/* UZB price */}
+                      {/* UZS equivalent */}
                       <td
                         className="px-4 py-3 text-right
                                      hidden lg:table-cell"
                       >
                         <p className="text-sm text-muted-foreground">
-                          {p.regionalConfig?.retailPriceUzs
-                            ? formatUZS(p.regionalConfig.retailPriceUzs)
-                            : p.regionalConfig?.retailPriceKrw && rate
+                          {p.regionalConfig?.retailPriceKrw && rate
                             ? formatUZS(Math.round(Number(p.regionalConfig.retailPriceKrw) * rate))
                             : '—'}
                         </p>
@@ -463,8 +465,20 @@ export function ProductsPage() {
                                         opacity-0 group-hover:opacity-100
                                         transition-opacity"
                         >
+                          {activeTab === 'deleted' && canWrite('products') && (
+                            <button
+                              onClick={() => restoreMutation.mutate(p.id)}
+                              title="Tiklash"
+                              className="w-7 h-7 rounded-lg flex items-center
+                                         justify-center hover:bg-green-50
+                                         text-green-600 transition-colors"
+                            >
+                              <RotateCcw className="h-3.5 w-3.5" strokeWidth={1.5} />
+                            </button>
+                          )}
+
                           {/* AI fill */}
-                          {canWrite('products') && (
+                          {activeTab !== 'deleted' && canWrite('products') && (
                             <button
                               onClick={() => aiFillMutation.mutate(p.id)}
                               disabled={aiLoadingId === p.id}
@@ -481,12 +495,9 @@ export function ProductsPage() {
                           )}
 
                           {/* Edit */}
-                          {canWrite('products') && (
+                          {activeTab !== 'deleted' && canWrite('products') && (
                             <button
-                              onClick={() => {
-                                setEditProduct(p)
-                                setSheetOpen(true)
-                              }}
+                              onClick={() => handleEdit(p)}
                               title="Tahrirlash"
                               className="w-7 h-7 rounded-lg flex
                                          items-center justify-center
@@ -541,7 +552,6 @@ export function ProductsPage() {
         }}
         product={editProduct}
         categories={flatCategories}
-        brands={brands ?? []}
         onSuccess={() => {
           qc.invalidateQueries({ queryKey: ['products'] })
           setSheetOpen(false)

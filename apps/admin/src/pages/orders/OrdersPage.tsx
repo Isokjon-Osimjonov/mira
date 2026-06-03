@@ -9,7 +9,7 @@ import { DataTable } from '../../components/shared/DataTable'
 import { Pagination } from '../../components/shared/Pagination'
 import { EmptyState } from '../../components/shared/EmptyState'
 import { SkeletonTable } from '../../components/shared/SkeletonTable'
-import { formatKRW } from '../../utils/currency'
+import { formatKRW, formatUZS } from '../../utils/currency'
 import { formatDateTime, formatDeadline } from '../../utils/date'
 import { useAuthStore } from '../../stores/auth.store'
 import { getSocket } from '../../lib/socket'
@@ -109,7 +109,14 @@ function OrderCard({ order, onClick }: { order: any; onClick: () => void }) {
 
       <div className="flex items-center justify-between">
         <p className="text-[11px] text-muted-foreground">{order.itemCount} ta mahsulot</p>
-        <p className="text-sm font-bold text-gray-900">{formatKRW(order.totalAmount)}</p>
+        <div className="text-right">
+          <p className="text-sm font-bold text-gray-900">{formatKRW(order.totalAmount)}</p>
+          {order.region === 'UZB' && order.krwToUzsRate && (
+            <p className="text-[10px] text-muted-foreground">
+              ≈ {formatUZS(Math.round(order.totalAmount * order.krwToUzsRate))}
+            </p>
+          )}
+        </div>
       </div>
 
       {order.status === 'PENDING_PAYMENT' && order.paymentDeadline && (
@@ -259,7 +266,14 @@ export function OrdersPage() {
       header: 'Summa',
       width: '110px',
       cell: (row: any) => (
-        <p className="text-xs font-semibold text-gray-900">{formatKRW(row.totalAmount)}</p>
+        <div className="text-right pr-4">
+          <p className="text-xs font-semibold text-gray-900">{formatKRW(row.totalAmount)}</p>
+          {row.region === 'UZB' && row.krwToUzsRate && (
+            <p className="text-[10px] text-muted-foreground">
+              ≈ {formatUZS(Math.round(row.totalAmount * row.krwToUzsRate))}
+            </p>
+          )}
+        </div>
       ),
     },
     {

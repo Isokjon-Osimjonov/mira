@@ -6,6 +6,7 @@ import {
   exchangeRateSnapshots,
   categories,
   cartItems,
+  regionEnum,
 } from '@mira/db'
 import { eq, and, isNull, sql, desc, asc, ilike, or, inArray } from 'drizzle-orm'
 import { escapeLikeQuery } from '../../lib/sanitize'
@@ -13,6 +14,92 @@ import { validateSort } from '../../lib/sort-whitelist'
 import { isValidCloudinaryUrl } from '../../lib/validate-url'
 import { cacheGet, cacheSet, CACHE_TTL } from '../../lib/cache'
 import type { CreateProductDto, UpdateProductDto, UpdatePricingDto } from './products.schema'
+
+// Flat regional-pricing fields stripped from the product payload before update.
+const REGIONAL_PRICE_KEYS = [
+  'korRetailPrice',
+  'korWholesalePrice',
+  'uzbRetailPrice',
+  'uzbWholesalePrice',
+  'minOrderQty',
+  'minWholesaleQty',
+] as const
+
+/**
+ * Build the per-region rows to insert for a product from the flat DTO fields.
+ *
+ * Rules:
+ *  - A region is only included if its retail price > 0.
+ *  - When retail is set, wholesale is required and must be > 0.
+ *  - wholesale must be <= retail (DB CHECK: product_regional_configs_price_compare_check).
+ *  - Returns an array (possibly empty). Caller decides whether empty is an error.
+ *
+ * Throws clean { status, code, message } on validation failure.
+ */
+type RegionalPriceInput = {
+  korRetailPrice?: number
+  korWholesalePrice?: number
+  minOrderQty?: number
+  minWholesaleQty?: number
+}
+
+export function buildRegionalConfigs(
+  data: RegionalPriceInput
+): Array<{
+  regionCode: 'UZB' | 'KOR'
+  retailPrice: bigint
+  wholesalePrice: bigint
+  currency: 'KRW'
+  minWholesaleQty: number
+  minOrderQty: number
+  isAvailable: boolean
+}> {
+  const retail = data.korRetailPrice
+  const wholesale = data.korWholesalePrice
+
+  if (!retail || retail <= 0) {
+    throw {
+      status: 400,
+      code: 'PRODUCT_NO_REGIONAL_CONFIG',
+      message: 'KOR retail narxi kiritilishi shart',
+    }
+  }
+
+  if (!wholesale || wholesale <= 0) {
+    throw {
+      status: 400,
+      code: 'VALIDATION_ERROR',
+      message: 'KOR wholesale narxi kiritilishi shart',
+    }
+  }
+
+  if (wholesale > retail) {
+    throw {
+      status: 400,
+      code: 'INVALID_DISCOUNT',
+      message: "Wholesale narx retail narxdan katta bo'lmasligi kerak",
+    }
+  }
+
+  return [
+    {
+      regionCode: 'KOR',
+      retailPrice: BigInt(retail),
+      wholesalePrice: BigInt(wholesale),
+      currency: 'KRW',
+      minWholesaleQty: data.minWholesaleQty ?? 5,
+      minOrderQty: data.minOrderQty ?? 1,
+      isAvailable: true,
+    },
+  ]
+}
+
+/** Strip flat regional-pricing keys so we don't try to write them to `products` table. */
+function pickProductColumns<T extends Record<string, any>>(data: T): Omit<T, typeof REGIONAL_PRICE_KEYS[number]> {
+  const out: any = { ...data }
+  for (const key of REGIONAL_PRICE_KEYS) delete out[key]
+  return out
+}
 
 export async function getLatestExchangeRate() {
   const [rate] = await db
@@ -33,6 +120,7 @@ export async function getProducts(query: {
   q?: string
   isActive?: boolean | string
   isAdmin?: boolean
+  showDeleted?: boolean
 }) {
   const page = query.page || 1
   const limit = query.limit || 20
@@ -41,7 +129,8 @@ export async function getProducts(query: {
   const rate = await getLatestExchangeRate()
   const krwToUzs = rate?.krwToUzs || 0
 
-  let where = and(isNull(products.deletedAt))
+  let where: any = query.showDeleted ? sql`${products.deletedAt} IS NOT NULL` : isNull(products.deletedAt)
+
   if (!query.isAdmin) {
     where = and(where, eq(products.isActive, true))
   } else if (query.isActive !== undefined) {
@@ -162,7 +251,7 @@ export async function getProductById(id: string, region: 'UZB' | 'KOR' = 'UZB') 
   const rate = await getLatestExchangeRate()
   const krwToUzs = rate?.krwToUzs || 0
 
-  const [product] = await db.select().from(products).where(eq(products.id, id)).limit(1)
+  const [product] = await db.select().from(products).where(and(eq(products.id, id), isNull(products.deletedAt))).limit(1)
 
   if (!product) throw { status: 404, message: 'Mahsulot topilmadi' }
 
@@ -193,6 +282,31 @@ export async function getProductById(id: string, region: 'UZB' | 'KOR' = 'UZB') 
     totalStock: Number(stock[0]?.total || 0),
     regionalConfigs: processedConfigs,
     exchangeRate: rate,
+  }
+}
+
+export async function getAdminProductById(id: string) {
+  const [product] = await db.select().from(products).where(eq(products.id, id)).limit(1)
+
+  if (!product) {
+    throw { status: 404, code: 'PRODUCT_NOT_FOUND', message: 'Mahsulot topilmadi' }
+  }
+
+  const configs = await db
+    .select()
+    .from(productRegionalConfigs)
+    .where(eq(productRegionalConfigs.productId, id))
+
+  const processedConfigs = configs.map((c) => ({
+    ...c,
+    retailPriceKrw: Number(c.retailPrice),
+    wholesalePriceKrw: Number(c.wholesalePrice),
+  }))
+
+  return {
+    ...product,
+    korRegionalConfig: processedConfigs.find((c) => c.regionCode === 'KOR') || null,
+    uzbRegionalConfig: processedConfigs.find((c) => c.regionCode === 'UZB') || null,
   }
 }
 
@@ -269,7 +383,8 @@ export async function getProductByBarcode(barcode: string) {
 
 export async function createProduct(data: CreateProductDto) {
   return await db.transaction(async (tx) => {
-    const { regionalConfigs, ...productData } = data
+    // Strip flat regional-pricing keys from the product insert payload.
+    const productData = pickProductColumns(data)
 
     // Check unique barcode/sku
     const [existing] = await tx
@@ -279,7 +394,11 @@ export async function createProduct(data: CreateProductDto) {
       .limit(1)
 
     if (existing) {
-      throw { status: 400, message: 'Bunday barkod yoki SKU ga ega mahsulot mavjud' }
+      throw {
+        status: 400,
+        code: 'DUPLICATE_BARCODE',
+        message: 'Bunday barkod yoki SKU ga ega mahsulot mavjud',
+      }
     }
 
     const [newProduct] = await tx
@@ -287,21 +406,24 @@ export async function createProduct(data: CreateProductDto) {
       .values(productData as any)
       .returning()
 
-    // Create regional configs
-    const regions: ('UZB' | 'KOR')[] = ['UZB', 'KOR']
-    for (const region of regions) {
-      const config = regionalConfigs?.find((c) => c.regionCode === region)
-      await tx.insert(productRegionalConfigs).values({
-        productId: newProduct.id,
-        regionCode: region,
-        retailPrice: BigInt(config?.retailPrice || 0),
-        wholesalePrice: BigInt(config?.wholesalePrice || 0),
-        currency: 'KRW',
-        minWholesaleQty: config?.minWholesaleQty || 5,
-        minOrderQty: config?.minOrderQty || 1,
-        isAvailable: config?.isAvailable ?? true,
-      })
+    // Build regional configs from the flat fields. Skips regions where
+    // retail price is 0/undefined. Throws on bad wholesale price.
+    const regionalConfigs = buildRegionalConfigs(data)
+
+    if (regionalConfigs.length === 0) {
+      throw {
+        status: 400,
+        code: 'PRODUCT_NO_REGIONAL_CONFIG',
+        message: "Kamida bitta mintaqa (KOR yoki UZB) uchun retail narx kiritilishi kerak",
+      }
     }
+
+    await tx.insert(productRegionalConfigs).values(
+      regionalConfigs.map((c) => ({
+        ...c,
+        productId: newProduct.id,
+      }))
+    )
 
     return newProduct
   })
@@ -313,16 +435,32 @@ export async function updateProduct(id: string, data: UpdateProductDto) {
     throw { status: 400, code: 'INVALID_URL', message: 'Faqat Cloudinary URL qabul qilinadi' }
   }
 
-  const { regionalConfigs, ...productData } = data
+  return await db.transaction(async (tx) => {
+    // Strip flat regional-pricing keys (and any other non-product fields).
+    const productData = pickProductColumns(data)
 
-  const [updated] = await db
-    .update(products)
-    .set({ ...productData, updatedAt: new Date() } as any)
-    .where(eq(products.id, id))
-    .returning()
+    const [updated] = await tx
+      .update(products)
+      .set({ ...productData, updatedAt: new Date() } as any)
+      .where(eq(products.id, id))
+      .returning()
 
-  if (!updated) throw { status: 404, message: 'Mahsulot topilmadi' }
-  return updated
+    if (!updated) throw { status: 404, message: 'Mahsulot topilmadi' }
+
+    // Update regional configs if prices provided
+    const regionalConfigs = buildRegionalConfigs(data as any)
+    if (regionalConfigs.length > 0) {
+      await tx.delete(productRegionalConfigs).where(eq(productRegionalConfigs.productId, id))
+      await tx.insert(productRegionalConfigs).values(
+        regionalConfigs.map((c) => ({
+          ...c,
+          productId: id,
+        }))
+      )
+    }
+
+    return updated
+  })
 }
 
 export async function updateProductImages(id: string, imageUrls: string[]) {
@@ -346,7 +484,7 @@ export async function deleteProduct(id: string) {
   return await db.transaction(async (tx) => {
     const [deleted] = await tx
       .update(products)
-      .set({ deletedAt: new Date(), updatedAt: new Date() })
+      .set({ deletedAt: new Date(), isActive: false, updatedAt: new Date() })
       .where(eq(products.id, id))
       .returning()
 
@@ -357,6 +495,17 @@ export async function deleteProduct(id: string) {
 
     return deleted
   })
+}
+
+export async function restoreProduct(id: string) {
+  const [restored] = await db
+    .update(products)
+    .set({ deletedAt: null, isActive: true, updatedAt: new Date() })
+    .where(eq(products.id, id))
+    .returning()
+
+  if (!restored) throw { status: 404, message: 'Mahsulot topilmadi' }
+  return restored
 }
 
 export async function updatePricing(id: string, data: UpdatePricingDto) {

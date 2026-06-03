@@ -44,11 +44,12 @@ const productSchema = z.object({
   volumeMl: z.coerce.number().min(0).optional(),
   isActive: z.boolean().default(true),
   imageUrls: z.array(z.string()).default([]),
-  // Regional configs (flattened in form)
+  // Regional configs (flattened in form, all optional).
+  // Only KOR pricing is now manually managed.
   korRetailPrice: z.coerce.number().min(0).optional(),
   korWholesalePrice: z.coerce.number().min(0).optional(),
   minOrderQty: z.coerce.number().min(1).default(1),
-  minWholesaleQty: z.coerce.number().min(5).default(5),
+  minWholesaleQty: z.coerce.number().min(1).default(5),
 })
 
 type ProductForm = z.infer<typeof productSchema>
@@ -58,11 +59,10 @@ interface Props {
   onClose: () => void
   product?: any // null = create, object = edit
   categories: any[]
-  brands: any[]
   onSuccess: () => void
 }
 
-export function ProductSheet({ open, onClose, product, categories, brands, onSuccess }: Props) {
+export function ProductSheet({ open, onClose, product, categories, onSuccess }: Props) {
   const isEdit = !!product
   const [uploadingImg, setUploadingImg] = useState(false)
   const [aiFilling, setAiFilling] = useState(false)
@@ -95,8 +95,16 @@ export function ProductSheet({ open, onClose, product, categories, brands, onSuc
   // Populate form when editing
   useEffect(() => {
     if (product) {
+      const kor =
+        product.korRegionalConfig ??
+        product.regionalConfigs?.find?.((c: any) => c.regionCode === 'KOR') ??
+        (product.regionalConfig?.regionCode === 'KOR' ? product.regionalConfig : null) ??
+        product.regionalConfig ??
+        null
+
       reset({
         name: product.name ?? '',
+        nameUz: product.nameUz ?? '',
         barcode: product.barcode ?? '',
         sku: product.sku ?? '',
         brandName: product.brandName ?? '',
@@ -110,10 +118,10 @@ export function ProductSheet({ open, onClose, product, categories, brands, onSuc
         volumeMl: product.volumeMl ?? undefined,
         isActive: product.isActive ?? true,
         imageUrls: product.imageUrls ?? [],
-        korRetailPrice: product.regionalConfig?.retailPriceKrw ?? undefined,
-        korWholesalePrice: product.regionalConfig?.wholesalePriceKrw ?? undefined,
-        minOrderQty: product.regionalConfig?.minOrderQty ?? 1,
-        minWholesaleQty: product.regionalConfig?.minWholesaleQty ?? 5,
+        korRetailPrice: kor?.retailPriceKrw ?? kor?.retailPrice ?? undefined,
+        korWholesalePrice: kor?.wholesalePriceKrw ?? kor?.wholesalePrice ?? undefined,
+        minOrderQty: kor?.minOrderQty ?? 1,
+        minWholesaleQty: kor?.minWholesaleQty ?? 5,
       })
     } else {
       reset({
@@ -132,8 +140,13 @@ export function ProductSheet({ open, onClose, product, categories, brands, onSuc
   // Create/Update mutation
   const saveMutation = useMutation({
     mutationFn: (data: ProductForm) => {
+      const cleanPrice = (v: number | undefined) =>
+        typeof v === 'number' && v > 0 ? v : undefined
+
       const apiPayload = {
         ...data,
+        korRetailPrice: cleanPrice(data.korRetailPrice),
+        korWholesalePrice: cleanPrice(data.korWholesalePrice),
         ingredients: data.ingredients
           ? data.ingredients.split(',').map((s) => s.trim()).filter(Boolean)
           : [],
@@ -322,23 +335,10 @@ export function ProductSheet({ open, onClose, product, categories, brands, onSuc
 
               <div>
                 <Label className="text-xs mb-1.5 block">Brend *</Label>
-                <Controller
-                  name="brandName"
-                  control={control}
-                  render={({ field }) => (
-                    <Select value={field.value} onValueChange={field.onChange}>
-                      <SelectTrigger className="h-9 text-sm rounded-lg border-[0.5px]">
-                        <SelectValue placeholder="Brend tanlang" />
-                      </SelectTrigger>
-                      <SelectContent className="rounded-xl max-h-56">
-                        {brands.map((b: string) => (
-                          <SelectItem key={b} value={b}>
-                            {b}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
+                <Input
+                  {...register('brandName')}
+                  placeholder="COSRX, Laneige..."
+                  className="h-9 text-sm rounded-lg border-[0.5px]"
                 />
                 {errors.brandName && (
                   <p className="text-xs text-red-500 mt-1">{errors.brandName.message}</p>
@@ -496,6 +496,9 @@ export function ProductSheet({ open, onClose, product, categories, brands, onSuc
                 />
               </div>
             </div>
+            <p className="text-[11px] text-muted-foreground">
+              UZS narx = KRW × valyuta kursi (har kuni yangilanadi)
+            </p>
           </div>
 
           {/* SECTION 4: Rasmlar */}

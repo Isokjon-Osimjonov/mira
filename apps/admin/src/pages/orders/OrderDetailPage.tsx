@@ -26,7 +26,6 @@ import { EmptyState } from '../../components/shared/EmptyState'
 import { formatKRW, formatUZS } from '../../utils/currency'
 import { formatDateTime } from '../../utils/date'
 import { useAuthStore } from '../../stores/auth.store'
-import { useExchangeRate } from '../../hooks/useExchangeRate'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 
@@ -78,7 +77,6 @@ interface Props {
 export function OrderDetailPage({ id }: Props) {
   const navigate = useNavigate()
   const qc = useQueryClient()
-  const { rate } = useExchangeRate()
   const canWrite = useAuthStore((s) => s.canWrite)
 
   const [confirmAction, setConfirmAction] = useState<{ type: string; label: string } | null>(null)
@@ -346,13 +344,27 @@ export function OrderDetailPage({ id }: Props) {
                 <span>JAMI</span>
                 <div className="text-right">
                   <p>{formatKRW(order.totalAmount)}</p>
-                  {isUZB && rate && (
+                  {isUZB && order.krwToUzsRate && (
                     <p className="text-[11px] font-normal text-muted-foreground">
-                      ≈ {formatUZS(Math.round(order.totalAmount * rate))}
+                      ≈ {formatUZS(Math.round(order.totalAmount * order.krwToUzsRate))}
                     </p>
                   )}
                 </div>
               </div>
+              
+              {isUZB && order.krwToUzsRate && (
+                <div className="flex justify-between text-[11px] text-muted-foreground pt-1 border-t border-dashed border-border/50">
+                  <span>Valyuta kursi (to'lov kuni)</span>
+                  <span>1 ₩ = {order.krwToUzsRate.toLocaleString()} so'm</span>
+                </div>
+              )}
+
+              {order.paymentConfirmedAt && (
+                <div className="flex justify-between text-[11px] text-muted-foreground">
+                  <span>To'lov tasdiqlangan</span>
+                  <span>{formatDateTime(order.paymentConfirmedAt)}</span>
+                </div>
+              )}
             </div>
           </div>
 

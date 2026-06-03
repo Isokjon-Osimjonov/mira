@@ -1021,9 +1021,11 @@ export async function adminGetOrders(query: {
       customerName: customers.firstName,
       customerPhone: customers.phone,
       itemCount: sql<number>`(SELECT SUM(quantity) FROM order_items WHERE order_id = orders.id)`,
+      krwToUzsRate: exchangeRateSnapshots.krwToUzs,
     })
     .from(orders)
     .innerJoin(customers, eq(orders.customerId, customers.id))
+    .leftJoin(exchangeRateSnapshots, eq(orders.rateSnapshotId, exchangeRateSnapshots.id))
     .where(where)
     .orderBy(desc(orders.createdAt))
     .limit(limit)
@@ -1047,6 +1049,7 @@ export async function adminGetOrders(query: {
     itemCount: Number(row.itemCount || 0),
     createdAt: row.order.createdAt,
     paymentDeadline: row.order.paymentDeadline,
+    krwToUzsRate: row.krwToUzsRate,
   }))
 
   return { items, meta: { page, limit, total, hasNext: offset + limit < total, hasPrev: page > 1 } }
@@ -1860,12 +1863,19 @@ export async function adminGetOrderDetail(orderId: string) {
     .from(orderStatusHistory)
     .where(eq(orderStatusHistory.orderId, orderId))
     .orderBy(asc(orderStatusHistory.createdAt))
+const expensesList = await db
+  .select()
+  .from(orderExpenses)
+  .where(eq(orderExpenses.orderId, orderId))
+  .orderBy(asc(orderExpenses.createdAt))
 
-  const expensesList = await db
-    .select()
-    .from(orderExpenses)
-    .where(eq(orderExpenses.orderId, orderId))
-    .orderBy(asc(orderExpenses.createdAt))
+const [rateSnapshot] = order.rateSnapshotId
+  ? await db
+      .select()
+      .from(exchangeRateSnapshots)
+      .where(eq(exchangeRateSnapshots.id, order.rateSnapshotId))
+      .limit(1)
+  : [null]
 
   return {
     id: order.id,
@@ -1874,6 +1884,8 @@ export async function adminGetOrderDetail(orderId: string) {
     createdAt: order.createdAt,
     paymentDeadline: order.paymentDeadline,
     deliveryRegion: order.deliveryRegion,
+    paymentConfirmedAt: order.paymentConfirmedAt,
+    krwToUzsRate: rateSnapshot?.krwToUzs || null,
 
     // Customer
     customerName: `${customer?.firstName || ''} ${customer?.lastName || ''}`.trim(),
