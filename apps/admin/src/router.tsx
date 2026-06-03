@@ -1,4 +1,4 @@
-import { createRouter, createRoute, createRootRoute } from '@tanstack/react-router'
+import { createRouter, createRoute, createRootRoute, redirect } from '@tanstack/react-router'
 import { useAuthStore } from './stores/auth.store'
 import { AppLayout } from './layouts/AppLayout'
 import LoginPage from './pages/auth/LoginPage'
@@ -27,7 +27,7 @@ const protectedRoute = createRoute({
   beforeLoad: () => {
     const state = useAuthStore.getState()
     if (!state.isAuthenticated) {
-      throw new Error('UNAUTHORIZED') // Handled by router or app
+      throw redirect({ to: '/login' })
     }
   },
   component: AppLayout
@@ -43,7 +43,7 @@ const indexRoute = createRoute({
   getParentRoute: () => protectedRoute,
   path: '/',
   beforeLoad: () => {
-    throw new Error('REDIRECT_TO_DASHBOARD')
+    throw redirect({ to: '/dashboard' })
   }
 })
 
