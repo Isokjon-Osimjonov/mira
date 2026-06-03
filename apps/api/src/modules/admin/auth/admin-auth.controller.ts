@@ -3,6 +3,7 @@ import { AdminLoginSchema, AdminChangePasswordSchema } from './admin-auth.schema
 import * as Service from './admin-auth.service'
 import { setRefreshCookie, clearRefreshCookie, getRefreshCookie } from '../../../lib/cookie'
 import type { AdminJwtPayload } from '../../../middleware/auth'
+import { authLogger } from '../../../config/logger'
 
 const ok = <T>(res: Response, data: T, status = 200) =>
   res.status(status).json({ data, error: null })
@@ -67,3 +68,15 @@ export async function changePassword(req: Request, res: Response) {
     return err(res, e.status ?? 500, e.message, e.code)
   }
 }
+
+export async function getMe(req: Request, res: Response) {
+  const admin = req.user as AdminJwtPayload
+  try {
+    const data = await Service.getAdminMe(admin.sub)
+    return ok(res, data)
+  } catch (e: any) {
+    authLogger.error({ err: e.message, adminId: admin?.sub }, 'GET /me failed')
+    return err(res, e.status ?? 500, e.message ?? 'Ichki xatolik', e.code ?? 'INTERNAL_ERROR')
+  }
+}
+

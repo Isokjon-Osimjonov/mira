@@ -74,7 +74,7 @@ export function LoginPage() {
       setUser(user)
       
       // Notify other tabs
-      authChannel.postMessage('LOGIN')
+      authChannel?.postMessage('LOGIN')
       
       if (user.mustChangePassword) {
         navigate({ to: '/change-password' })

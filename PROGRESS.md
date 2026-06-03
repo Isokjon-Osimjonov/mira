@@ -119,6 +119,58 @@
 
 ## 🔄 Changelog
 
+### v0.3.8-dev (2026-06-03)
+- **Token Refresh Fix**:
+  - Rewrote `api.ts` to ensure `axios-auth-refresh` interceptor is registered correctly.
+  - Removed conflicting manual 401 response interceptors from `main.tsx`.
+  - Updated `AppLayout` to handle session validation errors more gracefully, distinguishing between temporary network issues and permanent session loss.
+  - Ensured `withCredentials: true` is consistently applied to all authentication-related requests.
+
+### v0.3.7-dev (2026-06-03)
+- **Admin Auth Refactor**:
+  - Moved `/me` inline handler from `admin-auth.router.ts` to `admin-auth.controller.ts` and `admin-auth.service.ts`.
+  - Implemented `getAdminMe()` in the service layer for database access.
+  - Implemented `getMe()` in the controller layer for request handling and response formatting.
+  - Replaced `console.error` with `authLogger` for better error tracking.
+  - Cleaned up redundant imports and simplified the router definition.
+
+### v0.3.6-dev (2026-06-03)
+- **Professional Sidebar Layout**:
+  - Implemented shadcn/ui "sidebar-08" design for the Admin panel.
+  - Added Mira branding with `Flower2` logo and primary pink theme.
+  - Responsive navigation with `SidebarProvider`, `SidebarInset`, and `SidebarTrigger`.
+  - Grouped navigation items (Umumiy, Savdo, Mahsulotlar, Moliya, Marketing, Tizim).
+  - Breadcrumb navigation in the header synchronized with the current route.
+  - `NavUser` component with initials avatar and dropdown for profile/logout.
+  - Integrated live exchange rate display in the sidebar footer.
+  - Cleaned up obsolete layout code and simplified routing structure.
+
+### v0.3.5-dev (2026-06-03)
+- **Auth Implementation Cleanup**:
+  - Simplified `AuthGate` by removing eager server-side session validation (moved to layout level).
+  - Optimized Zustand store hydration with `setTimeout` for empty states.
+  - Fixed logout race condition by removing manual `localStorage.removeItem`.
+  - Ensured correct dynamic import and execution of API logout.
+  - Cleaned up unused derived state functions and imports.
+  - Aligned auth checks across Router and AppLayout.
+
+### v0.3.4-dev (2026-06-03)
+- **Session Validation & Reliability**:
+  - Implemented `GET /admin/auth/me` endpoint in API for robust session state synchronization.
+  - Enhanced `AuthGate` in Admin panel with timeout safety (4s) and component unmount handling.
+  - Improved offline tolerance: app remains functional if server is temporarily unreachable during boot.
+  - Added `text-muted-foreground` styling to loading state in Admin panel.
+
+### v0.3.3-dev (2026-06-03)
+- **Professional Secure Auth Rewrite**:
+  - Rewrote Zustand auth store with derived state (pure `isAuthenticated` function).
+  - Implemented cross-tab synchronization for login/logout using `BroadcastChannel`.
+  - Added `AuthGate` with server-side session validation (`GET /me`) on application boot.
+  - Improved security by removing stored `isAuthenticated` boolean (prevents local tampering).
+  - Added offline tolerance for session validation.
+  - Cleaned up redundant code and fixed circular dependencies in logout flow.
+  - Verified with comprehensive type checking.
+
 ### v0.3.2-dev (2026-06-03)
 - **Admin Panel Refinement**: 
   - Fixed API URL duplication issue (double /api/v1).

@@ -9,5 +9,6 @@ router.post('/login', authLimiter, ctrl.login)
 router.post('/refresh', ctrl.refresh)
 router.post('/logout', ctrl.logout)
 router.patch('/change-password', requireAdmin, ctrl.changePassword)
+router.get('/me', requireAdmin, ctrl.getMe)
 
 export default router

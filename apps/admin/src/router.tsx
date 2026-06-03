@@ -2,6 +2,9 @@ import { createRouter, createRoute, createRootRoute, redirect } from '@tanstack/
 import { useAuthStore } from './stores/auth.store'
 import { AppLayout } from './layouts/AppLayout'
 import { LoginPage } from './pages/auth/LoginPage'
+import { BoxesPage } from './pages/boxes/BoxesPage'
+import { NotFoundPage } from './pages/NotFoundPage'
+import { ErrorBoundary } from './components/ErrorBoundary'
 
 // For TanStack Router we define the root route and children
 const rootRoute = createRootRoute()
@@ -12,29 +15,40 @@ const rootRoute = createRootRoute()
 const loginRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/login',
-  component: LoginPage
+  component: () => (
+    <ErrorBoundary>
+      <LoginPage />
+    </ErrorBoundary>
+  )
 })
 
 const changePasswordRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/change-password',
-  component: () => <div>Change Password Placeholder</div>
+  component: () => (
+    <ErrorBoundary>
+      <div>Change Password Placeholder</div>
+    </ErrorBoundary>
+  )
 })
 
 const protectedRoute = createRoute({
   getParentRoute: () => rootRoute,
   id: 'protected',
   beforeLoad: ({ location }) => {
-    const { isAuthenticated, mustChangePassword } = useAuthStore.getState()
-    
-    if (!isAuthenticated) {
+    const state = useAuthStore.getState()
+    const authed = !!state.accessToken && !!state.user
+
+    if (!authed) {
       throw redirect({
         to: '/login',
-        search: { redirect: location.href }
+        search: {
+          redirect: location.pathname !== '/login' ? location.pathname : undefined,
+        },
       })
     }
-    
-    if (mustChangePassword && location.pathname !== '/change-password') {
+
+    if (state.mustChangePassword && location.pathname !== '/change-password') {
       throw redirect({ to: '/change-password' })
     }
   },
@@ -44,7 +58,21 @@ const protectedRoute = createRoute({
 const dashboardRoute = createRoute({
   getParentRoute: () => protectedRoute,
   path: '/dashboard',
-  component: () => <div>Dashboard Placeholder</div>
+  component: () => (
+    <ErrorBoundary>
+      <div>Dashboard Placeholder</div>
+    </ErrorBoundary>
+  )
+})
+
+const boxesRoute = createRoute({
+  getParentRoute: () => protectedRoute,
+  path: '/boxes',
+  component: () => (
+    <ErrorBoundary>
+      <BoxesPage />
+    </ErrorBoundary>
+  )
 })
 
 const indexRoute = createRoute({
@@ -53,6 +81,12 @@ const indexRoute = createRoute({
   beforeLoad: () => {
     throw redirect({ to: '/dashboard' })
   }
+})
+
+const notFoundRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '*',
+  component: NotFoundPage
 })
 
 // Catch-all route definition for TanStack Router is a bit different,
@@ -64,8 +98,10 @@ const routeTree = rootRoute.addChildren([
   protectedRoute.addChildren([
     indexRoute,
     dashboardRoute,
+    boxesRoute,
     // Add other routes here as they are created
-  ])
+  ]),
+  notFoundRoute
 ])
 
 export const router = createRouter({ routeTree })

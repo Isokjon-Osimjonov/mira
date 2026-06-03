@@ -1,85 +1,80 @@
 import axios, { AxiosError } from 'axios'
 import createAuthRefreshInterceptor from 'axios-auth-refresh'
-import { env } from '../config/env'
-import { getErrorMessage } from './errors'
-import { toast } from 'sonner'
 
-export interface ApiResponse<T = unknown> {
-  data: T | null
-  error: { message: string; code: string } | null
-  meta?: {
-    page:      number
-    limit:     number
-    total:     number
-    hasNext:   boolean
-    hasPrev:   boolean
-  }
-}
-
-// ── Axios instance ─────────────────────
+const API_BASE = import.meta.env.VITE_API_URL
+  ?? 'http://localhost:4000'
 
 export const api = axios.create({
-  baseURL:         `${env.apiUrl}/api/v1`,
-  withCredentials: true,   // for httpOnly cookies
+  baseURL:         `${API_BASE}/api/v1`,
+  withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
     'Accept':       'application/json',
   },
-  timeout: 30000,
+  timeout: 30_000,
 })
 
-// ── Response interceptor: parse errors ─
-
-api.interceptors.response.use(
-  (response) => response,
-  (error: AxiosError<ApiResponse>) => {
-    const code    = error.response?.data?.error?.code
-    const message = error.response?.data?.error?.message
-      ?? getErrorMessage(code ?? '')
-
-    // Attach friendly Uzbek message
-    const enhancedError = error as AxiosError & {
-      friendlyMessage: string
-      code: string
-    }
-    enhancedError.friendlyMessage = message
-    enhancedError.code = code ?? 'UNKNOWN'
-
-    return Promise.reject(enhancedError)
-  }
-)
-
-// ── Token refresh interceptor ──────────
+// ── Refresh interceptor (MUST be registered FIRST) ──
 
 createAuthRefreshInterceptor(
   api,
   async (failedRequest) => {
-    // Dynamic import to avoid circular dependency
+    // Use raw axios to avoid interceptor loops
+    const res = await axios.post(
+      `${API_BASE}/api/v1/admin/auth/refresh`,
+      {},
+      { withCredentials: true }
+    )
+    const { accessToken, mustChangePassword } = res.data.data
+
+    // Update store with new token
     const { useAuthStore } = await import('../stores/auth.store')
-    
-    try {
-      const res = await axios.post(
-        `${env.apiUrl}/api/v1/admin/auth/refresh`,
-        {},
-        { withCredentials: true }
-      )
-      const { accessToken, mustChangePassword } = res.data.data
-      useAuthStore.getState().setToken(accessToken)
-      if (mustChangePassword) {
-        useAuthStore.getState().setMustChangePassword(true)
-      }
-      failedRequest.response.config.headers.Authorization =
-        `Bearer ${accessToken}`
-      return Promise.resolve()
-    } catch (err) {
-      // Both tokens expired — clean logout
-      useAuthStore.getState().logout()
-      toast.error('Sessiya muddati tugadi. Qayta kiring.')
-      setTimeout(() => { 
-        window.location.href = '/login' 
-      }, 1500)
-      return Promise.reject(err)
-    }
+    const store = useAuthStore.getState()
+    store.setToken(accessToken)
+    if (mustChangePassword) store.setMustChangePassword(true)
+
+    // Update the failed request's auth header for retry
+    failedRequest.response.config.headers['Authorization'] =
+      `Bearer ${accessToken}`
+
+    return Promise.resolve()
   },
-  { statusCodes: [401] }
+  {
+    statusCodes: [401],
+  }
+)
+
+// ── Request interceptor: attach access token ──
+
+api.interceptors.request.use(
+  async (config) => {
+    const { useAuthStore } = await import('../stores/auth.store')
+    const token = useAuthStore.getState().accessToken
+    if (token) {
+      config.headers['Authorization'] = `Bearer ${token}`
+    }
+    return config
+  },
+  (error) => Promise.reject(error)
+)
+
+// ── Response interceptor: only for non-auth errors ──
+
+api.interceptors.response.use(
+  (response) => response,
+  (error: AxiosError<any>) => {
+    const status = error.response?.status
+    const code   = error.response?.data?.error?.code
+
+    // Skip 401 — handled by createAuthRefreshInterceptor
+    if (status === 401) {
+      return Promise.reject(error)
+    }
+
+    // Attach friendly message for other errors
+    const enhancedError = error as any
+    enhancedError.errorCode = code ?? 'UNKNOWN'
+
+    return Promise.reject(enhancedError)
+  }
 )

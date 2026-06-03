@@ -1,105 +1,121 @@
+import { Outlet, useLocation, useNavigate } from '@tanstack/react-router'
 import { useEffect } from 'react'
-import { Outlet, useNavigate } from '@tanstack/react-router'
-import { connectSocket, disconnectSocket } from '../lib/socket'
-import { useAuthStore } from '../stores/auth.store'
-import { navItems } from './nav-items'
 import { toast } from 'sonner'
+import { AppSidebar } from '../components/app-sidebar'
+import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar'
+import { Separator } from '@/components/ui/separator'
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from '@/components/ui/breadcrumb'
+import { api } from '../lib/api'
+import { useAuthStore } from '../stores/auth.store'
+import { connectSocket, disconnectSocket } from '../lib/socket'
+
+// Page title mapping
+const PAGE_TITLES: Record<string, { parent?: string; title: string }> = {
+  '/dashboard': { title: 'Dashboard' },
+  '/orders': { parent: 'Savdo', title: 'Buyurtmalar' },
+  '/customers': { parent: 'Savdo', title: 'Mijozlar' },
+  '/coupons': { parent: 'Savdo', title: 'Kuponlar' },
+  '/products': { parent: 'Mahsulotlar', title: 'Mahsulotlar' },
+  '/categories': { parent: 'Mahsulotlar', title: 'Kategoriyalar' },
+  '/inventory': { parent: 'Mahsulotlar', title: 'Inventar' },
+  '/suppliers': { parent: 'Mahsulotlar', title: 'Yetkazuvchilar' },
+  '/purchase-orders': { parent: 'Mahsulotlar', title: 'Buyurtma berish' },
+  '/expenses': { parent: 'Moliya', title: 'Xarajatlar' },
+  '/analytics': { parent: 'Moliya', title: 'Analitika' },
+  '/reports': { parent: 'Moliya', title: 'Hisobotlar' },
+  '/telegram': { parent: 'Marketing', title: 'Telegram' },
+  '/settings': { parent: 'Tizim', title: 'Sozlamalar' },
+  '/exchange-rates': { parent: 'Tizim', title: 'Valyuta kursi' },
+  '/admin-users': { parent: 'Tizim', title: 'Adminlar' },
+  '/roles': { parent: 'Tizim', title: 'Rollar' },
+}
 
 export function AppLayout() {
-  const { user, logout } = useAuthStore()
+  const location = useLocation()
   const navigate = useNavigate()
 
+  // Socket connection
   useEffect(() => {
     connectSocket()
+    return () => disconnectSocket()
+  }, [])
 
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        const { accessToken, isAuthenticated } = useAuthStore.getState()
-        if (!isAuthenticated || !accessToken) {
-          toast.error('Sessiya tugadi. Qayta kiring.')
-          navigate({ to: '/login' })
+  // Session validation (once on mount)
+  useEffect(() => {
+    let cancelled = false
+    api.get('/admin/auth/me')
+      .then(res => {
+        if (!cancelled) useAuthStore.getState().setUser(res.data.data)
+      })
+      .catch(err => {
+        if (!cancelled) {
+          const code = err?.response?.data?.error?.code
+          if (code === 'REFRESH_INVALID' || code === 'TOKEN_EXPIRED') {
+            useAuthStore.getState().logout()
+            toast.error('Sessiya muddati tugadi. Qayta kiring.')
+            navigate({ to: '/login' })
+          }
         }
-      }
-    }
-    document.addEventListener('visibilitychange', handleVisibilityChange)
-
-    return () => {
-      disconnectSocket()
-      document.removeEventListener('visibilitychange', handleVisibilityChange)
-    }
+      })
+    return () => { cancelled = true }
   }, [navigate])
 
-  const handleLogout = () => {
-    logout()
-    navigate({ to: '/login' })
-  }
+  // Get current page info
+  const basePath = '/' + location.pathname.split('/')[1]
+  const pageInfo = PAGE_TITLES[basePath] ?? { title: 'Sahifa' }
 
   return (
-    <div className="flex h-screen bg-gray-50 overflow-hidden">
-      {/* Sidebar */}
-      <aside className="w-64 bg-sidebar-background border-r border-sidebar-border flex flex-col">
+    <SidebarProvider>
+      <AppSidebar />
+      <SidebarInset>
         {/* Header */}
-        <div className="h-16 flex items-center px-6 border-b border-sidebar-border">
-          <span className="text-xl font-bold text-primary">🌸 Mira Admin</span>
-        </div>
-
-        {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto py-4">
-          {navItems.map((group, idx) => (
-            <div key={idx} className="mb-6 px-4">
-              {group.group && (
-                <h3 className="mb-2 px-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                  {group.group}
-                </h3>
+        <header
+          className="flex h-14 shrink-0 items-center gap-2
+                            border-b border-border/50 bg-white
+                            px-4 sticky top-0 z-10"
+        >
+          <SidebarTrigger
+            className="-ml-1 text-muted-foreground
+                                     hover:text-foreground"
+          />
+          <Separator orientation="vertical" className="h-4 mx-1" />
+          <Breadcrumb>
+            <BreadcrumbList>
+              {pageInfo.parent && (
+                <>
+                  <BreadcrumbItem className="hidden md:block">
+                    <BreadcrumbLink
+                      className="text-muted-foreground
+                                               text-sm"
+                    >
+                      {pageInfo.parent}
+                    </BreadcrumbLink>
+                  </BreadcrumbItem>
+                  <BreadcrumbSeparator className="hidden md:block" />
+                </>
               )}
-              <div className="space-y-1">
-                {group.items.map((item, itemIdx) => (
-                  <button
-                    key={itemIdx}
-                    className="w-full flex items-center gap-3 px-2 py-2 text-sm font-medium text-gray-700 rounded-md hover:bg-gray-100 hover:text-gray-900"
-                    onClick={() => navigate({ to: item.url })}
-                  >
-                    <span>{item.title}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          ))}
-        </nav>
+              <BreadcrumbItem>
+                <BreadcrumbPage className="text-sm font-medium">{pageInfo.title}</BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
+        </header>
 
-        {/* Footer */}
-        <div className="p-4 border-t border-sidebar-border bg-gray-50">
-          <div className="text-xs text-gray-500 mb-4 text-center">
-            Valyuta: 1 ₩ = 12 so'm
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center font-bold">
-              {user?.fullName?.[0] ?? 'A'}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-900 truncate">
-                {user?.fullName ?? 'Admin'}
-              </p>
-              <p className="text-xs text-gray-500 truncate">
-                {user?.role?.name ?? (user?.isSuperAdmin ? 'Super Admin' : 'Admin')}
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={handleLogout}
-            className="mt-4 w-full py-2 px-4 text-sm font-medium text-red-600 bg-red-50 rounded-md hover:bg-red-100"
-          >
-            Chiqish
-          </button>
-        </div>
-      </aside>
-
-      {/* Main Content */}
-      <main className="flex-1 overflow-y-auto">
-        <div className="p-8">
+        {/* Page content */}
+        <div
+          className="flex flex-col flex-1 gap-4 p-4 md:p-6
+                        bg-gray-50 min-h-0"
+        >
           <Outlet />
         </div>
-      </main>
-    </div>
+      </SidebarInset>
+    </SidebarProvider>
   )
 }

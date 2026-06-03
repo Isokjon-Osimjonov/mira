@@ -1,6 +1,6 @@
 import bcrypt from 'bcryptjs'
 import { db } from '../../../config/db'
-import { adminUsers, refreshTokens, rolePermissions } from '@mira/db'
+import { adminUsers, refreshTokens, rolePermissions, roles } from '@mira/db'
 import { eq, and, gt } from 'drizzle-orm'
 import { signAccess, signRefresh, verifyRefresh } from '../../../lib/jwt'
 import { generateToken, hashToken } from '../../../lib/otp'
@@ -267,3 +267,62 @@ export async function changePassword(
     return { success: true }
   })
 }
+
+export async function getAdminMe(adminId: string) {
+  const [admin] = await db
+    .select({
+      id: adminUsers.id,
+      email: adminUsers.email,
+      fullName: adminUsers.fullName,
+      isSuperAdmin: adminUsers.isSuperAdmin,
+      mustChangePassword: adminUsers.mustChangePassword,
+      roleId: adminUsers.roleId,
+    })
+    .from(adminUsers)
+    .where(eq(adminUsers.id, adminId))
+    .limit(1)
+
+  if (!admin) {
+    throw { status: 404, code: 'NOT_FOUND', message: 'Admin topilmadi' }
+  }
+
+  let role: {
+    id: string
+    name: string
+    permissions: string[]
+  } | null = null
+
+  if (admin.roleId) {
+    const [roleData] = await db
+      .select({ id: roles.id, name: roles.name })
+      .from(roles)
+      .where(eq(roles.id, admin.roleId))
+      .limit(1)
+
+    if (roleData) {
+      const perms = await db
+        .select({
+          resource: rolePermissions.resource,
+          action: rolePermissions.action,
+        })
+        .from(rolePermissions)
+        .where(eq(rolePermissions.roleId, admin.roleId))
+
+      role = {
+        id: roleData.id,
+        name: roleData.name,
+        permissions: perms.map((p) => `${p.resource}:${p.action}`),
+      }
+    }
+  }
+
+  return {
+    id: admin.id,
+    email: admin.email,
+    fullName: admin.fullName,
+    isSuperAdmin: admin.isSuperAdmin,
+    mustChangePassword: admin.mustChangePassword,
+    role,
+  }
+}
+
