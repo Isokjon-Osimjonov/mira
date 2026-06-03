@@ -61,6 +61,12 @@ export const stockMovementTypeEnum = pgEnum('stock_movement_type', [
   'RETURNED',
   'ADJUSTMENT_IN',
   'ADJUSTMENT_OUT',
+  'GIFT',
+  'SAMPLE',
+  'WRITE_OFF',
+  'EXPIRED',
+  'DAMAGED',
+  'ADJUSTMENT',
 ]);
 
 export const stockReservationStatusEnum = pgEnum('stock_reservation_status', [

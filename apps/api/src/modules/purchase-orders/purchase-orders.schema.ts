@@ -11,7 +11,7 @@ export const createPurchaseOrderSchema = z.object({
   orderDate: z.string().date(),
   expectedDeliveryDate: z.string().date().optional().nullable(),
   notes: z.string().optional().nullable(),
-  items: z.array(poItemSchema).min(1, 'Kamida bitta mahsulot qo\'shing'),
+  items: z.array(poItemSchema).min(1, "Kamida bitta mahsulot qo'shing"),
 })
 
 export const updatePurchaseOrderSchema = createPurchaseOrderSchema.partial().extend({

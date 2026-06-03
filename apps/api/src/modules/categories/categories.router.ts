@@ -9,9 +9,19 @@ const adminRouter = Router()
 publicRouter.get('/', ctrl.getCategoriesTree)
 
 // Admin (mount at /api/v1/admin/categories)
-adminRouter.get('/', requireAdmin, requirePermission('products', 'read'), ctrl.getAllCategoriesAdmin)
+adminRouter.get(
+  '/',
+  requireAdmin,
+  requirePermission('products', 'read'),
+  ctrl.getAllCategoriesAdmin
+)
 adminRouter.post('/', requireAdmin, requirePermission('products', 'write'), ctrl.createCategory)
 adminRouter.put('/:id', requireAdmin, requirePermission('products', 'write'), ctrl.updateCategory)
-adminRouter.delete('/:id', requireAdmin, requirePermission('products', 'write'), ctrl.deleteCategory)
+adminRouter.delete(
+  '/:id',
+  requireAdmin,
+  requirePermission('products', 'write'),
+  ctrl.deleteCategory
+)
 
 export { publicRouter as categoryRouter, adminRouter as categoryAdminRouter }

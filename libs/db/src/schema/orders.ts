@@ -38,6 +38,9 @@ export const orders = pgTable('orders', {
   rateSnapshotId: uuid('rate_snapshot_id').references(() => exchangeRateSnapshots.id, { onDelete: 'set null' }),
   
   paymentMethod: paymentMethodEnum('payment_method'),
+  paymentMode: varchar('payment_mode', { length: 10 }).default('RECEIPT').notNull(),
+  orderDiscountPct: integer('order_discount_pct'),
+  orderDiscountFlat: bigint('order_discount_flat', { mode: 'bigint' }),
   paymentAmount: bigint('payment_amount', { mode: 'bigint' }),
   paymentReference: text('payment_reference'),
   paymentReceiptUrl: text('payment_receipt_url'),
@@ -72,6 +75,7 @@ export const orders = pgTable('orders', {
   refundAmount: bigint('refund_amount', { mode: 'bigint' }),
   refundedAt: timestamp('refunded_at', { withTimezone: true }),
   refundedBy: uuid('refunded_by').references(() => adminUsers.id, { onDelete: 'set null' }),
+  refundRequestedAt: timestamp('refund_requested_at', { withTimezone: true }),
   refundNote: text('refund_note'),
   
   paymentCurrency: varchar('payment_currency', { length: 3 }),
@@ -90,6 +94,7 @@ export const orders = pgTable('orders', {
   createdAtIdx: index('orders_created_at_idx').on(t.createdAt),
   profileRegionCheck: check('orders_profile_region_check', sql`${t.profileRegion} IN ('UZB', 'KOR')`),
   deliveryRegionCheck: check('orders_delivery_region_check', sql`${t.deliveryRegion} IN ('UZB', 'KOR')`),
+  paymentModeCheck: check('orders_payment_mode_check', sql`${t.paymentMode} IN ('RECEIPT', 'IMMEDIATE')`),
   totalAmountCheck: check('orders_total_amount_check', sql`${t.totalAmount} >= 0`),
   subtotalCheck: check('orders_subtotal_check', sql`${t.subtotal} >= 0`),
   discountAmountCheck: check('orders_discount_amount_check', sql`${t.discountAmount} >= 0`),

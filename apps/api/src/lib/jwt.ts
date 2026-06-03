@@ -2,17 +2,17 @@ import jwt from 'jsonwebtoken'
 import { env } from '../config/env'
 
 export interface CustomerTokenPayload {
-  sub:    string   // customer UUID
-  type:   'customer'
-  phone:  string
+  sub: string // customer UUID
+  type: 'customer'
+  phone: string
   region: 'UZB' | 'KOR'
 }
 
 export interface AdminTokenPayload {
-  sub:          string   // admin_user UUID
-  type:         'admin'
-  email:        string
-  roleId:       string | null
+  sub: string // admin_user UUID
+  type: 'admin'
+  email: string
+  roleId: string | null
   isSuperAdmin: boolean
 }
 

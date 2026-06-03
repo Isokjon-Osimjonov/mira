@@ -8,21 +8,21 @@ const isProd = env.NODE_ENV === 'production'
 export function setRefreshCookie(res: Response, token: string): void {
   res.cookie(REFRESH_COOKIE, token, {
     httpOnly: true,
-    secure:   isProd,
+    secure: isProd,
     sameSite: isProd ? 'none' : 'lax',
-    domain:   isProd ? '.miracosmetics.uz' : undefined,
-    maxAge:   7 * 24 * 60 * 60 * 1000,
-    path:     '/',
+    domain: isProd ? '.miracosmetics.uz' : undefined,
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+    path: '/',
   })
 }
 
 export function clearRefreshCookie(res: Response): void {
   res.clearCookie(REFRESH_COOKIE, {
     httpOnly: true,
-    secure:   isProd,
+    secure: isProd,
     sameSite: isProd ? 'none' : 'lax',
-    domain:   isProd ? '.miracosmetics.uz' : undefined,
-    path:     '/',
+    domain: isProd ? '.miracosmetics.uz' : undefined,
+    path: '/',
   })
 }
 

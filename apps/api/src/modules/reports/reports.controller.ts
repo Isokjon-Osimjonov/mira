@@ -9,14 +9,19 @@ export async function getPLReport(req: Request, res: Response) {
     const dateTo = req.query.dateTo as string
 
     const { workbook, filename } = await service.generatePLReport(period, dateFrom, dateTo)
-    
-    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`)
-    
+
     await workbook.xlsx.write(res)
     res.end()
   } catch (e: any) {
-    return res.status(e.status ?? 500).json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
+    return res
+      .status(e.status ?? 500)
+      .json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
   }
 }
 
@@ -27,14 +32,19 @@ export async function getSalesReport(req: Request, res: Response) {
     const dateTo = req.query.dateTo as string
 
     const { workbook, filename } = await service.generateSalesReport(period, dateFrom, dateTo)
-    
-    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`)
-    
+
     await workbook.xlsx.write(res)
     res.end()
   } catch (e: any) {
-    return res.status(e.status ?? 500).json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
+    return res
+      .status(e.status ?? 500)
+      .json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
   }
 }
 
@@ -44,29 +54,43 @@ export async function getTransactionsReport(req: Request, res: Response) {
     const dateFrom = req.query.dateFrom as string
     const dateTo = req.query.dateTo as string
 
-    const { workbook, filename } = await service.generateTransactionsReport(period, dateFrom, dateTo)
-    
-    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    const { workbook, filename } = await service.generateTransactionsReport(
+      period,
+      dateFrom,
+      dateTo
+    )
+
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`)
-    
+
     await workbook.xlsx.write(res)
     res.end()
   } catch (e: any) {
-    return res.status(e.status ?? 500).json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
+    return res
+      .status(e.status ?? 500)
+      .json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
   }
 }
 
 export async function getInventoryReport(_req: Request, res: Response) {
   try {
     const { workbook, filename } = await service.generateInventoryReport()
-    
-    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`)
-    
+
     await workbook.xlsx.write(res)
     res.end()
   } catch (e: any) {
-    return res.status(e.status ?? 500).json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
+    return res
+      .status(e.status ?? 500)
+      .json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
   }
 }
 
@@ -77,14 +101,19 @@ export async function getCustomersReport(req: Request, res: Response) {
     const dateTo = req.query.dateTo as string
 
     const { workbook, filename } = await service.generateCustomersReport(period, dateFrom, dateTo)
-    
-    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`)
-    
+
     await workbook.xlsx.write(res)
     res.end()
   } catch (e: any) {
-    return res.status(e.status ?? 500).json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
+    return res
+      .status(e.status ?? 500)
+      .json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
   }
 }
 
@@ -95,14 +124,19 @@ export async function getCouponsReport(req: Request, res: Response) {
     const dateTo = req.query.dateTo as string
 
     const { workbook, filename } = await service.generateCouponsReport(period, dateFrom, dateTo)
-    
-    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`)
-    
+
     await workbook.xlsx.write(res)
     res.end()
   } catch (e: any) {
-    return res.status(e.status ?? 500).json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
+    return res
+      .status(e.status ?? 500)
+      .json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
   }
 }
 
@@ -113,13 +147,18 @@ export async function getExpensesReport(req: Request, res: Response) {
     const dateTo = req.query.dateTo as string
 
     const { workbook, filename } = await service.generateExpensesReport(period, dateFrom, dateTo)
-    
-    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`)
-    
+
     await workbook.xlsx.write(res)
     res.end()
   } catch (e: any) {
-    return res.status(e.status ?? 500).json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
+    return res
+      .status(e.status ?? 500)
+      .json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
   }
 }

@@ -5,7 +5,7 @@ import { adminUsers, roles, rolePermissions, refreshTokens } from '@mira/db'
 import { eq, and, sql, desc, count, isNull, or, ilike } from 'drizzle-orm'
 import type { CreateAdminUserDto, UpdateAdminUserDto } from './admin-users.schema'
 
-export async function getAdminUsers(query: { page?: number, limit?: number }) {
+export async function getAdminUsers(query: { page?: number; limit?: number }) {
   const page = query.page || 1
   const limit = query.limit || 20
   const offset = (page - 1) * limit
@@ -38,7 +38,7 @@ export async function getAdminUsers(query: { page?: number, limit?: number }) {
   const total = Number(countRes?.count || 0)
 
   return {
-    items: itemsQuery.map(u => ({
+    items: itemsQuery.map((u) => ({
       id: u.id,
       email: u.email,
       fullName: u.fullName,
@@ -47,9 +47,9 @@ export async function getAdminUsers(query: { page?: number, limit?: number }) {
       mustChangePassword: u.mustChangePassword,
       lastLoginAt: u.lastLoginAt,
       createdAt: u.createdAt,
-      role: u.roleId ? { id: u.roleId, name: u.roleName } : null
+      role: u.roleId ? { id: u.roleId, name: u.roleName } : null,
     })),
-    meta: { page, limit, total, hasNext: offset + limit < total, hasPrev: page > 1 }
+    meta: { page, limit, total, hasNext: offset + limit < total, hasPrev: page > 1 },
   }
 }
 
@@ -66,11 +66,14 @@ export async function getAdminUserById(id: string) {
   if (admin.roleId) {
     const [role] = await db.select().from(roles).where(eq(roles.id, admin.roleId)).limit(1)
     if (role) {
-      const perms = await db.select().from(rolePermissions).where(eq(rolePermissions.roleId, role.id))
+      const perms = await db
+        .select()
+        .from(rolePermissions)
+        .where(eq(rolePermissions.roleId, role.id))
       roleData = {
         id: role.id,
         name: role.name,
-        permissions: perms.map(p => `${p.resource}:${p.action}`)
+        permissions: perms.map((p) => `${p.resource}:${p.action}`),
       }
     }
   }
@@ -78,13 +81,22 @@ export async function getAdminUserById(id: string) {
   return {
     ...admin,
     passwordHash: undefined, // Security
-    role: roleData
+    role: roleData,
   }
 }
 
 export async function createAdminUser(data: CreateAdminUserDto) {
-  const [existing] = await db.select().from(adminUsers).where(eq(adminUsers.email, data.email)).limit(1)
-  if (existing) throw { status: 409, code: 'ADMIN_USER_DUPLICATE_EMAIL', message: 'Bunday email bilan admin mavjud' }
+  const [existing] = await db
+    .select()
+    .from(adminUsers)
+    .where(eq(adminUsers.email, data.email))
+    .limit(1)
+  if (existing)
+    throw {
+      status: 409,
+      code: 'ADMIN_USER_DUPLICATE_EMAIL',
+      message: 'Bunday email bilan admin mavjud',
+    }
 
   const passwordHash = await bcrypt.hash(data.password, 12)
 
@@ -105,9 +117,18 @@ export async function createAdminUser(data: CreateAdminUserDto) {
 
 export async function updateAdminUser(id: string, targetId: string, data: UpdateAdminUserDto) {
   if (id === targetId) {
-    if (data.isActive === false) throw { status: 400, code: 'ADMIN_CANNOT_SELF_DEACTIVATE', message: 'O\'zingizni faolsizlantira olmaysiz' }
+    if (data.isActive === false)
+      throw {
+        status: 400,
+        code: 'ADMIN_CANNOT_SELF_DEACTIVATE',
+        message: "O'zingizni faolsizlantira olmaysiz",
+      }
     if (data.roleId !== undefined || data.isSuperAdmin !== undefined) {
-       throw { status: 400, code: 'ADMIN_CANNOT_CHANGE_OWN_ROLE', message: 'O\'z rolingizni o\'zgartira olmaysiz' }
+      throw {
+        status: 400,
+        code: 'ADMIN_CANNOT_CHANGE_OWN_ROLE',
+        message: "O'z rolingizni o'zgartira olmaysiz",
+      }
     }
   }
 
@@ -123,7 +144,7 @@ export async function updateAdminUser(id: string, targetId: string, data: Update
     .set(updates)
     .where(eq(adminUsers.id, targetId))
     .returning()
-  
+
   return updated
 }
 
@@ -147,7 +168,8 @@ export async function resetAdminPassword(targetId: string) {
 }
 
 export async function deleteAdminUser(id: string, targetId: string) {
-  if (id === targetId) throw { status: 400, code: 'FORBIDDEN', message: 'O\'zingizni o\'chira olmaysiz' }
+  if (id === targetId)
+    throw { status: 400, code: 'FORBIDDEN', message: "O'zingizni o'chira olmaysiz" }
 
   const [deleted] = await db
     .update(adminUsers)

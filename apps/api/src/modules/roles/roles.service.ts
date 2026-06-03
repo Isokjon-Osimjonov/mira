@@ -5,38 +5,50 @@ import type { CreateRoleDto, UpdateRoleDto, UpdatePermissionDto } from './roles.
 
 export async function getRoles() {
   const allRoles = await db.select().from(roles)
-  
-  const rolesWithData = await Promise.all(allRoles.map(async (role) => {
-    const permissions = await db
-      .select({ resource: rolePermissions.resource, action: rolePermissions.action })
-      .from(rolePermissions)
-      .where(eq(rolePermissions.roleId, role.id))
-    
-    const [userCount] = await db
-      .select({ count: count() })
-      .from(adminUsers)
-      .where(and(eq(adminUsers.roleId, role.id), eq(adminUsers.isActive, true)))
-    
-    return {
-      ...role,
-      permissions,
-      adminCount: Number(userCount?.count || 0)
-    }
-  }))
+
+  const rolesWithData = await Promise.all(
+    allRoles.map(async (role) => {
+      const permissions = await db
+        .select({ resource: rolePermissions.resource, action: rolePermissions.action })
+        .from(rolePermissions)
+        .where(eq(rolePermissions.roleId, role.id))
+
+      const [userCount] = await db
+        .select({ count: count() })
+        .from(adminUsers)
+        .where(and(eq(adminUsers.roleId, role.id), eq(adminUsers.isActive, true)))
+
+      return {
+        ...role,
+        permissions,
+        adminCount: Number(userCount?.count || 0),
+      }
+    })
+  )
 
   return rolesWithData
 }
 
 export async function getPermissionMatrix() {
   const resources = [
-    'products', 'orders', 'customers', 'inventory',
-    'settings', 'analytics', 'telegram', 'expenses',
-    'coupons', 'exchange_rates', 'boxes', 'users', 'roles'
+    'products',
+    'orders',
+    'customers',
+    'inventory',
+    'settings',
+    'analytics',
+    'telegram',
+    'expenses',
+    'coupons',
+    'exchange_rates',
+    'boxes',
+    'users',
+    'roles',
   ]
   const actions = ['read', 'write', 'delete']
-  
+
   const matrix: Record<string, string[]> = {}
-  resources.forEach(res => {
+  resources.forEach((res) => {
     matrix[res] = [...actions]
   })
 
@@ -58,17 +70,21 @@ export async function getRoleById(id: string) {
 export async function createRole(data: CreateRoleDto) {
   // Check unique name
   const [existing] = await db.select().from(roles).where(eq(roles.name, data.name)).limit(1)
-  if (existing) throw { status: 409, code: 'ROLE_DUPLICATE_NAME', message: 'Bunday nomli rol mavjud' }
+  if (existing)
+    throw { status: 409, code: 'ROLE_DUPLICATE_NAME', message: 'Bunday nomli rol mavjud' }
 
   return await db.transaction(async (tx) => {
-    const [newRole] = await tx.insert(roles).values({
-      name: data.name,
-      description: data.description,
-    }).returning()
+    const [newRole] = await tx
+      .insert(roles)
+      .values({
+        name: data.name,
+        description: data.description,
+      })
+      .returning()
 
     if (data.permissions.length > 0) {
       await tx.insert(rolePermissions).values(
-        data.permissions.map(p => ({
+        data.permissions.map((p) => ({
           roleId: newRole.id,
           resource: p.resource,
           action: p.action,
@@ -85,8 +101,13 @@ export async function updateRole(id: string, data: UpdateRoleDto) {
   if (!role) throw { status: 404, code: 'ROLE_NOT_FOUND', message: 'Rol topilmadi' }
 
   if (data.name) {
-    const [existing] = await db.select().from(roles).where(and(eq(roles.name, data.name), sql`id != ${id}`)).limit(1)
-    if (existing) throw { status: 409, code: 'ROLE_DUPLICATE_NAME', message: 'Bunday nomli rol mavjud' }
+    const [existing] = await db
+      .select()
+      .from(roles)
+      .where(and(eq(roles.name, data.name), sql`id != ${id}`))
+      .limit(1)
+    if (existing)
+      throw { status: 409, code: 'ROLE_DUPLICATE_NAME', message: 'Bunday nomli rol mavjud' }
   }
 
   return await db.transaction(async (tx) => {
@@ -105,7 +126,7 @@ export async function updateRole(id: string, data: UpdateRoleDto) {
       await tx.delete(rolePermissions).where(eq(rolePermissions.roleId, id))
       if (data.permissions.length > 0) {
         await tx.insert(rolePermissions).values(
-          data.permissions.map(p => ({
+          data.permissions.map((p) => ({
             roleId: id,
             resource: p.resource,
             action: p.action,
@@ -123,19 +144,24 @@ export async function updateGranularPermission(id: string, dto: UpdatePermission
   if (!role) throw { status: 404, code: 'ROLE_NOT_FOUND', message: 'Rol topilmadi' }
 
   if (dto.operation === 'add') {
-    await db.insert(rolePermissions).values({
-      roleId: id,
-      resource: dto.resource,
-      action: dto.action,
-    }).onConflictDoNothing()
+    await db
+      .insert(rolePermissions)
+      .values({
+        roleId: id,
+        resource: dto.resource,
+        action: dto.action,
+      })
+      .onConflictDoNothing()
   } else {
-    await db.delete(rolePermissions).where(
-      and(
-        eq(rolePermissions.roleId, id),
-        eq(rolePermissions.resource, dto.resource),
-        eq(rolePermissions.action, dto.action)
+    await db
+      .delete(rolePermissions)
+      .where(
+        and(
+          eq(rolePermissions.roleId, id),
+          eq(rolePermissions.resource, dto.resource),
+          eq(rolePermissions.action, dto.action)
+        )
       )
-    )
   }
 }
 
@@ -144,9 +170,13 @@ export async function deleteRole(id: string) {
     .select({ count: count() })
     .from(adminUsers)
     .where(and(eq(adminUsers.roleId, id), eq(adminUsers.isActive, true)))
-  
+
   if (Number(userCount?.count || 0) > 0) {
-    throw { status: 400, code: 'ROLE_IN_USE', message: 'Bu rolda adminlar bor. Avval ularni boshqa rolga o\'tkazing.' }
+    throw {
+      status: 400,
+      code: 'ROLE_IN_USE',
+      message: "Bu rolda adminlar bor. Avval ularni boshqa rolga o'tkazing.",
+    }
   }
 
   const [deleted] = await db.delete(roles).where(eq(roles.id, id)).returning()

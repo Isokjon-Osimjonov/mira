@@ -33,17 +33,16 @@ authHandlers.command('start', async (ctx) => {
       .limit(1)
 
     if (!authToken) {
-      await ctx.reply(`❌ Token topilmadi yoki muddati o'tgan.\nIltimos, ilovada qayta urinib ko'ring.`)
+      await ctx.reply(
+        `❌ Token topilmadi yoki muddati o'tgan.\nIltimos, ilovada qayta urinib ko'ring.`
+      )
       return
     }
 
     const otp = generateOtp()
     const telegramId = ctx.from!.id
 
-    await db
-      .update(authTokens)
-      .set({ otp, telegramId })
-      .where(eq(authTokens.id, authToken.id))
+    await db.update(authTokens).set({ otp, telegramId }).where(eq(authTokens.id, authToken.id))
 
     const [existing] = await db
       .select({ firstName: customers.firstName })
@@ -59,9 +58,8 @@ authHandlers.command('start', async (ctx) => {
       `${greeting}\n\n🔐 Tasdiqlash kodi:\n\n<code>${otp}</code>\n\n⏱ Amal qilish muddati: <b>5 daqiqa</b>\n\n⚠️ Bu kodni <b>hech kimga bermang!</b>`,
       { parse_mode: 'HTML' }
     )
-
   } catch (err) {
     console.error('Bot /start error:', err)
-    await ctx.reply('Xatolik yuz berdi. Iltimos qayta urinib ko\'ring.')
+    await ctx.reply("Xatolik yuz berdi. Iltimos qayta urinib ko'ring.")
   }
 })

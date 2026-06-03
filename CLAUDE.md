@@ -59,28 +59,10 @@ Nothing that changes between environments or depends on business state may be ha
 - `INVALID_TOKEN`: 401 - JWT is malformed.
 - `TOKEN_EXPIRED`: 401 - JWT has expired.
 
-### Auth Domain (`auth.service.ts`)
-- `PHONE_RATE_LIMITED`: 429 - Too many OTP requests for this phone.
-- `TOKEN_INVALID`: 400 - Auth token not found or expired.
-- `MAX_ATTEMPTS`: 429 - OTP attempts limit reached.
-- `OTP_NOT_READY`: 400 - Bot hasn't processed /start yet.
-- `OTP_INVALID`: 400 - Wrong code.
-- `REFRESH_INVALID`: 401 - Refresh token malformed/expired.
-- `TOKEN_REUSE`: 401 - Token reuse attack detected (revokes family).
-- `CUSTOMER_INACTIVE`: 401 - Account suspended.
-- `NO_REFRESH_TOKEN`: 401 - Missing cookie.
-
-### Product Domain (`products.service.ts`)
-- `PRODUCT_NOT_FOUND`: 404 - Product does not exist or deleted.
-- `DUPLICATE_BARCODE`: 400 - Barcode or SKU already exists.
-
-### Settings Domain (`settings.service.ts`)
-- `SETTINGS_NOT_FOUND`: 500 - Critical: Singleton row missing.
-
-### Exchange Rate Domain (`exchange-rates.service.ts`)
-- `EXCHANGE_RATE_NOT_FOUND`: 404 - No snapshots in DB.
-- `API_KEY_MISSING`: 400 - Exchange rate provider key not in env.
-- `API_GATEWAY_ERROR`: 502 - External provider failed.
+### AI Domain (`ai.service.ts`)
+- `AI_AUTH_ERROR`: 500 - AI service credentials missing or invalid.
+- `AI_QUOTA_EXCEEDED`: 429 - AI provider limit reached.
+- `AI_GENERATION_FAILED`: 500 - AI failed to produce valid output.
 
 ### Cart Domain (Future)
 - `PRODUCT_INACTIVE`: 400 - Product is hidden.
@@ -98,6 +80,48 @@ Nothing that changes between environments or depends on business state may be ha
 - `COUPON_MAX_USES_REACHED`: 400 - Global limit reached.
 - `COUPON_REGION_MISMATCH`: 400 - Coupon not valid in user region.
 - `COUPON_MIN_ORDER_NOT_MET`: 400 - Order total too low for coupon.
+
+### Product Domain (`products.service.ts`)
+- `PRODUCT_NOT_FOUND`: 404 - Product does not exist or deleted.
+- `DUPLICATE_BARCODE`: 400 - Barcode or SKU already exists.
+
+### Settings Domain (`settings.service.ts`)
+- `SETTINGS_NOT_FOUND`: 500 - Critical: Singleton row missing.
+
+### Exchange Rate Domain (`exchange-rates.service.ts`)
+- `EXCHANGE_RATE_NOT_FOUND`: 404 - No snapshots in DB.
+- `API_KEY_MISSING`: 400 - Exchange rate provider key not in env.
+- `API_GATEWAY_ERROR`: 502 - External provider failed.
+
+### Order Domain (`orders.service.ts`)
+- `ORDER_NOT_FOUND`: 404 - Order does not exist.
+- `ORDER_UNAUTHORIZED`: 403 - Order belongs to another customer.
+- `INVALID_STATUS_TRANSITION`: 400 - Status cannot move from A to B.
+- `PAYMENT_DEADLINE_EXCEEDED`: 400 - Order auto-canceled.
+- `INVALID_DISCOUNT`: 400 - discount > subtotal.
+
+### Inventory Domain (`inventory.service.ts`)
+- `BATCH_NOT_FOUND`: 404 - batch does not exist.
+- `WRITE_OFF_QTY_EXCEEDED`: 400 - qty > batch.currentQty.
+
+### Customer Domain (`customers.service.ts`)
+- `CUSTOMER_NOT_FOUND`: 404 - customer not found.
+- `WALK_IN_PHONE_REQUIRED`: 400 - KOR region needs phone.
+- `ADDRESS_NOT_FOUND`: 404 - address not found.
+- `ADDRESS_UNAUTHORIZED`: 403 - address belongs to different customer.
+- `ADDRESS_LIMIT_EXCEEDED`: 400 - max 10 addresses reached.
+- `ADDRESS_IN_USE`: 400 - address used in active order.
+- `JUSO_API_ERROR`: 502 - Korea address search failed.
+- `WRITE_OFF_QTY_EXCEEDED`: 400 - qty > batch.currentQty.
+- `BATCH_NOT_FOUND`: 404 - batch does not exist.
+- `INVALID_DISCOUNT`: 400 - discount > subtotal.
+
+### Pick & Pack (`pick-pack.service.ts`)
+- `BOX_NOT_FOUND`: 404 - Box size does not exist.
+- `SCAN_MISMATCH`: 400 - Barcode does not match expected item.
+- `ITEM_ALREADY_SCANNED`: 400 - Duplicate scan.
+- `ITEM_NOT_IN_ORDER`: 400 - Scanned item not part of current order.
+- `BOX_OVERFLOW`: 400 - Scanned items exceed box capacity.
 - `COUPON_MIN_QTY_NOT_MET`: 400 - Too few items for coupon.
 - `COUPON_FIRST_ORDER_ONLY`: 400 - Only for new customers.
 - `COUPON_ONE_PER_CUSTOMER`: 400 - User already used this coupon.
@@ -297,3 +321,26 @@ const router = Router();
 router.post('/', ctrl.handle);
 export default router;
 ```
+
+---
+
+## ══ PROGRESS TRACKING RULE (MANDATORY) ══
+
+After EVERY task completion, Gemini MUST:
+
+1. Update PROGRESS.md:
+   - Move completed items from "Pending" → "Completed"
+   - Update "In Progress" section
+   - Add entry to Changelog
+   - Update "Last updated" date at top
+
+2. Update format:
+   ✅ Completed: [x] Task name
+   🚧 In Progress: [ ] Task name
+   📋 Pending: [ ] Task name
+
+3. Commit message must include:
+   "docs: update PROGRESS.md"
+
+This rule applies to ALL future Gemini sessions.
+PROGRESS.md is the single source of project truth.

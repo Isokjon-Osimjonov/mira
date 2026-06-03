@@ -1,8 +1,9 @@
 import type { AnyPgColumn } from 'drizzle-orm/pg-core';
 import {
-  pgTable, uuid, varchar, text, boolean, timestamp, uniqueIndex, index, check,
+  pgTable, uuid, varchar, text, boolean, timestamp, uniqueIndex, index, check, integer
 } from 'drizzle-orm/pg-core';
 import { relations, sql } from 'drizzle-orm';
+import { stockMovements } from './inventory';
 
 export const roles = pgTable('roles', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -36,6 +37,8 @@ export const adminUsers = pgTable('admin_users', {
   isSuperAdmin: boolean('is_super_admin').default(false).notNull(),
   isActive: boolean('is_active').default(true).notNull(),
   mustChangePassword: boolean('must_change_password').default(false).notNull(),
+  loginAttempts: integer('login_attempts').notNull().default(0),
+  lockedUntil: timestamp('locked_until', { withTimezone: true }),
   lastLoginAt: timestamp('last_login_at', { withTimezone: true }),
   createdBy: uuid('created_by').references((): AnyPgColumn => adminUsers.id, { onDelete: 'set null' }),
   deletedAt: timestamp('deleted_at', { withTimezone: true }),
@@ -67,7 +70,7 @@ export const rolePermissionsRelations = relations(rolePermissions, ({ one }) => 
   }),
 }));
 
-export const adminUsersRelations = relations(adminUsers, ({ one }) => ({
+export const adminUsersRelations = relations(adminUsers, ({ one, many }) => ({
   role: one(roles, {
     fields: [adminUsers.roleId],
     references: [roles.id],
@@ -77,6 +80,8 @@ export const adminUsersRelations = relations(adminUsers, ({ one }) => ({
     references: [adminUsers.id],
     relationName: 'adminCreator',
   }),
+  performedStockMovements: many(stockMovements, { relationName: 'stockPerformedBy' }),
+  writtenOffStockMovements: many(stockMovements, { relationName: 'stockWrittenOffBy' }),
 }));
 
 export type Role = typeof roles.$inferSelect;

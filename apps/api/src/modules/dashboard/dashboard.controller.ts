@@ -14,7 +14,7 @@ export async function getOverview(req: Request, res: Response) {
       revenue: {
         gross: Number(data.revenue.gross),
         refunds: Number(data.revenue.refunds),
-        net: Number(data.revenue.net)
+        net: Number(data.revenue.net),
       },
       profit: {
         cogs: Number(data.profit.cogs),
@@ -22,18 +22,20 @@ export async function getOverview(req: Request, res: Response) {
         grossMarginPct: data.profit.grossMarginPct,
         expenses: Number(data.profit.expenses),
         netProfit: Number(data.profit.netProfit),
-        netMarginPct: data.profit.netMarginPct
+        netMarginPct: data.profit.netMarginPct,
       },
       pendingPayments: {
         ...data.pendingPayments,
-        totalAmount: Number(data.pendingPayments.totalAmount)
+        totalAmount: Number(data.pendingPayments.totalAmount),
       },
-      inventoryValue: Number(data.inventoryValue)
+      inventoryValue: Number(data.inventoryValue),
     }
 
     return res.json({ data: safeData, error: null })
   } catch (e: any) {
-    return res.status(e.status ?? 500).json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
+    return res
+      .status(e.status ?? 500)
+      .json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
   }
 }
 
@@ -53,13 +55,15 @@ export async function getRevenueChart(req: Request, res: Response) {
         uzbRevenue: Number(data.summary.uzbRevenue),
         korRevenue: Number(data.summary.korRevenue),
         uzbPct: data.summary.uzbPct,
-        korPct: data.summary.korPct
-      }
+        korPct: data.summary.korPct,
+      },
     }
 
     return res.json({ data: safeData, error: null })
   } catch (e: any) {
-    return res.status(e.status ?? 500).json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
+    return res
+      .status(e.status ?? 500)
+      .json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
   }
 }
 
@@ -76,7 +80,7 @@ export async function getPLReport(req: Request, res: Response) {
       revenue: {
         gross: Number(data.revenue.gross),
         refunds: Number(data.revenue.refunds),
-        net: Number(data.revenue.net)
+        net: Number(data.revenue.net),
       },
       cogs: Number(data.cogs),
       grossProfit: Number(data.grossProfit),
@@ -86,17 +90,19 @@ export async function getPLReport(req: Request, res: Response) {
         coupons: Number(data.expenses.coupons),
         general: Number(data.expenses.general),
         total: Number(data.expenses.total),
-        byCategory: data.expenses.byCategory.map(c => ({
+        byCategory: data.expenses.byCategory.map((c) => ({
           ...c,
-          amount: Number(c.amount)
-        }))
+          amount: Number(c.amount),
+        })),
       },
-      netProfit: Number(data.netProfit)
+      netProfit: Number(data.netProfit),
     }
 
     return res.json({ data: safeData, error: null })
   } catch (e: any) {
-    return res.status(e.status ?? 500).json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
+    return res
+      .status(e.status ?? 500)
+      .json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
   }
 }
 
@@ -111,22 +117,24 @@ export async function getTransactions(req: Request, res: Response) {
 
     const result = await service.getTransactions({ period, dateFrom, dateTo, region, page, limit })
 
-    const safeItems = result.items.map(i => ({
+    const safeItems = result.items.map((i) => ({
       ...i,
       totalAmountKrw: Number(i.totalAmountKrw),
       totalAmountUzs: Number(i.totalAmountUzs),
-      discountAmount: Number(i.discountAmount)
+      discountAmount: Number(i.discountAmount),
     }))
 
     const safeMeta = {
       ...result.meta,
       totalRevenueKrw: Number(result.meta.totalRevenueKrw),
-      totalRevenueUzs: Number(result.meta.totalRevenueUzs)
+      totalRevenueUzs: Number(result.meta.totalRevenueUzs),
     }
 
     return res.json({ data: safeItems, meta: safeMeta, error: null })
   } catch (e: any) {
-    return res.status(e.status ?? 500).json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
+    return res
+      .status(e.status ?? 500)
+      .json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
   }
 }
 
@@ -140,18 +148,28 @@ export async function getProductPerformance(req: Request, res: Response) {
     const brand = req.query.brand as string
     const categoryId = req.query.categoryId as string
 
-    const data = await service.getProductPerformance({ period, dateFrom, dateTo, region, sort, brand, categoryId })
+    const data = await service.getProductPerformance({
+      period,
+      dateFrom,
+      dateTo,
+      region,
+      sort,
+      brand,
+      categoryId,
+    })
 
-    const safeData = data.map(i => ({
+    const safeData = data.map((i) => ({
       ...i,
       revenueKrw: Number(i.revenueKrw),
       cogsKrw: Number(i.cogsKrw),
-      grossProfit: Number(i.grossProfit)
+      grossProfit: Number(i.grossProfit),
     }))
 
     return res.json({ data: safeData, error: null })
   } catch (e: any) {
-    return res.status(e.status ?? 500).json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
+    return res
+      .status(e.status ?? 500)
+      .json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
   }
 }
 
@@ -163,14 +181,16 @@ export async function getBrandPerformance(req: Request, res: Response) {
 
     const data = await service.getBrandPerformance(period, dateFrom, dateTo)
 
-    const safeData = data.map(i => ({
+    const safeData = data.map((i) => ({
       ...i,
-      revenueKrw: Number(i.revenueKrw)
+      revenueKrw: Number(i.revenueKrw),
     }))
 
     return res.json({ data: safeData, error: null })
   } catch (e: any) {
-    return res.status(e.status ?? 500).json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
+    return res
+      .status(e.status ?? 500)
+      .json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
   }
 }
 
@@ -181,16 +201,18 @@ export async function getInventoryHealth(_req: Request, res: Response) {
     const safeData = {
       ...data,
       totalValue: Number(data.totalValue),
-      products: data.products.map(p => ({
+      products: data.products.map((p) => ({
         ...p,
         inventoryValue: Number(p.inventoryValue),
-        avgCostPrice: Number(p.avgCostPrice)
-      }))
+        avgCostPrice: Number(p.avgCostPrice),
+      })),
     }
 
     return res.json({ data: safeData, error: null })
   } catch (e: any) {
-    return res.status(e.status ?? 500).json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
+    return res
+      .status(e.status ?? 500)
+      .json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
   }
 }
 
@@ -204,13 +226,15 @@ export async function getCustomerAnalytics(req: Request, res: Response) {
 
     const safeData = {
       ...data,
-      aovTrend: data.aovTrend.map(t => ({ ...t, avgOrderValue: Number(t.avgOrderValue) })),
-      topCustomers: data.topCustomers.map(c => ({ ...c, totalSpent: Number(c.totalSpent) }))
+      aovTrend: data.aovTrend.map((t) => ({ ...t, avgOrderValue: Number(t.avgOrderValue) })),
+      topCustomers: data.topCustomers.map((c) => ({ ...c, totalSpent: Number(c.totalSpent) })),
     }
 
     return res.json({ data: safeData, error: null })
   } catch (e: any) {
-    return res.status(e.status ?? 500).json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
+    return res
+      .status(e.status ?? 500)
+      .json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
   }
 }
 
@@ -226,16 +250,18 @@ export async function getCouponAnalytics(req: Request, res: Response) {
       ...data,
       totalDiscountGiven: Number(data.totalDiscountGiven),
       avgDiscountPerOrder: Number(data.avgDiscountPerOrder),
-      coupons: data.coupons.map(c => ({
+      coupons: data.coupons.map((c) => ({
         ...c,
         totalDiscountGiven: Number(c.totalDiscountGiven),
-        revenueGenerated: Number(c.revenueGenerated)
-      }))
+        revenueGenerated: Number(c.revenueGenerated),
+      })),
     }
 
     return res.json({ data: safeData, error: null })
   } catch (e: any) {
-    return res.status(e.status ?? 500).json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
+    return res
+      .status(e.status ?? 500)
+      .json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
   }
 }
 
@@ -252,26 +278,28 @@ export async function getCashFlow(req: Request, res: Response) {
       cashIn: {
         ...data.cashIn,
         fromOrders: Number(data.cashIn.fromOrders),
-        total: Number(data.cashIn.total)
+        total: Number(data.cashIn.total),
       },
       cashOut: {
         ...data.cashOut,
         generalExpenses: Number(data.cashOut.generalExpenses),
         purchaseOrders: Number(data.cashOut.purchaseOrders),
-        total: Number(data.cashOut.total)
+        total: Number(data.cashOut.total),
       },
       netCashFlow: Number(data.netCashFlow),
       byMonth: data.byMonth.map((m: any) => ({
         ...m,
         cashIn: Number(m.cashIn),
         cashOut: Number(m.cashOut),
-        net: Number(m.net)
-      }))
+        net: Number(m.net),
+      })),
     }
 
     return res.json({ data: safeData, error: null })
   } catch (e: any) {
-    return res.status(e.status ?? 500).json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
+    return res
+      .status(e.status ?? 500)
+      .json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
   }
 }
 
@@ -283,13 +311,15 @@ export async function getAdminPerformance(req: Request, res: Response) {
 
     const data = await service.getAdminPerformance(period, dateFrom, dateTo)
 
-    const safeData = data.map(r => ({
+    const safeData = data.map((r) => ({
       ...r,
-      revenueConfirmed: Number(r.revenueConfirmed)
+      revenueConfirmed: Number(r.revenueConfirmed),
     }))
 
     return res.json({ data: safeData, error: null })
   } catch (e: any) {
-    return res.status(e.status ?? 500).json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
+    return res
+      .status(e.status ?? 500)
+      .json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
   }
 }

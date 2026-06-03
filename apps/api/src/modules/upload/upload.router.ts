@@ -9,7 +9,9 @@ router.get('/sign', requireAdmin, async (req, res, next) => {
   try {
     const { folder } = req.query
     if (!folder) {
-      return res.status(400).json({ data: null, error: { message: 'Folder required', code: 'BAD_REQUEST' } })
+      return res
+        .status(400)
+        .json({ data: null, error: { message: 'Folder required', code: 'BAD_REQUEST' } })
     }
 
     const params = await generateSignedUploadParams(folder as UploadFolder)

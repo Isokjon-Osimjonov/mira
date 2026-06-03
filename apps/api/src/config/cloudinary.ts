@@ -3,20 +3,20 @@ import { env } from './env'
 
 cloudinary.config({
   cloud_name: env.CLOUDINARY_CLOUD_NAME,
-  api_key:    env.CLOUDINARY_API_KEY,
+  api_key: env.CLOUDINARY_API_KEY,
   api_secret: env.CLOUDINARY_API_SECRET,
-  secure:     true,
+  secure: true,
 })
 
 export { cloudinary }
 
 // Folder strategy — all uploads go to organized subfolders
 export const UPLOAD_FOLDERS = {
-  products:  'mira/products',
-  receipts:  'mira/receipts',
-  expenses:  'mira/expenses',
-  telegram:  'mira/telegram',
-  profiles:  'mira/profiles',
+  products: 'mira/products',
+  receipts: 'mira/receipts',
+  expenses: 'mira/expenses',
+  telegram: 'mira/telegram',
+  profiles: 'mira/profiles',
 } as const
 
 export type UploadFolder = keyof typeof UPLOAD_FOLDERS
@@ -29,23 +29,20 @@ export async function generateSignedUploadParams(folder: UploadFolder) {
 
   const paramsToSign = {
     timestamp,
-    folder:     folderPath,
+    folder: folderPath,
     // Product images: allow transformation
     ...(folder === 'products' && {
       transformation: 'q_auto,f_auto,w_1200',
     }),
   }
 
-  const signature = cloudinary.utils.api_sign_request(
-    paramsToSign,
-    env.CLOUDINARY_API_SECRET
-  )
+  const signature = cloudinary.utils.api_sign_request(paramsToSign, env.CLOUDINARY_API_SECRET)
 
   return {
     timestamp,
     signature,
-    folder:    folderPath,
-    apiKey:    env.CLOUDINARY_API_KEY,
+    folder: folderPath,
+    apiKey: env.CLOUDINARY_API_KEY,
     cloudName: env.CLOUDINARY_CLOUD_NAME,
   }
 }

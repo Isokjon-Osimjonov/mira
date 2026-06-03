@@ -2,20 +2,26 @@ import { db } from '../../config/db'
 import { korShippingTiers } from '@mira/db'
 import { eq, asc, isNull, and, not } from 'drizzle-orm'
 import type { CreateTierDto, UpdateTierDto } from './kor-shipping.schema'
+import { cacheGet, cacheSet, cacheDelete, CACHE_TTL } from '../../lib/cache'
+
+const CACHE_KEY = 'korshipping:active'
 
 export async function getActiveTiers() {
-  return await db
+  const cached = await cacheGet<any>(CACHE_KEY)
+  if (cached) return cached
+
+  const result = await db
     .select()
     .from(korShippingTiers)
     .where(eq(korShippingTiers.isActive, true))
     .orderBy(asc(korShippingTiers.sortOrder))
+
+  await cacheSet(CACHE_KEY, result, CACHE_TTL.KOR_SHIPPING)
+  return result
 }
 
 export async function getAllTiers() {
-  return await db
-    .select()
-    .from(korShippingTiers)
-    .orderBy(asc(korShippingTiers.sortOrder))
+  return await db.select().from(korShippingTiers).orderBy(asc(korShippingTiers.sortOrder))
 }
 
 export async function createTier(data: CreateTierDto) {
@@ -26,9 +32,13 @@ export async function createTier(data: CreateTierDto) {
       .from(korShippingTiers)
       .where(isNull(korShippingTiers.maxOrderKrw))
       .limit(1)
-    
+
     if (existing) {
-      throw { status: 400, code: 'TIER_OVERLAP', message: 'Faqat bitta "unlimited" (maxOrderKrw=null) tier bo\'lishi mumkin.' }
+      throw {
+        status: 400,
+        code: 'TIER_OVERLAP',
+        message: 'Faqat bitta "unlimited" (maxOrderKrw=null) tier bo\'lishi mumkin.',
+      }
     }
   }
 
@@ -40,7 +50,8 @@ export async function createTier(data: CreateTierDto) {
       cargoFeeKrw: BigInt(data.cargoFeeKrw),
     } as any)
     .returning()
-  
+
+  await cacheDelete(CACHE_KEY)
   return newTier
 }
 
@@ -51,14 +62,19 @@ export async function updateTier(id: string, data: UpdateTierDto) {
       .from(korShippingTiers)
       .where(and(isNull(korShippingTiers.maxOrderKrw), not(eq(korShippingTiers.id, id))))
       .limit(1)
-    
+
     if (existing) {
-      throw { status: 400, code: 'TIER_OVERLAP', message: 'Faqat bitta "unlimited" tier bo\'lishi mumkin.' }
+      throw {
+        status: 400,
+        code: 'TIER_OVERLAP',
+        message: 'Faqat bitta "unlimited" tier bo\'lishi mumkin.',
+      }
     }
   }
 
   const updates: any = { ...data, updatedAt: new Date() }
-  if (data.maxOrderKrw !== undefined) updates.maxOrderKrw = data.maxOrderKrw !== null ? BigInt(data.maxOrderKrw) : null
+  if (data.maxOrderKrw !== undefined)
+    updates.maxOrderKrw = data.maxOrderKrw !== null ? BigInt(data.maxOrderKrw) : null
   if (data.cargoFeeKrw !== undefined) updates.cargoFeeKrw = BigInt(data.cargoFeeKrw)
 
   const [updated] = await db
@@ -66,13 +82,15 @@ export async function updateTier(id: string, data: UpdateTierDto) {
     .set(updates)
     .where(eq(korShippingTiers.id, id))
     .returning()
-  
+
   if (!updated) throw { status: 404, code: 'TIER_NOT_FOUND', message: 'Tier topilmadi' }
+  await cacheDelete(CACHE_KEY)
   return updated
 }
 
 export async function deleteTier(id: string) {
   const [deleted] = await db.delete(korShippingTiers).where(eq(korShippingTiers.id, id)).returning()
   if (!deleted) throw { status: 404, code: 'TIER_NOT_FOUND', message: 'Tier topilmadi' }
+  await cacheDelete(CACHE_KEY)
   return deleted
 }

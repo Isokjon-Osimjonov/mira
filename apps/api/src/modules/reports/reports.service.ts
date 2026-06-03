@@ -16,7 +16,7 @@ const HEADER_STYLE: Partial<ExcelJS.Style> = {
     left: { style: 'thin' },
     bottom: { style: 'thin' },
     right: { style: 'thin' },
-  }
+  },
 }
 
 const SUMMARY_ROW_STYLE: Partial<ExcelJS.Style> = {
@@ -31,7 +31,7 @@ const FORMATS = {
   UZS: '#,##0 "so\'m"',
   PCT: '0.00"%"',
   DATE: 'DD.MM.YYYY',
-  DATETIME: 'DD.MM.YYYY HH:MM'
+  DATETIME: 'DD.MM.YYYY HH:MM',
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────
@@ -59,7 +59,7 @@ function applyAlternatingRows(sheet: ExcelJS.Worksheet, startRow: number) {
 }
 
 function autoWidth(sheet: ExcelJS.Worksheet) {
-  sheet.columns.forEach(column => {
+  sheet.columns.forEach((column) => {
     let maxLength = 0
     column.eachCell!({ includeEmpty: true }, (cell) => {
       const columnLength = cell.value ? cell.value.toString().length : 10
@@ -77,10 +77,14 @@ function formatFilenameDate(date: Date) {
 
 // ─── Reports ─────────────────────────────────────────────────────────────
 
-export async function generatePLReport(period: DashboardService.Period, dateFrom?: string, dateTo?: string) {
+export async function generatePLReport(
+  period: DashboardService.Period,
+  dateFrom?: string,
+  dateTo?: string
+) {
   const data = await DashboardService.getPLReport(period, dateFrom, dateTo)
   const workbook = new ExcelJS.Workbook()
-  
+
   // Sheet 1: Daromad Hisoboti
   const s1 = workbook.addWorksheet('Daromad Hisoboti')
   const title = `P&L HISOBOT — ${format(data.period.startDate, 'dd.MM.yyyy')} - ${format(data.period.endDate, 'dd.MM.yyyy')}`
@@ -90,7 +94,7 @@ export async function generatePLReport(period: DashboardService.Period, dateFrom
   s1.getCell('A1').alignment = { horizontal: 'center' }
 
   let curr = 3
-  
+
   // DAROMAD
   s1.getCell(`A${curr}`).value = 'DAROMAD'
   s1.getCell(`A${curr}`).font = { bold: true }
@@ -109,11 +113,11 @@ export async function generatePLReport(period: DashboardService.Period, dateFrom
   s1.addRow(['Mahsulot narxi (COGS)', Number(data.cogs)]).getCell(2).numFmt = FORMATS.KRW
   s1.addRow(['Yuk tashish', Number(data.expenses.cargo)]).getCell(2).numFmt = FORMATS.KRW
   s1.addRow(['Kuponlar', Number(data.expenses.coupons)]).getCell(2).numFmt = FORMATS.KRW
-  
-  data.expenses.byCategory.forEach(cat => {
+
+  data.expenses.byCategory.forEach((cat) => {
     s1.addRow([cat.categoryName, Number(cat.amount)]).getCell(2).numFmt = FORMATS.KRW
   })
-  
+
   const totalExpRow = s1.addRow(['Jami xarajatlar', Number(data.expenses.total)])
   totalExpRow.getCell(2).numFmt = FORMATS.KRW
   applyStyleToRow(totalExpRow, SUMMARY_ROW_STYLE)
@@ -126,7 +130,7 @@ export async function generatePLReport(period: DashboardService.Period, dateFrom
   const gpRow = s1.addRow(['Yalpi foyda', Number(data.grossProfit), data.grossMarginPct / 100])
   gpRow.getCell(2).numFmt = FORMATS.KRW
   gpRow.getCell(3).numFmt = FORMATS.PCT
-  
+
   const npRow = s1.addRow(['Sof foyda', Number(data.netProfit), data.netMarginPct / 100])
   npRow.getCell(2).numFmt = FORMATS.KRW
   npRow.getCell(3).numFmt = FORMATS.PCT
@@ -154,7 +158,7 @@ export async function generatePLReport(period: DashboardService.Period, dateFrom
       revenue: Number(m.cashIn),
       cogs: 0, // Simplified
       profit: Number(m.net),
-      margin: m.cashIn > 0n ? Number(m.net * 10000n / m.cashIn) / 10000 : 0
+      margin: m.cashIn > 0n ? Number((m.net * 10000n) / m.cashIn) / 10000 : 0,
     })
     row.getCell(2).numFmt = FORMATS.KRW
     row.getCell(3).numFmt = FORMATS.KRW
@@ -167,12 +171,16 @@ export async function generatePLReport(period: DashboardService.Period, dateFrom
   return { workbook, filename }
 }
 
-export async function generateSalesReport(period: DashboardService.Period, dateFrom?: string, dateTo?: string) {
+export async function generateSalesReport(
+  period: DashboardService.Period,
+  dateFrom?: string,
+  dateTo?: string
+) {
   const productsData = await DashboardService.getProductPerformance({ period, dateFrom, dateTo })
   const brandsData = await DashboardService.getBrandPerformance(period, dateFrom, dateTo)
-  
+
   const workbook = new ExcelJS.Workbook()
-  
+
   // Sheet 1: Mahsulotlar
   const s1 = workbook.addWorksheet('Mahsulotlar')
   s1.columns = [
@@ -201,7 +209,7 @@ export async function generateSalesReport(period: DashboardService.Period, dateF
       cogs: Number(p.cogsKrw),
       profit: Number(p.grossProfit),
       margin: p.marginPct / 100,
-      refund: p.refundRate / 100
+      refund: p.refundRate / 100,
     })
     row.getCell(6).numFmt = FORMATS.KRW
     row.getCell(7).numFmt = FORMATS.KRW
@@ -215,14 +223,17 @@ export async function generateSalesReport(period: DashboardService.Period, dateF
   const totalCogs = productsData.reduce<bigint>((acc, p) => acc + BigInt(p.cogsKrw), 0n)
   const totalProfit = totalRev - totalCogs
   const totalUnits = productsData.reduce<number>((acc, p) => acc + Number(p.unitsSold), 0)
-  
+
   const sumRow = s1.addRow({
-    index: '', name: 'JAMI', brand: '', category: '',
+    index: '',
+    name: 'JAMI',
+    brand: '',
+    category: '',
     units: totalUnits,
     revenue: Number(totalRev),
     cogs: Number(totalCogs),
     profit: Number(totalProfit),
-    margin: totalRev > 0n ? Number((totalProfit * 10000n) / totalRev) / 10000 : 0
+    margin: totalRev > 0n ? Number((totalProfit * 10000n) / totalRev) / 10000 : 0,
   })
   applyStyleToRow(sumRow, SUMMARY_ROW_STYLE)
   sumRow.getCell(6).numFmt = FORMATS.KRW
@@ -249,7 +260,7 @@ export async function generateSalesReport(period: DashboardService.Period, dateF
       brand: b.brandName,
       units: b.unitsSold,
       revenue: Number(b.revenueKrw),
-      margin: b.marginPct / 100
+      margin: b.marginPct / 100,
     })
     row.getCell(4).numFmt = FORMATS.KRW
     row.getCell(5).numFmt = FORMATS.PCT
@@ -262,11 +273,15 @@ export async function generateSalesReport(period: DashboardService.Period, dateF
   return { workbook, filename }
 }
 
-export async function generateTransactionsReport(period: DashboardService.Period, dateFrom?: string, dateTo?: string) {
+export async function generateTransactionsReport(
+  period: DashboardService.Period,
+  dateFrom?: string,
+  dateTo?: string
+) {
   const result = await DashboardService.getTransactions({ period, dateFrom, dateTo, limit: 5000 }) // High limit for export
   const workbook = new ExcelJS.Workbook()
   const s = workbook.addWorksheet('Tranzaksiyalar')
-  
+
   s.columns = [
     { header: '№', key: 'index', width: 5 },
     { header: 'Buyurtma №', key: 'orderNumber' },
@@ -274,7 +289,7 @@ export async function generateTransactionsReport(period: DashboardService.Period
     { header: 'Telefon', key: 'customerPhone' },
     { header: 'Mintaqa', key: 'region' },
     { header: 'Summa (₩)', key: 'totalKrw' },
-    { header: 'Summa (so\'m)', key: 'totalUzs' },
+    { header: "Summa (so'm)", key: 'totalUzs' },
     { header: 'Chegirma (₩)', key: 'discount' },
     { header: 'Status', key: 'status' },
     { header: 'Tasdiqlangan sana', key: 'date' },
@@ -293,7 +308,7 @@ export async function generateTransactionsReport(period: DashboardService.Period
       totalUzs: Number(t.totalAmountUzs),
       discount: Number(t.discountAmount),
       status: t.status,
-      date: t.paymentConfirmedAt ? new Date(t.paymentConfirmedAt) : null
+      date: t.paymentConfirmedAt ? new Date(t.paymentConfirmedAt) : null,
     })
     row.getCell(6).numFmt = FORMATS.KRW
     row.getCell(7).numFmt = FORMATS.UZS
@@ -303,11 +318,16 @@ export async function generateTransactionsReport(period: DashboardService.Period
 
   // JAMI row
   const sumRow = s.addRow({
-    index: '', orderNumber: 'JAMI', customerName: '', customerPhone: '', region: '',
+    index: '',
+    orderNumber: 'JAMI',
+    customerName: '',
+    customerPhone: '',
+    region: '',
     totalKrw: Number(result.meta.totalRevenueKrw),
     totalUzs: Number(result.meta.totalRevenueUzs),
     discount: result.items.reduce((acc, t) => acc + Number(t.discountAmount), 0),
-    status: '', date: null
+    status: '',
+    date: null,
   })
   applyStyleToRow(sumRow, SUMMARY_ROW_STYLE)
   sumRow.getCell(6).numFmt = FORMATS.KRW
@@ -325,7 +345,7 @@ export async function generateTransactionsReport(period: DashboardService.Period
 export async function generateInventoryReport() {
   const data = await DashboardService.getInventoryHealth()
   const workbook = new ExcelJS.Workbook()
-  
+
   // Sheet 1: Ombor Holati
   const s1 = workbook.addWorksheet('Ombor Holati')
   s1.columns = [
@@ -341,8 +361,14 @@ export async function generateInventoryReport() {
     { header: 'Status', key: 'status' },
   ]
   applyStyleToRow(s1.getRow(1), HEADER_STYLE)
-  
-  const statusMap = { ok: 'Yaxshi', low: 'Kam', out: 'Tugagan', dead: 'O\'lik', expiring_soon: 'Yaroqlilik muddati yaqin' }
+
+  const statusMap = {
+    ok: 'Yaxshi',
+    low: 'Kam',
+    out: 'Tugagan',
+    dead: "O'lik",
+    expiring_soon: 'Yaroqlilik muddati yaqin',
+  }
 
   data.products.forEach((p, i) => {
     const row = s1.addRow({
@@ -355,16 +381,24 @@ export async function generateInventoryReport() {
       total: Number(p.inventoryValue),
       batches: p.batchCount,
       expiry: p.nearestExpiry ? new Date(p.nearestExpiry) : '-',
-      status: statusMap[p.status] || p.status
+      status: statusMap[p.status] || p.status,
     })
     row.getCell(6).numFmt = FORMATS.KRW
     row.getCell(7).numFmt = FORMATS.KRW
     if (p.nearestExpiry) row.getCell(9).numFmt = FORMATS.DATE
   })
-  
+
   const sumRow = s1.addRow({
-     index: '', name: 'JAMI', brand: '', barcode: '', qty: data.totalUnits,
-     cost: null, total: Number(data.totalValue), batches: null, expiry: null, status: ''
+    index: '',
+    name: 'JAMI',
+    brand: '',
+    barcode: '',
+    qty: data.totalUnits,
+    cost: null,
+    total: Number(data.totalValue),
+    batches: null,
+    expiry: null,
+    status: '',
   })
   applyStyleToRow(sumRow, SUMMARY_ROW_STYLE)
   sumRow.getCell(7).numFmt = FORMATS.KRW
@@ -376,11 +410,15 @@ export async function generateInventoryReport() {
   return { workbook, filename }
 }
 
-export async function generateCustomersReport(period: DashboardService.Period, dateFrom?: string, dateTo?: string) {
+export async function generateCustomersReport(
+  period: DashboardService.Period,
+  dateFrom?: string,
+  dateTo?: string
+) {
   const result = await CustomerService.getCustomers({ limit: 10000 }) // Export all
   const workbook = new ExcelJS.Workbook()
   const s = workbook.addWorksheet('Mijozlar')
-  
+
   s.columns = [
     { header: '№', key: 'index', width: 5 },
     { header: 'Ism', key: 'name' },
@@ -390,7 +428,7 @@ export async function generateCustomersReport(period: DashboardService.Period, d
     { header: 'Buyurtmalar', key: 'orders' },
     { header: 'Jami xarid (₩)', key: 'spent' },
     { header: 'Oxirgi buyurtma', key: 'lastOrder' },
-    { header: 'Ro\'yxatdan o\'tgan sana', key: 'joined' },
+    { header: "Ro'yxatdan o'tgan sana", key: 'joined' },
   ]
   applyStyleToRow(s.getRow(1), HEADER_STYLE)
 
@@ -404,7 +442,7 @@ export async function generateCustomersReport(period: DashboardService.Period, d
       orders: c.stats.totalOrders,
       spent: Number(c.stats.totalSpent),
       lastOrder: c.stats.lastOrderAt ? new Date(c.stats.lastOrderAt) : '-',
-      joined: new Date(c.createdAt)
+      joined: new Date(c.createdAt),
     })
     row.getCell(7).numFmt = FORMATS.KRW
     if (c.stats.lastOrderAt) row.getCell(8).numFmt = FORMATS.DATE
@@ -418,11 +456,15 @@ export async function generateCustomersReport(period: DashboardService.Period, d
   return { workbook, filename }
 }
 
-export async function generateCouponsReport(period: DashboardService.Period, dateFrom?: string, dateTo?: string) {
+export async function generateCouponsReport(
+  period: DashboardService.Period,
+  dateFrom?: string,
+  dateTo?: string
+) {
   const data = await DashboardService.getCouponAnalytics(period, dateFrom, dateTo)
   const workbook = new ExcelJS.Workbook()
   const s = workbook.addWorksheet('Kuponlar')
-  
+
   s.columns = [
     { header: '№', key: 'index', width: 5 },
     { header: 'Kod', key: 'code' },
@@ -441,10 +483,13 @@ export async function generateCouponsReport(period: DashboardService.Period, dat
       code: c.code,
       name: c.name,
       type: c.type,
-      value: c.type === 'PERCENTAGE' ? `${c.usedCount}%` : `${Number(c.totalDiscountGiven / BigInt(Math.max(c.usedCount, 1)))} ₩`,
+      value:
+        c.type === 'PERCENTAGE'
+          ? `${c.usedCount}%`
+          : `${Number(c.totalDiscountGiven / BigInt(Math.max(c.usedCount, 1)))} ₩`,
       used: c.usedCount,
       discount: Number(c.totalDiscountGiven),
-      status: 'ACTIVE' // Simplified, need to fetch actual status if needed
+      status: 'ACTIVE', // Simplified, need to fetch actual status if needed
     })
     row.getCell(7).numFmt = FORMATS.KRW
   })
@@ -457,14 +502,20 @@ export async function generateCouponsReport(period: DashboardService.Period, dat
   return { workbook, filename }
 }
 
-export async function generateExpensesReport(period: DashboardService.Period, dateFrom?: string, dateTo?: string) {
+export async function generateExpensesReport(
+  period: DashboardService.Period,
+  dateFrom?: string,
+  dateTo?: string
+) {
   const result = await DashboardService.getTransactions({ period, dateFrom, dateTo }) // Actually need expenses data
   // Using dashboard service which I just implemented
   const expensesData = await DashboardService.getPLReport(period, dateFrom, dateTo) // This has summary
-  const detailedExpenses = await db.execute(sql`SELECT e.*, c.name as category_name FROM expenses e JOIN expense_categories c ON e.category_id = c.id WHERE e.expense_date BETWEEN ${DashboardService.getPeriodDates(period, dateFrom, dateTo).startDate} AND ${DashboardService.getPeriodDates(period, dateFrom, dateTo).endDate}`)
-  
+  const detailedExpenses = await db.execute(
+    sql`SELECT e.*, c.name as category_name FROM expenses e JOIN expense_categories c ON e.category_id = c.id WHERE e.expense_date BETWEEN ${DashboardService.getPeriodDates(period, dateFrom, dateTo).startDate} AND ${DashboardService.getPeriodDates(period, dateFrom, dateTo).endDate}`
+  )
+
   const workbook = new ExcelJS.Workbook()
-  
+
   // Sheet 1: Xarajatlar
   const s1 = workbook.addWorksheet('Xarajatlar')
   s1.columns = [
@@ -476,7 +527,7 @@ export async function generateExpensesReport(period: DashboardService.Period, da
     { header: 'Kim tomonidan', key: 'by' },
   ]
   applyStyleToRow(s1.getRow(1), HEADER_STYLE)
-  
+
   detailedExpenses.rows.forEach((e: any, i: number) => {
     const row = s1.addRow({
       index: i + 1,
@@ -484,12 +535,12 @@ export async function generateExpensesReport(period: DashboardService.Period, da
       desc: e.description,
       amount: Number(e.amount_krw),
       date: new Date(e.expense_date),
-      by: 'Admin'
+      by: 'Admin',
     })
     row.getCell(4).numFmt = FORMATS.KRW
     row.getCell(5).numFmt = FORMATS.DATE
   })
-  
+
   applyAlternatingRows(s1, 2)
   autoWidth(s1)
 
@@ -501,17 +552,17 @@ export async function generateExpensesReport(period: DashboardService.Period, da
     { header: 'Foiz %', key: 'pct' },
   ]
   applyStyleToRow(s2.getRow(1), HEADER_STYLE)
-  
-  expensesData.expenses.byCategory.forEach(c => {
+
+  expensesData.expenses.byCategory.forEach((c) => {
     const row = s2.addRow({
       category: c.categoryName,
       total: Number(c.amount),
-      pct: c.pct / 100
+      pct: c.pct / 100,
     })
     row.getCell(2).numFmt = FORMATS.KRW
     row.getCell(3).numFmt = FORMATS.PCT
   })
-  
+
   const sumRow = s2.addRow(['JAMI', Number(expensesData.expenses.general), 1])
   applyStyleToRow(sumRow, SUMMARY_ROW_STYLE)
   sumRow.getCell(2).numFmt = FORMATS.KRW

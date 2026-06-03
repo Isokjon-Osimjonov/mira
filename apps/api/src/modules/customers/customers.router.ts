@@ -11,6 +11,7 @@ router.get('/', ctrl.getCustomers)
 router.get('/:id', ctrl.getCustomerById)
 router.get('/:id/orders', ctrl.getCustomerOrders)
 router.get('/:id/activity', ctrl.getCustomerActivity)
+router.post('/walk-in', requirePermission('customers', 'write'), ctrl.createWalkInCustomer)
 
 router.patch('/:id/notes', requirePermission('customers', 'write'), ctrl.updateNotes)
 router.patch('/:id/block', requirePermission('customers', 'write'), ctrl.blockCustomer)

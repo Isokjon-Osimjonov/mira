@@ -13,7 +13,7 @@ export async function getProducts(req: Request, res: Response, next: NextFunctio
       region: (region as 'UZB' | 'KOR') || 'UZB',
       sort: sort as string,
       q: q as string,
-      isAdmin: false
+      isAdmin: false,
     })
     res.json({ data: result.items, meta: result.meta, error: null })
   } catch (err) {
@@ -51,7 +51,7 @@ export async function getProductsByCategorySlug(req: Request, res: Response, nex
       brand: brand as string,
       region: (region as 'UZB' | 'KOR') || 'UZB',
       sort: sort as string,
-      q: q as string
+      q: q as string,
     })
     res.json({ data: result.items, meta: result.meta, error: null })
   } catch (err) {
@@ -71,9 +71,19 @@ export async function getProductsAdmin(req: Request, res: Response, next: NextFu
       region: (region as 'UZB' | 'KOR') || 'UZB',
       sort: sort as string,
       q: q as string,
-      isAdmin: true
+      isAdmin: true,
     })
     res.json({ data: result.items, meta: result.meta, error: null })
+  } catch (err) {
+    next(err)
+  }
+}
+
+export async function getProductByBarcode(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { barcode } = req.params
+    const result = await service.getProductByBarcode(barcode)
+    res.json({ data: result, error: null })
   } catch (err) {
     next(err)
   }
@@ -94,6 +104,17 @@ export async function updateProduct(req: Request, res: Response, next: NextFunct
     const { id } = req.params
     const validated = UpdateProductSchema.parse(req.body)
     const result = await service.updateProduct(id, validated)
+    res.json({ data: result, error: null })
+  } catch (err) {
+    next(err)
+  }
+}
+
+export async function updateProductImages(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { id } = req.params
+    const { imageUrls } = req.body
+    const result = await service.updateProductImages(id, imageUrls)
     res.json({ data: result, error: null })
   } catch (err) {
     next(err)

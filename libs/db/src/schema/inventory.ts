@@ -42,6 +42,10 @@ export const stockMovements = pgTable('stock_movements', {
   qtyBefore: integer('qty_before').notNull(),
   qtyAfter: integer('qty_after').notNull(),
   performedBy: uuid('performed_by').references(() => adminUsers.id, { onDelete: 'set null' }),
+  reason: text('reason'),
+  recipientName: varchar('recipient_name', { length: 200 }),
+  recipientPhone: varchar('recipient_phone', { length: 30 }),
+  writtenOffBy: uuid('written_off_by').references(() => adminUsers.id, { onDelete: 'set null' }),
   note: text('note'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 }, (t) => ({
@@ -117,6 +121,12 @@ export const stockMovementsRelations = relations(stockMovements, ({ one }) => ({
   performedByAdmin: one(adminUsers, {
     fields: [stockMovements.performedBy],
     references: [adminUsers.id],
+    relationName: 'stockPerformedBy',
+  }),
+  writtenOffByAdmin: one(adminUsers, {
+    fields: [stockMovements.writtenOffBy],
+    references: [adminUsers.id],
+    relationName: 'stockWrittenOffBy',
   }),
 }));
 

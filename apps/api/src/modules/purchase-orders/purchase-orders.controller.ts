@@ -1,8 +1,10 @@
 import type { Request, Response } from 'express'
 import * as service from './purchase-orders.service'
 import {
-  createPurchaseOrderSchema, updatePurchaseOrderSchema,
-  updatePOStatusSchema, receivePOSchema
+  createPurchaseOrderSchema,
+  updatePurchaseOrderSchema,
+  updatePOStatusSchema,
+  receivePOSchema,
 } from './purchase-orders.schema'
 
 export async function getPurchaseOrders(req: Request, res: Response) {
@@ -14,10 +16,19 @@ export async function getPurchaseOrders(req: Request, res: Response) {
     const dateFrom = req.query.dateFrom as string | undefined
     const dateTo = req.query.dateTo as string | undefined
 
-    const data = await service.getPurchaseOrders({ page, limit, status, supplierId, dateFrom, dateTo })
+    const data = await service.getPurchaseOrders({
+      page,
+      limit,
+      status,
+      supplierId,
+      dateFrom,
+      dateTo,
+    })
     return res.json({ data: data.items, meta: data.meta, error: null })
   } catch (e: any) {
-    return res.status(e.status ?? 500).json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
+    return res
+      .status(e.status ?? 500)
+      .json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
   }
 }
 
@@ -26,7 +37,9 @@ export async function getPurchaseOrderById(req: Request, res: Response) {
     const data = await service.getPurchaseOrderById(req.params.id)
     return res.json({ data, error: null })
   } catch (e: any) {
-    return res.status(e.status ?? 500).json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
+    return res
+      .status(e.status ?? 500)
+      .json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
   }
 }
 
@@ -38,8 +51,16 @@ export async function createPurchaseOrder(req: Request, res: Response) {
     const safeData = { ...data, totalCostKrw: Number(data.totalCostKrw) }
     return res.json({ data: safeData, error: null })
   } catch (e: any) {
-    if (e.name === 'ZodError') return res.status(400).json({ data: null, error: { message: 'Ma\'lumotlar noto\'g\'ri', code: 'VALIDATION_ERROR', details: e.errors } })
-    return res.status(e.status ?? 500).json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
+    if (e.name === 'ZodError')
+      return res
+        .status(400)
+        .json({
+          data: null,
+          error: { message: "Ma'lumotlar noto'g'ri", code: 'VALIDATION_ERROR', details: e.errors },
+        })
+    return res
+      .status(e.status ?? 500)
+      .json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
   }
 }
 
@@ -50,8 +71,16 @@ export async function updatePurchaseOrder(req: Request, res: Response) {
     const safeData = { ...data, totalCostKrw: Number(data.totalCostKrw) }
     return res.json({ data: safeData, error: null })
   } catch (e: any) {
-    if (e.name === 'ZodError') return res.status(400).json({ data: null, error: { message: 'Ma\'lumotlar noto\'g\'ri', code: 'VALIDATION_ERROR', details: e.errors } })
-    return res.status(e.status ?? 500).json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
+    if (e.name === 'ZodError')
+      return res
+        .status(400)
+        .json({
+          data: null,
+          error: { message: "Ma'lumotlar noto'g'ri", code: 'VALIDATION_ERROR', details: e.errors },
+        })
+    return res
+      .status(e.status ?? 500)
+      .json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
   }
 }
 
@@ -62,8 +91,16 @@ export async function updateStatus(req: Request, res: Response) {
     const safeData = { ...data, totalCostKrw: Number(data.totalCostKrw) }
     return res.json({ data: safeData, error: null })
   } catch (e: any) {
-    if (e.name === 'ZodError') return res.status(400).json({ data: null, error: { message: 'Ma\'lumotlar noto\'g\'ri', code: 'VALIDATION_ERROR', details: e.errors } })
-    return res.status(e.status ?? 500).json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
+    if (e.name === 'ZodError')
+      return res
+        .status(400)
+        .json({
+          data: null,
+          error: { message: "Ma'lumotlar noto'g'ri", code: 'VALIDATION_ERROR', details: e.errors },
+        })
+    return res
+      .status(e.status ?? 500)
+      .json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
   }
 }
 
@@ -75,8 +112,16 @@ export async function receiveOrder(req: Request, res: Response) {
     const safeData = { ...data, totalCostKrw: Number(data.totalCostKrw) }
     return res.json({ data: safeData, error: null })
   } catch (e: any) {
-    if (e.name === 'ZodError') return res.status(400).json({ data: null, error: { message: 'Ma\'lumotlar noto\'g\'ri', code: 'VALIDATION_ERROR', details: e.errors } })
-    return res.status(e.status ?? 500).json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
+    if (e.name === 'ZodError')
+      return res
+        .status(400)
+        .json({
+          data: null,
+          error: { message: "Ma'lumotlar noto'g'ri", code: 'VALIDATION_ERROR', details: e.errors },
+        })
+    return res
+      .status(e.status ?? 500)
+      .json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
   }
 }
 
@@ -85,6 +130,8 @@ export async function deletePurchaseOrder(req: Request, res: Response) {
     const data = await service.deletePurchaseOrder(req.params.id)
     return res.json({ data: { id: data.id }, error: null })
   } catch (e: any) {
-    return res.status(e.status ?? 500).json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
+    return res
+      .status(e.status ?? 500)
+      .json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
   }
 }

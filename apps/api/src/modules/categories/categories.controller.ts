@@ -2,7 +2,7 @@ import type { Request, Response } from 'express'
 import * as CategoryService from './categories.service'
 import { CreateCategorySchema, UpdateCategorySchema } from './categories.schema'
 
-const ok  = <T>(res: Response, data: T, status = 200) =>
+const ok = <T>(res: Response, data: T, status = 200) =>
   res.status(status).json({ data, error: null })
 
 const err = (res: Response, status: number, message: string, code?: string) =>

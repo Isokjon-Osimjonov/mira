@@ -1,11 +1,22 @@
 import { db } from '../../config/db'
-import { 
-  inventoryBatches, stockMovements, batchAdjustments, 
-  products, settings, adminUsers 
+import {
+  inventoryBatches,
+  stockMovements,
+  batchAdjustments,
+  products,
+  settings,
+  adminUsers,
+  expenses,
+  waitlists,
+  customers,
 } from '@mira/db'
-import { eq, and, sql, desc, asc, min } from 'drizzle-orm'
+import { eq, and, sql, desc, asc, min, inArray, gte, lte, isNotNull, gt } from 'drizzle-orm'
 import { emit } from '../../config/socket'
-import { notifyLowStock } from '../../bot/helpers/notify'
+import {
+  notifyLowStock,
+  sendAdminAlert,
+  notifyCustomerFull,
+} from '../../bot/helpers/notify'
 import type { CreateBatchDto, UpdateBatchDto } from './inventory.schema'
 
 export async function getStockSummary() {
@@ -20,19 +31,57 @@ export async function getStockSummary() {
       brandName: products.brandName,
       totalQty: sql<number>`SUM(${inventoryBatches.currentQty})`,
       batchCount: sql<number>`COUNT(${inventoryBatches.id})`,
-      nearestExpiryDate: min(inventoryBatches.expiryDate)
+      nearestExpiryDate: min(inventoryBatches.expiryDate),
     })
     .from(products)
     .leftJoin(inventoryBatches, eq(products.id, inventoryBatches.productId))
     .groupBy(products.id)
     .orderBy(products.name)
 
-  return summary.map(item => ({
+  return summary.map((item) => ({
     ...item,
     totalQty: Number(item.totalQty || 0),
     batchCount: Number(item.batchCount || 0),
-    isLowStock: Number(item.totalQty || 0) <= threshold
+    isLowStock: Number(item.totalQty || 0) <= threshold,
   }))
+}
+
+export async function checkLowStock(tx: any, productId: string) {
+  const [appSettings] = await tx.select().from(settings).limit(1)
+  const threshold = appSettings?.lowStockThreshold || 10
+
+  const [stock] = await tx
+    .select({
+      total: sql<number>`SUM(${inventoryBatches.currentQty})`,
+      count: sql<number>`COUNT(${inventoryBatches.id})`,
+    })
+    .from(inventoryBatches)
+    .where(eq(inventoryBatches.productId, productId))
+
+  const totalQty = Number(stock.total || 0)
+  const batchCount = Number(stock.count || 0)
+
+  if (totalQty <= threshold) {
+    const [product] = await tx.select().from(products).where(eq(products.id, productId)).limit(1)
+
+    if (product) {
+      emit.stockLow({
+        productId,
+        productName: product.name,
+        barcode: product.barcode,
+        currentQty: totalQty,
+        threshold,
+        batchCount,
+      })
+      await notifyLowStock({
+        productName: product.name,
+        barcode: product.barcode,
+        brandName: product.brandName,
+        currentQty: totalQty,
+        threshold,
+      }).catch(console.error)
+    }
+  }
 }
 
 export async function createBatch(data: CreateBatchDto, adminId: string) {
@@ -51,7 +100,7 @@ export async function createBatch(data: CreateBatchDto, adminId: string) {
         notes: data.notes,
       })
       .returning()
-      
+
     const newBatch = batchResult[0]
 
     // 2. Insert stock movement
@@ -63,44 +112,62 @@ export async function createBatch(data: CreateBatchDto, adminId: string) {
       qtyBefore: 0,
       qtyAfter: data.initialQty,
       performedBy: adminId,
-      note: 'Yangi partiya qabul qilindi'
+      note: 'Yangi partiya qabul qilindi',
     })
 
     // 3. Check low stock threshold
-    const [appSettings] = await tx.select().from(settings).limit(1)
-    const threshold = appSettings?.lowStockThreshold || 10
+    await checkLowStock(tx, data.productId)
 
-    const [stock] = await tx
-      .select({ 
-        total: sql<number>`SUM(${inventoryBatches.currentQty})`,
-        count: sql<number>`COUNT(${inventoryBatches.id})`
-      })
-      .from(inventoryBatches)
-      .where(eq(inventoryBatches.productId, data.productId))
-
-    const totalQty = Number(stock.total || 0)
-    const batchCount = Number(stock.count || 0)
+    // 4. Notify waitlist
     const [product] = await tx.select().from(products).where(eq(products.id, data.productId)).limit(1)
-
-    if (totalQty <= threshold) {
-      emit.stockLow({
-        productId: data.productId,
-        productName: product.name,
-        barcode: product.barcode,
-        currentQty: totalQty,
-        threshold,
-        batchCount
-      })
-      await notifyLowStock({
-        productName: product.name,
-        barcode: product.barcode,
-        currentQty: totalQty,
-        threshold
-      })
+    if (product) {
+      notifyWaitlistCustomers(data.productId, product.name).catch(console.error)
     }
 
     return newBatch
   })
+}
+
+export async function notifyWaitlistCustomers(productId: string, productName: string): Promise<void> {
+  const list = await db
+    .select({
+      customerId: waitlists.customerId,
+      telegramId: customers.telegramId,
+      expoPushToken: customers.expoPushToken,
+      firstName: customers.firstName,
+    })
+    .from(waitlists)
+    .innerJoin(customers, eq(customers.id, waitlists.customerId))
+    .where(and(eq(waitlists.productId, productId), eq(waitlists.notified, false)))
+
+  if (list.length === 0) return
+
+  for (const w of list) {
+    try {
+      await notifyCustomerFull({
+        customerId: w.customerId,
+        telegramId: w.telegramId,
+        expoPushToken: w.expoPushToken,
+        type: 'STOCK_BACK',
+        channel: 'BOTH',
+        title: `${productName} mavjud! 🎉`,
+        body: `Siz kutgan mahsulot sotuvga chiqdi. Tez buyurtma bering!`,
+        telegramMessage:
+          `🎉 <b>Mahsulot mavjud!</b>\n\n` +
+          `📦 <b>${productName}</b>\n` +
+          `Siz kutgan mahsulot omborda bor.\n` +
+          `Tez buyurtma bering! 👇`,
+        data: { productId, type: 'WAITLIST_AVAILABLE' },
+      })
+
+      await db
+        .update(waitlists)
+        .set({ notified: true, notifiedAt: new Date() })
+        .where(and(eq(waitlists.customerId, w.customerId), eq(waitlists.productId, productId)))
+    } catch (err) {
+      console.error(`Waitlist notify failed for customer ${w.customerId}:`, err)
+    }
+  }
 }
 
 export async function getBatchesByProduct(productId: string) {
@@ -122,18 +189,18 @@ export async function updateBatch(id: string, data: UpdateBatchDto, adminId: str
     if (!batch) throw { status: 404, message: 'Partiya topilmadi' }
 
     const updates: any = { updatedAt: new Date() }
-    
+
     // Log adjustments and movements
     if (data.currentQty !== undefined && data.currentQty !== batch.currentQty) {
       const delta = data.currentQty - batch.currentQty
-      
+
       await tx.insert(batchAdjustments).values({
         batchId: id,
         adminId,
         fieldChanged: 'current_qty',
         oldValue: batch.currentQty.toString(),
         newValue: data.currentQty.toString(),
-        reason: data.reason
+        reason: data.reason,
       })
 
       await tx.insert(stockMovements).values({
@@ -144,7 +211,7 @@ export async function updateBatch(id: string, data: UpdateBatchDto, adminId: str
         qtyBefore: batch.currentQty,
         qtyAfter: data.currentQty,
         performedBy: adminId,
-        note: data.reason
+        note: data.reason,
       })
 
       updates.currentQty = data.currentQty
@@ -157,7 +224,7 @@ export async function updateBatch(id: string, data: UpdateBatchDto, adminId: str
         fieldChanged: 'expiry_date',
         oldValue: batch.expiryDate || 'null',
         newValue: data.expiryDate || 'null',
-        reason: data.reason
+        reason: data.reason,
       })
       updates.expiryDate = data.expiryDate
     }
@@ -171,7 +238,7 @@ export async function updateBatch(id: string, data: UpdateBatchDto, adminId: str
           fieldChanged: 'cost_price',
           oldValue: batch.costPrice.toString(),
           newValue: data.costPrice,
-          reason: data.reason
+          reason: data.reason,
         })
         updates.costPrice = newCost
       }
@@ -183,6 +250,274 @@ export async function updateBatch(id: string, data: UpdateBatchDto, adminId: str
       .where(eq(inventoryBatches.id, id))
       .returning()
 
+    await checkLowStock(tx, batch.productId)
+
     return updated
   })
+}
+
+export async function writeOffStock(params: {
+  batchId: string
+  quantity: number
+  type: 'GIFT' | 'SAMPLE' | 'DAMAGED' | 'EXPIRED' | 'LOST' | 'ADJUSTMENT'
+  reason?: string
+  recipientName?: string
+  recipientPhone?: string
+  createExpense: boolean
+  expenseCategoryId?: string
+  performedBy: string
+}) {
+  const [batch] = await db
+    .select()
+    .from(inventoryBatches)
+    .where(eq(inventoryBatches.id, params.batchId))
+    .limit(1)
+
+  if (!batch) throw { status: 404, code: 'BATCH_NOT_FOUND', message: 'Partiya topilmadi' }
+
+  // Qty validation
+  if (params.type !== 'ADJUSTMENT') {
+    if (params.quantity <= 0) throw { status: 400, message: "Miqdor musbat bo'lishi kerak" }
+    if (params.quantity > batch.currentQty) {
+      throw {
+        status: 400,
+        code: 'WRITE_OFF_QTY_EXCEEDED',
+        message: `Stokda faqat ${batch.currentQty} ta bor`,
+      }
+    }
+  }
+
+  const qtyDelta = params.type === 'ADJUSTMENT' ? params.quantity : -params.quantity
+  const newQty = batch.currentQty + qtyDelta
+
+  return await db.transaction(async (tx) => {
+    // 1. Update batch
+    await tx
+      .update(inventoryBatches)
+      .set({ currentQty: newQty, updatedAt: new Date() })
+      .where(eq(inventoryBatches.id, params.batchId))
+
+    // 2. Log movement
+    const [movement] = await tx
+      .insert(stockMovements)
+      .values({
+        batchId: params.batchId,
+        productId: batch.productId,
+        movementType: params.type as any,
+        quantityDelta: qtyDelta,
+        qtyBefore: batch.currentQty,
+        qtyAfter: newQty,
+        reason: params.reason ?? null,
+        recipientName: params.recipientName ?? null,
+        recipientPhone: params.recipientPhone ?? null,
+        writtenOffBy: params.performedBy,
+        performedBy: params.performedBy,
+      })
+      .returning()
+
+    // 3. Create expense
+    let expense = null
+    if (
+      params.createExpense &&
+      params.expenseCategoryId &&
+      params.type !== 'GIFT' &&
+      params.type !== 'ADJUSTMENT'
+    ) {
+      const expenseAmount = batch.costPrice * BigInt(Math.abs(params.quantity))
+      const [exp] = await tx
+        .insert(expenses)
+        .values({
+          categoryId: params.expenseCategoryId,
+          amountKrw: expenseAmount,
+          description: `Hisobdan chiqarish (${params.type}): ${params.reason ?? batch.productId}`,
+          expenseDate: new Date().toISOString().split('T')[0],
+          createdBy: params.performedBy,
+        })
+        .returning()
+      expense = exp
+    }
+
+    await checkLowStock(tx, batch.productId)
+
+    return { batch: { ...batch, currentQty: newQty }, movement, expense }
+  })
+}
+
+export async function getWriteOffHistory(params: {
+  productId?: string
+  type?: string
+  dateFrom?: string
+  dateTo?: string
+  page: number
+  limit: number
+}) {
+  const offset = (params.page - 1) * params.limit
+
+  let where = inArray(stockMovements.movementType, [
+    'GIFT',
+    'SAMPLE',
+    'DAMAGED',
+    'EXPIRED',
+    'LOST',
+    'ADJUSTMENT',
+  ] as any)
+
+  if (params.productId) where = and(where, eq(stockMovements.productId, params.productId)) as any
+  if (params.type) where = and(where, eq(stockMovements.movementType, params.type as any)) as any
+  if (params.dateFrom)
+    where = and(where, gte(stockMovements.createdAt, new Date(params.dateFrom))) as any
+  if (params.dateTo)
+    where = and(where, lte(stockMovements.createdAt, new Date(params.dateTo))) as any
+
+  const items = await db
+    .select({
+      id: stockMovements.id,
+      type: stockMovements.movementType,
+      quantityDelta: stockMovements.quantityDelta,
+      reason: stockMovements.reason,
+      recipientName: stockMovements.recipientName,
+      createdAt: stockMovements.createdAt,
+      product: { name: products.name, brandName: products.brandName },
+      batch: { batchRef: inventoryBatches.batchRef, costPrice: inventoryBatches.costPrice },
+      admin: { fullName: adminUsers.fullName },
+    })
+    .from(stockMovements)
+    .innerJoin(products, eq(stockMovements.productId, products.id))
+    .innerJoin(inventoryBatches, eq(stockMovements.batchId, inventoryBatches.id))
+    .leftJoin(adminUsers, eq(stockMovements.writtenOffBy, adminUsers.id))
+    .where(where)
+    .orderBy(desc(stockMovements.createdAt))
+    .limit(params.limit)
+    .offset(offset)
+
+  const [countRes] = await db.select({ count: sql<number>`count(*)` }).from(stockMovements).where(where)
+  const total = Number(countRes.count)
+
+  return {
+    items,
+    meta: {
+      page: params.page,
+      limit: params.limit,
+      total,
+      hasNext: offset + params.limit < total,
+      hasPrev: params.page > 1,
+    },
+  }
+}
+
+export async function getProductMovements(params: {
+  productId: string
+  type?: string
+  dateFrom?: string
+  dateTo?: string
+  page: number
+  limit: number
+}) {
+  const offset = (params.page - 1) * params.limit
+
+  let where = eq(stockMovements.productId, params.productId)
+  if (params.type) where = and(where, eq(stockMovements.movementType, params.type as any)) as any
+  if (params.dateFrom)
+    where = and(where, gte(stockMovements.createdAt, new Date(params.dateFrom))) as any
+  if (params.dateTo)
+    where = and(where, lte(stockMovements.createdAt, new Date(params.dateTo))) as any
+
+  const items = await db
+    .select({
+      id: stockMovements.id,
+      type: stockMovements.movementType,
+      quantityDelta: stockMovements.quantityDelta,
+      qtyBefore: stockMovements.qtyBefore,
+      qtyAfter: stockMovements.qtyAfter,
+      reason: stockMovements.reason,
+      createdAt: stockMovements.createdAt,
+      batch: { batchRef: inventoryBatches.batchRef },
+      admin: { fullName: adminUsers.fullName },
+    })
+    .from(stockMovements)
+    .innerJoin(inventoryBatches, eq(stockMovements.batchId, inventoryBatches.id))
+    .leftJoin(adminUsers, eq(stockMovements.performedBy, adminUsers.id))
+    .where(where)
+    .orderBy(desc(stockMovements.createdAt))
+    .limit(params.limit)
+    .offset(offset)
+
+  const [countRes] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(stockMovements)
+    .where(where)
+  const total = Number(countRes.count)
+
+  return {
+    items,
+    meta: {
+      page: params.page,
+      limit: params.limit,
+      total,
+      hasNext: offset + params.limit < total,
+      hasPrev: params.page > 1,
+    },
+  }
+}
+
+export async function checkExpiringBatches(): Promise<void> {
+  const thirtyDaysFromNow = new Date()
+  thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30)
+
+  const expiringBatches = await db
+    .select({
+      batchId: inventoryBatches.id,
+      batchRef: inventoryBatches.batchRef,
+      productId: inventoryBatches.productId,
+      productName: products.name,
+      brandName: products.brandName,
+      barcode: products.barcode,
+      currentQty: inventoryBatches.currentQty,
+      expiryDate: inventoryBatches.expiryDate,
+    })
+    .from(inventoryBatches)
+    .innerJoin(products, eq(inventoryBatches.productId, products.id))
+    .where(
+      and(
+        gt(inventoryBatches.currentQty, 0),
+        isNotNull(inventoryBatches.expiryDate),
+        lte(inventoryBatches.expiryDate, thirtyDaysFromNow.toISOString().split('T')[0]),
+        gte(inventoryBatches.expiryDate, new Date().toISOString().split('T')[0])
+      )
+    )
+
+  if (expiringBatches.length === 0) return
+
+  // Group by urgency
+  const urgent = expiringBatches.filter((b) => {
+    const days = Math.ceil((new Date(b.expiryDate!).getTime() - Date.now()) / 86400000)
+    return days <= 7
+  })
+  const warning = expiringBatches.filter((b) => {
+    const days = Math.ceil((new Date(b.expiryDate!).getTime() - Date.now()) / 86400000)
+    return days > 7 && days <= 30
+  })
+
+  // Build Telegram message
+  let msg = '⚠️ <b>Muddati yaqinlashayotgan mahsulotlar</b>\n\n'
+
+  if (urgent.length > 0) {
+    msg += '🔴 <b>7 kun ichida tugaydi:</b>\n'
+    for (const b of urgent) {
+      const days = Math.ceil((new Date(b.expiryDate!).getTime() - Date.now()) / 86400000)
+      msg += `• ${b.productName} — ${b.currentQty} ta — ${days} kun\n`
+    }
+    msg += '\n'
+  }
+
+  if (warning.length > 0) {
+    msg += '🟡 <b>30 kun ichida tugaydi:</b>\n'
+    for (const b of warning) {
+      const days = Math.ceil((new Date(b.expiryDate!).getTime() - Date.now()) / 86400000)
+      msg += `• ${b.productName} — ${b.currentQty} ta — ${days} kun\n`
+    }
+  }
+
+  // Send to admin Telegram group
+  await sendAdminAlert(msg)
 }

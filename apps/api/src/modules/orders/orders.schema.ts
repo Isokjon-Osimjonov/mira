@@ -2,7 +2,7 @@ import { z } from 'zod'
 
 export const checkoutSchema = z.object({
   addressId: z.string().uuid('Manzilni tanlang'),
-  paymentMethod: z.enum(['KOREAN_BANK', 'UZB_BANK', 'E9PAY'], { message: 'To\'lov turini tanlang' }),
+  paymentMethod: z.enum(['KOREAN_BANK', 'UZB_BANK', 'E9PAY'], { message: "To'lov turini tanlang" }),
   boxId: z.string().uuid().optional(),
   couponCode: z.string().trim().toUpperCase().optional(),
   customerNote: z.string().optional(),
@@ -10,23 +10,33 @@ export const checkoutSchema = z.object({
 
 export const uploadReceiptSchema = z.object({
   receiptUrl: z.string().url('Kvitansiya rasmi yaroqsiz'),
-  paymentAmount: z.coerce.number().positive('To\'lov summasini kiriting'),
+  paymentAmount: z.coerce.number().positive("To'lov summasini kiriting"),
   paymentCurrency: z.enum(['KRW', 'UZS']),
 })
 
 export const manualOrderSchema = z.object({
   customerId: z.string().uuid(),
-  addressId: z.string().uuid(),
+  addressId: z.string().uuid().optional(),
   paymentMethod: z.enum(['KOREAN_BANK', 'UZB_BANK', 'E9PAY']),
+  paymentMode: z.enum(['RECEIPT', 'IMMEDIATE']).default('RECEIPT'),
+  orderDiscountPct: z.number().int().min(0).max(100).optional(),
+  orderDiscountFlat: z.number().int().min(0).optional(),
   boxId: z.string().uuid().optional(),
   couponCode: z.string().trim().toUpperCase().optional(),
   adminNote: z.string().optional(),
-  items: z.array(z.object({
-    productId: z.string().uuid(),
-    quantity: z.number().int().positive(),
-    negotiatedPriceKrw: z.coerce.number().min(0).optional(),
-  })).min(1, 'Kamida bitta mahsulot qo\'shing'),
-})
+  items: z
+    .array(
+      z.object({
+        productId: z.string().uuid(),
+        quantity: z.number().int().positive(),
+        negotiatedPriceKrw: z.coerce.number().min(0).optional(),
+      })
+    )
+    .min(1, "Kamida bitta mahsulot qo'shing"),
+}).refine(
+  (d) => !(d.orderDiscountPct && d.orderDiscountFlat),
+  { message: 'Faqat bir tur chegirma tanlang (foiz yoki summa)', path: ['orderDiscountPct'] }
+)
 
 export const confirmPaymentSchema = z.object({
   note: z.string().optional(),
@@ -45,8 +55,12 @@ export const cancelOrderSchema = z.object({
 })
 
 export const refundOrderSchema = z.object({
-  refundAmount: z.coerce.number().min(0),
+  refundAmount: z.coerce.number().positive(),
   refundNote: z.string().optional(),
+})
+
+export const requestRefundSchema = z.object({
+  reason: z.string().min(10).max(1000),
 })
 
 export const addExpenseSchema = z.object({

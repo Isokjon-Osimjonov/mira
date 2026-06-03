@@ -7,22 +7,22 @@ import { eq, and } from 'drizzle-orm'
 
 // ─── JWT Payload types ────────────────────────────────────────
 export interface CustomerJwtPayload {
-  sub:    string   // customer UUID
-  type:   'customer'
-  phone:  string
+  sub: string // customer UUID
+  type: 'customer'
+  phone: string
   region: 'UZB' | 'KOR'
-  iat:    number
-  exp:    number
+  iat: number
+  exp: number
 }
 
 export interface AdminJwtPayload {
-  sub:            string  // admin_user UUID
-  type:           'admin'
-  email:          string
-  roleId:         string | null
-  isSuperAdmin:   boolean
-  iat:            number
-  exp:            number
+  sub: string // admin_user UUID
+  type: 'admin'
+  email: string
+  roleId: string | null
+  isSuperAdmin: boolean
+  iat: number
+  exp: number
 }
 
 export type JwtPayload = CustomerJwtPayload | AdminJwtPayload
@@ -116,7 +116,12 @@ export function requirePermission(resource: string, action: string) {
         if (!perm) return forbidden(res, `Missing permission: ${resource}:${action}`)
         next()
       } catch {
-        res.status(500).json({ data: null, error: { message: 'Permission check failed', code: 'INTERNAL_ERROR' } })
+        res
+          .status(500)
+          .json({
+            data: null,
+            error: { message: 'Permission check failed', code: 'INTERNAL_ERROR' },
+          })
       }
     })
   }

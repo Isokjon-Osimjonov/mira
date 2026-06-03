@@ -1,7 +1,7 @@
 import {
-  pgTable, uuid, varchar, bigint, boolean, timestamp, text, index, uniqueIndex,
+  pgTable, uuid, varchar, bigint, boolean, timestamp, text, index, uniqueIndex, check,
 } from 'drizzle-orm/pg-core';
-import { relations } from 'drizzle-orm';
+import { relations, sql } from 'drizzle-orm';
 import { regionEnum } from './enums';
 import type { AnyPgColumn } from 'drizzle-orm/pg-core';
 
@@ -14,6 +14,7 @@ export const customers = pgTable('customers', {
   firstName: varchar('first_name', { length: 100 }).notNull(),
   lastName: varchar('last_name', { length: 100 }),
   profileImageUrl: varchar('profile_image_url', { length: 500 }),
+  source: varchar('source', { length: 20 }).default('APP').notNull(),
   isActive: boolean('is_active').default(true).notNull(),
   isVerified: boolean('is_verified').default(false).notNull(),
   expoPushToken: varchar('expo_push_token', { length: 500 }),
@@ -29,6 +30,7 @@ export const customers = pgTable('customers', {
   referralCodeIdx: uniqueIndex('customers_referral_code_idx').on(t.referralCode),
   phoneRegionIdx: index('customers_phone_region_idx').on(t.phoneRegion),
   isActiveIdx: index('customers_is_active_idx').on(t.isActive),
+  sourceCheck: check('customers_source_check', sql`${t.source} IN ('APP', 'WALK_IN', 'MANUAL')`),
 }));
 
 export const userAddresses = pgTable('user_addresses', {
@@ -37,16 +39,13 @@ export const userAddresses = pgTable('user_addresses', {
   label: text('label').default('Manzil').notNull(),
   regionCode: regionEnum('region_code').notNull(),
   isDefault: boolean('is_default').default(false).notNull(),
-  recipientName: text('recipient_name').notNull(),
+  fullName: text('full_name').notNull(),
   phone: text('phone').notNull(),
-  uzbRegion: text('uzb_region'),
-  uzbCity: text('uzb_city'),
-  uzbDistrict: text('uzb_district'),
-  uzbStreet: text('uzb_street'),
-  korPostalCode: text('kor_postal_code'),
-  korRoadAddress: text('kor_road_address'),
-  korDetail: text('kor_detail'),
-  korBuilding: text('kor_building'),
+  province: text('province'),
+  city: text('city'),
+  addressLine1: text('address_line1').notNull(),
+  addressLine2: text('address_line2'),
+  postalCode: text('postal_code'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 }, (t) => ({
@@ -65,6 +64,8 @@ export const userNotificationSettings = pgTable('user_notification_settings', {
   stockBack: boolean('stock_back').default(true).notNull(),
   priceDrop: boolean('price_drop').default(true).notNull(),
   promotions: boolean('promotions').default(false).notNull(),
+  pushEnabled: boolean('push_enabled').default(true).notNull(),
+  telegramEnabled: boolean('telegram_enabled').default(true).notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 }, (t) => ({
   customerIdIdx: uniqueIndex('user_notification_settings_customer_id_idx').on(t.customerId),
