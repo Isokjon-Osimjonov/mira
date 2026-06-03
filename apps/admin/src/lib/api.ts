@@ -1,90 +1,88 @@
-// Admin API client
-// - Access token: in memory (Zustand) — injected via interceptor
-// - Refresh token: httpOnly cookie — sent automatically (withCredentials: true)
-// - 401 handling: axios-auth-refresh queues concurrent requests automatically
-
-import axios from 'axios'
-// @ts-ignore
+import axios, { AxiosError } from 'axios'
 import createAuthRefreshInterceptor from 'axios-auth-refresh'
-import { getAccessToken, logoutUser, useAuthStore } from './auth-store'
-import type { ApiResponse } from '@mira/shared-types'
+import { env } from '../config/env'
+import { getErrorMessage } from './errors'
+import { useAuthStore } from '../stores/auth.store'
 
-const BASE_URL = import.meta.env.VITE_API_URL as string
+export interface ApiResponse<T = unknown> {
+  data: T | null
+  error: { message: string; code: string } | null
+  meta?: {
+    page:      number
+    limit:     number
+    total:     number
+    hasNext:   boolean
+    hasPrev:   boolean
+  }
+}
 
-// ─── Axios instance ───────────────────────────────────────────
-const api = axios.create({
-  baseURL:         BASE_URL,
-  timeout:         20_000,
-  withCredentials: true,  // send httpOnly refresh token cookie
+// ── Axios instance ─────────────────────
+
+export const api = axios.create({
+  baseURL:         `${env.apiUrl}/api/v1`,
+  withCredentials: true,   // for httpOnly cookies
   headers: {
     'Content-Type': 'application/json',
     'Accept':       'application/json',
   },
+  timeout: 30000,
 })
 
-// ─── Request: inject access token ─────────────────────────────
+// ── Request interceptor: attach token ──
+
 api.interceptors.request.use((config) => {
-  const token = getAccessToken()
-  if (token && config.headers) {
+  const token = useAuthStore.getState().accessToken
+  if (token) {
     config.headers.Authorization = `Bearer ${token}`
   }
   return config
 })
 
-// ─── Refresh function (called once on 401) ────────────────────
-// Cookie is sent automatically — no need to pass refresh token manually
-const refreshAuthLogic = async (failedRequest: any): Promise<void> => {
-  try {
-    // withCredentials ensures httpOnly cookie is sent
-    const res = await axios.post<ApiResponse<{ accessToken: string; user: any }>>(
-      `${BASE_URL}/admin/auth/refresh`,
-      {},
-      { withCredentials: true }
-    )
+// ── Response interceptor: parse errors ─
 
-    if (res.data.data) {
-      const { accessToken, user } = res.data.data
-      useAuthStore.getState().setAuth(accessToken, user)
-      failedRequest.config.headers.Authorization = `Bearer ${accessToken}`
-      return Promise.resolve()
-    }
-    throw new Error('Refresh failed')
-  } catch {
-    logoutUser()
-    window.location.href = '/login'
-    return Promise.reject()
-  }
-}
-
-// axios-auth-refresh handles:
-// - Concurrent 401s (queue all, refresh once, replay all)
-// - pauseInstanceWhileRefreshing prevents new requests during refresh
-// @ts-ignore — axios-auth-refresh v3 options
-createAuthRefreshInterceptor(api, refreshAuthLogic, {
-  statusCodes:                  [401],
-  retryInstance:                api,
-})
-
-// ─── Response: normalize errors ───────────────────────────────
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
-    if (!error.response) {
-      return Promise.reject({
-        response: {
-          data: {
-            data:  null,
-            error: {
-              message: 'Tarmoq xatosi. Internet ulanishini tekshiring.',
-              code:    'NETWORK_ERROR',
-            },
-          },
-          status: 0,
-        },
-      })
+  (error: AxiosError<ApiResponse>) => {
+    const code    = error.response?.data?.error?.code
+    const message = error.response?.data?.error?.message
+      ?? getErrorMessage(code ?? '')
+
+    // Attach friendly Uzbek message
+    const enhancedError = error as AxiosError & {
+      friendlyMessage: string
+      code: string
     }
-    return Promise.reject(error)
+    enhancedError.friendlyMessage = message
+    enhancedError.code = code ?? 'UNKNOWN'
+
+    return Promise.reject(enhancedError)
   }
 )
 
-export default api
+// ── Token refresh interceptor ──────────
+
+createAuthRefreshInterceptor(
+  api,
+  async (failedRequest) => {
+    try {
+      const res = await axios.post(
+        `${env.apiUrl}/api/v1/admin/auth/refresh`,
+        {},
+        { withCredentials: true }
+      )
+      const { accessToken, mustChangePassword } = res.data.data
+      useAuthStore.getState().setToken(accessToken)
+      if (mustChangePassword) {
+        useAuthStore.getState().setMustChangePassword(true)
+      }
+      failedRequest.response.config.headers.Authorization =
+        `Bearer ${accessToken}`
+      return Promise.resolve()
+    } catch {
+      useAuthStore.getState().logout()
+      window.location.href = '/login'
+      return Promise.reject()
+    }
+  },
+  { statusCodes: [401] }
+)

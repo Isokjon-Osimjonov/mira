@@ -67,11 +67,18 @@
 
 ## 🚧 In Progress
 
-### Sprint #8 — Admin Panel UI
-- [ ] Admin: Dashboard (sales summary, KPIs)
-- [ ] Admin: Customer management UI
-- [ ] Admin: Order processing workflow
-- [ ] Admin: Inventory & PO management
+### Sprint #9 — Admin Panel UI
+- [x] Foundation setup (layout, routing, auth)
+- [x] Login page
+- [ ] Dashboard page
+- [ ] Orders management
+- [ ] Products management
+- [ ] Inventory management
+- [ ] Customers management
+- [ ] Analytics & Reports
+- [ ] Settings
+- [ ] Telegram posts
+- [ ] Admin users & roles
 
 ### Mobile App
 - [ ] Mobile: Auth (OTP)

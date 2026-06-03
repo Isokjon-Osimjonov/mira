@@ -1,33 +1,85 @@
-import { io, type Socket } from 'socket.io-client'
-import type { SocketEvents, ClientSocketEvents } from '@mira/shared-types'
-import { getAccessToken } from './auth-store'
+import { io, Socket } from 'socket.io-client'
+import { env } from '../config/env'
+import { useAuthStore } from '../stores/auth.store'
+import { toast } from 'sonner'
+import { queryClient } from './query-client'
+import { QK } from '../constants/query-keys'
 
-type MiraAdminSocket = Socket<SocketEvents, ClientSocketEvents>
+let socket: Socket | null = null
 
-let socket: MiraAdminSocket | null = null
-
-export function connectSocket(): MiraAdminSocket {
+export function connectSocket(): Socket {
   if (socket?.connected) return socket
 
-  const SOCKET_URL = import.meta.env.VITE_SOCKET_URL as string
-
-  socket = io(SOCKET_URL, {
-    auth:             { token: getAccessToken() },
-    transports:       ['websocket'],
-    reconnection:     true,
-    reconnectionDelay: 1_000,
-    reconnectionDelayMax: 5_000,
+  socket = io(env.socketUrl, {
+    auth: {
+      token: useAuthStore.getState().accessToken
+    },
+    transports:    ['websocket'],
+    reconnection:  true,
     reconnectionAttempts: 10,
-  }) as MiraAdminSocket
+    reconnectionDelay:    1000,
+  })
 
-  socket.on('connect',    () => console.log('🔌 Socket connected'))
-  socket.on('disconnect', (reason) => console.log('🔌 Socket disconnected:', reason))
-  socket.on('connect_error', (err) => console.error('🔌 Socket error:', err.message))
+  socket.on('connect', () => {
+    socket!.emit('join-admin-room')
+    console.log('Socket connected')
+  })
 
-  return socket
-}
+  socket.on('disconnect', () => {
+    console.log('Socket disconnected')
+  })
 
-export function getSocket(): MiraAdminSocket | null {
+  // ── Admin events ───────────────────────
+
+  // New order
+  socket.on('order:new', (data) => {
+    toast.info(`🛍 Yangi buyurtma!`, {
+      description: `#${data.orderNumber} — ${data.customerName}`,
+      duration:    8000,
+      action: {
+        label:   'Ko\'rish',
+        onClick: () => window.location.href = `/orders/${data.orderId}`
+      }
+    })
+    queryClient.invalidateQueries({ queryKey: ['orders'] })
+  })
+
+  // Payment submitted
+  socket.on('payment:receipt_uploaded', (data) => {
+    toast.warning(`💳 To'lov kvitansiyasi`, {
+      description: `#${data.orderNumber} — tekshirish kerak`,
+      duration:    10000,
+    })
+    queryClient.invalidateQueries({ queryKey: ['orders'] })
+  })
+
+  // Payment confirmed
+  socket.on('payment:confirmed', (data) => {
+    toast.success(`✅ To'lov tasdiqlandi`, {
+      description: `#${data.orderNumber}`,
+    })
+    queryClient.invalidateQueries({ queryKey: ['orders'] })
+  })
+
+  // Low stock
+  socket.on('inventory:stock_low', (data) => {
+    toast.warning(`⚠️ Kam qolgan!`, {
+      description: `${data.productName}: ${data.currentQty} ta`,
+      duration:    10000,
+    })
+    queryClient.invalidateQueries({ queryKey: QK.INVENTORY_STOCK })
+  })
+
+  // Settings updated
+  socket.on('settings:updated', () => {
+    queryClient.invalidateQueries({ queryKey: QK.SETTINGS })
+  })
+
+  // Exchange rate updated
+  socket.on('exchange_rate:updated', () => {
+    queryClient.invalidateQueries({ queryKey: QK.EXCHANGE_LATEST })
+  })
+
   return socket
 }
 
@@ -36,14 +88,6 @@ export function disconnectSocket(): void {
   socket = null
 }
 
-// Type-safe event listener helper
-export function onSocketEvent<K extends keyof SocketEvents>(
-  event: K,
-  handler: (data: SocketEvents[K]) => void
-): () => void {
-  const s = getSocket()
-  if (!s) return () => {}
-
-  s.on(event as any, handler as any)
-  return () => s.off(event as any, handler as any)
+export function getSocket(): Socket | null {
+  return socket
 }

@@ -344,3 +344,58 @@ After EVERY task completion, Gemini MUST:
 
 This rule applies to ALL future Gemini sessions.
 PROGRESS.md is the single source of project truth.
+
+---
+
+## ══ ADMIN PANEL RULES (MANDATORY) ══
+
+NEVER hardcode:
+  - API URLs → env.apiUrl only
+  - Error messages → ERROR_MESSAGES map only
+  - Currency formats → formatKRW/formatUZS utils only
+  - Dates → formatDate/formatDateTime utils only
+  - Status labels → STATUS_CONFIG objects only
+  - Route paths → routes constants only
+
+ALL UI TEXT IN UZBEK:
+  - Labels, placeholders, tooltips
+  - Toast messages
+  - Error messages
+  - Empty state text
+  - Confirmation dialogs
+
+ERROR HANDLING PATTERN:
+  - API errors: caught by axios interceptor
+  - Toast: automatic via queryClient mutation.onError
+  - Manual toast: toast.error(getErrorMessage(code))
+  - Never show raw error.message to user
+
+CURRENCY DISPLAY:
+  - Always use formatKRW() or formatUZS()
+  - Exchange rate: from useExchangeRate() hook
+  - UZB region: show UZS primary, KRW secondary
+  - KOR region: show KRW only
+  - Dashboard totals: always KRW
+
+DATE DISPLAY:
+  - Always use formatDate() or formatDateTime()
+  - Format: DD.MM.YYYY or DD.MM.YYYY HH:mm
+  - Relative: formatRelative() for recent items
+  - NEVER: new Date().toString() directly
+
+PERMISSIONS:
+  - Use PermissionGate component for conditional render
+  - Use usePermission() hook for logic
+  - Super admin bypasses all checks
+  - Hide buttons user can't use (don't just disable)
+
+REAL-TIME UPDATES:
+  - Socket events → toast + queryClient.invalidateQueries
+  - Connect socket in AppLayout useEffect
+  - Disconnect on unmount
+
+COMPONENTS:
+  - StatusBadge for all status displays
+  - Skeleton for loading states (not spinners)
+  - ScrollArea for overflow (not overflow-auto directly)
+  - Shadcn Dialog/Sheet for forms (not inline)

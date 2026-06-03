@@ -1,31 +1,82 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    /* Violet Luxe brand — maps to Tailwind violet palette */
-    --background:            250 100% 98%; /* violet-50  #F5F3FF */
-    --foreground:            265  89% 23%; /* violet-950 #2E1065 */
+    --background:     0 0% 100%;
+    --foreground:     220 13% 10%;
+    --card:           0 0% 100%;
+    --card-foreground: 220 13% 10%;
+    --popover:        0 0% 100%;
+    --popover-foreground: 220 13% 10%;
+    --primary:        334 81% 47%;
+    --primary-foreground: 0 0% 100%;
+    --secondary:      334 81% 96%;
+    --secondary-foreground: 334 81% 47%;
+    --muted:          220 14% 96%;
+    --muted-foreground: 220 9% 46%;
+    --accent:         334 81% 96%;
+    --accent-foreground: 334 81% 47%;
+    --destructive:    0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border:         220 13% 91%;
+    --input:          220 13% 91%;
+    --ring:           334 81% 47%;
+    --radius:         0.75rem;
 
-    --primary:               263  70% 58%; /* violet-600 #7C3AED */
-    --primary-foreground:      0   0% 100%;
+    /* Sidebar specific */
+    --sidebar-background:          0 0% 100%;
+    --sidebar-foreground:          220 9% 40%;
+    --sidebar-primary:             334 81% 47%;
+    --sidebar-primary-foreground:  0 0% 100%;
+    --sidebar-accent:              334 81% 97%;
+    --sidebar-accent-foreground:   334 81% 47%;
+    --sidebar-border:              220 13% 93%;
+    --sidebar-ring:                334 81% 47%;
 
-    --secondary:             251  91% 95%; /* violet-100 #EDE9FE */
-    --secondary-foreground:  265  89% 23%; /* violet-950 #2E1065 */
+    /* Status colors */
+    --success:      142 71% 45%;
+    --success-bg:   142 76% 95%;
+    --warning:      37 92% 50%;
+    --warning-bg:   48 96% 89%;
+    --info:         217 91% 60%;
+    --info-bg:      213 97% 93%;
+    --purple:       262 84% 58%;
+    --purple-bg:    262 87% 96%;
+    --orange:       25 95% 53%;
+    --orange-bg:    34 100% 92%;
+  }
+}
 
-    --muted:                 251  91% 95%; /* violet-100 #EDE9FE */
-    --muted-foreground:      263  68% 55%; /* violet-500 approx  */
-
-    --accent:                251  91% 95%; /* violet-100 #EDE9FE */
-    --accent-foreground:     265  89% 23%; /* violet-950 #2E1065 */
-
-    --destructive:             0  84% 60%;
-    --destructive-foreground:  0   0% 100%;
-
-    --border:                263  68% 87%; /* violet-200 approx  */
-    --input:                 263  68% 87%;
-    --ring:                  263  70% 58%; /* violet-600 #7C3AED */
-    --radius:                0.5rem;
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground font-sans;
+    font-family: 'Inter', sans-serif;
+    font-feature-settings: 'cv11', 'ss01';
+    -webkit-font-smoothing: antialiased;
+  }
+  /* Ultra-thin borders */
+  .border {
+    border-width: 0.5px;
+  }
+  /* Scrollbar styling */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-gray-200 rounded-full;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-gray-300;
   }
 }
