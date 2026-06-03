@@ -19,8 +19,23 @@ export function LoginPage() {
   const navigate = useNavigate()
   const { setToken, setUser } = useAuthStore()
   const [loading, setLoading] = useState(false)
-  const [lockedUntil, setLockedUntil] = useState<Date | null>(null)
-  const [remainingSeconds, setRemainingSeconds] = useState(0)
+  const [lockedUntil, setLockedUntil] = useState<Date | null>(() => {
+    const stored = sessionStorage.getItem('admin_lock_until')
+    if (!stored) return null
+    const date = new Date(stored)
+    if (date <= new Date()) {
+      sessionStorage.removeItem('admin_lock_until')
+      return null
+    }
+    return date
+  })
+  const [remainingSeconds, setRemainingSeconds] = useState<number>(() => {
+    const stored = sessionStorage.getItem('admin_lock_until')
+    if (!stored) return 0
+    const date = new Date(stored)
+    const remaining = Math.max(0, Math.ceil((date.getTime() - Date.now()) / 1000))
+    return remaining
+  })
   
   const { register, handleSubmit,
           formState: { errors } } = useForm<LoginForm>({
@@ -37,11 +52,17 @@ export function LoginPage() {
       setRemainingSeconds(remaining)
       if (remaining === 0) {
         setLockedUntil(null)
+        sessionStorage.removeItem('admin_lock_until')
         clearInterval(interval)
       }
     }, 1000)
     return () => clearInterval(interval)
   }, [lockedUntil])
+
+  const setLocked = (until: Date) => {
+    sessionStorage.setItem('admin_lock_until', until.toISOString())
+    setLockedUntil(until)
+  }
   
   const onSubmit = async (data: LoginForm) => {
     setLoading(true)
@@ -69,9 +90,13 @@ export function LoginPage() {
       if (code === 'ACCOUNT_LOCKED') {
         const msg = err?.response?.data?.error?.message ?? ''
         const mins = parseInt(msg.match(/(\d+) daqiqa/)?.[1] ?? '30')
-        const until = new Date(Date.now() + mins * 60 * 1000)
-        setLockedUntil(until)
-        setRemainingSeconds(mins * 60)
+        
+        const newUntil = new Date(Date.now() + mins * 60 * 1000)
+        const currentUntil = lockedUntil
+        
+        if (!currentUntil || newUntil < currentUntil) {
+          setLocked(newUntil)
+        }
       } else {
         const msg = getErrorMessage(code || '')
         toast.error(msg || 'Kirish muvaffaqiyatsiz')

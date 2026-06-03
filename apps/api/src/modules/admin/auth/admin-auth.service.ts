@@ -28,18 +28,19 @@ export async function adminLogin(dto: AdminLoginDto, deviceInfo?: string, ipAddr
   // @ts-ignore
   if (admin.lockedUntil && admin.lockedUntil > new Date()) {
     // @ts-ignore
-    const mins = Math.ceil((admin.lockedUntil.getTime() - Date.now()) / 60000)
+    const remainingMs = admin.lockedUntil.getTime() - Date.now()
+    const remainingMins = Math.ceil(remainingMs / 60000)
     logSecurityEvent({
       type: 'ACCOUNT_LOCKED',
       userId: admin.id,
       ip: ipAddress || 'unknown',
       userAgent: deviceInfo,
-      details: { email: dto.email, remainingMins: mins }
+      details: { email: dto.email, remainingMins }
     })
     throw {
       status: 429,
       code: 'ACCOUNT_LOCKED',
-      message: `Akkaunt ${mins} daqiqa bloklangan`
+      message: `Akkaunt ${remainingMins} daqiqa bloklangan`
     }
   }
 
@@ -47,12 +48,16 @@ export async function adminLogin(dto: AdminLoginDto, deviceInfo?: string, ipAddr
   if (!valid) {
     // @ts-ignore
     const attempts = (admin.loginAttempts ?? 0) + 1
-    const shouldLock = attempts >= 5
+    const LOCK_THRESHOLD = process.env.NODE_ENV === 'development' ? 100 : 5
+    const shouldLock = attempts >= LOCK_THRESHOLD
+    const LOCK_MINUTES = 30
+    const lockedUntil = new Date(Date.now() + LOCK_MINUTES * 60 * 1000)
+
     await db.update(adminUsers).set({
       // @ts-ignore
       loginAttempts: attempts,
       // @ts-ignore
-      lockedUntil: shouldLock ? new Date(Date.now() + 30 * 60 * 1000) : null
+      lockedUntil: shouldLock ? lockedUntil : null
     }).where(eq(adminUsers.id, admin.id))
 
     logSecurityEvent({
@@ -67,8 +72,8 @@ export async function adminLogin(dto: AdminLoginDto, deviceInfo?: string, ipAddr
       status: 401,
       code: shouldLock ? 'ACCOUNT_LOCKED' : 'INVALID_CREDENTIALS',
       message: shouldLock
-        ? 'Akkaunt 30 daqiqa bloklandi (5 marta xato parol)'
-        : `Noto'g'ri parol. ${5 - attempts} urinish qoldi`
+        ? `Akkaunt ${LOCK_MINUTES} daqiqa bloklandi`
+        : `Noto'g'ri parol. ${LOCK_THRESHOLD - attempts} urinish qoldi`
     }
   }
 
