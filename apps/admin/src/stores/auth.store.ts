@@ -19,10 +19,12 @@ interface AuthStore {
   user:                AdminUser | null
   mustChangePassword:  boolean
   isAuthenticated:     boolean
+  _hasHydrated:        boolean
 
   setToken:            (token: string) => void
   setUser:             (user: AdminUser) => void
   setMustChangePassword: (val: boolean) => void
+  setHasHydrated:      (val: boolean) => void
   logout:              () => void
 
   hasPermission:       (resource: string, action: string) => boolean
@@ -31,6 +33,9 @@ interface AuthStore {
   canDelete:           (resource: string) => boolean
 }
 
+// BroadcastChannel for cross-tab sync
+export const authChannel = new BroadcastChannel('mira_auth')
+
 export const useAuthStore = create<AuthStore>()(
   persist(
     (set, get) => ({
@@ -38,6 +43,7 @@ export const useAuthStore = create<AuthStore>()(
       user:               null,
       mustChangePassword: false,
       isAuthenticated:    false,
+      _hasHydrated:       false,
 
       setToken: (token) => set({
         accessToken:     token,
@@ -54,12 +60,27 @@ export const useAuthStore = create<AuthStore>()(
         mustChangePassword: val
       }),
 
-      logout: () => set({
-        accessToken:        null,
-        user:               null,
-        isAuthenticated:    false,
-        mustChangePassword: false
-      }),
+      setHasHydrated: (val) => set({ _hasHydrated: val }),
+
+      logout: () => {
+        set({
+          accessToken:        null,
+          user:               null,
+          isAuthenticated:    false,
+          mustChangePassword: false
+        })
+        
+        // Clear localStorage explicitly
+        localStorage.removeItem('mira-admin-auth')
+        
+        // Call API logout (best effort)
+        import('../lib/api').then(({ api }) => {
+          api.post('/admin/auth/logout').catch(() => {})
+        })
+
+        // Notify other tabs
+        authChannel.postMessage('LOGOUT')
+      },
 
       hasPermission: (resource, action) => {
         const { user } = get()
@@ -76,6 +97,9 @@ export const useAuthStore = create<AuthStore>()(
     {
       name:    'mira-admin-auth',
       storage: createJSONStorage(() => localStorage),
+      onRehydrateStorage: () => (state) => {
+        state?.setHasHydrated(true)
+      },
       partialize: (state) => ({
         accessToken:        state.accessToken,
         user:               state.user,
@@ -84,3 +108,17 @@ export const useAuthStore = create<AuthStore>()(
     }
   )
 )
+
+// Listen for logout from other tabs
+authChannel.onmessage = (event) => {
+  if (event.data === 'LOGOUT') {
+    useAuthStore.getState().logout()
+    if (window.location.pathname !== '/login') {
+      window.location.href = '/login'
+    }
+  }
+  if (event.data === 'LOGIN') {
+    // Other tab logged in — reload to sync
+    window.location.reload()
+  }
+}

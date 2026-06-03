@@ -3,6 +3,7 @@ import { Outlet, useNavigate } from '@tanstack/react-router'
 import { connectSocket, disconnectSocket } from '../lib/socket'
 import { useAuthStore } from '../stores/auth.store'
 import { navItems } from './nav-items'
+import { toast } from 'sonner'
 
 export function AppLayout() {
   const { user, logout } = useAuthStore()
@@ -10,10 +11,23 @@ export function AppLayout() {
 
   useEffect(() => {
     connectSocket()
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        const { accessToken, isAuthenticated } = useAuthStore.getState()
+        if (!isAuthenticated || !accessToken) {
+          toast.error('Sessiya tugadi. Qayta kiring.')
+          navigate({ to: '/login' })
+        }
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+
     return () => {
       disconnectSocket()
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
-  }, [])
+  }, [navigate])
 
   const handleLogout = () => {
     logout()

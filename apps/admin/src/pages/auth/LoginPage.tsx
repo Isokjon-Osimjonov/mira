@@ -1,11 +1,11 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { toast } from 'sonner'
 import { api } from '../../lib/api'
-import { useAuthStore } from '../../stores/auth.store'
+import { useAuthStore, authChannel } from '../../stores/auth.store'
 import { getErrorMessage } from '../../lib/errors'
 
 const loginSchema = z.object({
@@ -19,11 +19,29 @@ export function LoginPage() {
   const navigate = useNavigate()
   const { setToken, setUser } = useAuthStore()
   const [loading, setLoading] = useState(false)
+  const [lockedUntil, setLockedUntil] = useState<Date | null>(null)
+  const [remainingSeconds, setRemainingSeconds] = useState(0)
   
   const { register, handleSubmit,
           formState: { errors } } = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
   })
+
+  useEffect(() => {
+    if (!lockedUntil) return
+    const interval = setInterval(() => {
+      const remaining = Math.max(
+        0,
+        Math.ceil((lockedUntil.getTime() - Date.now()) / 1000)
+      )
+      setRemainingSeconds(remaining)
+      if (remaining === 0) {
+        setLockedUntil(null)
+        clearInterval(interval)
+      }
+    }, 1000)
+    return () => clearInterval(interval)
+  }, [lockedUntil])
   
   const onSubmit = async (data: LoginForm) => {
     setLoading(true)
@@ -34,6 +52,9 @@ export function LoginPage() {
       setToken(accessToken)
       setUser(user)
       
+      // Notify other tabs
+      authChannel.postMessage('LOGIN')
+      
       if (user.mustChangePassword) {
         navigate({ to: '/change-password' })
       } else {
@@ -43,10 +64,18 @@ export function LoginPage() {
       toast.success(`Xush kelibsiz, ${user.fullName}!`)
       
     } catch (err: any) {
-      const msg = getErrorMessage(
-        err?.code ?? err?.response?.data?.error?.code ?? ''
-      )
-      toast.error(msg || 'Kirish muvaffaqiyatsiz')
+      const code = err?.code ?? err?.response?.data?.error?.code
+      
+      if (code === 'ACCOUNT_LOCKED') {
+        const msg = err?.response?.data?.error?.message ?? ''
+        const mins = parseInt(msg.match(/(\d+) daqiqa/)?.[1] ?? '30')
+        const until = new Date(Date.now() + mins * 60 * 1000)
+        setLockedUntil(until)
+        setRemainingSeconds(mins * 60)
+      } else {
+        const msg = getErrorMessage(code || '')
+        toast.error(msg || 'Kirish muvaffaqiyatsiz')
+      }
     } finally {
       setLoading(false)
     }
@@ -78,6 +107,25 @@ export function LoginPage() {
           <form onSubmit={handleSubmit(onSubmit)}
                 className="space-y-4">
             
+            {lockedUntil && (
+              <div className="rounded-lg bg-red-50 border-[0.5px]
+                              border-red-200 p-3">
+                <div className="flex items-center gap-2">
+                  <span className="w-4 h-4 text-red-500">🔒</span>
+                  <div>
+                    <p className="text-sm font-medium text-red-700">
+                      Akkaunt vaqtincha bloklangan
+                    </p>
+                    <p className="text-xs text-red-500 mt-0.5">
+                      {Math.floor(remainingSeconds / 60)}:{
+                        (remainingSeconds % 60).toString().padStart(2, '0')
+                      } dan keyin urinib ko'ring
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div>
               <label className="text-sm font-medium text-gray-700">
                 Email
@@ -86,10 +134,11 @@ export function LoginPage() {
                 {...register('email')}
                 type="email"
                 placeholder="admin@miracosmetics.uz"
+                disabled={!!lockedUntil}
                 className="mt-1 w-full h-9 px-3 rounded-lg
                            border-[0.5px] border-border text-sm
                            focus:outline-none focus:ring-2
-                           focus:ring-primary/20 focus:border-primary"
+                           focus:ring-primary/20 focus:border-primary disabled:opacity-50"
               />
               {errors.email && (
                 <p className="mt-1 text-xs text-red-500">
@@ -106,10 +155,11 @@ export function LoginPage() {
                 {...register('password')}
                 type="password"
                 placeholder="••••••••"
+                disabled={!!lockedUntil}
                 className="mt-1 w-full h-9 px-3 rounded-lg
                            border-[0.5px] border-border text-sm
                            focus:outline-none focus:ring-2
-                           focus:ring-primary/20 focus:border-primary"
+                           focus:ring-primary/20 focus:border-primary disabled:opacity-50"
               />
               {errors.password && (
                 <p className="mt-1 text-xs text-red-500">
@@ -120,7 +170,7 @@ export function LoginPage() {
             
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || !!lockedUntil}
               className="w-full h-9 bg-primary text-white
                          rounded-lg text-sm font-medium
                          hover:bg-primary/90 transition-colors

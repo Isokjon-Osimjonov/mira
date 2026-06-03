@@ -13,10 +13,18 @@ export const speedLimiter = slowDown({
   maxDelayMs: 5000,        // max 5 second delay
 })
 
-// Strict: OTP requests — 5 per 10 min per IP
+const isDev = process.env.NODE_ENV === 'development'
+
+export const adminAuthLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: isDev ? 200 : 5,
+  message: json("Juda ko'p urinish. 15 daqiqadan keyin qayta urinib ko'ring.", 'RATE_LIMITED'),
+})
+
+// Strict: OTP requests — 10 per 10 min per IP (200 in dev)
 export const authLimiter = rateLimit({
   windowMs: 10 * 60 * 1000,
-  max: 5,
+  max: isDev ? 200 : 10,
   standardHeaders: true,
   legacyHeaders: false,
   message: json("Juda ko'p urinish. 10 daqiqadan keyin qayta urinib ko'ring.", 'RATE_LIMITED'),
@@ -36,12 +44,13 @@ export const uploadLimiter = rateLimit({
   message: json('Upload limit reached.', 'RATE_LIMITED'),
 })
 
-// Admin: admin endpoints — 200 per minute
+// Admin: admin endpoints — 200 per minute (1000 in dev)
 export const adminLimiter = rateLimit({
   windowMs: 60 * 1000,
-  max: 200,
+  max: isDev ? 1000 : 200,
   message: json('Too many admin requests.', 'RATE_LIMITED'),
 })
+
 
 // AI: image analysis — 10 per minute
 export const imageLimiter = rateLimit({

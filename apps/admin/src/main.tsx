@@ -2,10 +2,55 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { RouterProvider } from '@tanstack/react-router'
 import { QueryClientProvider } from '@tanstack/react-query'
-import { Toaster } from 'sonner'
+import { Toaster, toast } from 'sonner'
 import { router } from './router'
 import { queryClient } from './lib/query-client'
+import { useAuthStore } from './stores/auth.store'
+import { api } from './lib/api'
 import './index.css'
+
+// ── Interceptors (defined here to avoid circular dependencies) ──
+
+api.interceptors.request.use((config) => {
+  const token = useAuthStore.getState().accessToken
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`
+  }
+  return config
+})
+
+api.interceptors.response.use(
+  (res) => res,
+  async (error) => {
+    if (error.response?.status === 401) {
+      const code = error.response?.data?.error?.code
+      if (code === 'TOKEN_EXPIRED' || code === 'REFRESH_INVALID') {
+        useAuthStore.getState().logout()
+        toast.error('Sessiya tugadi. Qayta kiring.')
+        setTimeout(() => {
+          window.location.href = '/login'
+        }, 1500)
+      }
+    }
+    return Promise.reject(error)
+  }
+)
+
+// ── Auth Gate Component ──
+
+function AuthGate({ children }: { children: React.ReactNode }) {
+  const _hasHydrated = useAuthStore((s) => s._hasHydrated)
+  
+  if (!_hasHydrated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    )
+  }
+  
+  return <>{children}</>
+}
 
 const root = document.getElementById('root')
 if (!root) throw new Error('Root element not found')
@@ -13,7 +58,9 @@ if (!root) throw new Error('Root element not found')
 createRoot(root).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
+      <AuthGate>
+        <RouterProvider router={router} />
+      </AuthGate>
       <Toaster
         position="top-right"
         expand={false}

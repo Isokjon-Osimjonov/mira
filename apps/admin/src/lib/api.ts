@@ -2,7 +2,7 @@ import axios, { AxiosError } from 'axios'
 import createAuthRefreshInterceptor from 'axios-auth-refresh'
 import { env } from '../config/env'
 import { getErrorMessage } from './errors'
-import { useAuthStore } from '../stores/auth.store'
+import { toast } from 'sonner'
 
 export interface ApiResponse<T = unknown> {
   data: T | null
@@ -26,16 +26,6 @@ export const api = axios.create({
     'Accept':       'application/json',
   },
   timeout: 30000,
-})
-
-// ── Request interceptor: attach token ──
-
-api.interceptors.request.use((config) => {
-  const token = useAuthStore.getState().accessToken
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`
-  }
-  return config
 })
 
 // ── Response interceptor: parse errors ─
@@ -64,6 +54,9 @@ api.interceptors.response.use(
 createAuthRefreshInterceptor(
   api,
   async (failedRequest) => {
+    // Dynamic import to avoid circular dependency
+    const { useAuthStore } = await import('../stores/auth.store')
+    
     try {
       const res = await axios.post(
         `${env.apiUrl}/api/v1/admin/auth/refresh`,
@@ -78,10 +71,14 @@ createAuthRefreshInterceptor(
       failedRequest.response.config.headers.Authorization =
         `Bearer ${accessToken}`
       return Promise.resolve()
-    } catch {
+    } catch (err) {
+      // Both tokens expired — clean logout
       useAuthStore.getState().logout()
-      window.location.href = '/login'
-      return Promise.reject()
+      toast.error('Sessiya muddati tugadi. Qayta kiring.')
+      setTimeout(() => { 
+        window.location.href = '/login' 
+      }, 1500)
+      return Promise.reject(err)
     }
   },
   { statusCodes: [401] }
