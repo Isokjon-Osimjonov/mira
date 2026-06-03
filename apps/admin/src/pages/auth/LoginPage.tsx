@@ -1,100 +1,144 @@
 import { useState } from 'react'
+import { useNavigate } from '@tanstack/react-router'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import * as z from 'zod'
-import { useNavigate } from '@tanstack/react-router'
-import { useAuthStore } from '../../stores/auth.store'
-import { api } from '../../lib/api'
+import { z } from 'zod'
 import { toast } from 'sonner'
+import { api } from '../../lib/api'
+import { useAuthStore } from '../../stores/auth.store'
 import { getErrorMessage } from '../../lib/errors'
 
 const loginSchema = z.object({
-  email: z.string().email('Noto\'g\'ri email'),
+  email:    z.string().email('Noto\'g\'ri email format'),
   password: z.string().min(1, 'Parol kiritilmagan'),
 })
 
 type LoginForm = z.infer<typeof loginSchema>
 
-export default function LoginPage() {
+export function LoginPage() {
   const navigate = useNavigate()
-  const { setToken, setUser, setMustChangePassword } = useAuthStore()
-  const [isLoading, setIsLoading] = useState(false)
-
-  const { register, handleSubmit, formState: { errors } } = useForm<LoginForm>({
+  const { setToken, setUser } = useAuthStore()
+  const [loading, setLoading] = useState(false)
+  
+  const { register, handleSubmit,
+          formState: { errors } } = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
   })
-
+  
   const onSubmit = async (data: LoginForm) => {
-    setIsLoading(true)
+    setLoading(true)
     try {
       const res = await api.post('/admin/auth/login', data)
-      const { accessToken, user, mustChangePassword } = res.data.data
-
+      const { accessToken, user } = res.data.data
+      
       setToken(accessToken)
       setUser(user)
-      setMustChangePassword(mustChangePassword)
-
-      if (mustChangePassword) {
+      
+      if (user.mustChangePassword) {
         navigate({ to: '/change-password' })
       } else {
         navigate({ to: '/dashboard' })
       }
-    } catch (error: any) {
-      toast.error(error.friendlyMessage || getErrorMessage(error.code))
+      
+      toast.success(`Xush kelibsiz, ${user.fullName}!`)
+      
+    } catch (err: any) {
+      const msg = getErrorMessage(
+        err?.code ?? err?.response?.data?.error?.code ?? ''
+      )
+      toast.error(msg || 'Kirish muvaffaqiyatsiz')
     } finally {
-      setIsLoading(false)
+      setLoading(false)
     }
   }
-
+  
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-          🌸 Mira Admin
-        </h2>
-        <p className="mt-2 text-center text-sm text-gray-600">
-          Tizimga kirish
-        </p>
-      </div>
-
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
-          <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
+    <div className="min-h-screen bg-gray-50 flex items-center
+                    justify-center p-4">
+      <div className="w-full max-w-sm">
+        
+        {/* Logo */}
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center
+                          w-12 h-12 rounded-xl bg-primary
+                          text-white text-xl mb-3">
+            🌸
+          </div>
+          <h1 className="text-xl font-semibold text-gray-900">
+            Mira Admin
+          </h1>
+          <p className="text-sm text-gray-500 mt-1">
+            Boshqaruv paneliga kirish
+          </p>
+        </div>
+        
+        {/* Form */}
+        <div className="bg-white rounded-xl border-[0.5px]
+                        border-border p-6 shadow-sm">
+          <form onSubmit={handleSubmit(onSubmit)}
+                className="space-y-4">
+            
             <div>
-              <label className="block text-sm font-medium text-gray-700">Email</label>
-              <div className="mt-1">
-                <input
-                  {...register('email')}
-                  type="email"
-                  className={`appearance-none block w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm ${errors.email ? 'border-red-300' : 'border-gray-300'}`}
-                />
-                {errors.email && <p className="mt-2 text-sm text-red-600">{errors.email.message}</p>}
-              </div>
+              <label className="text-sm font-medium text-gray-700">
+                Email
+              </label>
+              <input
+                {...register('email')}
+                type="email"
+                placeholder="admin@miracosmetics.uz"
+                className="mt-1 w-full h-9 px-3 rounded-lg
+                           border-[0.5px] border-border text-sm
+                           focus:outline-none focus:ring-2
+                           focus:ring-primary/20 focus:border-primary"
+              />
+              {errors.email && (
+                <p className="mt-1 text-xs text-red-500">
+                  {errors.email.message}
+                </p>
+              )}
             </div>
-
+            
             <div>
-              <label className="block text-sm font-medium text-gray-700">Parol</label>
-              <div className="mt-1">
-                <input
-                  {...register('password')}
-                  type="password"
-                  className={`appearance-none block w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm ${errors.password ? 'border-red-300' : 'border-gray-300'}`}
-                />
-                {errors.password && <p className="mt-2 text-sm text-red-600">{errors.password.message}</p>}
-              </div>
+              <label className="text-sm font-medium text-gray-700">
+                Parol
+              </label>
+              <input
+                {...register('password')}
+                type="password"
+                placeholder="••••••••"
+                className="mt-1 w-full h-9 px-3 rounded-lg
+                           border-[0.5px] border-border text-sm
+                           focus:outline-none focus:ring-2
+                           focus:ring-primary/20 focus:border-primary"
+              />
+              {errors.password && (
+                <p className="mt-1 text-xs text-red-500">
+                  {errors.password.message}
+                </p>
+              )}
             </div>
-
-            <div>
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50"
-              >
-                {isLoading ? 'Yuklanmoqda...' : 'Kirish'}
-              </button>
-            </div>
+            
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full h-9 bg-primary text-white
+                         rounded-lg text-sm font-medium
+                         hover:bg-primary/90 transition-colors
+                         disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? 'Kirilmoqda...' : 'Kirish'}
+            </button>
+            
           </form>
         </div>
+        
+        {/* Credentials hint (dev only) */}
+        {import.meta.env.DEV && (
+          <p className="text-center text-xs text-gray-400 mt-4">
+            admin@miracosmetics.uz / MiraAdmin2026!
+          </p>
+        )}
+        
       </div>
     </div>
   )

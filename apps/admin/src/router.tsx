@@ -1,7 +1,7 @@
 import { createRouter, createRoute, createRootRoute, redirect } from '@tanstack/react-router'
 import { useAuthStore } from './stores/auth.store'
 import { AppLayout } from './layouts/AppLayout'
-import LoginPage from './pages/auth/LoginPage'
+import { LoginPage } from './pages/auth/LoginPage'
 
 // For TanStack Router we define the root route and children
 const rootRoute = createRootRoute()
@@ -24,10 +24,18 @@ const changePasswordRoute = createRoute({
 const protectedRoute = createRoute({
   getParentRoute: () => rootRoute,
   id: 'protected',
-  beforeLoad: () => {
-    const state = useAuthStore.getState()
-    if (!state.isAuthenticated) {
-      throw redirect({ to: '/login' })
+  beforeLoad: ({ location }) => {
+    const { isAuthenticated, mustChangePassword } = useAuthStore.getState()
+    
+    if (!isAuthenticated) {
+      throw redirect({
+        to: '/login',
+        search: { redirect: location.href }
+      })
+    }
+    
+    if (mustChangePassword && location.pathname !== '/change-password') {
+      throw redirect({ to: '/change-password' })
     }
   },
   component: AppLayout

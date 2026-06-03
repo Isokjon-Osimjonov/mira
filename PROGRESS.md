@@ -119,6 +119,14 @@
 
 ## 🔄 Changelog
 
+### v0.3.2-dev (2026-06-03)
+- **Admin Panel Refinement**: 
+  - Fixed API URL duplication issue (double /api/v1).
+  - Implemented correct TanStack Router redirection with state preservation.
+  - Refreshed Login page UI with better validation and error feedback.
+  - Added centralized health check utility.
+  - Aligned environment variables with backend expectations.
+
 ### v0.3.1-dev (2026-06-03)
 - **Production Hardening**: Complete infrastructure upgrade.
   - Pino structured logging (replaces console.log).
