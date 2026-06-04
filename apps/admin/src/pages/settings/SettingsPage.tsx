@@ -14,6 +14,7 @@ import {
   CheckCircle2,
   Loader2,
   X,
+  RefreshCw,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { settingsApi } from '../../api/settings.api'
@@ -64,8 +65,8 @@ export function SettingsPage() {
           ))}
         </div>
 
-        {/* Tab content */}
-        <div className="flex-1 min-w-0">
+        {/* Tab content — consistent width */}
+        <div className="flex-1 min-w-0 max-w-2xl">
           {tab === 'payment' && <PaymentMethodsTab />}
           {tab === 'shipping' && <ShippingTiersTab />}
           {tab === 'exchange' && <ExchangeRateTab />}
@@ -94,31 +95,37 @@ function PaymentMethodsTab() {
     onError: (err: any) => toast.error(getErrorMessage(err?.errorCode ?? '')),
   })
 
-  const PAYMENT_LABELS: Record<string, any> = {
-    BANK_CARD: {
+  const PAYMENT_CONFIG: Record<string, any> = {
+    BANK_CARD_KOR: {
       label: 'Bank kartasi',
+      flag: '🇰🇷',
+      region: 'KOR',
       icon: '💳',
-      desc: "KOR va UZB uchun bank o'tkazmasi",
+      cardTypes: null,
+    },
+    BANK_CARD_UZB: {
+      label: 'Bank kartasi',
+      flag: '🇺🇿',
+      region: 'UZB',
+      icon: '💳',
+      cardTypes: ['Humo', 'Uzcard'],
     },
     E9PAY: {
       label: 'E9Pay',
+      flag: '🇺🇿',
+      region: 'UZB',
       icon: '📱',
-      desc: 'Faqat UZB uchun',
-    },
-    CASH: {
-      label: 'Naqd pul',
-      icon: '💵',
-      desc: 'Yetkazib berish vaqtida',
+      cardTypes: null,
     },
   }
 
   if (isLoading)
     return (
       <div className="space-y-4">
-        {[1, 2].map((i) => (
+        {[1, 2, 3].map((i) => (
           <div
             key={i}
-            className="h-40 bg-white rounded-2xl border-[0.5px] border-border animate-pulse"
+            className="h-48 bg-white rounded-2xl border-[0.5px] border-border animate-pulse"
           />
         ))}
       </div>
@@ -126,114 +133,150 @@ function PaymentMethodsTab() {
 
   return (
     <div className="space-y-4">
-      {methods.map((m: any) => {
-        const info = PAYMENT_LABELS[m.method] || { label: m.method, icon: '💰', desc: '' }
+      {Object.entries(PAYMENT_CONFIG).map(([key, cfg]) => {
+        const method = methods.find((m: any) => m.method === key)
+        if (!method) return null
 
         return (
-          <div key={m.id} className="bg-white rounded-2xl border-[0.5px] border-border p-6 shadow-sm">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-4">
-                <span className="text-3xl">{info.icon}</span>
+          <div key={key} className="bg-white rounded-2xl border-[0.5px] border-border p-5 space-y-4 shadow-sm">
+            {/* Header row */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">{cfg.icon}</span>
                 <div>
-                  <p className="text-base font-bold text-gray-900">{info.label}</p>
-                  <p className="text-xs text-muted-foreground">{info.desc}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-bold text-gray-900">{cfg.label}</p>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-lg bg-gray-100 text-gray-600 font-bold border-[0.5px]">
+                      {cfg.flag} {cfg.region}
+                    </span>
+                  </div>
+                  {cfg.cardTypes && (
+                    <p className="text-[11px] text-muted-foreground font-medium">
+                      {cfg.cardTypes.join(' / ')}
+                    </p>
+                  )}
                 </div>
               </div>
+
               {/* Toggle */}
               <button
                 onClick={() =>
                   updateMutation.mutate({
-                    method: m.method,
-                    payload: { isEnabled: !m.isEnabled },
+                    method: key,
+                    payload: { isEnabled: !method.isEnabled },
                   })
                 }
                 disabled={updateMutation.isPending}
                 className={cn(
-                  'relative w-11 h-6 rounded-full transition-colors border-[0.5px]',
-                  m.isEnabled ? 'bg-primary border-primary' : 'bg-gray-200 border-gray-300'
+                  'relative w-11 h-6 rounded-full border-[0.5px] transition-colors',
+                  method.isEnabled ? 'bg-primary border-primary' : 'bg-gray-200 border-gray-300'
                 )}
               >
                 <span
                   className={cn(
                     'absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform',
-                    m.isEnabled ? 'translate-x-5' : 'translate-x-0.5'
+                    method.isEnabled ? 'translate-x-5' : 'translate-x-0.5'
                   )}
                 />
               </button>
             </div>
 
-            {m.isEnabled && (
-              <div className="space-y-5 pt-5 border-t border-border/50">
-                {/* Region toggles */}
-                <div className="flex gap-2">
-                  {['KOR', 'UZB'].map((region) => (
-                    <button
-                      key={region}
-                      onClick={() => {
-                        const regions = m.enabledRegions ?? []
-                        const updated = regions.includes(region)
-                          ? regions.filter((r: string) => r !== region)
-                          : [...regions, region]
-                        updateMutation.mutate({
-                          method: m.method,
-                          payload: { enabledRegions: updated },
-                        })
-                      }}
-                      disabled={updateMutation.isPending}
-                      className={cn(
-                        'flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold border-[0.5px] transition-all',
-                        m.enabledRegions?.includes(region)
-                          ? 'bg-primary/10 text-primary border-primary/30'
-                          : 'bg-gray-50 text-muted-foreground border-border hover:bg-gray-100'
-                      )}
-                    >
-                      {region === 'KOR' ? '🇰🇷' : '🇺🇿'} {region}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Account info */}
+            {/* Details (always visible) */}
+            <div className="space-y-4 pt-4 border-t border-border/50">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    Hisob raqami / ma'lumot
+                    Bank nomi
                   </Label>
                   <Input
-                    defaultValue={m.accountInfo ?? ''}
-                    placeholder="Bank: 1234 5678 9012 3456"
-                    className="h-10 text-sm rounded-xl border-[0.5px]"
+                    key={`${key}-bank-${method.bankName}`}
+                    defaultValue={method.bankName ?? ''}
+                    placeholder={
+                      cfg.region === 'KOR'
+                        ? 'Kookmin Bank, Shinhan...'
+                        : 'Kapitalbank, Hamkorbank...'
+                    }
+                    className="h-9 text-sm rounded-xl border-[0.5px]"
                     onBlur={(e) => {
-                      if (e.target.value !== m.accountInfo) {
+                      if (e.target.value !== method.bankName) {
                         updateMutation.mutate({
-                          method: m.method,
-                          payload: { accountInfo: e.target.value },
+                          method: key,
+                          payload: { bankName: e.target.value },
                         })
                       }
                     }}
                   />
                 </div>
-
-                {/* Instructions */}
                 <div className="space-y-1.5">
                   <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    To'lov ko'rsatmalari (mijozga ko'rsatiladi)
+                    {key === 'E9PAY' ? 'E9Pay ID / Telefon' : 'Karta / Hisob raqami'}
                   </Label>
-                  <textarea
-                    rows={2}
-                    defaultValue={m.instructions ?? ''}
-                    placeholder="To'lovni amalga oshirgandan so'ng..."
-                    className="w-full rounded-xl border-[0.5px] border-border p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                  <Input
+                    key={`${key}-account-${method.accountNumber}`}
+                    defaultValue={method.accountNumber ?? ''}
+                    placeholder={
+                      key === 'E9PAY'
+                        ? '+82 10-xxxx-xxxx'
+                        : cfg.region === 'KOR'
+                        ? '1234-5678-9012-3456'
+                        : '8600 xxxx xxxx xxxx'
+                    }
+                    className="h-9 text-sm rounded-xl border-[0.5px]"
                     onBlur={(e) => {
-                      if (e.target.value !== m.instructions) {
+                      if (e.target.value !== method.accountNumber) {
                         updateMutation.mutate({
-                          method: m.method,
-                          payload: { instructions: e.target.value },
+                          method: key,
+                          payload: { accountNumber: e.target.value },
                         })
                       }
                     }}
                   />
                 </div>
               </div>
-            )}
+
+              {key !== 'E9PAY' && (
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Karta egasi (to'liq ism)
+                  </Label>
+                  <Input
+                    key={`${key}-holder-${method.holderName}`}
+                    defaultValue={method.holderName ?? ''}
+                    placeholder="HONG GIL DONG"
+                    className="h-9 text-sm rounded-xl border-[0.5px]"
+                    onBlur={(e) => {
+                      if (e.target.value !== method.holderName) {
+                        updateMutation.mutate({
+                          method: key,
+                          payload: { holderName: e.target.value },
+                        })
+                      }
+                    }}
+                  />
+                </div>
+              )}
+
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  To'lov ko'rsatmalari (mijozga ko'rsatiladi)
+                </Label>
+                <textarea
+                  key={`${key}-inst-${method.instructions}`}
+                  rows={2}
+                  defaultValue={method.instructions ?? ''}
+                  placeholder="To'lovni amalga oshirgandan so'ng chekni yuboring..."
+                  className="w-full rounded-xl border-[0.5px] border-border p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                  onBlur={(e) => {
+                    if (e.target.value !== method.instructions) {
+                      updateMutation.mutate({
+                        method: key,
+                        payload: { instructions: e.target.value },
+                      })
+                    }
+                  }}
+                />
+              </div>
+            </div>
           </div>
         )
       })}
@@ -245,7 +288,7 @@ function ShippingTiersTab() {
   const qc = useQueryClient()
   const [region, setRegion] = useState<'KOR' | 'UZB'>('KOR')
   const [adding, setAdding] = useState(false)
-  const [newTier, setNewTier] = useState({ minQty: '', shippingCost: '' })
+  const [newTier, setNewTier] = useState({ minOrderAmount: '', shippingCost: '' })
 
   const { data: tiers = [], isLoading } = useQuery({
     queryKey: QK.SHIPPING_TIERS,
@@ -259,13 +302,14 @@ function ShippingTiersTab() {
     mutationFn: () =>
       settingsApi.createShippingTier({
         region,
-        minQty: parseInt(newTier.minQty),
+        minOrderAmount: parseInt(newTier.minOrderAmount),
         shippingCost: parseInt(newTier.shippingCost),
+        currency: region === 'KOR' ? 'KRW' : 'UZS',
       }),
     onSuccess: () => {
       toast.success("Tier qo'shildi")
       qc.invalidateQueries({ queryKey: QK.SHIPPING_TIERS })
-      setNewTier({ minQty: '', shippingCost: '' })
+      setNewTier({ minOrderAmount: '', shippingCost: '' })
       setAdding(false)
     },
     onError: (err: any) => toast.error(getErrorMessage(err?.errorCode ?? '')),
@@ -281,7 +325,6 @@ function ShippingTiersTab() {
 
   return (
     <div className="space-y-4">
-      {/* Region tabs */}
       <div className="flex gap-1 bg-gray-100 rounded-xl p-1 w-fit">
         {(['KOR', 'UZB'] as const).map((r) => (
           <button
@@ -302,7 +345,7 @@ function ShippingTiersTab() {
           <div>
             <p className="text-base font-bold text-gray-900">{region} yetkazib berish narxlari</p>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Buyurtma miqdoriga qarab narxlarni belgilang
+              Buyurtma summasiga qarab narxlarni belgilang
             </p>
           </div>
           <Button
@@ -316,11 +359,10 @@ function ShippingTiersTab() {
           </Button>
         </div>
 
-        {/* Tier info note */}
         <div className="px-6 py-3 bg-blue-50/50 border-b border-blue-100/50">
           <p className="text-[11px] text-blue-700 font-medium flex items-center gap-2">
             <span className="text-base">ℹ️</span>
-            Minimal buyurtma miqdori → yetkazib berish narxi. 0 KRW = bepul yetkazib berish
+            Minimal buyurtma summasi → yetkazib berish narxi. 0 {region === 'KOR' ? 'KRW' : 'UZS'} = bepul
           </p>
         </div>
 
@@ -329,7 +371,7 @@ function ShippingTiersTab() {
             <thead>
               <tr className="border-b border-border/50 bg-gray-50/50">
                 <th className="px-6 py-3 text-left text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                  Minimal miqdor (dona)
+                  Minimal buyurtma summasi
                 </th>
                 <th className="px-6 py-3 text-right text-xs font-bold uppercase tracking-wider text-muted-foreground">
                   Yetkazib berish narxi
@@ -354,11 +396,13 @@ function ShippingTiersTab() {
                 </tr>
               ) : (
                 filtered
-                  .sort((a: any, b: any) => a.minQty - b.minQty)
+                  .sort((a: any, b: any) => Number(a.minOrderAmount) - Number(b.minOrderAmount))
                   .map((tier: any) => (
                     <tr key={tier.id} className="hover:bg-gray-50/50 group transition-colors">
                       <td className="px-6 py-4">
-                        <span className="text-sm font-bold text-gray-900">{tier.minQty} ta va undan ko'p</span>
+                        <span className="text-sm font-bold text-gray-900">
+                          {region === 'KOR' ? formatKRW(Number(tier.minOrderAmount)) : formatUZS(Number(tier.minOrderAmount))} dan yuqori
+                        </span>
                       </td>
                       <td className="px-6 py-4 text-right">
                         {Number(tier.shippingCost) === 0 ? (
@@ -367,7 +411,7 @@ function ShippingTiersTab() {
                           </span>
                         ) : (
                           <span className="text-sm font-bold text-gray-900">
-                            {formatKRW(Number(tier.shippingCost))}
+                            {region === 'KOR' ? formatKRW(Number(tier.shippingCost)) : formatUZS(Number(tier.shippingCost))}
                           </span>
                         )}
                       </td>
@@ -384,45 +428,55 @@ function ShippingTiersTab() {
                   ))
               )}
 
-              {/* Add new tier row */}
               {adding && (
                 <tr className="bg-primary/5">
-                  <td className="px-6 py-4">
-                    <Input
-                      value={newTier.minQty}
-                      onChange={(e) => setNewTier((p) => ({ ...p, minQty: e.target.value }))}
-                      type="number"
-                      placeholder="5"
-                      className="h-10 text-sm rounded-xl border-primary/30 w-32 focus:ring-primary/20"
-                      autoFocus
-                    />
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center justify-end gap-3">
-                      <Input
-                        value={newTier.shippingCost}
-                        onChange={(e) => setNewTier((p) => ({ ...p, shippingCost: e.target.value }))}
-                        type="number"
-                        placeholder="3000"
-                        className="h-10 text-sm rounded-xl border-primary/30 w-40 focus:ring-primary/20"
-                      />
-                      <Button
-                        size="sm"
-                        onClick={() => addMutation.mutate()}
-                        disabled={!newTier.minQty || !newTier.shippingCost || addMutation.isPending}
-                        className="h-9 rounded-xl px-4 font-bold"
-                      >
-                        {addMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Saqlash'}
-                      </Button>
-                      <button
-                        onClick={() => setAdding(false)}
-                        className="text-muted-foreground hover:text-gray-900 transition-colors"
-                      >
-                        <X className="h-5 w-5" />
-                      </button>
+                  <td colSpan={3} className="p-4">
+                    <div className="flex gap-3 items-end p-4 rounded-xl bg-blue-50/50 border-[0.5px] border-blue-100">
+                      <div className="flex-1 space-y-1.5">
+                        <Label className="text-[10px] font-bold uppercase text-blue-700">
+                          Minimal summa ({region === 'KOR' ? '₩' : "so'm"})
+                        </Label>
+                        <Input
+                          value={newTier.minOrderAmount}
+                          onChange={(e) => setNewTier((p) => ({ ...p, minOrderAmount: e.target.value }))}
+                          type="number"
+                          placeholder={region === 'KOR' ? '100000' : '1200000'}
+                          className="h-10 text-sm rounded-xl border-blue-200 focus:ring-blue-200"
+                          autoFocus
+                        />
+                      </div>
+                      <div className="flex-1 space-y-1.5">
+                        <Label className="text-[10px] font-bold uppercase text-blue-700">
+                          Yetkazib berish ({region === 'KOR' ? '₩' : "so'm"})
+                        </Label>
+                        <Input
+                          value={newTier.shippingCost}
+                          onChange={(e) => setNewTier((p) => ({ ...p, shippingCost: e.target.value }))}
+                          type="number"
+                          placeholder="0 = bepul"
+                          className="h-10 text-sm rounded-xl border-blue-200 focus:ring-blue-200"
+                        />
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          onClick={() => addMutation.mutate()}
+                          disabled={!newTier.minOrderAmount || !newTier.shippingCost || addMutation.isPending}
+                          className="h-10 rounded-xl px-5 font-bold"
+                        >
+                          {addMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Saqlash'}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => setAdding(false)}
+                          className="h-10 w-10 p-0 rounded-xl text-muted-foreground"
+                        >
+                          <X className="h-5 w-5" />
+                        </Button>
+                      </div>
                     </div>
                   </td>
-                  <td />
                 </tr>
               )}
             </tbody>
@@ -436,6 +490,8 @@ function ShippingTiersTab() {
 function ExchangeRateTab() {
   const qc = useQueryClient()
   const [newRate, setNewRate] = useState('')
+  const [fetching, setFetching] = useState(false)
+  const [liveRate, setLiveRate] = useState<number | null>(null)
 
   const { data: rates = [], isLoading } = useQuery({
     queryKey: QK.EXCHANGE_RATES,
@@ -450,10 +506,26 @@ function ExchangeRateTab() {
     onSuccess: () => {
       toast.success('Valyuta kursi yangilandi')
       qc.invalidateQueries({ queryKey: QK.EXCHANGE_RATES })
+      qc.invalidateQueries({ queryKey: ['exchange-rates'] })
       setNewRate('')
+      setLiveRate(null)
     },
     onError: (err: any) => toast.error(getErrorMessage(err?.errorCode ?? '')),
   })
+
+  const handleFetchLive = async () => {
+    setFetching(true)
+    try {
+      const res = await settingsApi.fetchLiveRate()
+      setLiveRate(res.rate)
+      setNewRate(res.rate.toString())
+      toast.success(`Joriy kurs olindi: 1 ₩ = ${res.rate.toLocaleString()} so'm`)
+    } catch (err: any) {
+      toast.error('Kursni olishda xatolik. Internet bor?')
+    } finally {
+      setFetching(false)
+    }
+  }
 
   if (isLoading) return <div className="space-y-4 h-96 bg-white rounded-2xl animate-pulse" />
 
@@ -493,46 +565,69 @@ function ExchangeRateTab() {
         )}
       </div>
 
-      {/* Update rate */}
       <div className="bg-white rounded-2xl border-[0.5px] border-border p-6 shadow-sm">
         <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-4">
           Kursni yangilash
         </p>
-        <div className="flex flex-col sm:flex-row gap-4 items-end">
-          <div className="flex-1 w-full">
-            <Label className="text-xs font-bold mb-2 block">Yangi kurs (1 ₩ = ? so'm)</Label>
-            <Input
-              value={newRate}
-              onChange={(e) => setNewRate(e.target.value)}
-              type="number"
-              placeholder={currentRate ? Number(currentRate.krwToUzs).toString() : '12000'}
-              className="h-11 text-base font-bold rounded-xl border-[0.5px] focus:ring-primary/20"
-            />
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col sm:flex-row gap-4 items-end">
+            <div className="flex-1 w-full">
+              <Label className="text-xs font-bold mb-2 block">Yangi kurs (1 ₩ = ? so'm)</Label>
+              <div className="flex gap-2">
+                <Input
+                  value={newRate}
+                  onChange={(e) => setNewRate(e.target.value)}
+                  type="number"
+                  placeholder={currentRate ? Number(currentRate.krwToUzs).toString() : '12'}
+                  className="h-11 text-base font-bold rounded-xl border-[0.5px] focus:ring-primary/20 flex-1"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleFetchLive}
+                  disabled={fetching}
+                  className="h-11 rounded-xl gap-2 shrink-0 border-[0.5px] text-xs font-bold text-blue-600 border-blue-200 hover:bg-blue-50 px-4"
+                >
+                  {fetching ? <RefreshCw className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                  Kursni olish
+                </Button>
+              </div>
+              <p className="text-[11px] text-muted-foreground mt-2 font-medium">
+                "Kursni olish" — open.er-api.com dan joriy kursni avtomatik yuklaydi
+              </p>
+            </div>
+
+            {newRate && !isNaN(parseFloat(newRate)) && (
+              <div className="pb-2 px-2 hidden sm:block">
+                <p className="text-[10px] font-bold uppercase text-muted-foreground">₩15,000 ≈</p>
+                <p className="text-lg font-bold text-gray-700">
+                  {formatUZS(Math.round(15000 * parseFloat(newRate)))}
+                </p>
+              </div>
+            )}
+
+            <Button
+              onClick={() => updateMutation.mutate()}
+              disabled={!newRate || parseFloat(newRate) <= 0 || updateMutation.isPending}
+              className="h-11 px-8 rounded-xl gap-2 font-bold w-full sm:w-auto"
+            >
+              {updateMutation.isPending ? <Loader2 className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />}
+              Saqlash
+            </Button>
           </div>
-          {newRate && (
-            <div className="pb-2 px-2 hidden sm:block">
-              <p className="text-[10px] font-bold uppercase text-muted-foreground">₩15,000 ≈</p>
-              <p className="text-lg font-bold text-gray-700">
-                {formatUZS(Math.round(15000 * parseFloat(newRate || '0')))}
+
+          {liveRate && (
+            <div className="flex items-center gap-3 p-3 rounded-xl bg-blue-50 border-[0.5px] border-blue-100 animate-in fade-in slide-in-from-top-1">
+              <CheckCircle2 className="h-5 w-5 text-blue-600 shrink-0" />
+              <p className="text-xs text-blue-700 font-bold">
+                API kurs: 1 ₩ = {liveRate.toLocaleString()} so'm · Saqlash tugmasini bosing
               </p>
             </div>
           )}
-          <Button
-            onClick={() => updateMutation.mutate()}
-            disabled={!newRate || parseFloat(newRate) <= 0 || updateMutation.isPending}
-            className="h-11 px-8 rounded-xl gap-2 font-bold w-full sm:w-auto"
-          >
-            {updateMutation.isPending ? (
-              <Loader2 className="h-5 w-5 animate-spin" />
-            ) : (
-              <Save className="h-5 w-5" />
-            )}
-            Saqlash
-          </Button>
         </div>
       </div>
 
-      {/* Rate history */}
       {rates.length > 0 && (
         <div className="bg-white rounded-2xl border-[0.5px] border-border overflow-hidden shadow-sm">
           <p className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-muted-foreground border-b border-border/50 bg-gray-50/30">
@@ -562,8 +657,8 @@ function OrderSettingsTab() {
 
   const orderSchema = z.object({
     paymentTimeoutMinutes: z.coerce.number().int().min(5).max(1440),
-    maxOrderQty: z.coerce.number().int().min(1).max(9999),
-    minOrderAmountKrw: z.coerce.number().int().min(0),
+    minOrderKorKrw: z.coerce.number().int().min(0),
+    minOrderUzbUzs: z.coerce.number().int().min(0),
   })
 
   const { data, isLoading } = useQuery({
@@ -603,44 +698,43 @@ function OrderSettingsTab() {
       </p>
 
       <form onSubmit={handleSubmit((data) => saveMutation.mutate(data))} className="space-y-6">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-          <div className="space-y-2">
-            <Label className="text-sm font-bold">To'lov muddati (daqiqa)</Label>
-            <Input
-              {...register('paymentTimeoutMinutes')}
-              type="number"
-              min="5"
-              max="1440"
-              className="h-10 rounded-xl border-[0.5px] focus:ring-primary/20"
-            />
-            <p className="text-[11px] text-muted-foreground font-medium">
-              To'lov qilinmasa, buyurtma avtomatik bekor qilinadi. Default: 30 daqiqa
-            </p>
-            {errors.paymentTimeoutMinutes && (
-              <p className="text-xs text-red-500 font-bold">5-1440 daqiqa oralig'ida bo'lishi kerak</p>
-            )}
-          </div>
+        <div className="space-y-2">
+          <Label className="text-sm font-bold text-gray-900">To'lov muddati (daqiqa)</Label>
+          <Input
+            {...register('paymentTimeoutMinutes')}
+            type="number"
+            min="5"
+            max="1440"
+            className="h-11 rounded-xl border-[0.5px] focus:ring-primary/20 max-w-[240px]"
+          />
+          <p className="text-[11px] text-muted-foreground font-medium">
+            To'lov qilinmasa, buyurtma avtomatik bekor qilinadi. Default: 30 daqiqa
+          </p>
+          {errors.paymentTimeoutMinutes && (
+            <p className="text-xs text-red-500 font-bold">5-1440 daqiqa oralig'ida bo'lishi kerak</p>
+          )}
+        </div>
 
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-2">
           <div className="space-y-2">
-            <Label className="text-sm font-bold">Maksimal buyurtma miqdori (dona)</Label>
+            <Label className="text-sm font-bold text-gray-900">🇰🇷 KOR minimal buyurtma (KRW)</Label>
             <Input
-              {...register('maxOrderQty')}
-              type="number"
-              min="1"
-              className="h-10 rounded-xl border-[0.5px] focus:ring-primary/20"
-            />
-            <p className="text-[11px] text-muted-foreground font-medium">
-              Bir buyurtmada maksimal mahsulot soni
-            </p>
-          </div>
-
-          <div className="space-y-2">
-            <Label className="text-sm font-bold">Minimal buyurtma summasi (KRW)</Label>
-            <Input
-              {...register('minOrderAmountKrw')}
+              {...register('minOrderKorKrw')}
               type="number"
               min="0"
-              className="h-10 rounded-xl border-[0.5px] focus:ring-primary/20"
+              placeholder="10000"
+              className="h-11 rounded-xl border-[0.5px] focus:ring-primary/20"
+            />
+            <p className="text-[11px] text-muted-foreground font-medium">0 = cheklov yo'q</p>
+          </div>
+          <div className="space-y-2">
+            <Label className="text-sm font-bold text-gray-900">🇺🇿 UZB minimal buyurtma (UZS)</Label>
+            <Input
+              {...register('minOrderUzbUzs')}
+              type="number"
+              min="0"
+              placeholder="120000"
+              className="h-11 rounded-xl border-[0.5px] focus:ring-primary/20"
             />
             <p className="text-[11px] text-muted-foreground font-medium">0 = cheklov yo'q</p>
           </div>
@@ -650,13 +744,9 @@ function OrderSettingsTab() {
           <Button
             type="submit"
             disabled={!isDirty || saveMutation.isPending}
-            className="rounded-xl px-8 h-11 gap-2 font-bold"
+            className="rounded-xl px-10 h-11 gap-2 font-bold"
           >
-            {saveMutation.isPending ? (
-              <Loader2 className="h-5 w-5 animate-spin" />
-            ) : (
-              <Save className="h-5 w-5" />
-            )}
+            {saveMutation.isPending ? <Loader2 className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />}
             Saqlash
           </Button>
         </div>

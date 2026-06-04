@@ -6,10 +6,11 @@ const router = Router()
 
 router.use(requireAdmin)
 
-router.get('/', requirePermission('inventory', 'read'), ctrl.getSuppliers)
-router.get('/:id', requirePermission('inventory', 'read'), ctrl.getSupplierById)
-router.post('/', requirePermission('inventory', 'write'), ctrl.createSupplier)
-router.put('/:id', requirePermission('inventory', 'write'), ctrl.updateSupplier)
-router.delete('/:id', requirePermission('inventory', 'delete'), ctrl.deleteSupplier) // Assuming delete permission exists or fallback to write
+router.get('/', requirePermission('suppliers', 'read'), ctrl.getSuppliers)
+router.get('/:id', requirePermission('suppliers', 'read'), ctrl.getSupplierById)
+router.post('/', requirePermission('suppliers', 'write'), ctrl.createSupplier)
+router.patch('/:id', requirePermission('suppliers', 'write'), ctrl.updateSupplier)
+router.delete('/:id', requirePermission('suppliers', 'write'), ctrl.deleteSupplier)
+router.get('/:id/batches', requirePermission('suppliers', 'read'), ctrl.getSupplierBatches)
 
 export default router

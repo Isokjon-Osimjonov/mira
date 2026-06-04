@@ -6,11 +6,12 @@ import { relations, sql } from 'drizzle-orm';
 import { stockMovementTypeEnum, stockReservationStatusEnum } from './enums';
 import { products } from './products';
 import { adminUsers } from './admin-users';
-import { purchaseOrderItems } from './suppliers';
+import { purchaseOrderItems, suppliers } from './suppliers';
 
 export const inventoryBatches = pgTable('inventory_batches', {
   id: uuid('id').primaryKey().defaultRandom(),
   productId: uuid('product_id').notNull().references(() => products.id, { onDelete: 'restrict' }),
+  supplierId: uuid('supplier_id').references((): AnyPgColumn => suppliers.id, { onDelete: 'set null' }),
   purchaseOrderItemId: uuid('purchase_order_item_id').references((): AnyPgColumn => purchaseOrderItems.id, { onDelete: 'set null' }),
   batchRef: varchar('batch_ref', { length: 100 }),
   initialQty: integer('initial_qty').notNull(),
@@ -99,6 +100,10 @@ export const inventoryBatchesRelations = relations(inventoryBatches, ({ one, man
   product: one(products, {
     fields: [inventoryBatches.productId],
     references: [products.id],
+  }),
+  supplier: one(suppliers, {
+    fields: [inventoryBatches.supplierId],
+    references: [suppliers.id],
   }),
   purchaseOrderItem: one(purchaseOrderItems, {
     fields: [inventoryBatches.purchaseOrderItemId],

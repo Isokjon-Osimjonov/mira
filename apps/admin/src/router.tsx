@@ -5,9 +5,6 @@ import { LoginPage } from './pages/auth/LoginPage'
 import { DashboardPage } from './pages/dashboard/DashboardPage'
 import { ProductsPage } from './pages/products/ProductsPage'
 import { CategoriesPage } from './pages/categories/CategoriesPage'
-import { OrdersPage } from './pages/orders/OrdersPage'
-import { OrderDetailPage } from './pages/orders/OrderDetailPage'
-import { BoxesPage } from './pages/boxes/BoxesPage'
 import { InventoryPage } from './pages/inventory/InventoryPage'
 import { CustomersPage } from './pages/customers/CustomersPage'
 import { CustomerDetailPage } from './pages/customers/CustomerDetailPage'
@@ -15,6 +12,8 @@ import { WalkInPage } from './pages/customers/WalkInPage'
 import { SettingsPage } from './pages/settings/SettingsPage'
 import { ExpensesPage } from './pages/expenses/ExpensesPage'
 import { AdminsPage } from './pages/admins/AdminsPage'
+import { QutularPage } from './pages/boxes/QutularPage'
+import { YetkazuvchilarPage } from './pages/suppliers/YetkazuvchilarPage'
 import { NotFoundPage } from './pages/NotFoundPage'
 import { ErrorBoundary } from './components/ErrorBoundary'
 
@@ -27,44 +26,31 @@ const rootRoute = createRootRoute()
 const loginRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/login',
-  component: () => (
-    <ErrorBoundary>
-      <LoginPage />
-    </ErrorBoundary>
-  )
-})
-
-const changePasswordRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: '/change-password',
-  component: () => (
-    <ErrorBoundary>
-      <div>Change Password Placeholder</div>
-    </ErrorBoundary>
-  )
+  component: LoginPage,
 })
 
 const protectedRoute = createRoute({
   getParentRoute: () => rootRoute,
   id: 'protected',
-  beforeLoad: ({ location }) => {
-    const state = useAuthStore.getState()
-    const authed = !!state.accessToken && !!state.user
-
-    if (!authed) {
+  beforeLoad: async () => {
+    const { accessToken, user } = useAuthStore.getState()
+    if (!accessToken || !user) {
       throw redirect({
         to: '/login',
-        search: {
-          redirect: location.pathname !== '/login' ? location.pathname : undefined,
-        },
       })
     }
-
-    if (state.mustChangePassword && location.pathname !== '/change-password') {
-      throw redirect({ to: '/change-password' })
-    }
   },
-  component: AppLayout
+  component: AppLayout,
+})
+
+const indexRoute = createRoute({
+  getParentRoute: () => protectedRoute,
+  path: '/',
+  beforeLoad: () => {
+    throw redirect({
+      to: '/dashboard',
+    })
+  },
 })
 
 const dashboardRoute = createRoute({
@@ -74,7 +60,7 @@ const dashboardRoute = createRoute({
     <ErrorBoundary>
       <DashboardPage />
     </ErrorBoundary>
-  )
+  ),
 })
 
 const productsRoute = createRoute({
@@ -102,7 +88,17 @@ const boxesRoute = createRoute({
   path: '/boxes',
   component: () => (
     <ErrorBoundary>
-      <BoxesPage />
+      <QutularPage />
+    </ErrorBoundary>
+  )
+})
+
+const suppliersRoute = createRoute({
+  getParentRoute: () => protectedRoute,
+  path: '/suppliers',
+  component: () => (
+    <ErrorBoundary>
+      <YetkazuvchilarPage />
     </ErrorBoundary>
   )
 })
@@ -114,7 +110,7 @@ const inventoryRoute = createRoute({
     <ErrorBoundary>
       <InventoryPage />
     </ErrorBoundary>
-  )
+  ),
 })
 
 const settingsRoute = createRoute({
@@ -159,12 +155,12 @@ const customersRoute = createRoute({
 
 const customerDetailRoute = createRoute({
   getParentRoute: () => protectedRoute,
-  path: '/customers/$id',
-  component: function CustomerDetail() {
-    const { id } = customerDetailRoute.useParams()
+  path: '/customers/$customerId',
+  component: () => {
+    const { customerId } = customerDetailRoute.useParams()
     return (
       <ErrorBoundary>
-        <CustomerDetailPage id={id} />
+        <CustomerDetailPage id={customerId} />
       </ErrorBoundary>
     )
   },
@@ -172,7 +168,7 @@ const customerDetailRoute = createRoute({
 
 const walkInCustomerRoute = createRoute({
   getParentRoute: () => protectedRoute,
-  path: '/customers/new',
+  path: '/customers/walk-in',
   component: () => (
     <ErrorBoundary>
       <WalkInPage />
@@ -185,36 +181,25 @@ const ordersRoute = createRoute({
   path: '/orders',
   component: () => (
     <ErrorBoundary>
-      <OrdersPage />
+      <div className="p-4">Orders Page (Coming Soon)</div>
     </ErrorBoundary>
   ),
 })
 
 const orderDetailRoute = createRoute({
   getParentRoute: () => protectedRoute,
-  path: '/orders/$id',
-  component: function OrderDetail() {
-    const { id } = orderDetailRoute.useParams()
-    return (
-      <ErrorBoundary>
-        <OrderDetailPage id={id} />
-      </ErrorBoundary>
-    )
-  },
-})
-
-const indexRoute = createRoute({
-  getParentRoute: () => protectedRoute,
-  path: '/',
-  beforeLoad: () => {
-    throw redirect({ to: '/dashboard' })
-  }
+  path: '/orders/$orderId',
+  component: () => (
+    <ErrorBoundary>
+      <div className="p-4">Order Detail Page (Coming Soon)</div>
+    </ErrorBoundary>
+  ),
 })
 
 const notFoundRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '*',
-  component: NotFoundPage
+  component: NotFoundPage,
 })
 
 // Catch-all route definition for TanStack Router is a bit different,
@@ -222,13 +207,13 @@ const notFoundRoute = createRoute({
 
 const routeTree = rootRoute.addChildren([
   loginRoute,
-  changePasswordRoute,
   protectedRoute.addChildren([
     indexRoute,
     dashboardRoute,
     productsRoute,
     categoriesRoute,
     boxesRoute,
+    suppliersRoute,
     inventoryRoute,
     settingsRoute,
     expensesRoute,

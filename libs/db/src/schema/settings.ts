@@ -17,8 +17,8 @@ export const settings = pgTable('settings', {
   standardShippingFeeKrw: bigint('standard_shipping_fee_krw', { mode: 'bigint' }).default(sql`3000`).notNull(),
   freeShippingThresholdKrw: bigint('free_shipping_threshold_krw', { mode: 'bigint' }).default(sql`50000`).notNull(),
   
-  minOrderUzbKrw: bigint('min_order_uzb_krw', { mode: 'bigint' }).default(sql`0`).notNull(),
-  minOrderKorKrw: bigint('min_order_kor_krw', { mode: 'bigint' }).default(sql`0`).notNull(),
+  minOrderKorKrw: integer('min_order_kor_krw').default(0).notNull(),
+  minOrderUzbUzs: integer('min_order_uzb_uzs').default(0).notNull(),
   
   korBankEnabled: boolean('kor_bank_enabled').default(false).notNull(),
   korBankName: text('kor_bank_name'),
@@ -44,6 +44,19 @@ export const settings = pgTable('settings', {
   lockIdx: uniqueIndex('settings_lock_idx').on(t.lockColumn),
 }));
 
+export const paymentMethods = pgTable('payment_methods', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  method: varchar('method', { length: 50 }).unique().notNull(),
+  region: varchar('region', { length: 10 }).notNull(),
+  isEnabled: boolean('is_enabled').default(false).notNull(),
+  bankName: text('bank_name'),
+  accountNumber: text('account_number'),
+  holderName: text('holder_name'),
+  instructions: text('instructions'),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
 export const exchangeRateSnapshots = pgTable('exchange_rate_snapshots', {
   id: uuid('id').primaryKey().defaultRandom(),
   krwToUzs: integer('krw_to_uzs').notNull(),
@@ -68,17 +81,21 @@ export const exchangeRateSnapshotsRelations = relations(exchangeRateSnapshots, (
 export const shippingTiers = pgTable('shipping_tiers', {
   id: uuid('id').primaryKey().defaultRandom(),
   region: varchar('region', { length: 10 }).notNull(), // 'KOR' or 'UZB'
-  minQty: integer('min_qty').notNull(),
+  minOrderAmount: bigint('min_order_amount', { mode: 'bigint' }).notNull(),
   shippingCost: bigint('shipping_cost', { mode: 'bigint' }).notNull(),
+  currency: varchar('currency', { length: 3 }).default('KRW').notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 }, (t) => ({
   regionIdx: index('shipping_tiers_region_idx').on(t.region),
-  qtyIdx: index('shipping_tiers_min_qty_idx').on(t.minQty),
+  amountIdx: index('shipping_tiers_min_amount_idx').on(t.minOrderAmount),
 }));
 
 export type Setting = typeof settings.$inferSelect;
 export type NewSetting = typeof settings.$inferInsert;
+
+export type PaymentMethod = typeof paymentMethods.$inferSelect;
+export type NewPaymentMethod = typeof paymentMethods.$inferInsert;
 
 export type ExchangeRateSnapshot = typeof exchangeRateSnapshots.$inferSelect;
 export type NewExchangeRateSnapshot = typeof exchangeRateSnapshots.$inferInsert;

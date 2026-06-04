@@ -77,3 +77,14 @@ export async function deleteSupplier(req: Request, res: Response) {
       .json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
   }
 }
+
+export async function getSupplierBatches(req: Request, res: Response) {
+  try {
+    const data = await service.getSupplierBatches(req.params.id)
+    return res.json({ data, error: null })
+  } catch (e: any) {
+    return res
+      .status(e.status ?? 500)
+      .json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
+  }
+}

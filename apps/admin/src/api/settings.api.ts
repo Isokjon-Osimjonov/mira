@@ -10,9 +10,10 @@ export const settingsApi = {
   updatePaymentMethod: async (
     method: string,
     payload: {
-      isEnabled: boolean
-      enabledRegions?: string[]
-      accountInfo?: string
+      isEnabled?: boolean
+      bankName?: string
+      accountNumber?: string
+      holderName?: string
       instructions?: string
     }
   ) => {
@@ -28,8 +29,9 @@ export const settingsApi = {
 
   createShippingTier: async (payload: {
     region: string
-    minQty: number
+    minOrderAmount: number
     shippingCost: number
+    currency: string
   }) => {
     const res = await api.post('/admin/settings/shipping-tiers', payload)
     return res.data
@@ -37,7 +39,7 @@ export const settingsApi = {
 
   updateShippingTier: async (
     id: string,
-    payload: { minQty?: number; shippingCost?: number }
+    payload: { minOrderAmount?: number; shippingCost?: number; currency?: string }
   ) => {
     const res = await api.patch(`/admin/settings/shipping-tiers/${id}`, payload)
     return res.data
@@ -59,6 +61,11 @@ export const settingsApi = {
     return res.data
   },
 
+  fetchLiveRate: async () => {
+    const res = await api.get('/admin/settings/exchange-rates/live')
+    return res.data.data as { rate: number; source: string }
+  },
+
   // Order settings
   getOrderSettings: async () => {
     const res = await api.get('/admin/settings/order')
@@ -67,8 +74,8 @@ export const settingsApi = {
 
   updateOrderSettings: async (payload: {
     paymentTimeoutMinutes?: number
-    maxOrderQty?: number
-    minOrderAmountKrw?: number
+    minOrderKorKrw?: number
+    minOrderUzbUzs?: number
   }) => {
     const res = await api.patch('/admin/settings/order', payload)
     return res.data

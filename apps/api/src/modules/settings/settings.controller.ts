@@ -108,6 +108,15 @@ export async function deleteShippingTier(req: Request, res: Response, next: any)
   }
 }
 
+export async function getLiveExchangeRate(_req: Request, res: Response, next: any) {
+  try {
+    const data = await service.fetchLiveExchangeRate()
+    res.json({ data, error: null })
+  } catch (err) {
+    next(err)
+  }
+}
+
 export async function getOrderSettings(_req: Request, res: Response, next: any) {
   try {
     const data = await service.getOrderSettings()

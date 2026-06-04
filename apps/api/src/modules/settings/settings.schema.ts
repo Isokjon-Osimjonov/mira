@@ -7,8 +7,8 @@ export const updateSettingsSchema = z.object({
 
   standardShippingFeeKrw: z.coerce.number().optional(),
   freeShippingThresholdKrw: z.coerce.number().optional(),
-  minOrderUzbKrw: z.coerce.number().optional(),
   minOrderKorKrw: z.coerce.number().optional(),
+  minOrderUzbUzs: z.coerce.number().optional(),
 
   korBankEnabled: z.boolean().optional(),
   korBankName: z.string().optional().nullable(),
@@ -29,4 +29,24 @@ export const updateSettingsSchema = z.object({
   websiteUrl: z.string().url().optional().nullable(),
 })
 
+export const updatePaymentMethodSchema = z.object({
+  isEnabled: z.boolean().optional(),
+  bankName: z.string().optional().nullable(),
+  accountNumber: z.string().optional().nullable(),
+  holderName: z.string().optional().nullable(),
+  instructions: z.string().optional().nullable(),
+})
+
+export const createShippingTierSchema = z.object({
+  region: z.enum(['KOR', 'UZB']),
+  minOrderAmount: z.coerce.number().min(0),
+  shippingCost: z.coerce.number().min(0),
+  currency: z.string().length(3).default('KRW'),
+})
+
+export const updateShippingTierSchema = createShippingTierSchema.partial()
+
 export type UpdateSettingsDto = z.infer<typeof updateSettingsSchema>
+export type UpdatePaymentMethodDto = z.infer<typeof updatePaymentMethodSchema>
+export type CreateShippingTierDto = z.infer<typeof createShippingTierSchema>
+export type UpdateShippingTierDto = z.infer<typeof updateShippingTierSchema>

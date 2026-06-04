@@ -1,7 +1,6 @@
 import { db } from '../../config/db'
-import { suppliers, purchaseOrders } from '@mira/db'
+import { suppliers, purchaseOrders, inventoryBatches, products } from '@mira/db'
 import { eq, and, sql, desc, count, ilike, or } from 'drizzle-orm'
-import { escapeLikeQuery } from '../../lib/sanitize'
 import type { CreateSupplierDto, UpdateSupplierDto } from './suppliers.schema'
 
 export async function getSuppliers(query: {
@@ -25,7 +24,7 @@ export async function getSuppliers(query: {
       or(
         ilike(suppliers.name, s),
         ilike(suppliers.contactName, s),
-        ilike(suppliers.contactEmail, s)
+        ilike(suppliers.email, s)
       )
     )
   }
@@ -100,15 +99,27 @@ export async function deleteSupplier(id: string) {
     .where(eq(purchaseOrders.supplierId, id))
 
   if (Number(orderCountRes?.count || 0) > 0) {
-    throw {
-      status: 400,
-      code: 'SUPPLIER_HAS_ORDERS',
-      message: "Bu yetkazib beruvchining buyurtmalari bor. O'chirib bo'lmaydi.",
-    }
+    // Soft delete
+    return await updateSupplier(id, { isActive: false })
   }
 
   const [deleted] = await db.delete(suppliers).where(eq(suppliers.id, id)).returning()
   if (!deleted)
     throw { status: 404, code: 'SUPPLIER_NOT_FOUND', message: 'Yetkazib beruvchi topilmadi' }
   return deleted
+}
+
+export async function getSupplierBatches(id: string) {
+  return await db
+    .select({
+      id: inventoryBatches.id,
+      productName: products.name,
+      quantity: inventoryBatches.initialQty,
+      createdAt: inventoryBatches.createdAt,
+    })
+    .from(inventoryBatches)
+    .innerJoin(products, eq(inventoryBatches.productId, products.id))
+    .where(eq(inventoryBatches.supplierId, id))
+    .orderBy(desc(inventoryBatches.createdAt))
+    .limit(50)
 }

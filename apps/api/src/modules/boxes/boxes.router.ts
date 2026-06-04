@@ -1,17 +1,20 @@
 import { Router } from 'express'
 import * as ctrl from './boxes.controller'
-import { requirePermission } from '../../middleware/auth'
+import { requireAdmin, requirePermission } from '../../middleware/auth'
 
-const publicRouter = Router()
-const adminRouter = Router()
+const boxesRouter = Router()
+const boxesAdminRouter = Router()
 
 // Public
-publicRouter.get('/', ctrl.getActiveBoxes)
+boxesRouter.get('/', ctrl.getActiveBoxes)
 
 // Admin
-adminRouter.get('/', requirePermission('boxes', 'read'), ctrl.getAllBoxes)
-adminRouter.post('/', requirePermission('boxes', 'write'), ctrl.createBox)
-adminRouter.put('/:id', requirePermission('boxes', 'write'), ctrl.updateBox)
-adminRouter.delete('/:id', requirePermission('boxes', 'write'), ctrl.deleteBox)
+boxesAdminRouter.use(requireAdmin)
 
-export { publicRouter as boxesRouter, adminRouter as boxesAdminRouter }
+boxesAdminRouter.get('/', requirePermission('settings', 'read'), ctrl.getAllBoxes)
+boxesAdminRouter.post('/', requirePermission('settings', 'write'), ctrl.createBox)
+boxesAdminRouter.patch('/:id', requirePermission('settings', 'write'), ctrl.updateBox)
+boxesAdminRouter.delete('/:id', requirePermission('settings', 'write'), ctrl.deleteBox)
+boxesAdminRouter.post('/:id/stock', requirePermission('settings', 'write'), ctrl.adjustStock)
+
+export { boxesRouter, boxesAdminRouter }

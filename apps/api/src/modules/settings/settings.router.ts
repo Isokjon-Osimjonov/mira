@@ -20,6 +20,8 @@ adminRouter.post('/shipping-tiers', requirePermission('settings', 'write'), ctrl
 adminRouter.patch('/shipping-tiers/:id', requirePermission('settings', 'write'), ctrl.updateShippingTier)
 adminRouter.delete('/shipping-tiers/:id', requirePermission('settings', 'write'), ctrl.deleteShippingTier)
 
+adminRouter.get('/exchange-rates/live', requirePermission('settings', 'read'), ctrl.getLiveExchangeRate)
+
 adminRouter.get('/order', requirePermission('settings', 'read'), ctrl.getOrderSettings)
 adminRouter.patch('/order', requirePermission('settings', 'write'), ctrl.updateOrderSettings)
 
