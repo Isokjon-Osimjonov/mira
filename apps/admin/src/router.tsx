@@ -231,6 +231,8 @@ const routeTree = rootRoute.addChildren([
     boxesRoute,
     inventoryRoute,
     settingsRoute,
+    expensesRoute,
+    adminsRoute,
     customersRoute,
     customerDetailRoute,
     walkInCustomerRoute,
