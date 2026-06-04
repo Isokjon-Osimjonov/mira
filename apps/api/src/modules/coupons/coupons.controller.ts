@@ -177,3 +177,14 @@ export async function getCouponRedemptions(req: Request, res: Response) {
       .json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
   }
 }
+
+export async function generateCode(_req: Request, res: Response) {
+  try {
+    const data = await service.generateCouponCode()
+    return res.json({ data, error: null })
+  } catch (e: any) {
+    return res
+      .status(e.status ?? 500)
+      .json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
+  }
+}

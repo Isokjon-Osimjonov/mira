@@ -386,6 +386,24 @@ export async function deleteCoupon(id: string) {
   return deleted
 }
 
+export async function generateCouponCode() {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+  let code: string
+  let exists = true
+  while (exists) {
+    code =
+      'MIRA' +
+      Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join('')
+    const [row] = await db
+      .select({ id: coupons.id })
+      .from(coupons)
+      .where(eq(coupons.code, code))
+      .limit(1)
+    exists = !!row
+  }
+  return { code: code! }
+}
+
 export async function getCouponRedemptions(id: string, query: { page?: number; limit?: number }) {
   const page = query.page || 1
   const limit = query.limit || 20

@@ -14,6 +14,7 @@ import { ExpensesPage } from './pages/expenses/ExpensesPage'
 import { AdminsPage } from './pages/admins/AdminsPage'
 import { QutularPage } from './pages/boxes/QutularPage'
 import { YetkazuvchilarPage } from './pages/suppliers/YetkazuvchilarPage'
+import { KupunlarPage } from './pages/coupons/KupunlarPage'
 import { NotFoundPage } from './pages/NotFoundPage'
 import { ErrorBoundary } from './components/ErrorBoundary'
 
@@ -99,6 +100,16 @@ const suppliersRoute = createRoute({
   component: () => (
     <ErrorBoundary>
       <YetkazuvchilarPage />
+    </ErrorBoundary>
+  )
+})
+
+const couponsRoute = createRoute({
+  getParentRoute: () => protectedRoute,
+  path: '/coupons',
+  component: () => (
+    <ErrorBoundary>
+      <KupunlarPage />
     </ErrorBoundary>
   )
 })
@@ -214,6 +225,7 @@ const routeTree = rootRoute.addChildren([
     categoriesRoute,
     boxesRoute,
     suppliersRoute,
+    couponsRoute,
     inventoryRoute,
     settingsRoute,
     expensesRoute,

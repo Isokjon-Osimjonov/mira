@@ -6,6 +6,7 @@ const adminRouter = Router()
 
 // Admin
 adminRouter.get('/', requirePermission('coupons', 'read'), ctrl.getCoupons)
+adminRouter.get('/generate-code', requirePermission('coupons', 'write'), ctrl.generateCode)
 adminRouter.post('/', requirePermission('coupons', 'write'), ctrl.createCoupon)
 adminRouter.get('/:id', requirePermission('coupons', 'read'), ctrl.getCouponById)
 adminRouter.put('/:id', requirePermission('coupons', 'write'), ctrl.updateCoupon)
