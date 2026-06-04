@@ -182,14 +182,15 @@ export function CustomerDetailPage({ id }: { id: string }) {
             <div className="flex items-center gap-2">
               <span
                 className={cn(
-                  'text-[11px] font-medium px-2 py-0.5 rounded',
-                  'border-[0.5px]',
+                  'inline-flex items-center gap-1 text-[11px] font-semibold',
+                  'px-2 py-0.5 rounded border-[0.5px]',
                   customer.phoneRegion === 'KOR'
-                    ? 'bg-blue-50 text-blue-600 border-blue-200'
-                    : 'bg-green-50 text-green-600 border-green-200'
+                    ? 'bg-blue-50 text-blue-700 border-blue-200'
+                    : 'bg-green-50 text-green-700 border-green-200'
                 )}
               >
-                {customer.phoneRegion === 'KOR' ? '🇰🇷' : '🇺🇿'} {customer.phoneRegion}
+                <span>{customer.phoneRegion === 'KOR' ? '🇰🇷' : '🇺🇿'}</span>
+                <span>{customer.phoneRegion}</span>
               </span>
               {!customer.isActive && (
                 <span className="text-[11px] font-medium px-2 py-0.5 rounded border-[0.5px] bg-red-50 text-red-600 border-red-200">

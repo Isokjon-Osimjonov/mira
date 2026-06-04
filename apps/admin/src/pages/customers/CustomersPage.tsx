@@ -200,14 +200,17 @@ export function CustomersPage() {
                     <td className="px-4 py-3 text-center">
                       <span
                         className={cn(
-                          'text-[11px] font-medium px-2 py-0.5',
-                          'rounded border-[0.5px]',
+                          'inline-flex items-center gap-1 text-xs font-semibold',
+                          'px-2.5 py-1 rounded-lg border-[0.5px]',
                           c.phoneRegion === 'KOR'
-                            ? 'bg-blue-50 text-blue-600 border-blue-200'
-                            : 'bg-green-50 text-green-600 border-green-200'
+                            ? 'bg-blue-50 text-blue-700 border-blue-200'
+                            : 'bg-green-50 text-green-700 border-green-200'
                         )}
                       >
-                        {c.phoneRegion === 'KOR' ? '🇰🇷' : '🇺🇿'} {c.phoneRegion}
+                        <span className="text-sm leading-none">
+                          {c.phoneRegion === 'KOR' ? '🇰🇷' : '🇺🇿'}
+                        </span>
+                        <span>{c.phoneRegion}</span>
                       </span>
                     </td>
 
@@ -302,13 +305,15 @@ export function CustomersPage() {
                   </p>
                   <span
                     className={cn(
-                      'text-[10px] font-medium px-1.5 py-0.5 rounded border-[0.5px] shrink-0',
+                      'inline-flex items-center gap-1 text-[10px]',
+                      'font-semibold px-1.5 py-0.5 rounded-md border-[0.5px] shrink-0',
                       c.phoneRegion === 'KOR'
-                        ? 'bg-blue-50 text-blue-600 border-blue-200'
-                        : 'bg-green-50 text-green-600 border-green-200'
+                        ? 'bg-blue-50 text-blue-700 border-blue-200'
+                        : 'bg-green-50 text-green-700 border-green-200'
                     )}
                   >
-                    {c.phoneRegion}
+                    <span>{c.phoneRegion === 'KOR' ? '🇰🇷' : '🇺🇿'}</span>
+                    <span>{c.phoneRegion}</span>
                   </span>
                 </div>
                 <p className="text-xs text-muted-foreground">{c.phone}</p>

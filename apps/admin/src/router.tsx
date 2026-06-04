@@ -12,6 +12,7 @@ import { InventoryPage } from './pages/inventory/InventoryPage'
 import { CustomersPage } from './pages/customers/CustomersPage'
 import { CustomerDetailPage } from './pages/customers/CustomerDetailPage'
 import { WalkInPage } from './pages/customers/WalkInPage'
+import { SettingsPage } from './pages/settings/SettingsPage'
 import { NotFoundPage } from './pages/NotFoundPage'
 import { ErrorBoundary } from './components/ErrorBoundary'
 
@@ -114,6 +115,16 @@ const inventoryRoute = createRoute({
   )
 })
 
+const settingsRoute = createRoute({
+  getParentRoute: () => protectedRoute,
+  path: '/settings',
+  component: () => (
+    <ErrorBoundary>
+      <SettingsPage />
+    </ErrorBoundary>
+  ),
+})
+
 const customersRoute = createRoute({
   getParentRoute: () => protectedRoute,
   path: '/customers',
@@ -197,6 +208,7 @@ const routeTree = rootRoute.addChildren([
     categoriesRoute,
     boxesRoute,
     inventoryRoute,
+    settingsRoute,
     customersRoute,
     customerDetailRoute,
     walkInCustomerRoute,

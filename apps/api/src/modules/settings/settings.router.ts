@@ -12,4 +12,15 @@ publicRouter.get('/payment-methods', ctrl.getPaymentMethods)
 adminRouter.get('/', requirePermission('settings', 'read'), ctrl.getAdminSettings)
 adminRouter.put('/', requirePermission('settings', 'write'), ctrl.updateAdminSettings)
 
+adminRouter.get('/payment-methods', requirePermission('settings', 'read'), ctrl.getAdminPaymentMethods)
+adminRouter.patch('/payment-methods/:method', requirePermission('settings', 'write'), ctrl.updatePaymentMethod)
+
+adminRouter.get('/shipping-tiers', requirePermission('settings', 'read'), ctrl.getShippingTiers)
+adminRouter.post('/shipping-tiers', requirePermission('settings', 'write'), ctrl.createShippingTier)
+adminRouter.patch('/shipping-tiers/:id', requirePermission('settings', 'write'), ctrl.updateShippingTier)
+adminRouter.delete('/shipping-tiers/:id', requirePermission('settings', 'write'), ctrl.deleteShippingTier)
+
+adminRouter.get('/order', requirePermission('settings', 'read'), ctrl.getOrderSettings)
+adminRouter.patch('/order', requirePermission('settings', 'write'), ctrl.updateOrderSettings)
+
 export { publicRouter as settingsRouter, adminRouter as settingsAdminRouter }

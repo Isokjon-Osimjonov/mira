@@ -50,3 +50,78 @@ export async function updateAdminSettings(req: Request, res: Response) {
       .json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
   }
 }
+
+export async function getAdminPaymentMethods(_req: Request, res: Response, next: any) {
+  try {
+    const data = await service.getAdminPaymentMethods()
+    res.json({ data, error: null })
+  } catch (err) {
+    next(err)
+  }
+}
+
+export async function updatePaymentMethod(req: Request, res: Response, next: any) {
+  try {
+    const { method } = req.params
+    const data = await service.updatePaymentMethod(method, req.body)
+    res.json({ data, error: null })
+  } catch (err) {
+    next(err)
+  }
+}
+
+export async function getShippingTiers(_req: Request, res: Response, next: any) {
+  try {
+    const data = await service.getShippingTiers()
+    res.json({ data, error: null })
+  } catch (err) {
+    next(err)
+  }
+}
+
+export async function createShippingTier(req: Request, res: Response, next: any) {
+  try {
+    const data = await service.createShippingTier(req.body)
+    res.status(201).json({ data, error: null })
+  } catch (err) {
+    next(err)
+  }
+}
+
+export async function updateShippingTier(req: Request, res: Response, next: any) {
+  try {
+    const { id } = req.params
+    const data = await service.updateShippingTier(id, req.body)
+    res.json({ data, error: null })
+  } catch (err) {
+    next(err)
+  }
+}
+
+export async function deleteShippingTier(req: Request, res: Response, next: any) {
+  try {
+    const { id } = req.params
+    const data = await service.deleteShippingTier(id)
+    res.json({ data, error: null })
+  } catch (err) {
+    next(err)
+  }
+}
+
+export async function getOrderSettings(_req: Request, res: Response, next: any) {
+  try {
+    const data = await service.getOrderSettings()
+    res.json({ data, error: null })
+  } catch (err) {
+    next(err)
+  }
+}
+
+export async function updateOrderSettings(req: Request, res: Response, next: any) {
+  try {
+    const data = await service.updateOrderSettings(req.body)
+    res.json({ data, error: null })
+  } catch (err) {
+    next(err)
+  }
+}

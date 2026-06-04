@@ -45,14 +45,20 @@ export async function getExchangeRateHistory() {
 
 export async function createManualExchangeRate(dto: CreateExchangeRateDto, adminId: string) {
   const { uzbCargoUsdPerKg } = await getSettings()
+  
+  let usdToKrw = dto.usdToKrw
+  if (!usdToKrw) {
+    const latest = await getLatestExchangeRate()
+    usdToKrw = latest.usdToKrw
+  }
 
-  const cargoRateKrwPerKg = Math.round(uzbCargoUsdPerKg * dto.usdToKrw)
+  const cargoRateKrwPerKg = Math.round(uzbCargoUsdPerKg * (usdToKrw as number))
 
   const [created] = await db
     .insert(exchangeRateSnapshots)
     .values({
       krwToUzs: dto.krwToUzs,
-      usdToKrw: dto.usdToKrw,
+      usdToKrw: usdToKrw as number,
       cargoRateKrwPerKg,
       note: dto.note,
       source: 'MANUAL',

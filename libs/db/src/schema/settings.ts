@@ -65,8 +65,23 @@ export const exchangeRateSnapshotsRelations = relations(exchangeRateSnapshots, (
   }),
 }));
 
+export const shippingTiers = pgTable('shipping_tiers', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  region: varchar('region', { length: 10 }).notNull(), // 'KOR' or 'UZB'
+  minQty: integer('min_qty').notNull(),
+  shippingCost: bigint('shipping_cost', { mode: 'bigint' }).notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+}, (t) => ({
+  regionIdx: index('shipping_tiers_region_idx').on(t.region),
+  qtyIdx: index('shipping_tiers_min_qty_idx').on(t.minQty),
+}));
+
 export type Setting = typeof settings.$inferSelect;
 export type NewSetting = typeof settings.$inferInsert;
 
 export type ExchangeRateSnapshot = typeof exchangeRateSnapshots.$inferSelect;
 export type NewExchangeRateSnapshot = typeof exchangeRateSnapshots.$inferInsert;
+
+export type ShippingTier = typeof shippingTiers.$inferSelect;
+export type NewShippingTier = typeof shippingTiers.$inferInsert;

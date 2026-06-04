@@ -4,6 +4,9 @@ export const QK = {
 
   // Settings
   SETTINGS:       ['settings'],
+  PAYMENT_METHODS: ['settings', 'payment-methods'],
+  SHIPPING_TIERS:  ['settings', 'shipping-tiers'],
+  ORDER_SETTINGS:  ['settings', 'order'],
   EXCHANGE_RATES: ['exchange-rates'],
   EXCHANGE_LATEST: ['exchange-rates', 'latest'],
 
