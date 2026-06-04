@@ -15,6 +15,7 @@ import { AdminsPage } from './pages/admins/AdminsPage'
 import { QutularPage } from './pages/boxes/QutularPage'
 import { YetkazuvchilarPage } from './pages/suppliers/YetkazuvchilarPage'
 import { KupunlarPage } from './pages/coupons/KupunlarPage'
+import { TelegramPage } from './pages/telegram/TelegramPage'
 import { NotFoundPage } from './pages/NotFoundPage'
 import { ErrorBoundary } from './components/ErrorBoundary'
 
@@ -110,6 +111,16 @@ const couponsRoute = createRoute({
   component: () => (
     <ErrorBoundary>
       <KupunlarPage />
+    </ErrorBoundary>
+  )
+})
+
+const telegramRoute = createRoute({
+  getParentRoute: () => protectedRoute,
+  path: '/telegram',
+  component: () => (
+    <ErrorBoundary>
+      <TelegramPage />
     </ErrorBoundary>
   )
 })
@@ -226,6 +237,7 @@ const routeTree = rootRoute.addChildren([
     boxesRoute,
     suppliersRoute,
     couponsRoute,
+    telegramRoute,
     inventoryRoute,
     settingsRoute,
     expensesRoute,

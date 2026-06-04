@@ -62,8 +62,8 @@ export const QK = {
   PERMISSIONS:        ['roles', 'permissions-matrix'],
 
   // Telegram
-  TG_CHANNELS:    ['telegram', 'channels'],
-  TG_POSTS:       (params?: object) => ['telegram', 'posts', params],
+  TELEGRAM_CHANNELS: ['telegram', 'channels'],
+  TELEGRAM_POSTS:    (params?: object) => ['telegram', 'posts', params],
 
   // Boxes & Shipping
   BOXES:          ['boxes'],

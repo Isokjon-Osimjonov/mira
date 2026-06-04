@@ -1,14 +1,95 @@
 import { db } from '../../config/db'
-import { telegramChannels, telegramPosts, telegramPostChannels, products } from '@mira/db'
+import { telegramChannels, telegramPosts, telegramPostChannels, products, regionalConfigs } from '@mira/db'
 import { eq, and, sql, desc, asc, isNull, inArray, count } from 'drizzle-orm'
 import { bot } from '../../bot/bot'
 import { env } from '../../config/env'
+import { openai, VISION_MODEL } from '../../config/openai'
 import type {
   CreateChannelDto,
   UpdateChannelDto,
   CreatePostDto,
   UpdatePostDto,
 } from './telegram.schema'
+import { logger } from '../../config/logger'
+
+// ─── AI Caption ─────────────────────────────────────────────────────────
+
+export async function generateCaption(params: {
+  productId: string
+  showRetail: boolean
+  showWholesale: boolean
+  phone?: string
+  language?: 'uz' | 'ko'
+}) {
+  const [product] = await db
+    .select({
+      id: products.id,
+      name: products.name,
+      description: products.description,
+      brandName: products.brandName,
+    })
+    .from(products)
+    .where(eq(products.id, params.productId))
+    .limit(1)
+
+  if (!product) throw { status: 404, message: 'Mahsulot topilmadi' }
+
+  const configs = await db
+    .select()
+    .from(regionalConfigs)
+    .where(and(eq(regionalConfigs.productId, params.productId), eq(regionalConfigs.regionCode, 'KOR')))
+    .limit(1)
+  
+  const config = configs[0]
+  const retailPrice = config?.retailPrice || 0n
+  const wholesalePrice = config?.wholesalePrice || 0n
+
+  const lang = params.language === 'ko' ? 'Korean' : 'Uzbek'
+  
+  let prompt = `Write a compelling Telegram post for this product in ${lang}:
+Product: ${product.name}
+Brand: ${product.brandName}
+Description: ${product.description || 'No description available'}
+`
+
+  if (params.showRetail) {
+    prompt += `Retail Price: ₩${Number(retailPrice).toLocaleString()}\n`
+  }
+  if (params.showWholesale) {
+    prompt += `Wholesale Price: ₩${Number(wholesalePrice).toLocaleString()}\n`
+  }
+  if (params.phone) {
+    prompt += `Contact: ${params.phone}\n`
+  }
+
+  prompt += `
+Use emojis, formatting (bold for name), and make it attractive for a cosmetics shop.
+Return ONLY a JSON object with this structure:
+{
+  "caption": "the text of the post",
+  "hashtags": ["list", "of", "tags"]
+}`
+
+  try {
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4o-mini', // Faster and cheaper for captions
+      messages: [{ role: 'user', content: prompt }],
+      response_format: { type: 'json_object' },
+    })
+
+    const result = JSON.parse(response.choices[0].message.content || '{}')
+    
+    // Append hashtags to caption if they are not already there
+    if (result.hashtags && result.hashtags.length > 0) {
+      result.caption += '\n\n' + result.hashtags.map((t: string) => `#${t.replace(/\s+/g, '')}`).join(' ')
+    }
+
+    return result
+  } catch (error) {
+    logger.error({ error, productId: params.productId }, 'OpenAI caption generation failed')
+    throw { status: 502, message: 'AI matn yaratishda xatolik yuz berdi' }
+  }
+}
 
 // ─── Channels ────────────────────────────────────────────────────────────
 

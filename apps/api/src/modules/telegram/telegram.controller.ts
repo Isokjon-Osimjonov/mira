@@ -179,3 +179,21 @@ export async function manualSendPost(req: Request, res: Response) {
       .json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
   }
 }
+
+export async function generateCaption(req: Request, res: Response) {
+  try {
+    const { productId, showRetail, showWholesale, phone, language } = req.body
+    const data = await service.generateCaption({
+      productId,
+      showRetail: !!showRetail,
+      showWholesale: !!showWholesale,
+      phone,
+      language,
+    })
+    return res.json({ data, error: null })
+  } catch (e: any) {
+    return res
+      .status(e.status ?? 500)
+      .json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
+  }
+}

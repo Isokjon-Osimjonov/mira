@@ -21,5 +21,6 @@ router.post('/posts', requirePermission('telegram', 'write'), ctrl.createPost)
 router.put('/posts/:id', requirePermission('telegram', 'write'), ctrl.updatePost)
 router.delete('/posts/:id', requirePermission('telegram', 'write'), ctrl.deletePost)
 router.post('/posts/:id/send', requirePermission('telegram', 'write'), ctrl.manualSendPost)
+router.post('/caption', requirePermission('telegram', 'write'), ctrl.generateCaption)
 
 export default router
