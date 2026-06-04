@@ -13,6 +13,8 @@ import { CustomersPage } from './pages/customers/CustomersPage'
 import { CustomerDetailPage } from './pages/customers/CustomerDetailPage'
 import { WalkInPage } from './pages/customers/WalkInPage'
 import { SettingsPage } from './pages/settings/SettingsPage'
+import { ExpensesPage } from './pages/expenses/ExpensesPage'
+import { AdminsPage } from './pages/admins/AdminsPage'
 import { NotFoundPage } from './pages/NotFoundPage'
 import { ErrorBoundary } from './components/ErrorBoundary'
 
@@ -121,6 +123,26 @@ const settingsRoute = createRoute({
   component: () => (
     <ErrorBoundary>
       <SettingsPage />
+    </ErrorBoundary>
+  ),
+})
+
+const expensesRoute = createRoute({
+  getParentRoute: () => protectedRoute,
+  path: '/expenses',
+  component: () => (
+    <ErrorBoundary>
+      <ExpensesPage />
+    </ErrorBoundary>
+  ),
+})
+
+const adminsRoute = createRoute({
+  getParentRoute: () => protectedRoute,
+  path: '/admins',
+  component: () => (
+    <ErrorBoundary>
+      <AdminsPage />
     </ErrorBoundary>
   ),
 })

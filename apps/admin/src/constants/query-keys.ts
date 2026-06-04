@@ -51,16 +51,15 @@ export const QK = {
   PO:             (id: string)      => ['purchase-orders', id],
 
   // Expenses
-  EXPENSES:       (params?: object) => ['expenses', params],
-  EXPENSE_CATS:   ['expense-categories'],
+  EXPENSES:           (params?: object) => ['expenses', params],
+  EXPENSE_CATEGORIES: ['expenses', 'categories'],
+  EXPENSES_SUMMARY:   (params?: object) => ['expenses', 'summary', params],
 
-  // Roles
-  ROLES:          ['roles'],
-  ROLE:           (id: string) => ['roles', id],
-  PERMISSIONS:    ['roles', 'permissions-matrix'],
-
-  // Admin users
-  ADMIN_USERS:    ['admin-users'],
+  // Admin users & Roles
+  ADMINS:             ['admins'],
+  ROLES:              ['roles'],
+  ROLE:               (id: string) => ['roles', id],
+  PERMISSIONS:        ['roles', 'permissions-matrix'],
 
   // Telegram
   TG_CHANNELS:    ['telegram', 'channels'],
