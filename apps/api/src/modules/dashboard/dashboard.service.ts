@@ -682,7 +682,7 @@ export async function getProductPerformance(query: {
           id: products.id,
           name: products.name,
           brandName: products.brandName,
-          categoryName: categories.name,
+          categoryName: categories.nameKo,
           imageUrls: products.imageUrls,
         })
         .from(products)

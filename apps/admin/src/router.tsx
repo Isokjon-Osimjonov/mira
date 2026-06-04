@@ -4,6 +4,7 @@ import { AppLayout } from './layouts/AppLayout'
 import { LoginPage } from './pages/auth/LoginPage'
 import { DashboardPage } from './pages/dashboard/DashboardPage'
 import { ProductsPage } from './pages/products/ProductsPage'
+import { CategoriesPage } from './pages/categories/CategoriesPage'
 import { OrdersPage } from './pages/orders/OrdersPage'
 import { OrderDetailPage } from './pages/orders/OrderDetailPage'
 import { BoxesPage } from './pages/boxes/BoxesPage'
@@ -79,6 +80,16 @@ const productsRoute = createRoute({
   ),
 })
 
+const categoriesRoute = createRoute({
+  getParentRoute: () => protectedRoute,
+  path: '/categories',
+  component: () => (
+    <ErrorBoundary>
+      <CategoriesPage />
+    </ErrorBoundary>
+  ),
+})
+
 const boxesRoute = createRoute({
   getParentRoute: () => protectedRoute,
   path: '/boxes',
@@ -136,6 +147,7 @@ const routeTree = rootRoute.addChildren([
     indexRoute,
     dashboardRoute,
     productsRoute,
+    categoriesRoute,
     boxesRoute,
     ordersRoute,
     orderDetailRoute,

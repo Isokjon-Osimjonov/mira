@@ -16,6 +16,7 @@ adminRouter.get(
   ctrl.getAllCategoriesAdmin
 )
 adminRouter.post('/', requireAdmin, requirePermission('products', 'write'), ctrl.createCategory)
+adminRouter.patch('/:id', requireAdmin, requirePermission('products', 'write'), ctrl.updateCategory)
 adminRouter.put('/:id', requireAdmin, requirePermission('products', 'write'), ctrl.updateCategory)
 adminRouter.delete(
   '/:id',

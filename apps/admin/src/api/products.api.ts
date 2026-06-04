@@ -33,6 +33,11 @@ export const productsApi = {
     return res.data
   },
 
+  restore: async (id: string) => {
+    const res = await api.post(`/admin/products/${id}/restore`)
+    return res.data
+  },
+
   aiFill: async (payload: {
     productId?: string
     productName?: string
@@ -64,7 +69,7 @@ export const productsApi = {
     formData.append('signature', sig.signature)
     formData.append('timestamp', sig.timestamp.toString())
     formData.append('api_key', sig.apiKey)
-    formData.append('folder', sig.folder)
+    if (sig.folder) formData.append('folder', sig.folder)
     
     // Aligned with backend: apps/api/src/config/cloudinary.ts
     formData.append('transformation', 'q_auto,f_auto,w_1200')
@@ -85,13 +90,6 @@ export const productsApi = {
 }
 
 // Separate APIs for selects
-export const categoriesApi = {
-  getTree: async () => {
-    const res = await api.get('/categories')
-    return res.data.data
-  },
-}
-
 export const brandsApi = {
   list: async () => {
     const res = await api.get('/brands')

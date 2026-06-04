@@ -6,6 +6,7 @@ import { useMutation } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { Upload, X, Loader2, Sparkles, Link as LinkIcon } from 'lucide-react'
 import { productsApi } from '../../api/products.api'
+import { categoriesApi } from '../../api/categories.api'
 import { getErrorMessage } from '../../lib/errors'
 import {
   Sheet,

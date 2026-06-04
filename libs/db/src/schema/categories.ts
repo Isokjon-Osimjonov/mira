@@ -6,7 +6,8 @@ import type { AnyPgColumn } from 'drizzle-orm/pg-core';
 
 export const categories = pgTable('categories', {
   id: uuid('id').primaryKey().defaultRandom(),
-  name: text('name').notNull(),
+  nameKo: text('name_ko').notNull(),
+  nameUz: text('name_uz'),
   slug: text('slug').unique().notNull(),
   imageUrl: text('image_url'),
   parentId: uuid('parent_id').references((): AnyPgColumn => categories.id, { onDelete: 'set null' }),

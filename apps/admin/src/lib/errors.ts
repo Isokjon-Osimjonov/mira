@@ -31,6 +31,10 @@ export const ERROR_MESSAGES: Record<string, string> = {
   INVALID_QUANTITY:       'Noto\'g\'ri miqdor',
   CART_ITEM_NOT_FOUND:    'Savat elementi topilmadi',
 
+  // Categories
+  CATEGORY_NOT_FOUND:     'Kategoriya topilmadi',
+  CATEGORY_HAS_PRODUCTS:  'Bu kategoriyada mahsulotlar bor. Avval mahsulotlarni ko\'chiring',
+
   // Coupons
   COUPON_NOT_FOUND:       'Kupon topilmadi',
   COUPON_INACTIVE:        'Kupon nofaol',
