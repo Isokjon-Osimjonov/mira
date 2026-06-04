@@ -65,6 +65,7 @@ export function ProductsPage() {
       category: categoryId === '_all' || !categoryId ? undefined : categoryId,
       isActive: activeTab === 'active' ? true : activeTab === 'inactive' ? false : undefined,
       showDeleted: activeTab === 'deleted',
+      region: 'KOR',
     } as any),
     queryFn: () =>
       productsApi.list({
@@ -74,6 +75,7 @@ export function ProductsPage() {
         category: categoryId === '_all' || !categoryId ? undefined : categoryId,
         isActive: activeTab === 'active' ? true : activeTab === 'inactive' ? false : undefined,
         showDeleted: activeTab === 'deleted',
+        region: 'KOR',
       } as any),
     staleTime: 30_000,
   })
@@ -233,7 +235,7 @@ export function ProductsPage() {
             {flatCategories.map((cat) => (
               <SelectItem key={cat.id} value={cat.id}>
                 {'  '.repeat(cat.depth)}
-                {cat.nameUz ?? cat.nameKo ?? cat.name}
+                {cat.name ?? cat.nameKo}
               </SelectItem>
             ))}
           </SelectContent>

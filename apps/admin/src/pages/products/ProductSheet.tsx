@@ -4,10 +4,11 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useMutation } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Upload, X, Loader2, Sparkles, Link as LinkIcon } from 'lucide-react'
+import { Sparkles, Loader2 } from 'lucide-react'
 import { productsApi } from '../../api/products.api'
 import { categoriesApi } from '../../api/categories.api'
 import { getErrorMessage } from '../../lib/errors'
+import { ImageUploadField } from '../../components/shared/ImageUploadField'
 import {
   Sheet,
   SheetContent,
@@ -65,10 +66,7 @@ interface Props {
 
 export function ProductSheet({ open, onClose, product, categories, onSuccess }: Props) {
   const isEdit = !!product
-  const [uploadingImg, setUploadingImg] = useState(false)
   const [aiFilling, setAiFilling] = useState(false)
-  const [imgMode, setImgMode] = useState<'upload' | 'url'>('upload')
-  const [urlInput, setUrlInput] = useState('')
 
   const {
     register,
@@ -227,36 +225,6 @@ export function ProductSheet({ open, onClose, product, categories, onSuccess }: 
     }
   }
 
-  // Image upload handler
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files ?? [])
-    if (!files.length) return
-    setUploadingImg(true)
-    try {
-      const urls = await Promise.all(files.map((f) => productsApi.uploadImage(f)))
-      const current = watch('imageUrls') || []
-      setValue('imageUrls', [...current, ...urls], {
-        shouldDirty: true,
-        shouldValidate: true,
-      })
-      toast.success(`${urls.length} ta rasm yuklandi`)
-    } catch (err) {
-      console.error('Upload error:', err)
-      toast.error('Rasm yuklashda xatolik')
-    } finally {
-      setUploadingImg(false)
-      e.target.value = ''
-    }
-  }
-
-  const removeImage = (url: string) => {
-    setValue(
-      'imageUrls',
-      (imageUrls || []).filter((u) => u !== url),
-      { shouldDirty: true, shouldValidate: true }
-    )
-  }
-
   const onSubmit = handleSubmit((data: ProductForm) => saveMutation.mutate(data))
 
   return (
@@ -364,7 +332,7 @@ export function ProductSheet({ open, onClose, product, categories, onSuccess }: 
                         {categories.map((c: any) => (
                           <SelectItem key={c.id} value={c.id}>
                             {'  '.repeat(c.depth)}
-                            {c.nameUz ?? c.name}
+                            {c.name ?? c.nameKo}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -508,112 +476,18 @@ export function ProductSheet({ open, onClose, product, categories, onSuccess }: 
               Rasmlar
             </p>
 
-            {/* Image previews */}
-            {imageUrls && imageUrls.length > 0 && (
-              <div className="flex gap-2 flex-wrap mb-2">
-                {imageUrls.map((url, i) => (
-                  <div key={`${url}-${i}`} className="relative group">
-                    <img
-                      src={url}
-                      alt={`img-${i}`}
-                      className="w-16 h-16 rounded-lg object-cover border-[0.5px] border-border"
-                      onError={(e) => {
-                        ;(e.target as HTMLImageElement).src =
-                          'https://placehold.co/64?text=Error'
-                      }}
-                    />
-                    {i === 0 && (
-                      <span className="absolute bottom-0 left-0 right-0 text-[9px] text-center bg-primary/80 text-white rounded-b-lg py-0.5">
-                        Asosiy
-                      </span>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => removeImage(url)}
-                      className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                      <X className="h-2.5 w-2.5" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Tab switcher */}
-            <div className="flex gap-1 bg-gray-100 rounded-lg p-0.5">
-              <button
-                type="button"
-                onClick={() => setImgMode('upload')}
-                className={cn(
-                  'flex-1 text-[11px] py-1 rounded-md transition-all font-medium',
-                  imgMode === 'upload' ? 'bg-white shadow-sm text-gray-900' : 'text-muted-foreground'
-                )}
-              >
-                <Upload className="h-3 w-3 inline mr-1" />
-                Yuklash
-              </button>
-              <button
-                type="button"
-                onClick={() => setImgMode('url')}
-                className={cn(
-                  'flex-1 text-[11px] py-1 rounded-md transition-all font-medium',
-                  imgMode === 'url' ? 'bg-white shadow-sm text-gray-900' : 'text-muted-foreground'
-                )}
-              >
-                <LinkIcon className="h-3 w-3 inline mr-1" />
-                URL orqali
-              </button>
-            </div>
-
-            {imgMode === 'upload' ? (
-              <label
-                className={cn(
-                  'flex items-center gap-2 px-4 py-3 rounded-lg border-[0.5px] border-dashed border-border text-sm text-muted-foreground cursor-pointer hover:border-primary hover:text-primary transition-colors',
-                  uploadingImg && 'opacity-50 pointer-events-none'
-                )}
-              >
-                {uploadingImg ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Upload className="h-4 w-4" strokeWidth={1.5} />
-                )}
-                {uploadingImg ? 'Yuklanmoqda...' : "Rasmlarni yuklash (ko'p tanlash mumkin)"}
-                <input
-                  type="file"
-                  multiple
-                  accept="image/*"
-                  onChange={handleImageUpload}
-                  className="hidden"
-                  disabled={uploadingImg}
-                />
-              </label>
-            ) : (
-              <div className="flex gap-2">
-                <Input
-                  value={urlInput}
-                  onChange={(e) => setUrlInput(e.target.value)}
-                  placeholder="https://example.com/image.jpg"
-                  className="h-9 text-sm rounded-lg border-[0.5px] flex-1"
-                />
-                <Button
-                  type="button"
-                  size="sm"
-                  onClick={() => {
-                    if (!urlInput.trim()) return
-                    const current = watch('imageUrls') || []
-                    setValue('imageUrls', [...current, urlInput.trim()], {
-                      shouldDirty: true,
-                      shouldValidate: true,
-                    })
-                    setUrlInput('')
-                    toast.success("Rasm qo'shildi")
-                  }}
-                  className="h-9 rounded-lg px-3 text-xs"
-                >
-                  Qo'shish
-                </Button>
-              </div>
-            )}
+            <ImageUploadField
+              mode="multi"
+              value={watch('imageUrls') || []}
+              onChange={(urls) =>
+                setValue('imageUrls', urls as string[], {
+                  shouldDirty: true,
+                  shouldValidate: true,
+                })
+              }
+              uploadFn={productsApi.uploadImage}
+              disabled={saveMutation.isPending}
+            />
           </div>
 
           {/* SECTION 5: Sozlamalar */}
@@ -648,7 +522,7 @@ export function ProductSheet({ open, onClose, product, categories, onSuccess }: 
           </Button>
           <Button
             onClick={onSubmit}
-            disabled={saveMutation.isPending || uploadingImg}
+            disabled={saveMutation.isPending}
             className="flex-1 rounded-lg"
           >
             {saveMutation.isPending ? (

@@ -10,6 +10,7 @@ import { QK } from '../../constants/query-keys'
 import { getErrorMessage } from '../../lib/errors'
 import { ConfirmDialog } from '../../components/shared/ConfirmDialog'
 import { EmptyState } from '../../components/shared/EmptyState'
+import { ImageUploadField } from '../../components/shared/ImageUploadField'
 import { useAuthStore } from '../../stores/auth.store'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -24,8 +25,8 @@ import {
 } from '@/components/ui/select'
 
 const categorySchema = z.object({
-  nameKo: z.string().min(1, 'Kategoriya nomi talab qilinadi'),
-  nameUz: z.string().optional(),
+  name: z.string().min(1, 'Kategoriya nomi talab qilinadi'),
+  imageUrl: z.string().optional(),
   parentId: z.string().optional(),
   sortOrder: z.coerce.number().int().default(0),
 })
@@ -44,10 +45,12 @@ export function CategoriesPage() {
     handleSubmit,
     control,
     reset,
+    watch,
+    setValue,
     formState: { errors },
   } = useForm<CategoryForm>({
     resolver: zodResolver(categorySchema) as any,
-    defaultValues: { nameKo: '', nameUz: '', sortOrder: 0 },
+    defaultValues: { name: '', sortOrder: 0, imageUrl: '' },
   })
 
   const { data: categories = [], isLoading } = useQuery({
@@ -90,7 +93,7 @@ export function CategoriesPage() {
   })
 
   const resetForm = () => {
-    reset({ nameKo: '', nameUz: '', sortOrder: 0, parentId: '_none' })
+    reset({ name: '', sortOrder: 0, parentId: '_none', imageUrl: '' })
     setEditTarget(null)
     setShowForm(false)
   }
@@ -98,10 +101,10 @@ export function CategoriesPage() {
   const handleEdit = (cat: any) => {
     setEditTarget(cat)
     reset({
-      nameKo: cat.nameKo ?? '',
-      nameUz: cat.nameUz ?? '',
+      name: cat.name ?? cat.nameKo ?? '',
       parentId: cat.parentId ?? '_none',
       sortOrder: cat.sortOrder ?? 0,
+      imageUrl: cat.imageUrl ?? '',
     })
     setShowForm(true)
   }
@@ -117,6 +120,25 @@ export function CategoriesPage() {
         className="border-b border-border/30
                      hover:bg-gray-50/60 transition-colors group"
       >
+        <td className="px-3 py-3">
+          {cat.imageUrl ? (
+            <img
+              src={cat.imageUrl}
+              alt={cat.name}
+              className="w-12 h-12 rounded-lg object-cover
+                         border-[0.5px] border-border
+                         shrink-0"
+            />
+          ) : (
+            <div
+              className="w-12 h-12 rounded-lg bg-gray-100
+                            flex items-center justify-center
+                            shrink-0"
+            >
+              <FolderOpen className="h-4 w-4 text-gray-400" strokeWidth={1.5} />
+            </div>
+          )}
+        </td>
         <td className="px-4 py-3">
           <div className="flex items-center gap-2" style={{ paddingLeft: `${depth * 20}px` }}>
             {depth > 0 && <span className="text-muted-foreground text-xs">→</span>}
@@ -134,9 +156,8 @@ export function CategoriesPage() {
                   depth === 0 ? 'font-semibold text-gray-900' : 'font-medium text-gray-700'
                 )}
               >
-                {cat.nameKo}
+                {cat.name ?? cat.nameKo}
               </p>
-              {cat.nameUz && <p className="text-[11px] text-muted-foreground">{cat.nameUz}</p>}
             </div>
           </div>
         </td>
@@ -254,6 +275,7 @@ export function CategoriesPage() {
                   className="border-b border-border/50
                                bg-gray-50/80"
                 >
+                  <th className="w-12 px-4 py-3" />
                   <th
                     className="px-4 py-3 text-left text-xs
                                  font-medium text-muted-foreground"
@@ -296,21 +318,31 @@ export function CategoriesPage() {
 
             <form onSubmit={handleSubmit((data: CategoryForm) => saveMutation.mutate(data))} className="space-y-3">
               <div>
-                <Label className="text-xs mb-1.5 block">Nomi (Korean) *</Label>
+                <Label className="text-xs mb-1.5 block">Nomi *</Label>
                 <Input
-                  {...register('nameKo')}
-                  placeholder="Toner, Moisturizer..."
+                  {...register('name')}
+                  placeholder="Toner, Moisturizer, Yuz parvarishi..."
                   className="h-9 text-sm rounded-lg border-[0.5px]"
                 />
-                {errors.nameKo && <p className="text-xs text-red-500 mt-1">{errors.nameKo.message}</p>}
+                {errors.name && <p className="text-xs text-red-500 mt-1">{errors.name.message}</p>}
               </div>
 
+              {/* Image upload */}
               <div>
-                <Label className="text-xs mb-1.5 block">Nomi (O'zbek)</Label>
-                <Input
-                  {...register('nameUz')}
-                  placeholder="Tonik, Namlovchi..."
-                  className="h-9 text-sm rounded-lg border-[0.5px]"
+                <Label className="text-xs mb-1.5 block">Rasm (ixtiyoriy)</Label>
+
+                <ImageUploadField
+                  mode="single"
+                  value={watch('imageUrl') || ''}
+                  onChange={(url) =>
+                    setValue('imageUrl', url as string, {
+                      shouldDirty: true,
+                      shouldValidate: true,
+                      shouldTouch: true,
+                    })
+                  }
+                  uploadFn={categoriesApi.uploadCategoryImage}
+                  disabled={saveMutation.isPending}
                 />
               </div>
 
@@ -337,7 +369,7 @@ export function CategoriesPage() {
                           .filter((c) => c.id !== editTarget?.id)
                           .map((c) => (
                             <SelectItem key={c.id} value={c.id}>
-                              {c.nameKo}
+                              {c.name}
                             </SelectItem>
                           ))}
                       </SelectContent>
@@ -396,12 +428,11 @@ export function CategoriesPage() {
         )}
       </div>
 
-      {/* Delete confirm */}
       <ConfirmDialog
         open={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
         title="Kategoriyani o'chirish"
-        description={`"${deleteTarget?.nameKo}" kategoriyasini 
+        description={`"${deleteTarget?.name ?? deleteTarget?.nameKo}" kategoriyasini 
         o'chirishni tasdiqlaysizmi?`}
         variant="destructive"
         loading={deleteMutation.isPending}

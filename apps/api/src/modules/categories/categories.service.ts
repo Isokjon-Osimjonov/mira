@@ -32,26 +32,50 @@ export async function getCategoriesTree() {
 }
 
 export async function createCategory(data: CreateCategoryDto) {
-  const slug = data.slug || slugify(data.nameKo).toLowerCase()
-  const [newCategory] = await db.insert(categories).values({ ...data, slug }).returning()
+  const slug = data.slug || slugify(data.name).toLowerCase()
+  const [newCategory] = await db
+    .insert(categories)
+    .values({
+      name: data.name,
+      slug,
+      imageUrl: data.imageUrl || null,
+      parentId: data.parentId || null,
+      sortOrder: data.sortOrder ?? 0,
+    })
+    .returning()
+
   await cacheDelete(CACHE_KEY)
   return newCategory
 }
 
 export async function updateCategory(id: string, data: UpdateCategoryDto) {
-  const updates: any = { ...data, updatedAt: new Date() }
-  if (data.nameKo && !data.slug) {
-    updates.slug = slugify(data.nameKo).toLowerCase()
-  }
-
   const [updatedCategory] = await db
     .update(categories)
-    .set(updates)
+    .set({
+      ...(data.name !== undefined && {
+        name: data.name,
+        slug: slugify(data.name).toLowerCase(),
+      }),
+      ...(data.imageUrl !== undefined && {
+        imageUrl: data.imageUrl || null,
+      }),
+      ...(data.parentId !== undefined && {
+        parentId: data.parentId || null,
+      }),
+      ...(data.sortOrder !== undefined && {
+        sortOrder: data.sortOrder,
+      }),
+      updatedAt: new Date(),
+    })
     .where(eq(categories.id, id))
     .returning()
 
   if (!updatedCategory) {
-    throw { status: 404, message: 'Kategoriya topilmadi' }
+    throw {
+      status: 404,
+      code: 'CATEGORY_NOT_FOUND',
+      message: 'Kategoriya topilmadi',
+    }
   }
 
   await cacheDelete(CACHE_KEY)
@@ -101,8 +125,8 @@ export async function getAllCategoriesAdmin() {
   const cats = await db
     .select({
       id: categories.id,
-      nameKo: categories.nameKo,
-      nameUz: categories.nameUz,
+      name: categories.name,
+      imageUrl: categories.imageUrl,
       parentId: categories.parentId,
       sortOrder: categories.sortOrder,
       isActive: categories.isActive,
@@ -115,7 +139,7 @@ export async function getAllCategoriesAdmin() {
     .leftJoin(products, eq(products.categoryId, categories.id))
     .where(isNull(categories.deletedAt))
     .groupBy(categories.id)
-    .orderBy(asc(categories.parentId), asc(categories.sortOrder), asc(categories.nameKo))
+    .orderBy(asc(categories.parentId), asc(categories.sortOrder), asc(categories.name))
 
   return cats
 }

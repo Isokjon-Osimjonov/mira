@@ -11,41 +11,54 @@ export function errorHandler(err: any, req: Request, res: Response, _next: NextF
     })
   }
 
-  // Known business errors (thrown with status/code)
-  if (err.status && err.code) {
-    return res.status(err.status).json({
-      data: null,
-      error: { message: err.message, code: err.code }
-    })
+  const status = err.status ?? err.statusCode ?? 500
+  const code = err.code ?? (err.name === 'ZodError' ? 'VALIDATION_ERROR' : 'INTERNAL_ERROR')
+  const message =
+    err.name === 'ZodError'
+      ? `Invalid input: ${err.errors?.[0]?.message}`
+      : err.message ?? 'Ichki xatolik'
+
+  // Structured logging
+  if (status >= 500) {
+    logger.error(
+      {
+        err: {
+          message: err.message,
+          code: err.code,
+          stack: err.stack,
+        },
+        req: {
+          method: req.method,
+          path: req.path,
+          params: req.params,
+          query: req.query,
+          userId: (req as any).user?.sub ?? null,
+          ip: req.ip,
+        },
+        status,
+      },
+      `${req.method} ${req.path} → ${status} ERROR`
+    )
+  } else if (status >= 400) {
+    logger.warn(
+      {
+        code,
+        message,
+        method: req.method,
+        path: req.path,
+        userId: (req as any).user?.sub ?? null,
+        status,
+      },
+      `${req.method} ${req.path} → ${status} ${code}`
+    )
   }
 
-  // Zod validation errors
-  if (err.name === 'ZodError') {
-    return res.status(400).json({
-      data: null,
-      error: {
-        message: `Invalid input: ${err.errors?.[0]?.message}`,
-        code: 'VALIDATION_ERROR'
-      }
-    })
-  }
+  // Mask 500 in production
+  const clientMsg =
+    status >= 500 && process.env.NODE_ENV === 'production' ? 'Ichki xatolik yuz berdi' : message
 
-  // Unknown errors
-  const isDev = process.env.NODE_ENV === 'development'
-  
-  logger.error({
-    path:      req.path,
-    method:    req.method,
-    err:       err.message,
-    stack:     err.stack,
-    body:      req.body ? '[hidden]' : undefined
-  }, 'UNHANDLED ERROR')
-
-  return res.status(500).json({
+  return res.status(status).json({
     data: null,
-    error: {
-      message: isDev ? err.message : 'Ichki xatolik yuz berdi',
-      code: 'INTERNAL_ERROR'
-    }
+    error: { message: clientMsg, code },
   })
 }

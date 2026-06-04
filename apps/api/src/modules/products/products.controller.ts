@@ -62,7 +62,7 @@ export async function getProductsByCategorySlug(req: Request, res: Response, nex
 // Admin
 export async function getProductsAdmin(req: Request, res: Response, next: NextFunction) {
   try {
-    const { page, limit, category, brand, region, sort, q, isActive } = req.query
+    const { page, limit, category, brand, region, sort, q, isActive, showDeleted } = req.query
     const result = await service.getProducts({
       page: page ? Number(page) : undefined,
       limit: limit ? Number(limit) : undefined,
@@ -72,6 +72,7 @@ export async function getProductsAdmin(req: Request, res: Response, next: NextFu
       sort: sort as string,
       q: q as string,
       isActive: isActive as string,
+      showDeleted: showDeleted === 'true',
       isAdmin: true,
     })
     res.json({ data: result.items, meta: result.meta, error: null })
@@ -84,6 +85,16 @@ export async function getProductByBarcode(req: Request, res: Response, next: Nex
   try {
     const { barcode } = req.params
     const result = await service.getProductByBarcode(barcode)
+    res.json({ data: result, error: null })
+  } catch (err) {
+    next(err)
+  }
+}
+
+export async function getAdminProductById(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { id } = req.params
+    const result = await service.getAdminProductById(id)
     res.json({ data: result, error: null })
   } catch (err) {
     next(err)
@@ -126,6 +137,16 @@ export async function deleteProduct(req: Request, res: Response, next: NextFunct
   try {
     const { id } = req.params
     const result = await service.deleteProduct(id)
+    res.json({ data: result, error: null })
+  } catch (err) {
+    next(err)
+  }
+}
+
+export async function restoreProduct(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { id } = req.params
+    const result = await service.restoreProduct(id)
     res.json({ data: result, error: null })
   } catch (err) {
     next(err)

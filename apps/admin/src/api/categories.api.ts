@@ -2,8 +2,8 @@ import { api } from '../lib/api'
 
 export interface Category {
   id:           string
-  nameKo:       string
-  nameUz?:      string
+  name:         string
+  imageUrl?:    string
   parentId?:    string
   parentName?:  string
   sortOrder:    number
@@ -24,8 +24,8 @@ export const categoriesApi = {
   },
 
   create: async (payload: {
-    nameKo:    string
-    nameUz?:   string
+    name:      string
+    imageUrl?: string
     parentId?: string
     sortOrder?: number
   }) => {
@@ -34,8 +34,8 @@ export const categoriesApi = {
   },
 
   update: async (id: string, payload: {
-    nameKo?:   string
-    nameUz?:   string
+    name?:     string
+    imageUrl?: string
     parentId?: string
     sortOrder?: number
   }) => {
@@ -46,5 +46,27 @@ export const categoriesApi = {
   delete: async (id: string) => {
     const res = await api.delete(`/admin/categories/${id}`)
     return res.data
+  },
+
+  uploadCategoryImage: async (file: File): Promise<string> => {
+    // GET /admin/upload/sign?folder=categories
+    const sigRes = await api.get('/admin/upload/sign', {
+      params: { folder: 'categories' },
+    })
+    const sig = sigRes.data.data
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('signature', sig.signature)
+    formData.append('timestamp', sig.timestamp.toString())
+    formData.append('api_key', sig.apiKey)
+    if (sig.folder) formData.append('folder', sig.folder)
+
+    const res = await fetch(`https://api.cloudinary.com/v1_1/${sig.cloudName}/image/upload`, {
+      method: 'POST',
+      body: formData,
+    })
+    const data = await res.json()
+    if (!data.secure_url) throw new Error('Upload failed')
+    return data.secure_url as string
   },
 }

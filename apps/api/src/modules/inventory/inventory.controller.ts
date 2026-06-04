@@ -5,7 +5,23 @@ import type { AdminJwtPayload } from '../../middleware/auth'
 
 export async function getStockSummary(req: Request, res: Response, next: NextFunction) {
   try {
-    const result = await service.getStockSummary()
+    const { filter, search, categoryId, page, limit } = req.query as any
+    const result = await service.getStockSummary({
+      filter,
+      search,
+      categoryId,
+      page: page ? Number(page) : undefined,
+      limit: limit ? Number(limit) : undefined,
+    })
+    res.json({ data: result.items, meta: result.meta, error: null })
+  } catch (err) {
+    next(err)
+  }
+}
+
+export async function getWriteOffReasons(req: Request, res: Response, next: NextFunction) {
+  try {
+    const result = await service.getWriteOffReasons()
     res.json({ data: result, error: null })
   } catch (err) {
     next(err)

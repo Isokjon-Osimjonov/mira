@@ -8,6 +8,7 @@ import { CategoriesPage } from './pages/categories/CategoriesPage'
 import { OrdersPage } from './pages/orders/OrdersPage'
 import { OrderDetailPage } from './pages/orders/OrderDetailPage'
 import { BoxesPage } from './pages/boxes/BoxesPage'
+import { InventoryPage } from './pages/inventory/InventoryPage'
 import { NotFoundPage } from './pages/NotFoundPage'
 import { ErrorBoundary } from './components/ErrorBoundary'
 
@@ -100,6 +101,16 @@ const boxesRoute = createRoute({
   )
 })
 
+const inventoryRoute = createRoute({
+  getParentRoute: () => protectedRoute,
+  path: '/inventory',
+  component: () => (
+    <ErrorBoundary>
+      <InventoryPage />
+    </ErrorBoundary>
+  )
+})
+
 const ordersRoute = createRoute({
   getParentRoute: () => protectedRoute,
   path: '/orders',
@@ -149,6 +160,7 @@ const routeTree = rootRoute.addChildren([
     productsRoute,
     categoriesRoute,
     boxesRoute,
+    inventoryRoute,
     ordersRoute,
     orderDetailRoute,
     // Add other routes here as they are created

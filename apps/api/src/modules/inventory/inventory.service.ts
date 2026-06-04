@@ -7,10 +7,12 @@ import {
   settings,
   adminUsers,
   expenses,
+  expenseCategories,
+  stockReservations,
   waitlists,
   customers,
 } from '@mira/db'
-import { eq, and, sql, desc, asc, min, inArray, gte, lte, isNotNull, gt } from 'drizzle-orm'
+import { eq, and, sql, desc, asc, min, inArray, gte, lte, isNotNull, gt, or, ilike, isNull } from 'drizzle-orm'
 import { emit } from '../../config/socket'
 import {
   notifyLowStock,
@@ -19,31 +21,112 @@ import {
 } from '../../bot/helpers/notify'
 import type { CreateBatchDto, UpdateBatchDto } from './inventory.schema'
 
-export async function getStockSummary() {
+export async function getStockSummary(query: {
+  filter?: 'low' | 'out' | 'expiring'
+  search?: string
+  categoryId?: string
+  page?: number
+  limit?: number
+} = {}) {
+  const page = query.page || 1
+  const limit = query.limit || 20
+  const offset = (page - 1) * limit
+
   const [appSettings] = await db.select().from(settings).limit(1)
   const threshold = appSettings?.lowStockThreshold || 10
 
-  const summary = await db
+  const thirtyDaysFromNow = new Date()
+  thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30)
+  const thirtyDaysStr = thirtyDaysFromNow.toISOString().split('T')[0]
+
+  // Subquery for total stock and nearest expiry per product
+  const statsSq = db
+    .select({
+      productId: inventoryBatches.productId,
+      totalQty: sql<number>`SUM(${inventoryBatches.currentQty})`.as('total_qty'),
+      nearestExpiry: min(inventoryBatches.expiryDate).as('nearest_expiry'),
+    })
+    .from(inventoryBatches)
+    .groupBy(inventoryBatches.productId)
+    .as('stats_sq')
+
+  // Subquery for reserved quantity
+  const reserveSq = db
+    .select({
+      productId: stockReservations.productId,
+      reservedQty: sql<number>`SUM(${stockReservations.quantity})`.as('reserved_qty'),
+    })
+    .from(stockReservations)
+    .where(eq(stockReservations.status, 'ACTIVE'))
+    .groupBy(stockReservations.productId)
+    .as('reserve_sq')
+
+  let where = isNotNull(products.id)
+
+  if (query.search) {
+    const s = `%${query.search.toLowerCase()}%`
+    where = and(where, or(ilike(products.name, s), ilike(products.barcode, s))) as any
+  }
+
+  if (query.categoryId) {
+    where = and(where, eq(products.categoryId, query.categoryId)) as any
+  }
+
+  if (query.filter === 'out') {
+    where = and(where, or(isNull(statsSq.totalQty), eq(statsSq.totalQty, 0))) as any
+  } else if (query.filter === 'low') {
+    where = and(where, gt(statsSq.totalQty, 0), lte(statsSq.totalQty, threshold)) as any
+  } else if (query.filter === 'expiring') {
+    where = and(
+      where,
+      gt(statsSq.totalQty, 0),
+      isNotNull(statsSq.nearestExpiry),
+      lte(statsSq.nearestExpiry, thirtyDaysStr)
+    ) as any
+  }
+
+  const items = await db
     .select({
       productId: products.id,
       productName: products.name,
       barcode: products.barcode,
       brandName: products.brandName,
-      totalQty: sql<number>`SUM(${inventoryBatches.currentQty})`,
-      batchCount: sql<number>`COUNT(${inventoryBatches.id})`,
-      nearestExpiryDate: min(inventoryBatches.expiryDate),
+      imageUrl: sql<string>`(${products.imageUrls})[1]`,
+      availableStock: sql<number>`COALESCE(${statsSq.totalQty}, 0)`,
+      reservedStock: sql<number>`COALESCE(${reserveSq.reservedQty}, 0)`,
+      nearestExpiry: statsSq.nearestExpiry,
     })
     .from(products)
-    .leftJoin(inventoryBatches, eq(products.id, inventoryBatches.productId))
-    .groupBy(products.id)
-    .orderBy(products.name)
+    .leftJoin(statsSq, eq(products.id, statsSq.productId))
+    .leftJoin(reserveSq, eq(products.id, reserveSq.productId))
+    .where(where)
+    .orderBy(asc(products.name))
+    .limit(limit)
+    .offset(offset)
 
-  return summary.map((item) => ({
-    ...item,
-    totalQty: Number(item.totalQty || 0),
-    batchCount: Number(item.batchCount || 0),
-    isLowStock: Number(item.totalQty || 0) <= threshold,
-  }))
+  const [countRes] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(products)
+    .leftJoin(statsSq, eq(products.id, statsSq.productId))
+    .where(where)
+
+  const total = Number(countRes.count)
+
+  return {
+    items,
+    meta: {
+      total,
+      page,
+      limit,
+      hasNext: offset + limit < total,
+      hasPrev: page > 1,
+    },
+  }
+}
+
+export async function getWriteOffReasons() {
+  // These are the types we support in writeOffStock
+  return ['GIFT', 'SAMPLE', 'DAMAGED', 'EXPIRED', 'LOST', 'ADJUSTMENT']
 }
 
 export async function checkLowStock(tx: any, productId: string) {
@@ -264,12 +347,18 @@ export async function writeOffStock(params: {
   recipientName?: string
   recipientPhone?: string
   createExpense: boolean
-  expenseCategoryId?: string
   performedBy: string
 }) {
   const [batch] = await db
-    .select()
+    .select({
+      id: inventoryBatches.id,
+      productId: inventoryBatches.productId,
+      currentQty: inventoryBatches.currentQty,
+      costPrice: inventoryBatches.costPrice,
+      productName: products.name,
+    })
     .from(inventoryBatches)
+    .innerJoin(products, eq(inventoryBatches.productId, products.id))
     .where(eq(inventoryBatches.id, params.batchId))
     .limit(1)
 
@@ -315,26 +404,54 @@ export async function writeOffStock(params: {
       })
       .returning()
 
-    // 3. Create expense
+    // 3. Auto-create expense entry if requested
     let expense = null
-    if (
-      params.createExpense &&
-      params.expenseCategoryId &&
-      params.type !== 'GIFT' &&
-      params.type !== 'ADJUSTMENT'
-    ) {
-      const expenseAmount = batch.costPrice * BigInt(Math.abs(params.quantity))
-      const [exp] = await tx
-        .insert(expenses)
-        .values({
-          categoryId: params.expenseCategoryId,
-          amountKrw: expenseAmount,
-          description: `Hisobdan chiqarish (${params.type}): ${params.reason ?? batch.productId}`,
-          expenseDate: new Date().toISOString().split('T')[0],
-          createdBy: params.performedBy,
-        })
-        .returning()
-      expense = exp
+    if (params.createExpense && params.type !== 'GIFT' && params.type !== 'ADJUSTMENT') {
+      const expenseAmount = BigInt(batch.costPrice) * BigInt(Math.abs(params.quantity))
+
+      if (expenseAmount > 0n) {
+        // Look for 'inventory-loss' category
+        let [lossCategory] = await tx
+          .select()
+          .from(expenseCategories)
+          .where(eq(expenseCategories.slug, 'inventory-loss'))
+          .limit(1)
+
+        // Create if missing
+        if (!lossCategory) {
+          const [newCat] = await tx
+            .insert(expenseCategories)
+            .values({
+              name: 'Inventar yo\'qotishlari',
+              slug: 'inventory-loss',
+              isSystem: true,
+            })
+            .returning()
+          lossCategory = newCat
+        }
+
+        const WRITEOFF_EXPENSE_NAMES: Record<string, string> = {
+          DAMAGED: 'Zarar (shikastlangan mahsulot)',
+          EXPIRED: 'Zarar (muddati o\'tgan mahsulot)',
+          SAMPLE: 'Namuna xarajati',
+          LOST: 'Yo\'qotish',
+          ADJUSTMENT: 'Inventar tuzatish',
+        }
+
+        const [exp] = await tx
+          .insert(expenses)
+          .values({
+            categoryId: lossCategory.id,
+            amountKrw: expenseAmount,
+            description: `${WRITEOFF_EXPENSE_NAMES[params.type] || params.type}: ${Math.abs(
+              params.quantity
+            )} ta (${batch.productName})`,
+            expenseDate: new Date().toISOString().split('T')[0],
+            createdBy: params.performedBy,
+          })
+          .returning()
+        expense = exp
+      }
     }
 
     await checkLowStock(tx, batch.productId)

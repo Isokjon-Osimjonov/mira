@@ -25,19 +25,12 @@ export const WriteOffStockSchema = z.object({
   recipientName: z.string().max(200).optional(),
   recipientPhone: z.string().max(30).optional(),
   createExpense: z.boolean().default(false),
-  expenseCategoryId: z.string().uuid().optional(),
 }).refine(
   (data) => {
     if (data.type === 'GIFT' && !data.recipientName) return false
     return true
   },
   { message: "Sovg'a oluvchi ismi kerak", path: ['recipientName'] }
-).refine(
-  (data) => {
-    if (data.createExpense && !data.expenseCategoryId) return false
-    return true
-  },
-  { message: "Xarajat kategoriyasi kerak", path: ['expenseCategoryId'] }
 ).refine(
   (data) => {
     if (data.type !== 'ADJUSTMENT' && data.quantity <= 0) return false

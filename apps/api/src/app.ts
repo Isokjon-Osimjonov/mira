@@ -101,8 +101,16 @@ export function createApp() {
 
   // Morgan → pino integration
   const morganStream = {
-    write: (message: string) => {
-      logger.info({ http: message.trim() }, 'HTTP request')
+    write: (msg: string) => {
+      const parts = msg.trim().split(' ')
+      const method = parts[0]
+      const url = parts[1]
+      const status = parseInt(parts[2]) || 0
+      const ms = parseFloat(parts[parts.length - 2]) || 0
+
+      const logFn = status >= 500 ? 'error' : status >= 400 ? 'warn' : 'info'
+
+      logger[logFn]({ method, url, status, ms }, `${method} ${url} ${status} ${ms}ms`)
     },
   }
 
@@ -110,7 +118,11 @@ export function createApp() {
     app.use(morgan('dev'))
   } else {
     // Production: JSON structured
-    app.use(morgan(':method :url :status :res[content-length] - :response-time ms', { stream: morganStream }))
+    app.use(
+      morgan(':method :url :status :res[content-length] - :response-time ms', {
+        stream: morganStream,
+      })
+    )
   }
   
   app.use('/api', apiLimiter)
