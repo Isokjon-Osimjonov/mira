@@ -45,6 +45,7 @@ export const inventoryApi = {
     quantity: number
     type: string
     reason?: string
+    recipientName?: string
     note?: string
     createExpense?: boolean
     expenseCategoryId?: string
@@ -56,6 +57,7 @@ export const inventoryApi = {
       quantity: payload.quantity,
       type: payload.type,
       reason: payload.reason || payload.note,
+      recipientName: payload.recipientName,
       createExpense: payload.createExpense || false,
       expenseCategoryId: payload.expenseCategoryId,
     })
@@ -65,5 +67,10 @@ export const inventoryApi = {
   getWriteOffReasons: async () => {
     const res = await api.get('/admin/inventory/write-off-reasons')
     return res.data.data as string[]
+  },
+
+  deleteBatch: async (id: string) => {
+    const res = await api.delete(`/admin/inventory/batches/${id}`)
+    return res.data
   },
 }

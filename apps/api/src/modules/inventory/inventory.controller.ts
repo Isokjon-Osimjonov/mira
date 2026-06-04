@@ -112,3 +112,14 @@ export async function getWriteOffHistory(req: Request, res: Response, next: Next
     next(err)
   }
 }
+
+export async function deleteBatch(req: Request, res: Response, next: NextFunction) {
+  try {
+    const admin = req.user as AdminJwtPayload
+    const { id } = req.params
+    const result = await service.deleteBatch(id, admin.sub)
+    res.json({ data: result, error: null })
+  } catch (err) {
+    next(err)
+  }
+}

@@ -55,6 +55,8 @@ export const ERROR_MESSAGES: Record<string, string> = {
   // Inventory
   BATCH_NOT_FOUND:        'Partiya topilmadi',
   WRITE_OFF_QTY_EXCEEDED: 'Stokda yetarli mahsulot yo\'q',
+  BATCH_HAS_MOVEMENTS:    'Partiyadan mahsulot ishlatilgan',
+  BATCH_HAS_RESERVATIONS: 'Partiyada band mahsulotlar bor',
 
   // Admin
   ADMIN_USER_NOT_FOUND:   'Admin foydalanuvchi topilmadi',

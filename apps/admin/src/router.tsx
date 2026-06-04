@@ -9,6 +9,9 @@ import { OrdersPage } from './pages/orders/OrdersPage'
 import { OrderDetailPage } from './pages/orders/OrderDetailPage'
 import { BoxesPage } from './pages/boxes/BoxesPage'
 import { InventoryPage } from './pages/inventory/InventoryPage'
+import { CustomersPage } from './pages/customers/CustomersPage'
+import { CustomerDetailPage } from './pages/customers/CustomerDetailPage'
+import { WalkInPage } from './pages/customers/WalkInPage'
 import { NotFoundPage } from './pages/NotFoundPage'
 import { ErrorBoundary } from './components/ErrorBoundary'
 
@@ -111,6 +114,39 @@ const inventoryRoute = createRoute({
   )
 })
 
+const customersRoute = createRoute({
+  getParentRoute: () => protectedRoute,
+  path: '/customers',
+  component: () => (
+    <ErrorBoundary>
+      <CustomersPage />
+    </ErrorBoundary>
+  ),
+})
+
+const customerDetailRoute = createRoute({
+  getParentRoute: () => protectedRoute,
+  path: '/customers/$id',
+  component: function CustomerDetail() {
+    const { id } = customerDetailRoute.useParams()
+    return (
+      <ErrorBoundary>
+        <CustomerDetailPage id={id} />
+      </ErrorBoundary>
+    )
+  },
+})
+
+const walkInCustomerRoute = createRoute({
+  getParentRoute: () => protectedRoute,
+  path: '/customers/new',
+  component: () => (
+    <ErrorBoundary>
+      <WalkInPage />
+    </ErrorBoundary>
+  ),
+})
+
 const ordersRoute = createRoute({
   getParentRoute: () => protectedRoute,
   path: '/orders',
@@ -161,6 +197,9 @@ const routeTree = rootRoute.addChildren([
     categoriesRoute,
     boxesRoute,
     inventoryRoute,
+    customersRoute,
+    customerDetailRoute,
+    walkInCustomerRoute,
     ordersRoute,
     orderDetailRoute,
     // Add other routes here as they are created

@@ -577,6 +577,65 @@ export async function getProductMovements(params: {
   }
 }
 
+export async function deleteBatch(batchId: string, adminId: string) {
+  const [batch] = await db
+    .select()
+    .from(inventoryBatches)
+    .where(eq(inventoryBatches.id, batchId))
+    .limit(1)
+
+  if (!batch) throw { status: 404, code: 'BATCH_NOT_FOUND', message: 'Partiya topilmadi' }
+
+  // 1. Check if stock was used
+  if (batch.currentQty !== batch.initialQty) {
+    throw {
+      status: 400,
+      code: 'BATCH_HAS_MOVEMENTS',
+      message: `Bu partiyadan mahsulot ishlatilgan (Jami: ${batch.initialQty}, qolgan: ${batch.currentQty}). O'chirib bo'lmaydi.`,
+    }
+  }
+
+  // 2. Check for active reservations
+  const [reservation] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(stockReservations)
+    .where(and(eq(stockReservations.batchId, batchId), eq(stockReservations.status, 'ACTIVE')))
+
+  if (Number(reservation?.count || 0) > 0) {
+    throw {
+      status: 400,
+      code: 'BATCH_HAS_RESERVATIONS',
+      message: "Bu partiyada band (rezerv) qilingan mahsulotlar bor. O'chirib bo'lmaydi.",
+    }
+  }
+
+  // 3. Check for movements other than the initial STOCK_IN
+  const [movementCount] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(stockMovements)
+    .where(eq(stockMovements.batchId, batchId))
+
+  if (Number(movementCount?.count || 0) > 1) {
+    throw {
+      status: 400,
+      code: 'BATCH_HAS_MOVEMENTS',
+      message: "Bu partiya bo'yicha harakatlar mavjud. O'chirib bo'lmaydi.",
+    }
+  }
+
+  return await db.transaction(async (tx) => {
+    // Delete the movements first
+    await tx.delete(stockMovements).where(eq(stockMovements.batchId, batchId))
+    // Delete batch
+    await tx.delete(inventoryBatches).where(eq(inventoryBatches.id, batchId))
+
+    // Re-check low stock for the product
+    await checkLowStock(tx, batch.productId)
+
+    return { success: true }
+  })
+}
+
 export async function checkExpiringBatches(): Promise<void> {
   const thirtyDaysFromNow = new Date()
   thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30)
