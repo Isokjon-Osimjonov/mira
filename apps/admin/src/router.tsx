@@ -139,7 +139,7 @@ const expensesRoute = createRoute({
 
 const adminsRoute = createRoute({
   getParentRoute: () => protectedRoute,
-  path: '/admins',
+  path: '/admin-users',
   component: () => (
     <ErrorBoundary>
       <AdminsPage />

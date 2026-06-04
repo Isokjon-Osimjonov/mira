@@ -14,8 +14,8 @@ export const expensesApi = {
   },
 
   getCategories: async () => {
-    const res = await api.get('/admin/expenses/categories')
-    return res.data.data as string[]
+    const res = await api.get('/admin/expense-categories')
+    return res.data.data
   },
 
   create: async (payload: {

@@ -30,6 +30,24 @@ import {
 
 const LIMIT = 20
 
+const CATEGORY_LABELS: Record<string, string> = {
+  'cargo':          'Yuk tashish',
+  'packaging':      'Qadoqlash',
+  'customs':        'Bojxona',
+  'marketing':      'Marketing',
+  'tax':            'Soliq',
+  'inventory-loss': 'Inventar zarari',
+  'other':          'Boshqa',
+  'salary':         'Maosh',
+  'rent':           'Ijara',
+}
+
+const DATE_FILTERS = [
+  { value: 'month',      label: 'Bu oy' },
+  { value: 'last_month', label: 'O\'tgan oy' },
+  { value: 'all',        label: 'Barchasi' },
+]
+
 const expenseSchema = z.object({
   amountKrw:   z.coerce.number().int().min(1, 'Summa 0 dan katta bo\'lishi kerak'),
   category:    z.string().min(1, 'Kategoriya tanlang'),
@@ -115,7 +133,10 @@ export function ExpensesPage() {
   })
 
   const createMutation = useMutation({
-    mutationFn: expensesApi.create,
+    mutationFn: (data: any) => expensesApi.create({
+      ...data,
+      categoryId: data.category
+    }),
     onSuccess: () => {
       toast.success('Xarajat qo\'shildi')
       qc.invalidateQueries({ queryKey: ['expenses'] })
@@ -137,12 +158,6 @@ export function ExpensesPage() {
 
   const expenses = data?.data ?? []
   const meta     = data?.meta
-
-  const DATE_FILTERS = [
-    { value: 'month',      label: 'Bu oy' },
-    { value: 'last_month', label: 'O\'tgan oy' },
-    { value: 'all',        label: 'Barchasi' },
-  ]
 
   return (
     <div className="flex flex-col gap-4">
@@ -202,8 +217,8 @@ export function ExpensesPage() {
           </SelectTrigger>
           <SelectContent className="rounded-xl">
             <SelectItem value="_all">Barcha kategoriyalar</SelectItem>
-            {categories.map((c: string) => (
-              <SelectItem key={c} value={c}>{c}</SelectItem>
+            {categories.map((c: any) => (
+              <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -254,7 +269,7 @@ export function ExpensesPage() {
                     </td>
                     <td className="px-4 py-3">
                       <span className="text-[11px] px-2 py-0.5 rounded-full bg-orange-50 text-orange-700 font-medium">
-                        {e.category?.name ?? e.category}
+                        {CATEGORY_LABELS[e.category?.slug] ?? e.category?.name ?? e.category ?? '—'}
                       </span>
                     </td>
                     <td className="px-4 py-3">
@@ -310,8 +325,8 @@ export function ExpensesPage() {
                       <SelectValue placeholder="Tanlang" />
                     </SelectTrigger>
                     <SelectContent className="rounded-xl">
-                      {categories.map((c: string) => (
-                        <SelectItem key={c} value={c}>{c}</SelectItem>
+                      {categories.map((c: any) => (
+                        <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>

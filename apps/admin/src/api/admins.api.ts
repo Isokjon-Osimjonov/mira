@@ -2,7 +2,7 @@ import { api } from '../lib/api'
 
 export const adminsApi = {
   list: async () => {
-    const res = await api.get('/admin/admins')
+    const res = await api.get('/admin/users')
     return res.data.data
   },
 
@@ -11,22 +11,22 @@ export const adminsApi = {
     fullName: string
     roleId:   string
   }) => {
-    const res = await api.post('/admin/admins/invite', payload)
+    const res = await api.post('/admin/users', payload)
     return res.data
   },
 
   updateRole: async (id: string, roleId: string) => {
-    const res = await api.patch(`/admin/admins/${id}/role`, { roleId })
+    const res = await api.put(`/admin/users/${id}`, { roleId })
     return res.data
   },
 
   deactivate: async (id: string) => {
-    const res = await api.post(`/admin/admins/${id}/deactivate`)
+    const res = await api.patch(`/admin/users/${id}`, { isActive: false })
     return res.data
   },
 
   reactivate: async (id: string) => {
-    const res = await api.post(`/admin/admins/${id}/reactivate`)
+    const res = await api.patch(`/admin/users/${id}`, { isActive: true })
     return res.data
   },
 
