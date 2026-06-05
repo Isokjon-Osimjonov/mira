@@ -19,6 +19,8 @@ import {
   Shield,
   Lock,
   Flower2,
+  FileText,
+  Activity,
 } from 'lucide-react'
 import { NavMain } from './nav-main'
 import { NavUser } from './nav-user'
@@ -74,9 +76,10 @@ const navMain = [
     title: 'Tizim',
     items: [
       { title: 'Sozlamalar', url: '/settings', icon: Settings2 },
-      { title: 'Valyuta kursi', url: '/exchange-rates', icon: Coins },
+      { title: 'Tizim holati', url: '/system', icon: Activity, superAdminOnly: true },
       { title: 'Adminlar', url: '/admin-users', icon: Shield, superAdminOnly: true },
       { title: 'Rollar', url: '/roles', icon: Lock, superAdminOnly: true },
+      { title: 'Audit log', url: '/audit', icon: FileText, superAdminOnly: true },
     ],
   },
 ]

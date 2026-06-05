@@ -1,9 +1,22 @@
 import {
-  pgTable, uuid, varchar, text, jsonb, timestamp, index,
+  pgTable, uuid, varchar, text, jsonb, timestamp, index, boolean
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { notificationTypeEnum, notificationChannelEnum, notificationStatusEnum } from './enums';
 import { customers } from './customers';
+
+export const adminNotifications = pgTable('admin_notifications', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  type: text('type').notNull(),
+  title: text('title').notNull(),
+  message: text('message').notNull(),
+  link: text('link'),
+  isRead: boolean('is_read').default(false),
+  data: jsonb('data').default({}),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+}, (t) => ({
+  readIdx: index('admin_notifications_read_idx').on(t.isRead, t.createdAt),
+}));
 
 export const notificationsLog = pgTable('notifications_log', {
   id: uuid('id').primaryKey().defaultRandom(),

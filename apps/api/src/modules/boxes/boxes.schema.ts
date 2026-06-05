@@ -9,6 +9,7 @@ export const createBoxSchema = z.object({
   costKrw: z.coerce.number().int().min(0).default(0),
   stockCount: z.coerce.number().int().min(0).default(0),
   minStock: z.coerce.number().int().min(0).default(10),
+  imageUrls: z.array(z.string()).optional().default([]),
   isActive: z.boolean().optional().default(true),
   
   // Legacy fields (optional)

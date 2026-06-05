@@ -1,10 +1,34 @@
 import {
-  pgTable, uuid, varchar, timestamp, text, index,
+  pgTable, uuid, varchar, timestamp, text, index, jsonb
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { pickPackActionEnum, pickPackResultEnum } from './enums';
 import { orders, orderItems } from './orders';
 import { adminUsers } from './admin-users';
+
+export const adminAuditLogs = pgTable('admin_audit_logs', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  adminId: uuid('admin_id').references(() => adminUsers.id, { onDelete: 'set null' }),
+  adminName: text('admin_name'),
+  action: text('action').notNull(),
+  entityType: text('entity_type'),
+  entityId: text('entity_id'),
+  oldValue: jsonb('old_value'),
+  newValue: jsonb('new_value'),
+  ipAddress: text('ip_address'),
+  userAgent: text('user_agent'),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+}, (t) => ({
+  adminIdIdx: index('admin_audit_logs_admin_id_idx').on(t.adminId),
+  createdAtIdx: index('admin_audit_logs_created_at_idx').on(t.createdAt),
+}));
+
+export const adminAuditLogsRelations = relations(adminAuditLogs, ({ one }) => ({
+  admin: one(adminUsers, {
+    fields: [adminAuditLogs.adminId],
+    references: [adminUsers.id],
+  }),
+}));
 
 // APPEND-ONLY — no UPDATE or DELETE ever
 export const pickPackAudit = pgTable('pick_pack_audit', {

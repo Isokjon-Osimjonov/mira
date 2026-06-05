@@ -40,6 +40,7 @@ import {
 import wishlistRouter from './modules/wishlists/wishlists.router'
 import waitlistRouter from './modules/waitlists/waitlists.router'
 import notificationRouter from './modules/notifications/notifications.router'
+import adminNotificationsRouter from './modules/admin-notifications/admin-notifications.router'
 import rolesRouter from './modules/roles/roles.router'
 import adminUsersRouter from './modules/admin-users/admin-users.router'
 import adminRouter from './modules/admin/admin.router'
@@ -48,6 +49,7 @@ import suppliersRouter from './modules/suppliers/suppliers.router'
 import purchaseOrdersRouter from './modules/purchase-orders/purchase-orders.router'
 import { expCategoriesRouter, expensesRouter } from './modules/expenses/expenses.router'
 import dashboardRouter from './modules/dashboard/dashboard.router'
+import analyticsRouter from './modules/analytics/analytics.router'
 import reportsRouter from './modules/reports/reports.router'
 import telegramRouter from './modules/telegram/telegram.router'
 import aiRouter from './modules/ai/ai.router'
@@ -144,6 +146,18 @@ export function createApp() {
       })(),
     ])
 
+    const getQueueCounts = async (q: any) => {
+      try {
+        return await q.getJobCounts('waiting', 'active', 'delayed')
+      } catch {
+        return { waiting: 0, active: 0, delayed: 0 }
+      }
+    }
+    
+    const notifCounts = await getQueueCounts(notificationQueue)
+    const payCounts = await getQueueCounts(paymentDeadlineQueue)
+    const tgCounts = await getQueueCounts(telegramPostQueue)
+
     const status = !dbOk ? 'down' : redisOk === 'down' ? 'degraded' : 'ok'
 
     res.status(status === 'down' ? 503 : 200).json({
@@ -161,6 +175,12 @@ export function createApp() {
             waitingCount: pool.waitingCount,
           },
           redis: { status: redisOk },
+          bullmq: {
+            status: 'ok',
+            waiting: notifCounts.waiting + payCounts.waiting + tgCounts.waiting,
+            active: notifCounts.active + payCounts.active + tgCounts.active,
+            delayed: notifCounts.delayed + payCounts.delayed + tgCounts.delayed,
+          },
           bot: { status: 'ok', username: env.BOT_USERNAME },
         },
       },
@@ -237,7 +257,9 @@ export function createApp() {
   app.use('/api/v1/admin/expense-categories', expCategoriesRouter)
   app.use('/api/v1/admin/expenses', expensesRouter)
   app.use('/api/v1/admin/dashboard', dashboardRouter)
+  app.use('/api/v1/admin/analytics', analyticsRouter)
   app.use('/api/v1/admin/reports', reportsRouter)
+  app.use('/api/v1/admin/notifications', adminNotificationsRouter)
   app.use('/api/v1/admin/telegram', telegramRouter)
   app.use('/api/v1/admin/ai', aiRouter)
 

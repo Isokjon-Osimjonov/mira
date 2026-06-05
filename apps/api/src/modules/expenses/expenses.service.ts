@@ -1,4 +1,5 @@
 import { db } from '../../config/db'
+import { logger } from '../../config/logger'
 import { expenseCategories, expenses } from '@mira/db'
 import { eq, and, sql, desc, asc, count } from 'drizzle-orm'
 import type {
@@ -11,42 +12,28 @@ import type {
 // ─── Expense Categories ──────────────────────────────────────────────────
 
 export async function getExpenseCategories() {
-  try {
-    const items = await db
-      .select({
-        category: expenseCategories,
-        expenseCount: sql<number>`(SELECT COUNT(*) FROM expenses WHERE category_id = ${expenseCategories.id})`.mapWith(Number),
-      })
-      .from(expenseCategories)
-      .orderBy(asc(expenseCategories.sortOrder))
+  return await db
+    .select()
+    .from(expenseCategories)
+    .where(eq(expenseCategories.isActive, true))
+    .orderBy(asc(expenseCategories.sortOrder), asc(expenseCategories.name))
+}
 
-    if (items.length > 0) {
-      return items.map((row) => ({
-        ...row.category,
-        expenseCount: row.expenseCount,
-      }))
-    }
-  } catch (error) {
-    logger.error({ error }, 'Error fetching expense categories')
-  }
-
-  // Fallback/Default categories if DB empty or error
-  return [
-    { id: '1', name: 'Yuk tashish', slug: 'cargo', icon: 'truck', isSystem: true, isActive: true },
-    { id: '2', name: 'Qadoq', slug: 'packaging', icon: 'package', isSystem: true, isActive: true },
-    { id: '3', name: 'Bojxona', slug: 'customs', icon: 'landmark', isSystem: true, isActive: true },
-    { id: '4', name: 'Reklama', slug: 'marketing', icon: 'megaphone', isSystem: true, isActive: true },
-    { id: '5', name: 'Soliq', slug: 'tax', icon: 'receipt', isSystem: true, isActive: true },
-    { id: '6', name: 'Inventar yo\'qotishlari', slug: 'inventory-loss', icon: 'package-x', isSystem: true, isActive: true },
-    { id: '7', name: 'Boshqa', slug: 'other', icon: 'more-horizontal', isSystem: true, isActive: true },
-  ]
+export async function getAllExpenseCategories() {
+  return await db
+    .select()
+    .from(expenseCategories)
+    .orderBy(asc(expenseCategories.sortOrder), asc(expenseCategories.name))
 }
 
 export async function createExpenseCategory(data: CreateExpenseCategoryDto) {
+  const slug = data.slug || data.name.toLowerCase().replace(/ /g, '-')
+  
   const [created] = await db
     .insert(expenseCategories)
     .values({
       ...data,
+      slug,
       isSystem: false,
     })
     .returning()
@@ -62,16 +49,11 @@ export async function updateExpenseCategory(id: string, data: UpdateExpenseCateg
   if (!category)
     throw { status: 404, code: 'EXPENSE_CATEGORY_NOT_FOUND', message: 'Kategoriya topilmadi' }
 
-  const updates: any = { updatedAt: new Date() }
+  const updates: any = { ...data, updatedAt: new Date() }
 
   if (category.isSystem) {
-    if (data.sortOrder !== undefined) updates.sortOrder = data.sortOrder
-    if (data.icon !== undefined) updates.icon = data.icon
-  } else {
-    if (data.name !== undefined) updates.name = data.name
-    if (data.slug !== undefined) updates.slug = data.slug
-    if (data.sortOrder !== undefined) updates.sortOrder = data.sortOrder
-    if (data.icon !== undefined) updates.icon = data.icon
+    // Prevent changing name/slug of system categories if needed
+    // For now we allow everything but usually we might lock them
   }
 
   const [updated] = await db
@@ -90,6 +72,7 @@ export async function deleteExpenseCategory(id: string) {
     .limit(1)
   if (!category)
     throw { status: 404, code: 'EXPENSE_CATEGORY_NOT_FOUND', message: 'Kategoriya topilmadi' }
+  
   if (category.isSystem)
     throw {
       status: 400,
@@ -101,11 +84,12 @@ export async function deleteExpenseCategory(id: string) {
     .select({ count: count() })
     .from(expenses)
     .where(eq(expenses.categoryId, id))
+
   if (Number(expenseCountRes?.count || 0) > 0) {
     throw {
       status: 400,
       code: 'EXPENSE_CATEGORY_IN_USE',
-      message: "Bu kategoriyada xarajatlar mavjud. O'chirib bo'lmaydi.",
+      message: `Bu kategoriyada ${expenseCountRes?.count} ta xarajat bor. O'chirib bo'lmaydi.`,
     }
   }
 
@@ -137,8 +121,13 @@ export async function getExpenses(query: {
   const items = await db
     .select({
       expense: expenses,
-      categoryName: expenseCategories.name,
-      categoryIcon: expenseCategories.icon,
+      category: {
+        id: expenseCategories.id,
+        name: expenseCategories.name,
+        slug: expenseCategories.slug,
+        icon: expenseCategories.icon,
+        color: expenseCategories.color,
+      }
     })
     .from(expenses)
     .innerJoin(expenseCategories, eq(expenses.categoryId, expenseCategories.id))
@@ -158,8 +147,7 @@ export async function getExpenses(query: {
     items: items.map((row) => ({
       ...row.expense,
       amountKrw: Number(row.expense.amountKrw),
-      categoryName: row.categoryName,
-      categoryIcon: row.categoryIcon,
+      category: row.category,
     })),
     meta: {
       page,
@@ -229,7 +217,8 @@ export async function createExpense(data: CreateExpenseDto, adminId: string) {
       categoryId: data.categoryId,
       amountKrw: BigInt(data.amountKrw),
       description: data.description,
-      expenseDate: data.expenseDate,
+      expenseDate: data.date,
+      note: data.note,
       receiptUrl: data.receiptUrl,
       createdBy: adminId,
     })
@@ -254,6 +243,10 @@ export async function updateExpense(id: string, data: UpdateExpenseDto) {
 
   const updates: any = { ...data, updatedAt: new Date() }
   if (data.amountKrw !== undefined) updates.amountKrw = BigInt(data.amountKrw)
+  if (data.date !== undefined) {
+    updates.expenseDate = data.date
+    delete updates.date
+  }
 
   const [updated] = await db.update(expenses).set(updates).where(eq(expenses.id, id)).returning()
   return updated

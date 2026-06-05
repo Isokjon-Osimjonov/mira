@@ -1,7 +1,7 @@
 import bcrypt from 'bcryptjs'
 import { db } from '../../../config/db'
-import { adminUsers, refreshTokens, rolePermissions, roles } from '@mira/db'
-import { eq, and, gt } from 'drizzle-orm'
+import { adminUsers, refreshTokens, rolePermissions, roles, adminAuditLogs } from '@mira/db'
+import { eq, and, gt, desc, sql } from 'drizzle-orm'
 import { signAccess, signRefresh, verifyRefresh } from '../../../lib/jwt'
 import { generateToken, hashToken } from '../../../lib/otp'
 import type { AdminLoginDto } from './admin-auth.schema'
@@ -266,6 +266,56 @@ export async function changePassword(
 
     return { success: true }
   })
+}
+
+export async function updateProfile(adminId: string, data: { fullName?: string }) {
+  const [updated] = await db
+    .update(adminUsers)
+    .set({
+      fullName: data.fullName,
+      updatedAt: new Date(),
+    })
+    .where(eq(adminUsers.id, adminId))
+    .returning()
+  
+  if (!updated) throw { status: 404, message: 'Admin topilmadi' }
+  return updated
+}
+
+export async function getAuditLogs(query: { page?: number; limit?: number; adminId?: string; action?: string }) {
+  const page = query.page || 1
+  const limit = query.limit || 50
+  const offset = (page - 1) * limit
+
+  let where: any = sql`1=1`
+  if (query.adminId) where = and(where, eq(adminAuditLogs.adminId, query.adminId))
+  if (query.action) where = and(where, eq(adminAuditLogs.action, query.action))
+
+  const items = await db
+    .select()
+    .from(adminAuditLogs)
+    .where(where)
+    .orderBy(desc(adminAuditLogs.createdAt))
+    .limit(limit)
+    .offset(offset)
+
+  const [countRes] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(adminAuditLogs)
+    .where(where)
+
+  const total = Number(countRes?.count || 0)
+
+  return {
+    items,
+    meta: {
+      page,
+      limit,
+      total,
+      hasNext: offset + limit < total,
+      hasPrev: page > 1,
+    }
+  }
 }
 
 export async function getAdminMe(adminId: string) {

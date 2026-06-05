@@ -11,7 +11,8 @@ router.get('/:id', requirePermission('inventory', 'read'), ctrl.getPurchaseOrder
 router.post('/', requirePermission('inventory', 'write'), ctrl.createPurchaseOrder)
 router.put('/:id', requirePermission('inventory', 'write'), ctrl.updatePurchaseOrder)
 router.patch('/:id/status', requirePermission('inventory', 'write'), ctrl.updateStatus)
-router.patch('/:id/receive', requirePermission('inventory', 'write'), ctrl.receiveOrder)
+router.post('/:id/receive', requirePermission('inventory', 'write'), ctrl.receiveOrder)
+router.post('/:id/payment', requirePermission('inventory', 'write'), ctrl.recordPayment)
 router.delete('/:id', requirePermission('inventory', 'delete'), ctrl.deletePurchaseOrder)
 
 export default router

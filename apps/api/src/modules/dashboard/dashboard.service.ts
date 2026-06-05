@@ -211,7 +211,7 @@ export async function getOverview(period: Period) {
 
   const [todayRev] = await db
     .select({
-      revenue: sql<string>`COALESCE(SUM(${orders.totalAmount} - ${orders.refundAmount}), '0')`,
+      revenue: sql<string>`COALESCE(SUM(${orders.totalAmount} - ${orders.refundAmount}), 0)`,
     })
     .from(orders)
     .where(
@@ -224,7 +224,7 @@ export async function getOverview(period: Period) {
 
   const [yestRev] = await db
     .select({
-      revenue: sql<string>`COALESCE(SUM(${orders.totalAmount} - ${orders.refundAmount}), '0')`,
+      revenue: sql<string>`COALESCE(SUM(${orders.totalAmount} - ${orders.refundAmount}), 0)`,
     })
     .from(orders)
     .where(
@@ -243,7 +243,7 @@ export async function getOverview(period: Period) {
   // 2. Period vs Previous Period
   const [periodRev] = await db
     .select({
-      revenue: sql<string>`COALESCE(SUM(${orders.totalAmount} - ${orders.refundAmount}), '0')`,
+      revenue: sql<string>`COALESCE(SUM(${orders.totalAmount} - ${orders.refundAmount}), 0)`,
       count: count(orders.id),
     })
     .from(orders)
@@ -257,7 +257,7 @@ export async function getOverview(period: Period) {
 
   const [prevRev] = await db
     .select({
-      revenue: sql<string>`COALESCE(SUM(${orders.totalAmount} - ${orders.refundAmount}), '0')`,
+      revenue: sql<string>`COALESCE(SUM(${orders.totalAmount} - ${orders.refundAmount}), 0)`,
     })
     .from(orders)
     .where(
@@ -355,8 +355,8 @@ export async function getPLReport(period: Period, dateFrom?: string, dateTo?: st
 
   const [revenueStats] = await db
     .select({
-      gross: sql<string>`COALESCE(SUM(${orders.totalAmount}), '0')`,
-      refunds: sql<string>`COALESCE(SUM(${orders.refundAmount}), '0')`,
+      gross: sql<string>`COALESCE(SUM(${orders.totalAmount}), 0)`,
+      refunds: sql<string>`COALESCE(SUM(${orders.refundAmount}), 0)`,
     })
     .from(orders)
     .where(
@@ -369,7 +369,7 @@ export async function getPLReport(period: Period, dateFrom?: string, dateTo?: st
 
   const [prevRev] = await db
     .select({
-      net: sql<string>`COALESCE(SUM(${orders.totalAmount} - ${orders.refundAmount}), '0')`,
+      net: sql<string>`COALESCE(SUM(${orders.totalAmount} - ${orders.refundAmount}), 0)`,
     })
     .from(orders)
     .where(
@@ -386,9 +386,9 @@ export async function getPLReport(period: Period, dateFrom?: string, dateTo?: st
 
   const [summaryData] = await db
     .select({
-      cogs: sql<string>`COALESCE(SUM(${dailySalesSummary.cogsKrw}), '0')`,
-      cargo: sql<string>`COALESCE(SUM(${dailySalesSummary.cargoKrw}), '0')`,
-      coupons: sql<string>`COALESCE(SUM(${dailySalesSummary.couponDiscountKrw}), '0')`,
+      cogs: sql<string>`COALESCE(SUM(${dailySalesSummary.cogsKrw}), 0)`,
+      cargo: sql<string>`COALESCE(SUM(${dailySalesSummary.cargoKrw}), 0)`,
+      coupons: sql<string>`COALESCE(SUM(${dailySalesSummary.couponDiscountKrw}), 0)`,
     })
     .from(dailySalesSummary)
     .where(
@@ -399,7 +399,7 @@ export async function getPLReport(period: Period, dateFrom?: string, dateTo?: st
     )
 
   const [expensesTotal] = await db
-    .select({ total: sql<string>`COALESCE(SUM(${expenses.amountKrw}), '0')` })
+    .select({ total: sql<string>`COALESCE(SUM(${expenses.amountKrw}), 0)` })
     .from(expenses)
     .where(
       and(
@@ -412,7 +412,7 @@ export async function getPLReport(period: Period, dateFrom?: string, dateTo?: st
     .select({
       categoryName: expenseCategories.name,
       categoryIcon: expenseCategories.icon,
-      amount: sql<string>`COALESCE(SUM(${expenses.amountKrw}), '0')`,
+      amount: sql<string>`COALESCE(SUM(${expenses.amountKrw}), 0)`,
     })
     .from(expenses)
     .innerJoin(expenseCategories, eq(expenses.categoryId, expenseCategories.id))

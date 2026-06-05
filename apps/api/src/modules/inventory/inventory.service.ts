@@ -20,6 +20,7 @@ import {
   notifyCustomerFull,
 } from '../../bot/helpers/notify'
 import type { CreateBatchDto, UpdateBatchDto } from './inventory.schema'
+import { createNotification } from '../admin-notifications/admin-notifications.service'
 
 export async function getStockSummary(query: {
   filter?: 'low' | 'out' | 'expiring'
@@ -455,6 +456,15 @@ export async function writeOffStock(params: {
     }
 
     await checkLowStock(tx, batch.productId)
+
+    if (qtyDelta < 0) {
+      await createNotification({
+        type: 'WRITE_OFF',
+        title: 'Hisobdan chiqarildi',
+        message: `${Math.abs(qtyDelta)} ta mahsulot hisobdan chiqarildi (${batch.productName})`,
+        link: '/inventory',
+      }).catch(err => console.error('Failed to create notification', err))
+    }
 
     return { batch: { ...batch, currentQty: newQty }, movement, expense }
   })

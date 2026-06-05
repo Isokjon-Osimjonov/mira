@@ -1,5 +1,5 @@
 import { db } from '../../config/db'
-import { telegramChannels, telegramPosts, telegramPostChannels, products, regionalConfigs } from '@mira/db'
+import { telegramChannels, telegramPosts, telegramPostChannels, products, productRegionalConfigs } from '@mira/db'
 import { eq, and, sql, desc, asc, isNull, inArray, count } from 'drizzle-orm'
 import { bot } from '../../bot/bot'
 import { env } from '../../config/env'
@@ -25,7 +25,7 @@ export async function generateCaption(params: {
     .select({
       id: products.id,
       name: products.name,
-      description: products.description,
+      description: products.descriptionUz,
       brandName: products.brandName,
     })
     .from(products)
@@ -36,8 +36,8 @@ export async function generateCaption(params: {
 
   const configs = await db
     .select()
-    .from(regionalConfigs)
-    .where(and(eq(regionalConfigs.productId, params.productId), eq(regionalConfigs.regionCode, 'KOR')))
+    .from(productRegionalConfigs)
+    .where(and(eq(productRegionalConfigs.productId, params.productId), eq(productRegionalConfigs.regionCode, 'KOR')))
     .limit(1)
   
   const config = configs[0]

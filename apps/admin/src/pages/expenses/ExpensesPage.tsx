@@ -4,7 +4,7 @@ import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import {
-  Plus, Search, Trash2,
+  Plus, Search, Trash2, Tag, Pencil,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { expensesApi } from '../../api/expenses.api'
@@ -59,6 +59,7 @@ const expenseSchema = z.object({
 export function ExpensesPage() {
   const qc = useQueryClient()
 
+  const [pageTab,      setPageTab]      = useState<'expenses'|'categories'>('expenses')
   const [sheet,        setSheet]        = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<any>(null)
   const [search,       setSearch]       = useState('')
@@ -134,13 +135,16 @@ export function ExpensesPage() {
 
   const createMutation = useMutation({
     mutationFn: (data: any) => expensesApi.create({
-      ...data,
-      categoryId: data.category
+      amountKrw:   data.amountKrw,
+      categoryId:  data.category,
+      description: data.description,
+      date:        data.date,
+      note:        data.note,
     }),
     onSuccess: () => {
       toast.success('Xarajat qo\'shildi')
       qc.invalidateQueries({ queryKey: ['expenses'] })
-      reset({ date: now.toISOString().split('T')[0] })
+      reset({ date: now.toISOString().split('T')[0], amountKrw: 0, category: '', description: '', note: '' })
       setSheet(false)
     },
     onError: (err: any) => toast.error(getErrorMessage(err?.errorCode ?? ''))
@@ -162,22 +166,48 @@ export function ExpensesPage() {
   return (
     <div className="flex flex-col gap-4">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-semibold text-gray-900">Xarajatlar</h1>
           <p className="text-sm text-muted-foreground">
-            {summary?.totalKrw
+            {pageTab === 'expenses' ? (summary?.totalKrw
               ? `Bu oy: ${formatKRW(summary.totalKrw)}`
-              : 'Xarajatlar ro\'yxati'}
+              : 'Xarajatlar ro\'yxati') : 'Kategoriyalarni boshqarish'}
           </p>
         </div>
-        <Button size="sm" className="rounded-lg gap-2 h-9" onClick={() => setSheet(true)}>
-          <Plus className="h-4 w-4" strokeWidth={1.5} />
-          <span className="hidden sm:inline">Xarajat qo'shish</span>
-        </Button>
+
+        <div className="flex items-center gap-2">
+          <div className="flex gap-1 bg-gray-100 rounded-lg p-0.5 w-fit">
+            <button
+              onClick={() => setPageTab('expenses')}
+              className={cn(
+                'px-4 py-1.5 rounded-md text-sm font-medium transition-all',
+                pageTab === 'expenses' ? 'bg-white shadow-sm text-gray-900' : 'text-muted-foreground'
+              )}>
+              Xarajatlar
+            </button>
+            <button
+              onClick={() => setPageTab('categories')}
+              className={cn(
+                'px-4 py-1.5 rounded-md text-sm font-medium transition-all',
+                pageTab === 'categories' ? 'bg-white shadow-sm text-gray-900' : 'text-muted-foreground'
+              )}>
+              Kategoriyalar
+            </button>
+          </div>
+          
+          {pageTab === 'expenses' && (
+            <Button size="sm" className="rounded-lg gap-2 h-9" onClick={() => setSheet(true)}>
+              <Plus className="h-4 w-4" strokeWidth={1.5} />
+              <span className="hidden sm:inline">Xarajat qo'shish</span>
+            </Button>
+          )}
+        </div>
       </div>
 
-      {/* Summary cards */}
+      {pageTab === 'expenses' ? (
+        <>
+          {/* Summary cards */}
       {summary && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {[
@@ -268,8 +298,12 @@ export function ExpensesPage() {
                       <span className="text-xs text-gray-700">{formatDate(e.expenseDate ?? e.createdAt)}</span>
                     </td>
                     <td className="px-4 py-3">
-                      <span className="text-[11px] px-2 py-0.5 rounded-full bg-orange-50 text-orange-700 font-medium">
-                        {CATEGORY_LABELS[e.category?.slug] ?? e.category?.name ?? e.category ?? '—'}
+                      <span className="text-[11px] px-2 py-0.5 rounded-full font-medium"
+                            style={{ 
+                              backgroundColor: (e.category?.color || '#6366f1') + '15',
+                              color: e.category?.color || '#6366f1' 
+                            }}>
+                        {e.category?.name ?? '—'}
                       </span>
                     </td>
                     <td className="px-4 py-3">
@@ -326,7 +360,12 @@ export function ExpensesPage() {
                     </SelectTrigger>
                     <SelectContent className="rounded-xl">
                       {categories.map((c: any) => (
-                        <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                        <SelectItem key={c.id} value={c.id}>
+                          <div className="flex items-center gap-2">
+                            <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: c.color || '#6366f1' }} />
+                            {c.name}
+                          </div>
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -334,7 +373,7 @@ export function ExpensesPage() {
               />
               {errors.category && <p className="text-xs text-red-500 mt-1">{errors.category.message}</p>}
             </div>
-
+            {/* ... rest of form ... */}
             <div>
               <Label className="text-xs mb-1.5 block">Tavsif *</Label>
               <Input {...register('description')} placeholder="Xarajat tavsifi..." className="h-9 text-sm rounded-lg border-[0.5px]" />
@@ -375,6 +414,182 @@ export function ExpensesPage() {
         onClose={() => setDeleteTarget(null)}
         title="Xarajatni o'chirish"
         description={`${formatKRW(deleteTarget?.amountKrw ?? 0)} miqdoridagi xarajat o'chiriladi.`}
+        variant="destructive"
+        loading={deleteMutation.isPending}
+        onConfirm={() => deleteMutation.mutate(deleteTarget.id)}
+      />
+        </>
+      ) : (
+        <ExpenseCategoriesManager />
+      )}
+    </div>
+  )
+}
+
+function ExpenseCategoriesManager() {
+  const qc = useQueryClient()
+  const [editTarget,   setEditTarget]   = useState<any>(null)
+  const [showForm,     setShowForm]     = useState(false)
+  const [deleteTarget, setDeleteTarget] = useState<any>(null)
+
+  const COLOR_OPTIONS = [
+    '#f97316', '#8b5cf6', '#3b82f6',
+    '#f59e0b', '#10b981', '#6366f1',
+    '#ec4899', '#64748b', '#ef4444',
+    '#14b8a6',
+  ]
+
+  const catSchema = z.object({
+    name:        z.string().min(1, 'Nom talab qilinadi'),
+    description: z.string().optional(),
+    color:       z.string().default('#6366f1'),
+  })
+
+  const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm({
+    resolver: zodResolver(catSchema),
+    defaultValues: { color: '#6366f1', name: '', description: '' }
+  })
+
+  const watchColor = watch('color')
+
+  const { data: categories = [], isLoading } = useQuery({
+    queryKey: QK.EXPENSE_CATEGORIES,
+    queryFn:  expensesApi.getCategories,
+    staleTime: 60_000,
+  })
+
+  const saveMutation = useMutation({
+    mutationFn: (data: any) => editTarget
+      ? expensesApi.updateCategory(editTarget.id, data)
+      : expensesApi.createCategory(data),
+    onSuccess: () => {
+      toast.success(editTarget ? 'Kategoriya yangilandi' : 'Kategoriya yaratildi')
+      qc.invalidateQueries({ queryKey: QK.EXPENSE_CATEGORIES })
+      resetForm()
+    },
+    onError: (err: any) => toast.error(getErrorMessage(err?.errorCode ?? ''))
+  })
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => expensesApi.deleteCategory(id),
+    onSuccess: () => {
+      toast.success('Kategoriya o\'chirildi')
+      qc.invalidateQueries({ queryKey: QK.EXPENSE_CATEGORIES })
+      setDeleteTarget(null)
+    },
+    onError: (err: any) => toast.error(getErrorMessage(err?.errorCode ?? ''))
+  })
+
+  const resetForm = () => {
+    reset({ color: '#6366f1', name: '', description: '' })
+    setEditTarget(null)
+    setShowForm(false)
+  }
+
+  const handleEdit = (cat: any) => {
+    setEditTarget(cat)
+    reset({
+      name:        cat.name,
+      description: cat.description ?? '',
+      color:       cat.color ?? '#6366f1',
+    })
+    setShowForm(true)
+  }
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div className="lg:col-span-2 bg-white rounded-xl border-[0.5px] border-border overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border/50">
+          <h2 className="text-sm font-semibold text-gray-900">Xarajat kategoriyalari</h2>
+          <Button size="sm" variant="outline" onClick={() => { resetForm(); setShowForm(true) }} className="rounded-lg gap-1.5 h-8 border-[0.5px] text-xs">
+            <Plus className="h-3.5 w-3.5" strokeWidth={1.5} />
+            Yangi
+          </Button>
+        </div>
+
+        {isLoading ? (
+          <div className="p-4 space-y-2">
+            {[1,2,3,4].map(i => (
+              <div key={i} className="h-12 bg-gray-100 rounded-lg animate-pulse" />
+            ))}
+          </div>
+        ) : categories.length === 0 ? (
+          <div className="p-8 text-center">
+            <p className="text-sm text-muted-foreground">Kategoriyalar yo'q</p>
+          </div>
+        ) : (
+          <div className="divide-y divide-border/30">
+            {categories.map((cat: any) => (
+              <div key={cat.id} className="flex items-center gap-3 px-5 py-3 group hover:bg-gray-50/60 transition-colors">
+                <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: cat.color ?? '#6366f1' }} />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-900">{cat.name}</p>
+                  {cat.description && (
+                    <p className="text-[11px] text-muted-foreground truncate">{cat.description}</p>
+                  )}
+                </div>
+                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button onClick={() => handleEdit(cat)} className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-blue-50 text-blue-600 transition-colors">
+                    <Pencil className="h-3.5 w-3.5" strokeWidth={1.5} />
+                  </button>
+                  <button onClick={() => setDeleteTarget(cat)} className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-red-50 text-red-500 transition-all">
+                    <Trash2 className="h-3.5 w-3.5" strokeWidth={1.5} />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {showForm ? (
+        <div className="bg-white rounded-xl border-[0.5px] border-border p-5 sticky top-20">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-sm font-semibold text-gray-900">{editTarget ? 'Kategoriyani tahrirlash' : 'Yangi kategoriya'}</h2>
+            <button onClick={resetForm} className="text-muted-foreground hover:text-gray-700 text-lg">×</button>
+          </div>
+          <form onSubmit={handleSubmit(data => saveMutation.mutate(data))} className="space-y-4">
+            <div>
+              <Label className="text-xs mb-1.5 block">Nomi *</Label>
+              <Input {...register('name')} placeholder="Marketing, Ijara..." className="h-9 text-sm rounded-lg border-[0.5px]" />
+              {errors.name && <p className="text-xs text-red-500 mt-1">{errors.name.message as string}</p>}
+            </div>
+            <div>
+              <Label className="text-xs mb-1.5 block">Tavsif</Label>
+              <Input {...register('description')} placeholder="Qisqacha izoh..." className="h-9 text-sm rounded-lg border-[0.5px]" />
+            </div>
+            <div>
+              <Label className="text-xs mb-2 block">Rang</Label>
+              <div className="flex flex-wrap gap-2">
+                {COLOR_OPTIONS.map(color => (
+                  <button key={color} type="button" onClick={() => setValue('color', color)}
+                    className={cn('w-7 h-7 rounded-full transition-all border-2', watchColor === color ? 'border-gray-900 scale-110' : 'border-transparent')}
+                    style={{ backgroundColor: color }} />
+                ))}
+              </div>
+            </div>
+            <div className="flex gap-2 pt-2">
+              <Button type="button" variant="outline" size="sm" onClick={resetForm} className="flex-1 rounded-lg border-[0.5px]">Bekor</Button>
+              <Button type="submit" size="sm" disabled={saveMutation.isPending} className="flex-1 rounded-lg">
+                {saveMutation.isPending ? 'Saqlanmoqda...' : editTarget ? 'Saqlash' : 'Yaratish'}
+              </Button>
+            </div>
+          </form>
+        </div>
+      ) : (
+        <div className="hidden lg:flex bg-gray-50 rounded-xl border-[0.5px] border-border border-dashed items-center justify-center p-8 text-center sticky top-20 h-[300px]">
+          <div>
+            <Tag className="h-8 w-8 text-gray-300 mx-auto mb-2" strokeWidth={1.5} />
+            <p className="text-sm text-muted-foreground">Kategoriya tanlang yoki yangi yarating</p>
+          </div>
+        </div>
+      )}
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        title="Kategoriyani o'chirish"
+        description={`"${deleteTarget?.name}" kategoriyasini o'chirishni tasdiqlaysizmi?`}
         variant="destructive"
         loading={deleteMutation.isPending}
         onConfirm={() => deleteMutation.mutate(deleteTarget.id)}

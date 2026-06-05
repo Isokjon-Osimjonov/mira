@@ -5,6 +5,7 @@ import {
   updatePurchaseOrderSchema,
   updatePOStatusSchema,
   receivePOSchema,
+  recordPaymentSchema,
 } from './purchase-orders.schema'
 
 export async function getPurchaseOrders(req: Request, res: Response) {
@@ -130,6 +131,29 @@ export async function deletePurchaseOrder(req: Request, res: Response) {
     const data = await service.deletePurchaseOrder(req.params.id)
     return res.json({ data: { id: data.id }, error: null })
   } catch (e: any) {
+    return res
+      .status(e.status ?? 500)
+      .json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
+  }
+}
+
+export async function recordPayment(req: Request, res: Response) {
+  try {
+    const validated = recordPaymentSchema.parse(req.body)
+    const adminId = (req.user as any).sub
+    const data = await service.recordPayment(req.params.id, validated, adminId)
+    const safeData = {
+      ...data,
+      totalCostKrw: Number(data.totalCostKrw),
+      paidAmountKrw: Number(data.paidAmountKrw),
+    }
+    return res.json({ data: safeData, error: null })
+  } catch (e: any) {
+    if (e.name === 'ZodError')
+      return res.status(400).json({
+        data: null,
+        error: { message: "Ma'lumotlar noto'g'ri", code: 'VALIDATION_ERROR', details: e.errors },
+      })
     return res
       .status(e.status ?? 500)
       .json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })

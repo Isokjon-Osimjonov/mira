@@ -1,9 +1,12 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from '@tanstack/react-router'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation } from '@tanstack/react-query'
 import { Search, X, Plus } from 'lucide-react'
+import { toast } from 'sonner'
+import { api } from '../../lib/api'
 import { ordersApi } from '../../api/orders.api'
 import { QK } from '../../constants/query-keys'
+import { getErrorMessage } from '../../lib/errors'
 import { StatusBadge } from '../../components/ui/status-badge'
 import { DataTable } from '../../components/shared/DataTable'
 import { Pagination } from '../../components/shared/Pagination'
@@ -201,9 +204,59 @@ export function OrdersPage() {
   const orders = data?.data ?? []
   const meta = data?.meta
 
+  // ── Render ────────────────────────────────────────────────
+
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+
+  const toggleSelect = (id: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+  }
+
+  const toggleAll = () => {
+    selected.size === orders.length
+      ? setSelected(new Set())
+      : setSelected(new Set(orders.map((o: any) => o.id)))
+  }
+
+  const bulkStatusMutation = useMutation({
+    mutationFn: (data: { ids: string[]; status: string }) =>
+      api.post('/admin/orders/bulk-status', data).then((r) => r.data),
+    onSuccess: (_, vars) => {
+      toast.success(`${vars.ids.length} ta buyurtma yangilandi`)
+      queryClient.invalidateQueries({ queryKey: QK.ORDERS() })
+      setSelected(new Set())
+    },
+    onError: (err: any) => toast.error(getErrorMessage(err?.errorCode ?? ''))
+  })
+
   // ── Table columns (desktop) ───────────────────────────────
 
   const columns = [
+    {
+      key: 'checkbox',
+      header: (
+        <input
+          type="checkbox"
+          checked={selected.size === orders.length && orders.length > 0}
+          onChange={toggleAll}
+          className="rounded cursor-pointer"
+        />
+      ),
+      width: '40px',
+      cell: (row: any) => (
+        <input
+          type="checkbox"
+          checked={selected.has(row.id)}
+          onChange={() => toggleSelect(row.id)}
+          className="rounded cursor-pointer"
+          onClick={(e) => e.stopPropagation()}
+        />
+      ),
+    },
     {
       key: 'order',
       header: 'Buyurtma',
@@ -517,6 +570,38 @@ export function OrdersPage() {
             )}
           </div>
         </>
+      )}
+
+      {/* Bulk action bar */}
+      {selected.size > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-900 text-white rounded-xl px-4 py-3 shadow-xl flex items-center gap-3 z-50">
+          <span className="text-sm font-medium">{selected.size} ta tanlandi</span>
+          <div className="w-px h-4 bg-white/30" />
+          <Button
+            size="sm"
+            variant="ghost"
+            className="text-white hover:bg-white/10 rounded-lg text-xs h-7"
+            onClick={() => bulkStatusMutation.mutate({ ids: Array.from(selected), status: 'PACKING' })}
+          >
+            → Yig'ilmoqda
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="text-white hover:bg-white/10 rounded-lg text-xs h-7"
+            onClick={() => bulkStatusMutation.mutate({ ids: Array.from(selected), status: 'SHIPPED' })}
+          >
+            → Jo'natildi
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="text-red-300 hover:bg-white/10 rounded-lg text-xs h-7"
+            onClick={() => setSelected(new Set())}
+          >
+            <X className="h-3.5 w-3.5" />
+          </Button>
+        </div>
       )}
     </div>
   )

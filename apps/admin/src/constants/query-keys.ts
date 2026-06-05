@@ -45,6 +45,14 @@ export const QK = {
   DASHBOARD_COUPONS:    (period: string) => ['dashboard', 'coupons', period],
   DASHBOARD_CASH_FLOW:  (period: string) => ['dashboard', 'cashflow', period],
 
+  // Analytics
+  ANALYTICS_OVERVIEW: (p: any) => ['analytics', 'overview', p],
+  ANALYTICS_REVENUE: (p: any) => ['analytics', 'revenue', p],
+  ANALYTICS_PRODUCTS: (p: any) => ['analytics', 'top-products', p],
+  ANALYTICS_PL: (p: any) => ['analytics', 'pl', p],
+  ANALYTICS_FUNNEL: (p: any) => ['analytics', 'funnel', p],
+  ANALYTICS_CUSTOMERS: (p: any) => ['analytics', 'customers', p],
+
   // Suppliers
   SUPPLIERS:      (params?: object) => ['suppliers', params],
   PURCHASE_ORDERS: (params?: object) => ['purchase-orders', params],

@@ -19,7 +19,11 @@ export const updatePurchaseOrderSchema = createPurchaseOrderSchema.partial().ext
 })
 
 export const updatePOStatusSchema = z.object({
-  status: z.enum(['ORDERED', 'CANCELED']),
+  status: z.enum(['ORDERED', 'CANCELLED']),
+})
+
+export const recordPaymentSchema = z.object({
+  amountKrw: z.coerce.number().positive(),
 })
 
 export const receivePOItemSchema = z.object({
@@ -37,3 +41,4 @@ export type CreatePurchaseOrderDto = z.infer<typeof createPurchaseOrderSchema>
 export type UpdatePurchaseOrderDto = z.infer<typeof updatePurchaseOrderSchema>
 export type UpdatePOStatusDto = z.infer<typeof updatePOStatusSchema>
 export type ReceivePODto = z.infer<typeof receivePOSchema>
+export type RecordPaymentDto = z.infer<typeof recordPaymentSchema>

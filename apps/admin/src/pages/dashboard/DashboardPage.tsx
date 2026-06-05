@@ -126,13 +126,13 @@ export function DashboardPage() {
 
   const { data: overview, isLoading: overviewLoading } = useQuery({
     queryKey: QK.DASHBOARD_OVERVIEW(period),
-    queryFn: () => analyticsApi.getOverview(period),
+    queryFn: () => analyticsApi.getDashboardOverview(period),
     refetchInterval: 30_000, // auto refresh every 30s
   })
 
   const { data: revenueData, isLoading: revenueLoading } = useQuery({
     queryKey: QK.DASHBOARD_REVENUE(period),
-    queryFn: () => analyticsApi.getRevenue(period),
+    queryFn: () => analyticsApi.getDashboardRevenue(period),
     refetchInterval: 60_000,
   })
 
@@ -144,7 +144,7 @@ export function DashboardPage() {
 
   const { data: topProducts } = useQuery({
     queryKey: QK.DASHBOARD_PRODUCTS(period),
-    queryFn: () => analyticsApi.getTopProducts(period),
+    queryFn: () => analyticsApi.getDashboardProducts(period),
   })
 
   const { data: inventoryStats } = useQuery({

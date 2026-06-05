@@ -3,20 +3,29 @@ import { useAuthStore } from './stores/auth.store'
 import { AppLayout } from './layouts/AppLayout'
 import { LoginPage } from './pages/auth/LoginPage'
 import { DashboardPage } from './pages/dashboard/DashboardPage'
+import { AnalitikPage } from './pages/analytics/AnalitikPage'
 import { ProductsPage } from './pages/products/ProductsPage'
 import { CategoriesPage } from './pages/categories/CategoriesPage'
 import { InventoryPage } from './pages/inventory/InventoryPage'
 import { CustomersPage } from './pages/customers/CustomersPage'
 import { CustomerDetailPage } from './pages/customers/CustomerDetailPage'
 import { WalkInPage } from './pages/customers/WalkInPage'
+import { OrdersPage } from './pages/orders/OrdersPage'
+import { OrderDetailPage } from './pages/orders/OrderDetailPage'
 import { SettingsPage } from './pages/settings/SettingsPage'
 import { ExpensesPage } from './pages/expenses/ExpensesPage'
 import { AdminsPage } from './pages/admins/AdminsPage'
+import { RollarPage } from './pages/roles/RollarPage'
 import { QutularPage } from './pages/boxes/QutularPage'
 import { YetkazuvchilarPage } from './pages/suppliers/YetkazuvchilarPage'
 import { KupunlarPage } from './pages/coupons/KupunlarPage'
 import { TelegramPage } from './pages/telegram/TelegramPage'
-import { NotFoundPage } from './pages/NotFoundPage'
+import { BuyurtmaBerish } from './pages/purchase-orders/BuyurtmaBerish'
+import { HisobotlarPage } from './pages/reports/HisobotlarPage'
+import { ProfilePage } from './pages/profile/ProfilePage'
+import { AuditLogPage } from './pages/audit/AuditLogPage'
+import { SystemHealthPage } from './pages/system/SystemHealthPage'
+import { NotFoundPage } from './pages/errors/NotFoundPage'
 import { ErrorBoundary } from './components/ErrorBoundary'
 
 // For TanStack Router we define the root route and children
@@ -61,6 +70,16 @@ const dashboardRoute = createRoute({
   component: () => (
     <ErrorBoundary>
       <DashboardPage />
+    </ErrorBoundary>
+  ),
+})
+
+const analyticsRoute = createRoute({
+  getParentRoute: () => protectedRoute,
+  path: '/analytics',
+  component: () => (
+    <ErrorBoundary>
+      <AnalitikPage />
     </ErrorBoundary>
   ),
 })
@@ -125,6 +144,26 @@ const telegramRoute = createRoute({
   )
 })
 
+const purchaseOrdersRoute = createRoute({
+  getParentRoute: () => protectedRoute,
+  path: '/purchase-orders',
+  component: () => (
+    <ErrorBoundary>
+      <BuyurtmaBerish />
+    </ErrorBoundary>
+  )
+})
+
+const reportsRoute = createRoute({
+  getParentRoute: () => protectedRoute,
+  path: '/reports',
+  component: () => (
+    <ErrorBoundary>
+      <HisobotlarPage />
+    </ErrorBoundary>
+  )
+})
+
 const inventoryRoute = createRoute({
   getParentRoute: () => protectedRoute,
   path: '/inventory',
@@ -161,6 +200,16 @@ const adminsRoute = createRoute({
   component: () => (
     <ErrorBoundary>
       <AdminsPage />
+    </ErrorBoundary>
+  ),
+})
+
+const rolesRoute = createRoute({
+  getParentRoute: () => protectedRoute,
+  path: '/roles',
+  component: () => (
+    <ErrorBoundary>
+      <RollarPage />
     </ErrorBoundary>
   ),
 })
@@ -203,7 +252,7 @@ const ordersRoute = createRoute({
   path: '/orders',
   component: () => (
     <ErrorBoundary>
-      <div className="p-4">Orders Page (Coming Soon)</div>
+      <OrdersPage />
     </ErrorBoundary>
   ),
 })
@@ -211,9 +260,42 @@ const ordersRoute = createRoute({
 const orderDetailRoute = createRoute({
   getParentRoute: () => protectedRoute,
   path: '/orders/$orderId',
+  component: () => {
+    const { orderId } = orderDetailRoute.useParams()
+    return (
+      <ErrorBoundary>
+        <OrderDetailPage id={orderId} />
+      </ErrorBoundary>
+    )
+  },
+})
+
+const profileRoute = createRoute({
+  getParentRoute: () => protectedRoute,
+  path: '/profile',
   component: () => (
     <ErrorBoundary>
-      <div className="p-4">Order Detail Page (Coming Soon)</div>
+      <ProfilePage />
+    </ErrorBoundary>
+  ),
+})
+
+const auditRoute = createRoute({
+  getParentRoute: () => protectedRoute,
+  path: '/audit',
+  component: () => (
+    <ErrorBoundary>
+      <AuditLogPage />
+    </ErrorBoundary>
+  ),
+})
+
+const systemRoute = createRoute({
+  getParentRoute: () => protectedRoute,
+  path: '/system',
+  component: () => (
+    <ErrorBoundary>
+      <SystemHealthPage />
     </ErrorBoundary>
   ),
 })
@@ -232,21 +314,28 @@ const routeTree = rootRoute.addChildren([
   protectedRoute.addChildren([
     indexRoute,
     dashboardRoute,
+    analyticsRoute,
     productsRoute,
     categoriesRoute,
     boxesRoute,
     suppliersRoute,
     couponsRoute,
     telegramRoute,
+    purchaseOrdersRoute,
+    reportsRoute,
     inventoryRoute,
     settingsRoute,
     expensesRoute,
     adminsRoute,
+    rolesRoute,
     customersRoute,
     customerDetailRoute,
     walkInCustomerRoute,
     ordersRoute,
     orderDetailRoute,
+    profileRoute,
+    auditRoute,
+    systemRoute,
     // Add other routes here as they are created
   ]),
   notFoundRoute

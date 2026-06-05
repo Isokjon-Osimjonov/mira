@@ -10,6 +10,7 @@ publicRouter.get('/latest', ctrl.getLatest)
 
 // Admin
 adminRouter.get('/', requirePermission('exchange_rates', 'read'), ctrl.getHistory)
+adminRouter.get('/live', requirePermission('exchange_rates', 'read'), ctrl.getLatest)
 adminRouter.post('/', requirePermission('exchange_rates', 'write'), ctrl.createManual)
 adminRouter.post('/fetch', requirePermission('exchange_rates', 'write'), ctrl.fetchAuto)
 

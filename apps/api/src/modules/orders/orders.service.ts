@@ -49,6 +49,7 @@ import type {
 import { getSettings } from '../settings/settings.service'
 import { isValidCloudinaryUrl } from '../../lib/validate-url'
 import { orderLogger } from '../../config/logger'
+import { createNotification } from '../admin-notifications/admin-notifications.service'
 
 const VALID_TRANSITIONS: Record<string, string[]> = {
   PENDING_PAYMENT: ['PAYMENT_SUBMITTED', 'CANCELED'],
@@ -1154,6 +1155,14 @@ export async function confirmPayment(
       changedBy: adminId,
       note: dto.note,
     })
+
+    // Notify admins
+    await createNotification({
+      type: 'PAYMENT_CONFIRMED',
+      title: 'To\'lov tasdiqlandi',
+      message: `Buyurtma #${order.orderNumber}`,
+      link: `/orders/${order.id}`,
+    }).catch(err => orderLogger.error({ err }, 'Failed to create PAYMENT_CONFIRMED notification'))
 
     if (order.discountAmount > 0n) {
       await tx.insert(orderExpenses).values({

@@ -16,6 +16,9 @@ import { api } from '../lib/api'
 import { useAuthStore } from '../stores/auth.store'
 import { connectSocket, disconnectSocket } from '../lib/socket'
 
+import { NotificationBell } from '../components/NotificationBell'
+import { GlobalSearch } from '../components/GlobalSearch'
+
 // Page title mapping
 const PAGE_TITLES: Record<string, { parent?: string; title: string }> = {
   '/dashboard': { title: 'Dashboard' },
@@ -35,6 +38,9 @@ const PAGE_TITLES: Record<string, { parent?: string; title: string }> = {
   '/exchange-rates': { parent: 'Tizim', title: 'Valyuta kursi' },
   '/admin-users': { parent: 'Tizim', title: 'Adminlar' },
   '/roles': { parent: 'Tizim', title: 'Rollar' },
+  '/audit': { parent: 'Tizim', title: 'Audit log' },
+  '/system': { parent: 'Tizim', title: 'Tizim holati' },
+  '/profile': { title: 'Profil' },
 }
 
 export function AppLayout() {
@@ -73,35 +79,42 @@ export function AppLayout() {
       <SidebarInset>
         {/* Header */}
         <header
-          className="flex h-14 shrink-0 items-center gap-2
+          className="flex h-14 shrink-0 items-center justify-between gap-2
                             border-b border-border/50 bg-white
                             px-4 sticky top-0 z-10"
         >
-          <SidebarTrigger
-            className="-ml-1 text-muted-foreground
-                                     hover:text-foreground"
-          />
-          <Separator orientation="vertical" className="h-4 mx-1" />
-          <Breadcrumb>
-            <BreadcrumbList>
-              {pageInfo.parent && (
-                <>
-                  <BreadcrumbItem className="hidden md:block">
-                    <BreadcrumbLink
-                      className="text-muted-foreground
-                                               text-sm"
-                    >
-                      {pageInfo.parent}
-                    </BreadcrumbLink>
-                  </BreadcrumbItem>
-                  <BreadcrumbSeparator className="hidden md:block" />
-                </>
-              )}
-              <BreadcrumbItem>
-                <BreadcrumbPage className="text-sm font-medium">{pageInfo.title}</BreadcrumbPage>
-              </BreadcrumbItem>
-            </BreadcrumbList>
-          </Breadcrumb>
+          <div className="flex items-center gap-2">
+            <SidebarTrigger
+              className="-ml-1 text-muted-foreground
+                                       hover:text-foreground"
+            />
+            <Separator orientation="vertical" className="h-4 mx-1" />
+            <Breadcrumb>
+              <BreadcrumbList>
+                {pageInfo.parent && (
+                  <>
+                    <BreadcrumbItem className="hidden md:block">
+                      <BreadcrumbLink
+                        className="text-muted-foreground
+                                                 text-sm"
+                      >
+                        {pageInfo.parent}
+                      </BreadcrumbLink>
+                    </BreadcrumbItem>
+                    <BreadcrumbSeparator className="hidden md:block" />
+                  </>
+                )}
+                <BreadcrumbItem>
+                  <BreadcrumbPage className="text-sm font-medium">{pageInfo.title}</BreadcrumbPage>
+                </BreadcrumbItem>
+              </BreadcrumbList>
+            </Breadcrumb>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <GlobalSearch />
+            <NotificationBell />
+          </div>
         </header>
 
         {/* Page content */}

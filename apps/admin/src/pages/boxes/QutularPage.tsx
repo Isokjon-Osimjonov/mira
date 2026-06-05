@@ -14,6 +14,7 @@ import { formatKRW } from '../../utils/currency'
 import { getErrorMessage } from '../../lib/errors'
 import { ConfirmDialog } from '../../components/shared/ConfirmDialog'
 import { EmptyState } from '../../components/shared/EmptyState'
+import { ImageUploadField } from '../../components/shared/ImageUploadField'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -28,6 +29,7 @@ const boxSchema = z.object({
   costKrw:    z.coerce.number().int().min(0).default(0),
   stockCount: z.coerce.number().int().min(0).default(0),
   minStock:   z.coerce.number().int().min(0).default(10),
+  imageUrls:  z.array(z.string()).default([]),
 })
 type BoxForm = z.infer<typeof boxSchema>
 
@@ -65,9 +67,9 @@ export function QutularPage() {
     staleTime: 60_000,
   })
 
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<any>({ 
+  const { register, handleSubmit, reset, watch, setValue, formState: { errors } } = useForm<any>({ 
     resolver: zodResolver(boxSchema),
-    defaultValues: { costKrw: 0, stockCount: 0, minStock: 10 }
+    defaultValues: { costKrw: 0, stockCount: 0, minStock: 10, imageUrls: [] }
   })
 
   const saveMutation = useMutation({
@@ -103,7 +105,7 @@ export function QutularPage() {
   })
 
   const resetForm = () => {
-    reset({ costKrw: 0, stockCount: 0, minStock: 10, name: '', sizeLabel: '', lengthCm: null, widthCm: null, heightCm: null })
+    reset({ costKrw: 0, stockCount: 0, minStock: 10, name: '', sizeLabel: '', lengthCm: null, widthCm: null, heightCm: null, imageUrls: [] })
     setEditTarget(null)
     setShowForm(false)
   }
@@ -119,6 +121,7 @@ export function QutularPage() {
       costKrw:    box.costKrw ?? 0,
       stockCount: box.stockCount ?? 0,
       minStock:   box.minStock ?? 10,
+      imageUrls:  box.imageUrls ?? [],
     })
     setShowForm(true)
   }
@@ -182,7 +185,17 @@ export function QutularPage() {
                   <tr key={box.id} className="hover:bg-gray-50/60 transition-colors group">
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
-                        <Package className="h-4 w-4 text-muted-foreground shrink-0" strokeWidth={1.5} />
+                        {box.imageUrls?.[0] ? (
+                          <img
+                            src={box.imageUrls[0]}
+                            alt={box.name}
+                            className="w-10 h-10 rounded-lg object-cover border-[0.5px] border-border shrink-0"
+                          />
+                        ) : (
+                          <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center shrink-0">
+                            <Package className="h-4 w-4 text-gray-400" strokeWidth={1.5} />
+                          </div>
+                        )}
                         <div>
                           <p className="text-sm font-medium text-gray-900">{box.name}</p>
                           {box.sizeLabel && (
@@ -273,6 +286,21 @@ export function QutularPage() {
                   <Label className="text-xs mb-1.5 block">Nomi *</Label>
                   <Input {...register('name')} placeholder="Kichik quti, A4 quti..." className="h-9 text-sm rounded-lg border-[0.5px]" />
                   {errors.name && <p className="text-xs text-red-500 mt-1">{errors.name.message as string}</p>}
+                </div>
+                <div>
+                  <Label className="text-xs mb-1.5 block">Rasmlar (ixtiyoriy, max 3)</Label>
+                  <ImageUploadField
+                    mode="multi"
+                    value={watch('imageUrls') ?? []}
+                    onChange={(urls) => {
+                      const limited = (urls as string[]).slice(0, 3)
+                      setValue('imageUrls', limited, { shouldDirty: true })
+                    }}
+                    uploadFn={boxesApi.uploadBoxImage}
+                  />
+                  <p className="text-[11px] text-muted-foreground mt-1">
+                    Quti ko'rinishi, o'lchami uchun rasm
+                  </p>
                 </div>
                 <div>
                   <Label className="text-xs mb-1.5 block">Hajm belgisi</Label>

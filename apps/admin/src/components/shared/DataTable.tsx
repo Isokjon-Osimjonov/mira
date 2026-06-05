@@ -5,7 +5,7 @@ import { EmptyState } from './EmptyState'
 
 interface Column<T> {
   key:       string
-  header:    string
+  header:    React.ReactNode
   width?:    string
   cell:      (row: T) => React.ReactNode
   className?: string

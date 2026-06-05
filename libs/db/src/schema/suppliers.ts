@@ -31,7 +31,9 @@ export const purchaseOrders = pgTable('purchase_orders', {
   expectedDeliveryDate: date('expected_delivery_date'),
   actualDeliveryDate: date('actual_delivery_date'),
   status: varchar('status', { length: 20 }).default('DRAFT').notNull(),
+  paymentStatus: varchar('payment_status', { length: 20 }).default('UNPAID').notNull(),
   totalCostKrw: bigint('total_cost_krw', { mode: 'bigint' }).default(sql`0`).notNull(),
+  paidAmountKrw: bigint('paid_amount_krw', { mode: 'bigint' }).default(sql`0`).notNull(),
   notes: text('notes'),
   createdBy: uuid('created_by').references(() => adminUsers.id, { onDelete: 'set null' }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
@@ -41,7 +43,8 @@ export const purchaseOrders = pgTable('purchase_orders', {
   supplierIdIdx: index('purchase_orders_supplier_id_idx').on(t.supplierId),
   statusIdx: index('purchase_orders_status_idx').on(t.status),
   orderDateIdx: index('purchase_orders_order_date_idx').on(t.orderDate),
-  statusCheck: check('purchase_orders_status_check', sql`${t.status} IN ('DRAFT','ORDERED','PARTIAL','RECEIVED','CANCELED')`),
+  statusCheck: check('purchase_orders_status_check', sql`${t.status} IN ('DRAFT','ORDERED','PARTIAL','RECEIVED','CANCELLED')`),
+  paymentStatusCheck: check('purchase_orders_payment_status_check', sql`${t.paymentStatus} IN ('UNPAID','PARTIAL','PAID')`),
 }));
 
 export const purchaseOrderItems = pgTable('purchase_order_items', {

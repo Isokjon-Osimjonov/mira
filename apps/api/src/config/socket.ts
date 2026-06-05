@@ -62,6 +62,9 @@ export const emit = {
   exchangeRateUpdated: (data: SocketEvents['exchange_rate:updated']) =>
     getIO().to('admins').emit('exchange_rate:updated', data),
   settingsUpdated: () => getIO().to('admins').emit('settings:updated', {}),
+
   notificationCount: (data: SocketEvents['notification:count']) =>
     getIO().to('admins').emit('notification:count', data),
-}
+  notificationNew: (data: any) => 
+    getIO().to('admins').emit('notification:new', data),
+  }

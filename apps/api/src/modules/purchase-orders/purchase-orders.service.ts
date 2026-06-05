@@ -6,16 +6,21 @@ import {
   products,
   inventoryBatches,
   stockMovements,
+  expenses,
+  expenseCategories,
   settings,
 } from '@mira/db'
 import { eq, and, sql, desc, count, ilike, or } from 'drizzle-orm'
+import { logger } from '../../config/logger'
 import { emit } from '../../config/socket'
 import { notifyLowStock } from '../../bot/helpers/notify'
 import { checkLowStock, notifyWaitlistCustomers } from '../inventory/inventory.service'
 import type {
   CreatePurchaseOrderDto,
   UpdatePurchaseOrderDto,
+  UpdatePOStatusDto,
   ReceivePODto,
+  RecordPaymentDto,
 } from './purchase-orders.schema'
 
 export async function getPurchaseOrders(query: {
@@ -196,13 +201,14 @@ export async function updatePurchaseOrder(id: string, data: UpdatePurchaseOrderD
   })
 }
 
-export async function updatePurchaseOrderStatus(id: string, status: 'ORDERED' | 'CANCELED') {
+export async function updatePurchaseOrderStatus(id: string, status: 'ORDERED' | 'CANCELLED') {
   const [order] = await db.select().from(purchaseOrders).where(eq(purchaseOrders.id, id)).limit(1)
   if (!order) throw { status: 404, code: 'PO_NOT_FOUND', message: 'Xarid buyurtmasi topilmadi' }
 
   const validTransitions: Record<string, string[]> = {
-    DRAFT: ['ORDERED', 'CANCELED'],
-    ORDERED: ['CANCELED'],
+    DRAFT: ['ORDERED', 'CANCELLED'],
+    ORDERED: ['CANCELLED'],
+    PARTIAL: ['CANCELLED'],
   }
 
   if (!validTransitions[order.status]?.includes(status)) {
@@ -219,6 +225,67 @@ export async function updatePurchaseOrderStatus(id: string, status: 'ORDERED' | 
     .where(eq(purchaseOrders.id, id))
     .returning()
   return updated
+}
+
+export async function recordPayment(id: string, data: RecordPaymentDto, adminId: string) {
+  return await db.transaction(async (tx) => {
+    const [po] = await tx.select().from(purchaseOrders).where(eq(purchaseOrders.id, id)).limit(1)
+    if (!po) throw { status: 404, code: 'PO_NOT_FOUND', message: 'Xarid buyurtmasi topilmadi' }
+
+    const amountKrw = BigInt(data.amountKrw)
+    const newPaidAmount = po.paidAmountKrw + amountKrw
+
+    let paymentStatus: 'UNPAID' | 'PARTIAL' | 'PAID' = 'PARTIAL'
+    if (newPaidAmount >= po.totalCostKrw) {
+      paymentStatus = 'PAID'
+    } else if (newPaidAmount === 0n) {
+      paymentStatus = 'UNPAID'
+    }
+
+    // 1. Update PO
+    const [updated] = await tx
+      .update(purchaseOrders)
+      .set({
+        paidAmountKrw: newPaidAmount,
+        paymentStatus,
+        updatedAt: new Date(),
+      })
+      .where(eq(purchaseOrders.id, id))
+      .returning()
+
+    // 2. Find or create 'Inventory Purchase' category
+    let [category] = await tx
+      .select()
+      .from(expenseCategories)
+      .where(eq(expenseCategories.slug, 'inventory-purchase'))
+      .limit(1)
+
+    if (!category) {
+      const [newCat] = await tx
+        .insert(expenseCategories)
+        .values({
+          name: 'Inventar xaridi',
+          slug: 'inventory-purchase',
+          icon: 'Package',
+          isSystem: true,
+        })
+        .returning()
+      category = newCat
+    }
+
+    // 3. Create expense entry
+    await tx.insert(expenses).values({
+      categoryId: category.id,
+      amountKrw,
+      description: `To'lov: ${po.orderNumber}`,
+      expenseDate: new Date().toISOString().split('T')[0],
+      referenceId: po.id,
+      referenceType: 'PURCHASE_ORDER',
+      createdBy: adminId,
+    })
+
+    return updated
+  })
 }
 
 export async function receivePurchaseOrder(id: string, data: ReceivePODto, adminId: string) {
@@ -320,6 +387,8 @@ export async function receivePurchaseOrder(id: string, data: ReceivePODto, admin
       })
       .where(eq(purchaseOrders.id, id))
       .returning()
+
+    logger.info({ poId: id, status: newStatus }, 'PO items received')
 
     // Low stock check
     for (const productId of productsReceived) {

@@ -87,7 +87,7 @@ export function NavUser({
             <DropdownMenuSeparator />
 
             <DropdownMenuItem asChild>
-              <Link to="/admin-users" className="cursor-pointer">
+              <Link to="/profile" className="cursor-pointer">
                 <User className="mr-2 size-4" />
                 <span>Profil</span>
               </Link>

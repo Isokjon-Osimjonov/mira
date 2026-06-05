@@ -80,3 +80,27 @@ export async function getMe(req: Request, res: Response) {
   }
 }
 
+export async function updateProfile(req: Request, res: Response) {
+  const admin = req.user as AdminJwtPayload
+  try {
+    const data = await Service.updateProfile(admin.sub, { fullName: req.body.fullName })
+    return ok(res, data)
+  } catch (e: any) {
+    return err(res, e.status ?? 500, e.message ?? 'Ichki xatolik', e.code ?? 'INTERNAL_ERROR')
+  }
+}
+
+export async function getAuditLogs(req: Request, res: Response) {
+  try {
+    const page = req.query.page ? Number(req.query.page) : undefined
+    const limit = req.query.limit ? Number(req.query.limit) : undefined
+    const adminId = req.query.adminId as string | undefined
+    const action = req.query.action as string | undefined
+
+    const data = await Service.getAuditLogs({ page, limit, adminId, action })
+    return res.json({ data: data.items, meta: data.meta, error: null })
+  } catch (e: any) {
+    return err(res, e.status ?? 500, e.message ?? 'Ichki xatolik', e.code ?? 'INTERNAL_ERROR')
+  }
+}
+

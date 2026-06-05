@@ -1,5 +1,5 @@
 import {
-  pgTable, uuid, varchar, decimal, integer, boolean, timestamp, bigint, check, text, numeric,
+  pgTable, uuid, varchar, decimal, integer, boolean, timestamp, bigint, check, text, numeric, jsonb
 } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 
@@ -13,6 +13,7 @@ export const boxes = pgTable('boxes', {
   costKrw: integer('cost_krw').notNull().default(0),
   stockCount: integer('stock_count').notNull().default(0),
   minStock: integer('min_stock').notNull().default(10),
+  imageUrls: jsonb('image_urls').$type<string[]>().default([]),
   
   // Legacy fields kept for compatibility
   maxWeightKg: decimal('max_weight_kg', { precision: 8, scale: 3 }),
