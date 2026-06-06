@@ -54,7 +54,6 @@ export function YetkazuvchilarPage() {
   const { data: suppliersData, isLoading } = useQuery({
     queryKey: QK.SUPPLIERS(),
     queryFn:  suppliersApi.list,
-    staleTime: 60_000,
   })
   const suppliers = (suppliersData as any[]) ?? []
 
@@ -62,7 +61,6 @@ export function YetkazuvchilarPage() {
     queryKey: ['supplier-batches', expanded],
     queryFn:  () => suppliersApi.getBatches(expanded!),
     enabled:  !!expanded,
-    staleTime: 30_000,
   })
 
   const { register, handleSubmit, control, reset, formState: { errors } } = useForm<any>({

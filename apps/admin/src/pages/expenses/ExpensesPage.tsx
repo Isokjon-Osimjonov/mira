@@ -91,17 +91,18 @@ export function ExpensesPage() {
     return {}
   }
 
+  const dateParams = getDateParams()
   const queryParams = {
     page, limit: LIMIT,
     search:   debSearch || undefined,
     category: category === '_all' ? undefined : category,
-    ...getDateParams(),
+    ...dateParams,
   }
 
   const { data, isLoading } = useQuery({
     queryKey: QK.EXPENSES(queryParams),
     queryFn:  () => expensesApi.list(queryParams),
-    staleTime: 30_000,
+
   })
 
   const { data: categories = [] } = useQuery({
@@ -111,16 +112,12 @@ export function ExpensesPage() {
   })
 
   const { data: summary } = useQuery({
-    queryKey: QK.EXPENSES_SUMMARY({
-      year:  now.getFullYear(),
-      month: now.getMonth() + 1,
-    }),
-    queryFn: () => expensesApi.getSummary({
-      year:  now.getFullYear(),
-      month: now.getMonth() + 1,
-    }),
-    staleTime: 60_000,
+    queryKey: QK.EXPENSES_SUMMARY(dateParams),
+    queryFn: () => expensesApi.getSummary(dateParams),
+
   })
+
+  const periodLabel = DATE_FILTERS.find(f => f.value === dateFilter)?.label ?? 'Barchasi'
 
   const { register, handleSubmit, control, reset, formState: { errors } } = useForm({ 
     resolver: zodResolver(expenseSchema),
@@ -144,6 +141,8 @@ export function ExpensesPage() {
     onSuccess: () => {
       toast.success('Xarajat qo\'shildi')
       qc.invalidateQueries({ queryKey: ['expenses'] })
+      qc.invalidateQueries({ queryKey: ['analytics'] })
+      qc.invalidateQueries({ queryKey: ['dashboard'] })
       reset({ date: now.toISOString().split('T')[0], amountKrw: 0, category: '', description: '', note: '' })
       setSheet(false)
     },
@@ -155,6 +154,8 @@ export function ExpensesPage() {
     onSuccess: () => {
       toast.success('Xarajat o\'chirildi')
       qc.invalidateQueries({ queryKey: ['expenses'] })
+      qc.invalidateQueries({ queryKey: ['analytics'] })
+      qc.invalidateQueries({ queryKey: ['dashboard'] })
       setDeleteTarget(null)
     },
     onError: (err: any) => toast.error(getErrorMessage(err?.errorCode ?? ''))
@@ -208,21 +209,20 @@ export function ExpensesPage() {
       {pageTab === 'expenses' ? (
         <>
           {/* Summary cards */}
-      {summary && (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          {[
-            { label: 'Bu oy jami', value: formatKRW(summary.totalKrw ?? 0), color: 'text-red-600' },
-            { label: 'Inventar zararlari', value: formatKRW(summary.inventoryLossKrw ?? 0), color: 'text-orange-600' },
-            { label: 'Marketing', value: formatKRW(summary.marketingKrw ?? 0), color: 'text-blue-600' },
-            { label: 'Boshqa', value: formatKRW(summary.otherKrw ?? 0), color: 'text-gray-600' },
-          ].map(card => (
-            <div key={card.label} className="bg-white rounded-xl border-[0.5px] border-border p-4">
-              <p className="text-xs text-muted-foreground mb-1">{card.label}</p>
-              <p className={cn('text-lg font-bold', card.color)}>{card.value}</p>
+          {summary && (
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+              <div className="bg-white rounded-xl border-[0.5px] border-border p-4">
+                <p className="text-xs text-muted-foreground mb-1">{periodLabel} jami</p>
+                <p className="text-lg font-bold text-red-600">-{formatKRW(summary.totalAmountKrw ?? 0)}</p>
+              </div>
+              {(summary.byCategory ?? []).slice(0, 3).map((cat: any) => (
+                <div key={cat.categoryId} className="bg-white rounded-xl border-[0.5px] border-border p-4">
+                  <p className="text-xs text-muted-foreground mb-1 truncate">{cat.categoryName}</p>
+                  <p className="text-lg font-bold text-orange-600">-{formatKRW(cat.totalAmountKrw ?? 0)}</p>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-      )}
+          )}
 
       {/* Filters */}
       <div className="flex flex-wrap gap-2">
@@ -455,7 +455,7 @@ function ExpenseCategoriesManager() {
   const { data: categories = [], isLoading } = useQuery({
     queryKey: QK.EXPENSE_CATEGORIES,
     queryFn:  expensesApi.getCategories,
-    staleTime: 60_000,
+
   })
 
   const saveMutation = useMutation({
@@ -465,6 +465,9 @@ function ExpenseCategoriesManager() {
     onSuccess: () => {
       toast.success(editTarget ? 'Kategoriya yangilandi' : 'Kategoriya yaratildi')
       qc.invalidateQueries({ queryKey: QK.EXPENSE_CATEGORIES })
+      qc.invalidateQueries({ queryKey: ['expenses'] })
+      qc.invalidateQueries({ queryKey: ['analytics'] })
+      qc.invalidateQueries({ queryKey: ['dashboard'] })
       resetForm()
     },
     onError: (err: any) => toast.error(getErrorMessage(err?.errorCode ?? ''))
@@ -475,6 +478,9 @@ function ExpenseCategoriesManager() {
     onSuccess: () => {
       toast.success('Kategoriya o\'chirildi')
       qc.invalidateQueries({ queryKey: QK.EXPENSE_CATEGORIES })
+      qc.invalidateQueries({ queryKey: ['expenses'] })
+      qc.invalidateQueries({ queryKey: ['analytics'] })
+      qc.invalidateQueries({ queryKey: ['dashboard'] })
       setDeleteTarget(null)
     },
     onError: (err: any) => toast.error(getErrorMessage(err?.errorCode ?? ''))
@@ -597,3 +603,4 @@ function ExpenseCategoriesManager() {
     </div>
   )
 }
+

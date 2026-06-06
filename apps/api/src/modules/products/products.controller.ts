@@ -10,7 +10,7 @@ export async function getProducts(req: Request, res: Response, next: NextFunctio
       limit: limit ? Number(limit) : undefined,
       category: category as string,
       brand: brand as string,
-      region: (region as 'UZB' | 'KOR') || 'UZB',
+      region: (region as 'UZB' | 'KOR') || 'KOR',
       sort: sort as string,
       q: q as string,
       isAdmin: false,
@@ -49,7 +49,7 @@ export async function getProductsByCategorySlug(req: Request, res: Response, nex
       page: page ? Number(page) : undefined,
       limit: limit ? Number(limit) : undefined,
       brand: brand as string,
-      region: (region as 'UZB' | 'KOR') || 'UZB',
+      region: (region as 'UZB' | 'KOR') || 'KOR',
       sort: sort as string,
       q: q as string,
     })
@@ -68,7 +68,7 @@ export async function getProductsAdmin(req: Request, res: Response, next: NextFu
       limit: limit ? Number(limit) : undefined,
       category: category as string,
       brand: brand as string,
-      region: (region as 'UZB' | 'KOR') || 'UZB',
+      region: (region as 'UZB' | 'KOR') || 'KOR',
       sort: sort as string,
       q: q as string,
       isActive: isActive as string,
@@ -104,7 +104,8 @@ export async function getAdminProductById(req: Request, res: Response, next: Nex
 export async function createProduct(req: Request, res: Response, next: NextFunction) {
   try {
     const validated = CreateProductSchema.parse(req.body)
-    const result = await service.createProduct(validated)
+    const admin = req.user as any
+    const result = await service.createProduct(validated, admin?.sub, admin?.fullName)
     res.status(201).json({ data: result, error: null })
   } catch (err) {
     next(err)
@@ -115,7 +116,8 @@ export async function updateProduct(req: Request, res: Response, next: NextFunct
   try {
     const { id } = req.params
     const validated = UpdateProductSchema.parse(req.body)
-    const result = await service.updateProduct(id, validated)
+    const admin = req.user as any
+    const result = await service.updateProduct(id, validated, admin?.sub, admin?.fullName)
     res.json({ data: result, error: null })
   } catch (err) {
     next(err)
@@ -136,7 +138,8 @@ export async function updateProductImages(req: Request, res: Response, next: Nex
 export async function deleteProduct(req: Request, res: Response, next: NextFunction) {
   try {
     const { id } = req.params
-    const result = await service.deleteProduct(id)
+    const admin = req.user as any
+    const result = await service.deleteProduct(id, admin?.sub, admin?.fullName)
     res.json({ data: result, error: null })
   } catch (err) {
     next(err)

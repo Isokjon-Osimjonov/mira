@@ -41,8 +41,36 @@ export const telegramApi = {
     return res.data.data
   },
 
+  addChannel: async (payload: { chatId: string; channelName: string }) => {
+    const res = await api.post('/admin/telegram/channels', payload)
+    return res.data
+  },
+
+  removeChannel: async (id: string) => {
+    const res = await api.delete(`/admin/telegram/channels/${id}`)
+    return res.data
+  },
+
   testChannel: async (channelId: string) => {
     const res = await api.post(`/admin/telegram/channels/${channelId}/test`)
+    return res.data
+  },
+
+  getPostSettings: async () => {
+    const res = await api.get('/admin/telegram/post-settings')
+    return res.data
+  },
+
+  updatePostSettings: async (payload: {
+    phone?: string
+    link1Label?: string
+    link1Url?: string
+    link2Label?: string
+    link2Url?: string
+    link3Label?: string
+    link3Url?: string
+  }) => {
+    const res = await api.patch('/admin/telegram/post-settings', payload)
     return res.data
   },
 }

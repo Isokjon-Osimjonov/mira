@@ -14,6 +14,10 @@ router.put('/channels/:id', requirePermission('telegram', 'write'), ctrl.updateC
 router.delete('/channels/:id', requirePermission('telegram', 'write'), ctrl.deleteChannel)
 router.post('/channels/:id/test', requirePermission('telegram', 'write'), ctrl.testChannel)
 
+// Settings
+router.get('/post-settings', ctrl.getPostSettings)
+router.patch('/post-settings', requirePermission('telegram', 'write'), ctrl.updatePostSettings)
+
 // Posts
 router.get('/posts', ctrl.getPosts)
 router.get('/posts/:id', ctrl.getPostById)

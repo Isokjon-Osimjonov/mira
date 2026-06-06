@@ -42,7 +42,6 @@ export function AdminsPage() {
   const { data: admins = [], isLoading: adminsLoading } = useQuery({
     queryKey: QK.ADMINS,
     queryFn:  adminsApi.list,
-    staleTime: 60_000,
   })
 
   const { data: roles = [] } = useQuery({

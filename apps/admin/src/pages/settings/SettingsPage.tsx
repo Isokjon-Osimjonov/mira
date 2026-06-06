@@ -26,6 +26,7 @@ import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { ToggleSwitch } from '../../components/ui/ToggleSwitch'
 
 const TABS = [
   { id: 'payment', label: "To'lov usullari", icon: CreditCard },
@@ -83,7 +84,7 @@ function PaymentMethodsTab() {
   const { data: methods = [], isLoading } = useQuery({
     queryKey: QK.PAYMENT_METHODS,
     queryFn: settingsApi.getPaymentMethods,
-    staleTime: 60_000,
+
   })
 
   const updateMutation = useMutation({
@@ -159,26 +160,16 @@ function PaymentMethodsTab() {
               </div>
 
               {/* Toggle */}
-              <button
-                onClick={() =>
+              <ToggleSwitch
+                checked={method.isEnabled}
+                disabled={updateMutation.isPending}
+                onChange={(v) =>
                   updateMutation.mutate({
                     method: key,
-                    payload: { isEnabled: !method.isEnabled },
+                    payload: { isEnabled: v },
                   })
                 }
-                disabled={updateMutation.isPending}
-                className={cn(
-                  'relative w-11 h-6 rounded-full border-[0.5px] transition-colors',
-                  method.isEnabled ? 'bg-primary border-primary' : 'bg-gray-200 border-gray-300'
-                )}
-              >
-                <span
-                  className={cn(
-                    'absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform',
-                    method.isEnabled ? 'translate-x-5' : 'translate-x-0.5'
-                  )}
-                />
-              </button>
+              />
             </div>
 
             {/* Details (always visible) */}
@@ -293,7 +284,7 @@ function ShippingTiersTab() {
   const { data: tiers = [], isLoading } = useQuery({
     queryKey: QK.SHIPPING_TIERS,
     queryFn: settingsApi.getShippingTiers,
-    staleTime: 60_000,
+
   })
 
   const filtered = tiers.filter((t: any) => t.region === region)
@@ -496,7 +487,7 @@ function ExchangeRateTab() {
   const { data: rates = [], isLoading } = useQuery({
     queryKey: QK.EXCHANGE_RATES,
     queryFn: () => settingsApi.getExchangeRates(7),
-    staleTime: 60_000,
+
   })
 
   const currentRate = rates[0]
@@ -664,7 +655,7 @@ function OrderSettingsTab() {
   const { data, isLoading } = useQuery({
     queryKey: QK.ORDER_SETTINGS,
     queryFn: settingsApi.getOrderSettings,
-    staleTime: 60_000,
+
   })
 
   const {

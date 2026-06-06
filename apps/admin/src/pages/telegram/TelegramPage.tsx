@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -7,6 +7,7 @@ import {
   Send, Clock, Trash2, RefreshCw,
   Sparkles, Eye, History, Radio,
   Phone, Check, Image as ImageIcon,
+  Plus, X, Package, AlertTriangle,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { telegramApi } from '../../api/telegram.api'
@@ -20,10 +21,18 @@ import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { ToggleSwitch } from '../../components/ui/ToggleSwitch'
+import { api } from '../../lib/api'
 import {
   Select, SelectContent, SelectItem,
   SelectTrigger, SelectValue
 } from '@/components/ui/select'
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet'
 
 const POST_STATUS_LABELS: Record<string, any> = {
   SENT:      { label: 'Yuborildi',    color: 'text-green-600 bg-green-50' },
@@ -37,9 +46,7 @@ const postSchema = z.object({
   productId:    z.string().min(1, 'Mahsulot tanlang'),
   channelId:    z.string().min(1, 'Kanal tanlang'),
   caption:      z.string().min(1, 'Matn kiriting'),
-  showRetail:   z.boolean().default(true),
-  showWholesale: z.boolean().default(false),
-  phone:        z.string().optional(),
+  phoneNumber:  z.string().optional(),
   sendNow:      z.boolean().default(true),
   scheduledAt:  z.string().optional(),
 })
@@ -47,7 +54,7 @@ type PostForm = z.infer<typeof postSchema>
 
 export function TelegramPage() {
   const qc        = useQueryClient()
-  const { rate }  = useExchangeRate()
+  const { rate: currentRate }  = useExchangeRate()
 
   const [historyTab, setHistoryTab] = useState<'all'|'SCHEDULED'|'SENT'|'FAILED'>('all')
   const [productSearch, setProductSearch] = useState('')
@@ -56,28 +63,124 @@ export function TelegramPage() {
   const [generatingCaption, setGeneratingCaption] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<any>(null)
   const [page, setPage] = useState(1)
+  const [isSubmitted, setIsSubmitted] = useState(false)
   const LIMIT = 10
+
+  const [addChannelSheet, setAddChannelSheet] = useState(false)
+  const [chatId, setChatId] = useState('')
+  const [chatName, setChatName] = useState('')
+
+  // Price toggles state
+  const [showKorRetail,    setShowKorRetail]    = useState(true)
+  const [showKorWholesale, setShowKorWholesale] = useState(true)
+  const [showUzbRetail,    setShowUzbRetail]    = useState(true)
+  const [showUzbWholesale, setShowUzbWholesale] = useState(true)
+
+  // Link states
+  const [linksEnabled, setLinksEnabled] = useState([true, true, true])
+  const [linkLabels, setLinkLabels] = useState(['Telegram', 'Instagram', 'Website'])
+  const [linkUrls, setLinkUrls] = useState(['', '', ''])
 
   const { register, handleSubmit, control, reset, setValue, watch, formState: { errors } } = useForm<any>({
     resolver: zodResolver(postSchema),
+    mode: 'onSubmit',
+    reValidateMode: 'onSubmit',
     defaultValues: {
-      showRetail: true,
-      showWholesale: false,
       sendNow: true,
     }
   })
 
-  const watchCaption      = watch('caption')
-  const watchShowRetail   = watch('showRetail')
-  const watchShowWholesale = watch('showWholesale')
-  const watchPhone        = watch('phone')
-  const watchSendNow      = watch('sendNow')
+  // Load saved settings
+  const { data: savedSettings } = useQuery({
+    queryKey: ['tg-post-settings'],
+    queryFn: async () => {
+      const res = await api.get('/admin/telegram/post-settings')
+      return res.data.data
+    },
+    staleTime: Infinity,
+  })
+
+  useEffect(() => {
+    if (!savedSettings) return
+    setValue('phoneNumber', savedSettings.phone ?? '')
+    setLinkLabels([
+      savedSettings.link1Label ?? 'Telegram',
+      savedSettings.link2Label ?? 'Instagram',
+      savedSettings.link3Label ?? 'Website',
+    ])
+    setLinkUrls([
+      savedSettings.link1Url ?? '',
+      savedSettings.link2Url ?? '',
+      savedSettings.link3Url ?? '',
+    ])
+  }, [savedSettings, setValue])
+
+  const saveSettings = (data?: any) => {
+    const payload = data || {
+      phone: watchPhone,
+      link1Label: linkLabels[0],
+      link1Url: linkUrls[0],
+      link2Label: linkLabels[1],
+      link2Url: linkUrls[1],
+      link3Label: linkLabels[2],
+      link3Url: linkUrls[2],
+    }
+    saveSettingsMutation.mutate(payload)
+  }
+
+  const saveSettingsMutation = useMutation({
+    mutationFn: (data: any) => api.patch('/admin/telegram/post-settings', data).then(r => r.data),
+  })
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      const target = e.target as HTMLElement
+      if (!target.closest('.product-search-container')) {
+        setProductResults([])
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
+  const watchCaption     = watch('caption')
+  const watchPhone       = watch('phoneNumber')
+  const watchSendNow     = watch('sendNow')
+
+  // Computed prices
+  const rate = Number(currentRate ?? 0)
+  const korRetail = Number(selectedProduct?.retailPrice ?? 0)
+  const korWholesale = Number(selectedProduct?.wholesalePrice ?? 0)
+  const korMinQty = Number(selectedProduct?.minOrderQty ?? 1)
+  const uzbRetail = Math.round(korRetail * rate)
+  const uzbWholesale = Math.round(korWholesale * rate)
+  const uzbMinQty = Number(selectedProduct?.minWholesaleQty ?? 5)
 
   // Channels
   const { data: channels = [] } = useQuery({
     queryKey: QK.TELEGRAM_CHANNELS,
     queryFn:  telegramApi.getChannels,
-    staleTime: 300_000,
+  })
+
+  const addChannelMutation = useMutation({
+    mutationFn: () => telegramApi.addChannel({ chatId, channelName: chatName }),
+    onSuccess: () => {
+      toast.success('Kanal qo\'shildi')
+      qc.invalidateQueries({ queryKey: QK.TELEGRAM_CHANNELS })
+      setAddChannelSheet(false)
+      setChatId('')
+      setChatName('')
+    },
+    onError: (err: any) => toast.error(getErrorMessage(err?.errorCode ?? ''))
+  })
+
+  const removeChannelMutation = useMutation({
+    mutationFn: (id: string) => telegramApi.removeChannel(id),
+    onSuccess: () => {
+      toast.success('Kanal o\'chirildi')
+      qc.invalidateQueries({ queryKey: QK.TELEGRAM_CHANNELS })
+    },
+    onError: (err: any) => toast.error(getErrorMessage(err?.errorCode ?? ''))
   })
 
   // Posts history
@@ -90,7 +193,6 @@ export function TelegramPage() {
       status: historyTab === 'all' ? undefined : historyTab,
       page, limit: LIMIT,
     }),
-    staleTime: 30_000,
     refetchInterval: 30_000,
   })
   const posts = postsRes?.data ?? []
@@ -98,25 +200,24 @@ export function TelegramPage() {
 
   // Product search
   useEffect(() => {
-    if (!productSearch || (selectedProduct && productSearch === selectedProduct.name)) {
-      setProductResults([])
+    if (!productSearch.trim() || productSearch.length < 2 || selectedProduct) {
+      if (!selectedProduct) setProductResults([])
       return
     }
+
     const t = setTimeout(async () => {
       try {
-        const res = await productsApi.list({ q: productSearch, limit: 5 })
-        setProductResults(res.data?.data ?? [])
-      } catch {}
+        const res = await productsApi.list({ q: productSearch.trim(), limit: 8 })
+        const data = res?.data?.data ?? res?.data ?? []
+        setProductResults(Array.isArray(data) ? data : [])
+      } catch (err) {
+        console.error('Product search error:', err)
+        setProductResults([])
+      }
     }, 300)
+
     return () => clearTimeout(t)
   }, [productSearch, selectedProduct])
-
-  const handleSelectProduct = (product: any) => {
-    setSelectedProduct(product)
-    setProductSearch(product.name)
-    setProductResults([])
-    setValue('productId', product.id)
-  }
 
   const handleGenerateCaption = async () => {
     if (!selectedProduct) {
@@ -127,13 +228,13 @@ export function TelegramPage() {
     try {
       const res = await telegramApi.generateCaption({
         productId:    selectedProduct.id,
-        showRetail:   watchShowRetail,
-        showWholesale: watchShowWholesale,
+        showRetail:   showKorRetail || showUzbRetail,
+        showWholesale: showKorWholesale || showUzbWholesale,
         phone:        watchPhone,
         language:     'uz',
       })
       setValue('caption', res.caption)
-      toast.success('AI matn yaratdi ✨')
+      toast.success('AI matn yaratid ✨')
     } catch (err: any) {
       toast.error('Matn yaratishda xatolik')
     } finally {
@@ -148,17 +249,18 @@ export function TelegramPage() {
         productId: data.productId,
         channelIds: [data.channelId],
         title: selectedProduct?.name || 'Yangi post',
-        content: data.caption,
+        content: buildCaption(),
         imageUrl: imageUrls[0] || null,
         scheduledAt: data.sendNow ? null : (data.scheduledAt ? new Date(data.scheduledAt).toISOString() : null),
       })
     },
     onSuccess: () => {
       toast.success(watchSendNow ? 'Post yuborildi! 🚀' : 'Post rejalashtirildi ✅')
-      qc.invalidateQueries({ queryKey: ['telegram', 'posts'] })
-      reset({ showRetail: true, showWholesale: false, sendNow: true, caption: '' })
+      qc.invalidateQueries({ queryKey: QK.TELEGRAM_POSTS() })
+      reset({ sendNow: true, caption: '' })
       setSelectedProduct(null)
       setProductSearch('')
+      setIsSubmitted(false)
     },
     onError: (err: any) => toast.error(getErrorMessage(err?.errorCode ?? ''))
   })
@@ -167,38 +269,79 @@ export function TelegramPage() {
     mutationFn: (id: string) => telegramApi.deletePost(id),
     onSuccess: () => {
       toast.success('Post o\'chirildi')
-      qc.invalidateQueries({ queryKey: ['telegram', 'posts'] })
+      qc.invalidateQueries({ queryKey: QK.TELEGRAM_POSTS() })
       setDeleteTarget(null)
     },
     onError: (err: any) => toast.error(getErrorMessage(err?.errorCode ?? ''))
   })
 
-  const buildPreviewCaption = () => {
-    if (!selectedProduct && !watchCaption) return null
+  const SEP = '━'.repeat(19)
+
+  const buildCaption = (): string => {
+    if (!selectedProduct && !watchCaption)
+      return ''
     const lines: string[] = []
+
+    // Headline from post matni
     if (watchCaption) {
       lines.push(watchCaption)
-    } else if (selectedProduct) {
-      lines.push(`🌸 *${selectedProduct.name}*`)
+      lines.push('')
     }
-    const retailPrice = selectedProduct?.korRegionalConfig?.retailPriceKrw ?? selectedProduct?.retailPriceKrw
-    const wholesalePrice = selectedProduct?.korRegionalConfig?.wholesalePriceKrw ?? selectedProduct?.wholesalePriceKrw
-    if (watchShowRetail && retailPrice) {
-      lines.push(``)
-      lines.push(`💰 Narx: ${formatKRW(retailPrice)}`)
-      if (rate) lines.push(`    ≈ ${formatUZS(Math.round(retailPrice * rate))}`)
+
+    // Price section
+    const priceLines: string[] = []
+    if (showKorRetail && korRetail > 0)
+      priceLines.push(
+        `🇰🇷 Narx: ₩${
+          korRetail.toLocaleString('en')
+        } / dona`)
+    if (showKorWholesale && korWholesale > 0)
+      priceLines.push(
+        `🇰🇷 Narx: ₩${
+          korWholesale.toLocaleString('en')
+        } dan — ${korMinQty} tadan`)
+    if (showUzbRetail && uzbRetail > 0)
+      priceLines.push(
+        `🇺🇿 Narx: ${
+          uzbRetail.toLocaleString('en')
+        } so'm / dona`)
+    if (showUzbWholesale && uzbWholesale > 0)
+      priceLines.push(
+        `🇺🇿 Narx: ${
+          uzbWholesale.toLocaleString('en')
+        } so'm dan — ${uzbMinQty} tadan`)
+
+    if (priceLines.length > 0) {
+      lines.push(SEP)
+      lines.push('')
+      lines.push(...priceLines)
+      lines.push('')
+      lines.push(SEP)
     }
-    if (watchShowWholesale && wholesalePrice) {
-      lines.push(`🏷 Ulguji: ${formatKRW(wholesalePrice)}`)
+
+    // Phone
+    const activePhone = watchPhone?.trim()
+    if (activePhone) {
+      lines.push('')
+      lines.push(`📞 ${activePhone}`)
     }
-    if (watchPhone) {
-      lines.push(``)
-      lines.push(`📞 ${watchPhone}`)
+
+    // Links as TEXT (not buttons)
+    const activeLinks = [0,1,2]
+      .filter(i =>
+        linksEnabled[i] && linkUrls[i]?.trim())
+      .map(i => linkLabels[i] || ['Telegram',
+        'Instagram','Website'][i])
+
+    if (activeLinks.length > 0) {
+      lines.push('')
+      lines.push(activeLinks.join('  |  '))
     }
+
     return lines.join('\n')
   }
 
-  const previewCaption = buildPreviewCaption()
+  const previewCaption = buildCaption()
   const connectedCount = channels.filter((c: any) => c.isActive).length
 
   return (
@@ -208,17 +351,21 @@ export function TelegramPage() {
           <h1 className="text-xl font-semibold text-gray-900">Telegram</h1>
           <p className="text-sm text-muted-foreground">{connectedCount} ta kanal ulangan</p>
         </div>
+        <Button size="sm" variant="outline" onClick={() => setAddChannelSheet(true)} className="rounded-lg gap-1.5 h-8 border-[0.5px] text-xs">
+          <Plus className="h-3.5 w-3.5" strokeWidth={1.5} />
+          Kanal qo'shish
+        </Button>
       </div>
 
       {channels.length > 0 && (
-        <div className="flex gap-2 overflow-x-auto scrollbar-none">
+        <div className="flex gap-2 overflow-x-auto scrollbar-none py-1">
           {channels.map((ch: any) => (
             <div key={ch.id} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white border-[0.5px] border-border shrink-0">
               <div className={cn('w-2 h-2 rounded-full', ch.isActive ? 'bg-green-500' : 'bg-gray-300')} />
               <span className="text-xs font-medium text-gray-900">{ch.channelName ?? ch.channelUsername}</span>
-              {ch.postCount !== undefined && (
-                <span className="text-[10px] text-muted-foreground">{ch.postCount} post</span>
-              )}
+              <button onClick={() => removeChannelMutation.mutate(ch.id)} className="w-4 h-4 text-gray-400 hover:text-red-500 ml-1 transition-colors">
+                <X className="h-3 w-3" strokeWidth={1.5} />
+              </button>
             </div>
           ))}
         </div>
@@ -228,28 +375,123 @@ export function TelegramPage() {
         {/* LEFT: Create post form */}
         <div className="lg:col-span-3 bg-white rounded-xl border-[0.5px] border-border p-5">
           <h2 className="text-sm font-semibold text-gray-900 mb-4">Yangi post</h2>
-          <form onSubmit={handleSubmit(data => createMutation.mutate(data))} className="space-y-4">
+          <form onSubmit={handleSubmit(data => { setIsSubmitted(true); createMutation.mutate(data) })} className="space-y-4">
             <div>
               <Label className="text-xs mb-1.5 block">Mahsulot *</Label>
-              <div className="relative">
-                <Input value={productSearch} onChange={e => setProductSearch(e.target.value)} placeholder="Mahsulot nomi yoki barcode..." className="h-9 text-sm rounded-lg border-[0.5px]" />
-                {selectedProduct && <div className="absolute right-2 top-1/2 -translate-y-1/2"><Check className="h-4 w-4 text-green-600" /></div>}
+              <div className="relative product-search-container">
+                <Input
+                  value={productSearch}
+                  onChange={e => {
+                    const val = e.target.value
+                    setProductSearch(val)
+                    if (!val.trim()) {
+                      setSelectedProduct(null)
+                      setValue('productId', '')
+                      setProductResults([])
+                    }
+                  }}
+                  placeholder="Mahsulot nomini yozing..."
+                  className={cn("h-9 text-sm rounded-lg border-[0.5px]", selectedProduct && "pr-8")}
+                  autoComplete="off"
+                />
+
+                {/* Dropdown results */}
                 {productResults.length > 0 && (
-                  <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-xl border-[0.5px] border-border shadow-lg z-20 overflow-hidden">
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-xl border-[0.5px] border-border shadow-xl z-[200] max-h-64 overflow-y-auto">
                     {productResults.map((p: any) => (
-                      <button key={p.id} type="button" onClick={() => handleSelectProduct(p)} className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 transition-colors text-left">
-                        {p.imageUrls?.[0] ? <img src={p.imageUrls[0]} className="w-8 h-8 rounded-lg object-cover shrink-0 border-[0.5px] border-border" />
-                        : <div className="w-8 h-8 rounded-lg bg-gray-100 shrink-0 flex items-center justify-center"><ImageIcon className="h-4 w-4 text-gray-400" strokeWidth={1.5} /></div>}
+                      <button key={p.id} type="button"
+                        onMouseDown={e => {
+                          e.preventDefault()
+                          setSelectedProduct(p)
+                          setProductSearch(p.name ?? p.nameKo ?? '')
+                          setProductResults([])
+                          setValue('productId', p.id, { shouldValidate: true })
+                        }}
+                        className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-primary/5 transition-colors text-left border-b border-border/20 last:border-0">
+                        {p.imageUrls?.[0] ? (
+                          <img src={p.imageUrls[0]} className="w-10 h-10 rounded-lg object-cover shrink-0 border-[0.5px] border-border" onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />
+                        ) : (
+                          <div className="w-10 h-10 rounded-lg bg-gray-100 shrink-0 flex items-center justify-center">
+                            <Package className="h-4 w-4 text-gray-400" strokeWidth={1.5} />
+                          </div>
+                        )}
                         <div className="flex-1 min-w-0">
-                          <p className="text-xs font-medium text-gray-900 truncate">{p.name}</p>
-                          <p className="text-[10px] text-muted-foreground">{p.brandName}</p>
+                          <p className="text-sm font-medium text-gray-900 truncate">{p.name ?? p.nameKo}</p>
+                          <p className="text-[11px] text-muted-foreground">{p.brandName ?? p.brand} {p.barcode ? ` · ${p.barcode}` : ''}</p>
                         </div>
+                        {(p.retailPrice ?? p.korRegionalConfig?.retailPrice) ? (
+                          <p className="text-xs font-semibold text-gray-900 shrink-0">{formatKRW(p.retailPrice ?? p.korRegionalConfig?.retailPrice)}</p>
+                        ) : null}
                       </button>
                     ))}
                   </div>
                 )}
+
+                {/* Selected product indicator */}
+                {selectedProduct && (
+                  <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 bg-white pl-2">
+                    <Check className="h-4 w-4 text-green-600" strokeWidth={2} />
+                    <button type="button"
+                      onClick={() => {
+                        setSelectedProduct(null)
+                        setProductSearch('')
+                        setValue('productId', '')
+                        setProductResults([])
+                      }}
+                      className="text-muted-foreground hover:text-gray-700">
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                )}
               </div>
-              {errors.productId && <p className="text-xs text-red-500 mt-1">{errors.productId.message as string}</p>}
+              {errors.productId && isSubmitted && <p className="text-xs text-red-500 mt-1">Mahsulot tanlang</p>}
+            </div>
+
+            {/* Price toggles section */}
+            <div className="space-y-3">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Narxlarni ko'rsatish</p>
+
+              {/* KOR section */}
+              <div className="p-3 rounded-lg bg-gray-50 border-[0.5px] border-border/50">
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide mb-3">🇰🇷 Koreya (KRW)</p>
+                <div className="space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-medium text-gray-900">Dona narxi</p>
+                      <p className="text-[11px] text-muted-foreground">{korRetail > 0 ? `₩${korRetail.toLocaleString()} / dona` : 'Kiritilmagan'}</p>
+                    </div>
+                    <ToggleSwitch checked={showKorRetail} onChange={setShowKorRetail} disabled={korRetail === 0} size="sm" />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-medium text-gray-900">Optom narxi</p>
+                      <p className="text-[11px] text-muted-foreground">{korWholesale > 0 ? `₩${korWholesale.toLocaleString()} dan — ${korMinQty} tadan` : 'Kiritilmagan'}</p>
+                    </div>
+                    <ToggleSwitch checked={showKorWholesale} onChange={setShowKorWholesale} disabled={korWholesale === 0} size="sm" />
+                  </div>
+                </div>
+              </div>
+
+              {/* UZB section */}
+              <div className="p-3 rounded-lg bg-gray-50 border-[0.5px] border-border/50">
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide mb-3">🇺🇿 O'zbekiston (UZS)</p>
+                <div className="space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-medium text-gray-900">Dona narxi</p>
+                      <p className="text-[11px] text-muted-foreground">{uzbRetail > 0 ? `${uzbRetail.toLocaleString()} so'm / dona` : 'Kiritilmagan'}</p>
+                    </div>
+                    <ToggleSwitch checked={showUzbRetail} onChange={setShowUzbRetail} disabled={uzbRetail === 0} size="sm" />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-medium text-gray-900">Optom narxi</p>
+                      <p className="text-[11px] text-muted-foreground">{uzbWholesale > 0 ? `${uzbWholesale.toLocaleString()} so'm dan — ${uzbMinQty} tadan` : 'Kiritilmagan'}</p>
+                    </div>
+                    <ToggleSwitch checked={showUzbWholesale} onChange={setShowUzbWholesale} disabled={uzbWholesale === 0} size="sm" />
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div>
@@ -264,27 +506,70 @@ export function TelegramPage() {
                   </SelectContent>
                 </Select>
               )} />
-              {errors.channelId && <p className="text-xs text-red-500 mt-1">{errors.channelId.message as string}</p>}
-            </div>
-
-            <div>
-              <Label className="text-xs mb-2 block">Narxlarni ko'rsatish</Label>
-              <div className="flex gap-2">
-                <Controller name="showRetail" control={control} render={({ field }) => (
-                  <button type="button" onClick={() => field.onChange(!field.value)} className={cn('flex-1 py-2 rounded-lg text-xs font-medium border-[0.5px] transition-all', field.value ? 'bg-primary/10 border-primary/40 text-primary' : 'bg-white border-border text-gray-600')}>💰 Retail narx</button>
-                )} />
-                <Controller name="showWholesale" control={control} render={({ field }) => (
-                  <button type="button" onClick={() => field.onChange(!field.value)} className={cn('flex-1 py-2 rounded-lg text-xs font-medium border-[0.5px] transition-all', field.value ? 'bg-primary/10 border-primary/40 text-primary' : 'bg-white border-border text-gray-600')}>🏷 Ulguji narx</button>
-                )} />
-              </div>
+              {errors.channelId && isSubmitted && channels.length > 0 && (
+                <p className="text-xs text-red-500 mt-1">{errors.channelId.message as string}</p>
+              )}
+              {channels.length === 0 && (
+                <p className="text-xs text-amber-600 mt-1 flex items-center gap-1">
+                  <AlertTriangle className="h-3 w-3" /> Avval kanal qo'shish kerak
+                </p>
+              )}
             </div>
 
             <div>
               <Label className="text-xs mb-1.5 block">Telefon raqami (havolali)</Label>
               <div className="relative">
                 <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" strokeWidth={1.5} />
-                <Input {...register('phone')} placeholder="+82 10-xxxx-xxxx" className="h-9 text-sm rounded-lg border-[0.5px] pl-9" />
+                <Input
+                  {...register('phoneNumber')}
+                  placeholder="+82 10-xxxx-xxxx"
+                  className="h-9 text-sm rounded-lg border-[0.5px] pl-9"
+                  onBlur={() => saveSettingsMutation.mutate({ phone: watchPhone })}
+                />
               </div>
+            </div>
+
+            {/* Links section */}
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide block mb-2">
+                Pastki tugmalar (linklar)
+              </Label>
+
+              {[0, 1, 2].map(i => (
+                <div key={i} className="flex items-center gap-2">
+                  <ToggleSwitch
+                    size="sm"
+                    checked={linksEnabled[i]}
+                    onChange={v => {
+                      const next = [...linksEnabled]
+                      next[i] = v
+                      setLinksEnabled(next)
+                    }}
+                  />
+                  <Input
+                    value={linkLabels[i]}
+                    onChange={e => {
+                      const next = [...linkLabels]
+                      next[i] = e.target.value
+                      setLinkLabels(next)
+                    }}
+                    onBlur={() => saveSettings()}
+                    placeholder={['Telegram', 'Instagram', 'Website'][i]}
+                    className="h-8 text-xs rounded-lg border-[0.5px] w-28 shrink-0"
+                  />
+                  <Input
+                    value={linkUrls[i]}
+                    onChange={e => {
+                      const next = [...linkUrls]
+                      next[i] = e.target.value
+                      setLinkUrls(next)
+                    }}
+                    onBlur={() => saveSettings()}
+                    placeholder="https://..."
+                    className="h-8 text-xs rounded-lg border-[0.5px] flex-1"
+                  />
+                </div>
+              ))}
             </div>
 
             <div>
@@ -295,7 +580,7 @@ export function TelegramPage() {
                 </Button>
               </div>
               <textarea {...register('caption')} rows={6} placeholder="Mahsulot haqida matn yozing yoki AI yordamida yarating..." className="w-full rounded-lg border-[0.5px] border-border p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary font-mono" />
-              {errors.caption && <p className="text-xs text-red-500 mt-1">{errors.caption.message as string}</p>}
+              {errors.caption && isSubmitted && <p className="text-xs text-red-500 mt-1">{errors.caption.message as string}</p>}
             </div>
 
             <div className="space-y-3">
@@ -336,12 +621,10 @@ export function TelegramPage() {
               ) : (
                 <div className="bg-[#EFFDDE] rounded-2xl rounded-tr-sm p-3 max-w-[280px] ml-auto shadow-sm">
                   {selectedProduct?.imageUrls?.[0] && <img src={selectedProduct.imageUrls[0]} alt="product" className="w-full rounded-xl object-cover mb-2 max-h-48" />}
-                  <div className="text-[13px] text-gray-900 leading-relaxed whitespace-pre-line">
-                    {previewCaption ? previewCaption.split('\n').map((line, i) => (
-                      <p key={i}>{line.includes('+') && line.includes('📞') ? <span>📞 <span className="text-blue-500 underline">{line.replace('📞 ', '')}</span></span>
-                      : line.startsWith('*') && line.endsWith('*') ? <strong>{line.replace(/\*/g, '')}</strong> : line}</p>
-                    )) : <span className="text-muted-foreground text-xs italic">Matn yo'q</span>}
+                  <div className="text-[13px] text-gray-900 leading-relaxed whitespace-pre-wrap font-sans">
+                    {previewCaption || <span className="text-muted-foreground text-xs italic">Matn yo'q</span>}
                   </div>
+
                   <p className="text-[10px] text-gray-400 text-right mt-1.5">{new Date().toLocaleTimeString('uz',{hour:'2-digit', minute:'2-digit'})} ✓✓</p>
                 </div>
               )}
@@ -412,6 +695,33 @@ export function TelegramPage() {
           </div>
         </div>
       )}
+
+      <Sheet open={addChannelSheet} onOpenChange={setAddChannelSheet}>
+        <SheetContent side="right" className="w-[90vw] sm:w-[400px]">
+          <SheetHeader>
+            <SheetTitle>Kanal qo'shish</SheetTitle>
+          </SheetHeader>
+          <div className="space-y-4 py-4">
+            <div className="p-3 bg-blue-50 rounded-lg border-[0.5px] border-blue-100">
+              <p className="text-xs text-blue-700">
+                ℹ️ Botni (@mira_cosmetics_bot) kanalga admin sifatida qo'shing, keyin kanal ID sini kiriting.
+              </p>
+            </div>
+            <div>
+              <Label className="text-xs mb-1.5 block">Kanal ID yoki username *</Label>
+              <Input value={chatId} onChange={e => setChatId(e.target.value)} placeholder="@mira_channel yoki -1001234567890" className="h-9 text-sm rounded-lg border-[0.5px]" />
+            </div>
+            <div>
+              <Label className="text-xs mb-1.5 block">Kanal nomi *</Label>
+              <Input value={chatName} onChange={e => setChatName(e.target.value)} placeholder="Mira Cosmetics Official" className="h-9 text-sm rounded-lg border-[0.5px]" />
+            </div>
+            <Button className="w-full rounded-lg" disabled={addChannelMutation.isPending} onClick={() => addChannelMutation.mutate()}>
+              {addChannelMutation.isPending ? 'Yuklanmoqda...' : 'Qo\'shish'}
+            </Button>
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   )
 }
+

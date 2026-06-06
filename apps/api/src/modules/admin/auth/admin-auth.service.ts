@@ -109,6 +109,7 @@ export async function adminLogin(dto: AdminLoginDto, deviceInfo?: string, ipAddr
     sub: admin.id,
     type: 'admin',
     email: admin.email,
+    fullName: admin.fullName,
     roleId: admin.roleId ?? null,
     isSuperAdmin: admin.isSuperAdmin ?? false,
   })
@@ -186,6 +187,7 @@ export async function refreshAdminToken(rawRefreshToken: string) {
     sub: admin.id,
     type: 'admin',
     email: admin.email,
+    fullName: admin.fullName,
     roleId: admin.roleId ?? null,
     isSuperAdmin: admin.isSuperAdmin ?? false,
   })

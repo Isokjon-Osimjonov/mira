@@ -82,6 +82,30 @@ export async function testChannel(req: Request, res: Response) {
   }
 }
 
+// ─── Settings ────────────────────────────────────────────────────────────
+
+export async function getPostSettings(_req: Request, res: Response) {
+  try {
+    const data = await service.getTelegramPostSettings()
+    return res.json({ data, error: null })
+  } catch (e: any) {
+    return res
+      .status(e.status ?? 500)
+      .json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
+  }
+}
+
+export async function updatePostSettings(req: Request, res: Response) {
+  try {
+    const data = await service.updateTelegramPostSettings(req.body)
+    return res.json({ data, error: null })
+  } catch (e: any) {
+    return res
+      .status(e.status ?? 500)
+      .json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
+  }
+}
+
 // ─── Posts ───────────────────────────────────────────────────────────────
 
 export async function getPosts(req: Request, res: Response) {

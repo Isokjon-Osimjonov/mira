@@ -137,7 +137,7 @@ export async function getExpenses(query: {
     .offset(offset)
 
   const [countRes] = await db
-    .select({ count: count(), totalAmount: sql<number>`SUM(amount_krw)`.mapWith(Number) })
+    .select({ count: count(), totalAmount: sql<string>`COALESCE(SUM(${expenses.amountKrw})::text, '0')` })
     .from(expenses)
     .where(where)
   const total = Number(countRes?.count || 0)
@@ -170,7 +170,7 @@ export async function getExpenseSummary(query: { dateFrom?: string; dateTo?: str
       categoryId: expenseCategories.id,
       categoryName: expenseCategories.name,
       categoryIcon: expenseCategories.icon,
-      totalAmountKrw: sql<number>`SUM(${expenses.amountKrw})`.mapWith(Number),
+      totalAmountKrw: sql<string>`COALESCE(SUM(${expenses.amountKrw})::text, '0')`,
       count: count(),
     })
     .from(expenses)
@@ -178,13 +178,14 @@ export async function getExpenseSummary(query: { dateFrom?: string; dateTo?: str
     .where(where)
     .groupBy(expenseCategories.id, expenseCategories.name, expenseCategories.icon)
 
-  const overallTotal = summary.reduce((acc, curr) => acc + curr.totalAmountKrw, 0)
+  const overallTotal = summary.reduce((acc, curr) => acc + Number(curr.totalAmountKrw), 0)
 
   return {
     totalAmountKrw: overallTotal,
     byCategory: summary.map((row) => ({
       ...row,
-      percentage: overallTotal > 0 ? (row.totalAmountKrw / overallTotal) * 100 : 0,
+      totalAmountKrw: Number(row.totalAmountKrw),
+      percentage: overallTotal > 0 ? (Number(row.totalAmountKrw) / overallTotal) * 100 : 0,
     })),
   }
 }

@@ -61,7 +61,7 @@ export const expensesApi = {
   },
 
   getSummary: async (params: {
-    year?: number; month?: number
+    dateFrom?: string; dateTo?: string
   } = {}) => {
     const res = await api.get('/admin/expenses/summary', { params })
     return res.data.data

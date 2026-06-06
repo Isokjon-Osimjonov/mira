@@ -53,7 +53,7 @@ export function AuditLogPage() {
   const { data, isLoading } = useQuery({
     queryKey: ['audit-logs', queryParams],
     queryFn: () => api.get('/admin/auth/audit-logs', { params: queryParams }).then(res => res.data),
-    staleTime: 10_000,
+
   })
 
   const logs = data?.data ?? []

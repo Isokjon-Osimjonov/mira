@@ -12,6 +12,7 @@ export interface AdminTokenPayload {
   sub: string // admin_user UUID
   type: 'admin'
   email: string
+  fullName: string
   roleId: string | null
   isSuperAdmin: boolean
 }

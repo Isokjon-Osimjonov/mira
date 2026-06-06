@@ -5,11 +5,12 @@ import { getErrorMessage } from './errors'
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime:          1 * 60 * 1000,   // 1 minute
-      gcTime:             5 * 60 * 1000,   // 5 minutes
-      retry:              1,
-      refetchOnWindowFocus: false,          // prevent annoying refetch
-      throwOnError:       false,
+      staleTime:            0,
+      gcTime:               5 * 60_000,
+      retry:                1,
+      refetchOnMount:       true,
+      refetchOnWindowFocus: true,
+      throwOnError: false,
     },
     mutations: {
       onError: (error: any) => {

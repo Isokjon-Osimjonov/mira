@@ -50,6 +50,7 @@ import { getSettings } from '../settings/settings.service'
 import { isValidCloudinaryUrl } from '../../lib/validate-url'
 import { orderLogger } from '../../config/logger'
 import { createNotification } from '../admin-notifications/admin-notifications.service'
+import { logAudit } from '../../lib/audit'
 
 const VALID_TRANSITIONS: Record<string, string[]> = {
   PENDING_PAYMENT: ['PAYMENT_SUBMITTED', 'CANCELED'],
@@ -1076,7 +1077,8 @@ export async function getOrderStatusCounts() {
 export async function adminUpdateStatus(
   orderId: string,
   adminId: string,
-  payload: { status: string; note?: string; trackingNumber?: string }
+  payload: { status: string; note?: string; trackingNumber?: string },
+  adminName?: string
 ) {
   return await db.transaction(async (tx) => {
     const [order] = await tx.select().from(orders).where(eq(orders.id, orderId)).limit(1)
@@ -1104,6 +1106,16 @@ export async function adminUpdateStatus(
       note: payload.note,
     })
 
+    await logAudit({
+      adminId,
+      adminName: adminName ?? 'Admin',
+      action: 'order:status_change',
+      entityType: 'order',
+      entityId: orderId,
+      oldValue: { status: order.status },
+      newValue: { status: payload.status },
+    })
+
     emit.orderStatusChanged({
       orderId,
       orderNumber: order.orderNumber,
@@ -1121,10 +1133,11 @@ export async function adminUpdateStatus(
 export async function confirmPayment(
   orderId: string,
   adminId: string,
-  dto: ConfirmPaymentDto
+  dto: ConfirmPaymentDto,
+  adminName?: string
 ) {
   if (!dto.confirmed) {
-    return rejectPayment(orderId, adminId, { reason: dto.note || "To'lov rad etildi" })
+    return rejectPayment(orderId, adminId, { reason: dto.note || "To'lov rad etildi" }, adminName)
   }
 
   return await db.transaction(async (tx) => {
@@ -1163,6 +1176,16 @@ export async function confirmPayment(
       message: `Buyurtma #${order.orderNumber}`,
       link: `/orders/${order.id}`,
     }).catch(err => orderLogger.error({ err }, 'Failed to create PAYMENT_CONFIRMED notification'))
+
+    await logAudit({
+      adminId,
+      adminName: adminName ?? 'Admin',
+      action: 'order:status_change',
+      entityType: 'order',
+      entityId: orderId,
+      oldValue: { status: 'PAYMENT_SUBMITTED' },
+      newValue: { status: 'PAYMENT_CONFIRMED' },
+    })
 
     if (order.discountAmount > 0n) {
       await tx.insert(orderExpenses).values({
@@ -1241,7 +1264,7 @@ export async function confirmPayment(
   })
 }
 
-export async function rejectPayment(orderId: string, adminId: string, dto: RejectPaymentDto) {
+export async function rejectPayment(orderId: string, adminId: string, dto: RejectPaymentDto, adminName?: string) {
   return await db.transaction(async (tx) => {
     const [order] = await tx.select().from(orders).where(eq(orders.id, orderId)).limit(1)
     if (!order) throw { status: 404, code: 'ORDER_NOT_FOUND', message: 'Buyurtma topilmadi' }
@@ -1280,6 +1303,16 @@ export async function rejectPayment(orderId: string, adminId: string, dto: Rejec
       note: dto.reason,
     })
 
+    await logAudit({
+      adminId,
+      adminName: adminName ?? 'Admin',
+      action: 'order:status_change',
+      entityType: 'order',
+      entityId: orderId,
+      oldValue: { status: 'PAYMENT_SUBMITTED' },
+      newValue: { status: 'PAYMENT_REJECTED' },
+    })
+
     const tokens = await getCustomerTokens(order.customerId)
     await notifyCustomerFull({
       customerId: order.customerId,
@@ -1313,7 +1346,7 @@ export async function rejectPayment(orderId: string, adminId: string, dto: Rejec
   })
 }
 
-export async function startPacking(orderId: string, adminId: string) {
+export async function startPacking(orderId: string, adminId: string, adminName?: string) {
   return await db.transaction(async (tx) => {
     const [order] = await tx.select().from(orders).where(eq(orders.id, orderId)).limit(1)
     if (!order) throw { status: 404, code: 'ORDER_NOT_FOUND', message: 'Buyurtma topilmadi' }
@@ -1407,6 +1440,16 @@ export async function startPacking(orderId: string, adminId: string) {
     await tx
       .insert(orderStatusHistory)
       .values({ orderId, fromStatus: 'PAYMENT_CONFIRMED', toStatus: 'PACKING', changedBy: adminId })
+
+    await logAudit({
+      adminId,
+      adminName: adminName ?? 'Admin',
+      action: 'order:status_change',
+      entityType: 'order',
+      entityId: orderId,
+      oldValue: { status: 'PAYMENT_CONFIRMED' },
+      newValue: { status: 'PACKING' },
+    })
     emit.orderStatusChanged({
       orderId,
       orderNumber: order.orderNumber,
@@ -1437,7 +1480,7 @@ export async function startPacking(orderId: string, adminId: string) {
   })
 }
 
-export async function shipOrder(orderId: string, adminId: string, dto: ShipOrderDto) {
+export async function shipOrder(orderId: string, adminId: string, dto: ShipOrderDto, adminName?: string) {
   return await db.transaction(async (tx) => {
     const [order] = await tx.select().from(orders).where(eq(orders.id, orderId)).limit(1)
     if (!order) throw { status: 404, code: 'ORDER_NOT_FOUND', message: 'Buyurtma topilmadi' }
@@ -1487,6 +1530,16 @@ export async function shipOrder(orderId: string, adminId: string, dto: ShipOrder
     await tx
       .insert(orderStatusHistory)
       .values({ orderId, fromStatus: 'PACKING', toStatus: 'SHIPPED', changedBy: adminId })
+
+    await logAudit({
+      adminId,
+      adminName: adminName ?? 'Admin',
+      action: 'order:status_change',
+      entityType: 'order',
+      entityId: orderId,
+      oldValue: { status: 'PACKING' },
+      newValue: { status: 'SHIPPED', trackingNumber: dto.trackingNumber },
+    })
     emit.orderStatusChanged({
       orderId,
       orderNumber: order.orderNumber,

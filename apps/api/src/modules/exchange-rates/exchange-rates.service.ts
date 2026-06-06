@@ -24,9 +24,9 @@ export async function getLatestExchangeRate() {
   }
 
   const result = {
-    krwToUzs: latest.krwToUzs,
-    usdToKrw: latest.usdToKrw,
-    cargoRateKrwPerKg: latest.cargoRateKrwPerKg,
+    krwToUzs: Number(latest.krwToUzs),
+    usdToKrw: Number(latest.usdToKrw),
+    cargoRateKrwPerKg: Number(latest.cargoRateKrwPerKg),
     createdAt: latest.createdAt,
     source: latest.source,
   }
@@ -36,11 +36,18 @@ export async function getLatestExchangeRate() {
 }
 
 export async function getExchangeRateHistory() {
-  return await db
+  const rows = await db
     .select()
     .from(exchangeRateSnapshots)
     .orderBy(desc(exchangeRateSnapshots.createdAt))
     .limit(30)
+  
+  return rows.map(r => ({
+    ...r,
+    krwToUzs: Number(r.krwToUzs),
+    usdToKrw: Number(r.usdToKrw),
+    cargoRateKrwPerKg: Number(r.cargoRateKrwPerKg),
+  }))
 }
 
 export async function createManualExchangeRate(dto: CreateExchangeRateDto, adminId: string) {
@@ -57,9 +64,9 @@ export async function createManualExchangeRate(dto: CreateExchangeRateDto, admin
   const [created] = await db
     .insert(exchangeRateSnapshots)
     .values({
-      krwToUzs: dto.krwToUzs,
-      usdToKrw: usdToKrw as number,
-      cargoRateKrwPerKg,
+      krwToUzs: dto.krwToUzs.toString(),
+      usdToKrw: (usdToKrw as number).toString(),
+      cargoRateKrwPerKg: cargoRateKrwPerKg.toString(),
       note: dto.note,
       source: 'MANUAL',
       createdBy: adminId,
@@ -111,9 +118,9 @@ export async function fetchAndSaveExchangeRate() {
     const [created] = await db
       .insert(exchangeRateSnapshots)
       .values({
-        krwToUzs: Math.round(krwToUzs), // stored as integer as per requirement (e.g. 12)
-        usdToKrw,
-        cargoRateKrwPerKg,
+        krwToUzs: krwToUzs.toString(),
+        usdToKrw: usdToKrw.toString(),
+        cargoRateKrwPerKg: cargoRateKrwPerKg.toString(),
         source: 'API',
         createdBy: null,
       })

@@ -357,7 +357,7 @@ JSON:
     return parsed
   } catch (err: any) {
     if (err.status === 429)
-      throw { status: 429, code: 'AI_QUOTA_EXCEEDED', message: 'OpenAI limit oshdi.' }
+      throw { status: 429, code: 'AI_QUOTA_EXCEEDED', message: 'OpenAI limitdan oshdi.' }
     throw { status: 500, code: 'AI_GENERATION_FAILED', message: 'Post yaratilmadi. Qayta urining.' }
   }
 }

@@ -276,7 +276,7 @@ export async function downloadInvoice(req: Request, res: Response) {
           postalCode: order.deliveryPostalCode,
           regionCode: order.deliveryRegion ?? 'KOR',
         },
-        exchangeRate: rate ? { krwToUzs: rate.krwToUzs } : undefined,
+        exchangeRate: rate ? { krwToUzs: Number(rate.krwToUzs) } : undefined,
       },
       res
     )
@@ -323,9 +323,9 @@ export async function adminGetOrderDetail(req: Request, res: Response) {
 export async function adminUpdateStatus(req: Request, res: Response) {
   try {
     const { id } = req.params
-    const adminId = (req.user as any).sub
+    const admin = req.user as any
     const payload = req.body // { status, note, trackingNumber }
-    const data = await service.adminUpdateStatus(id, adminId, payload)
+    const data = await service.adminUpdateStatus(id, admin?.sub, payload, admin?.fullName)
     return res.json({ data, error: null })
   } catch (e: any) {
     return res
@@ -366,8 +366,8 @@ export async function adminCreateOrder(req: Request, res: Response) {
 export async function confirmPayment(req: Request, res: Response) {
   try {
     const validated = confirmPaymentSchema.parse(req.body)
-    const adminId = (req.user as any).sub
-    const data = await service.confirmPayment(req.params.id, adminId, validated)
+    const admin = req.user as any
+    const data = await service.confirmPayment(req.params.id, admin?.sub, validated, admin?.fullName)
     return res.json({ data, error: null })
   } catch (e: any) {
     if (e.name === 'ZodError')
@@ -386,8 +386,8 @@ export async function confirmPayment(req: Request, res: Response) {
 export async function rejectPayment(req: Request, res: Response) {
   try {
     const validated = rejectPaymentSchema.parse(req.body)
-    const adminId = (req.user as any).sub
-    const data = await service.rejectPayment(req.params.id, adminId, validated)
+    const admin = req.user as any
+    const data = await service.rejectPayment(req.params.id, admin?.sub, validated, admin?.fullName)
     return res.json({ data: { id: data.id, status: data.status }, error: null })
   } catch (e: any) {
     if (e.name === 'ZodError')
@@ -405,8 +405,8 @@ export async function rejectPayment(req: Request, res: Response) {
 
 export async function startPacking(req: Request, res: Response) {
   try {
-    const adminId = (req.user as any).sub
-    const data = await service.startPacking(req.params.id, adminId)
+    const admin = req.user as any
+    const data = await service.startPacking(req.params.id, admin?.sub, admin?.fullName)
     return res.json({ data: { id: data.id, status: data.status }, error: null })
   } catch (e: any) {
     return res
@@ -418,8 +418,8 @@ export async function startPacking(req: Request, res: Response) {
 export async function shipOrder(req: Request, res: Response) {
   try {
     const validated = shipOrderSchema.parse(req.body)
-    const adminId = (req.user as any).sub
-    const data = await service.shipOrder(req.params.id, adminId, validated)
+    const admin = req.user as any
+    const data = await service.shipOrder(req.params.id, admin?.sub, validated, admin?.fullName)
     return res.json({ data: { id: data.id, status: data.status }, error: null })
   } catch (e: any) {
     if (e.name === 'ZodError')

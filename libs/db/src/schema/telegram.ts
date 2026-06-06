@@ -1,5 +1,5 @@
 import {
-  pgTable, uuid, varchar, text, boolean, timestamp, uniqueIndex, index, check,
+  pgTable, uuid, varchar, text, boolean, timestamp, uniqueIndex, index, check, integer
 } from 'drizzle-orm/pg-core';
 import { relations, sql } from 'drizzle-orm';
 import { telegramPostStatusEnum } from './enums';
@@ -11,6 +11,8 @@ export const telegramChannels = pgTable('telegram_channels', {
   chatId: varchar('chat_id', { length: 50 }).unique().notNull(),
   channelName: varchar('channel_name', { length: 200 }).notNull(),
   channelUsername: varchar('channel_username', { length: 100 }),
+  type: text('type').default('channel'),
+  memberCount: integer('member_count'),
   regionCode: varchar('region_code', { length: 5 }),
   isActive: boolean('is_active').default(true).notNull(),
   addedBy: uuid('added_by').references(() => adminUsers.id, { onDelete: 'set null' }),
@@ -84,6 +86,18 @@ export const telegramPostChannelsRelations = relations(telegramPostChannels, ({ 
     references: [telegramChannels.id],
   }),
 }));
+
+export const telegramPostSettings = pgTable('telegram_post_settings', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  phone: text('phone').default(''),
+  link1Label: text('link1_label').default('Telegram'),
+  link1Url: text('link1_url').default(''),
+  link2Label: text('link2_label').default('Instagram'),
+  link2Url: text('link2_url').default(''),
+  link3Label: text('link3_label').default('Website'),
+  link3Url: text('link3_url').default(''),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+});
 
 export type TelegramChannel = typeof telegramChannels.$inferSelect;
 export type NewTelegramChannel = typeof telegramChannels.$inferInsert;

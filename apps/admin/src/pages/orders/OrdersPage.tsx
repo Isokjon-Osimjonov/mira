@@ -174,7 +174,6 @@ export function OrdersPage() {
         region: region || undefined,
         search: debouncedSearch || undefined,
       }),
-    staleTime: 30_000,
   })
 
   const { data: statusCounts } = useQuery({

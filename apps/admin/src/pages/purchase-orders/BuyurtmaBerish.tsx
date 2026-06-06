@@ -108,7 +108,7 @@ export function BuyurtmaBerish() {
   const { data, isLoading } = useQuery({
     queryKey: QK.PURCHASE_ORDERS(queryParams),
     queryFn: () => purchaseOrdersApi.list(queryParams),
-    staleTime: 30_000,
+
   })
 
   const { data: suppliersData = [] } = useQuery({

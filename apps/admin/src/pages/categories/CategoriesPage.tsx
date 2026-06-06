@@ -56,7 +56,6 @@ export function CategoriesPage() {
   const { data: categories = [], isLoading } = useQuery({
     queryKey: QK.CATEGORIES,
     queryFn: categoriesApi.getFlat,
-    staleTime: 60_000,
   })
 
   const saveMutation = useMutation({

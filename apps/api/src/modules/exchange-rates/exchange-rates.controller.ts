@@ -32,9 +32,9 @@ export async function createManual(req: Request, res: Response) {
     const data = await service.createManualExchangeRate(validated, adminId)
 
     emit.exchangeRateUpdated({
-      krwToUzs: data.krwToUzs,
-      usdToKrw: data.usdToKrw,
-      cargoRateKrw: data.cargoRateKrwPerKg,
+      krwToUzs: Number(data.krwToUzs),
+      usdToKrw: Number(data.usdToKrw),
+      cargoRateKrw: Number(data.cargoRateKrwPerKg),
       source: data.source as 'API' | 'MANUAL',
       updatedAt: data.createdAt.toISOString(),
     })
@@ -60,9 +60,9 @@ export async function fetchAuto(_req: Request, res: Response) {
     const data = await service.fetchAndSaveExchangeRate()
 
     emit.exchangeRateUpdated({
-      krwToUzs: data.krwToUzs,
-      usdToKrw: data.usdToKrw,
-      cargoRateKrw: data.cargoRateKrwPerKg,
+      krwToUzs: Number(data.krwToUzs),
+      usdToKrw: Number(data.usdToKrw),
+      cargoRateKrw: Number(data.cargoRateKrwPerKg),
       source: data.source as 'API' | 'MANUAL',
       updatedAt: data.createdAt.toISOString(),
     })

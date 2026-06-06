@@ -64,7 +64,6 @@ export function QutularPage() {
   const { data: boxes = [], isLoading } = useQuery({
     queryKey: QK.BOXES,
     queryFn:  boxesApi.list,
-    staleTime: 60_000,
   })
 
   const { register, handleSubmit, reset, watch, setValue, formState: { errors } } = useForm<any>({ 

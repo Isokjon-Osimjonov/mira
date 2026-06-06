@@ -15,12 +15,11 @@ import {
   FileSpreadsheet,
   Send,
   Settings2,
-  Coins,
   Shield,
   Lock,
-  Flower2,
   FileText,
   Activity,
+  ExternalLink,
 } from 'lucide-react'
 import { NavMain } from './nav-main'
 import { NavUser } from './nav-user'
@@ -96,16 +95,14 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
               <Link to="/dashboard">
-                <div
-                  className="flex aspect-square size-8 items-center
-                                justify-center rounded-lg bg-primary
-                                text-white"
-                >
-                  <Flower2 className="size-4" />
+                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+                  <ShoppingBag className="size-4" strokeWidth={2.5} />
                 </div>
-                <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-semibold text-gray-900">Mira Admin</span>
-                  <span className="truncate text-xs text-muted-foreground">miracosmetics.uz</span>
+                <div className="grid flex-1 text-left leading-tight">
+                  <span className="truncate font-bold">Mira Admin</span>
+                  <span className="truncate text-[10px] text-muted-foreground uppercase tracking-wider">
+                    Cosmetics
+                  </span>
                 </div>
               </Link>
             </SidebarMenuButton>
@@ -113,21 +110,20 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarMenu>
       </SidebarHeader>
 
-      {/* Content: Nav groups */}
       <SidebarContent>
         {navMain.map((group) => (
           <NavMain key={group.title} label={group.title} items={group.items} />
         ))}
       </SidebarContent>
 
-      {/* Footer: Exchange rate + User */}
       <SidebarFooter>
-        {/* Exchange rate */}
-        {rate && (
-          <div className="px-3 py-1 group-data-[collapsible=icon]:hidden">
-            <p className="text-[11px] text-muted-foreground">Valyuta: 1 ₩ = {rate} so'm</p>
-          </div>
-        )}
+        <div className="px-4 py-2 mb-2 bg-gray-50/50 rounded-xl border-[0.5px] border-border/50 mx-2">
+          <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider mb-1">
+            Valyuta kursi
+          </p>
+          <p className="text-sm font-bold text-gray-900">1 ₩ = {rate} so'm</p>
+        </div>
+
         {user && (
           <NavUser
             user={{

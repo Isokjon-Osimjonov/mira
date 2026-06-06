@@ -87,42 +87,36 @@ export function AnalitikPage() {
     queryKey: ['analytics', 'overview', dateFrom, dateTo],
     queryFn: () => analyticsApi.getOverview(dateParams),
     enabled,
-    staleTime: 300_000,
   })
 
   const { data: revenueData = [] } = useQuery({
     queryKey: ['analytics', 'revenue', dateFrom, dateTo, groupBy],
     queryFn: () => analyticsApi.getRevenue({ ...dateParams, groupBy }),
     enabled,
-    staleTime: 300_000,
   })
 
   const { data: topProducts = [] } = useQuery({
     queryKey: ['analytics', 'top-products', dateFrom, dateTo],
     queryFn: () => analyticsApi.getTopProducts({ ...dateParams, limit: 10 }),
     enabled,
-    staleTime: 300_000,
   })
 
   const { data: funnel = [] } = useQuery({
     queryKey: ['analytics', 'funnel', dateFrom, dateTo],
     queryFn: () => analyticsApi.getOrderFunnel(dateParams),
     enabled,
-    staleTime: 300_000,
   })
 
   const { data: customerData } = useQuery({
     queryKey: ['analytics', 'customers', dateFrom, dateTo],
     queryFn: () => analyticsApi.getCustomers(dateParams),
     enabled,
-    staleTime: 300_000,
   })
 
   const { data: couponStats } = useQuery({
     queryKey: ['analytics', 'coupons', dateFrom, dateTo],
     queryFn: () => analyticsApi.getCouponStats(dateParams),
     enabled,
-    staleTime: 300_000,
   })
 
   const handleExport = async (type: 'pl' | 'orders' | 'products') => {

@@ -5,6 +5,7 @@ import morgan from 'morgan'
 import cookieParser from 'cookie-parser'
 import { env } from './config/env'
 import { errorHandler } from './middleware/errorHandler'
+import { requireAdmin } from './middleware/auth'
 import { apiLimiter, speedLimiter } from './middleware/rateLimiter'
 import { sanitizeInputs } from './middleware/sanitize'
 import { logger } from './config/logger'
@@ -13,6 +14,7 @@ import { getRedis } from './config/redis'
 import { createBullBoard } from '@bull-board/api'
 import { BullMQAdapter } from '@bull-board/api/bullMQAdapter'
 import { ExpressAdapter } from '@bull-board/express'
+import { Queue } from 'bullmq'
 import { notificationQueue, paymentDeadlineQueue, telegramPostQueue } from './config/queues'
 
 // Routers
@@ -129,8 +131,42 @@ export function createApp() {
   
   app.use('/api', apiLimiter)
 
+  const QUEUE_NAMES = ['order-notifications', 'payment-deadlines', 'telegram-posts', 'sales-rollup', 'db-backup', 'exchange-rate']
+
+  const getDetailedQueueStats = async () => {
+    return await Promise.all(
+      QUEUE_NAMES.map(async (name) => {
+        try {
+          const q = new Queue(name, { connection: getRedis() as any })
+          const [waiting, active, completed, failed, delayed] = await Promise.all([
+            q.getWaitingCount(),
+            q.getActiveCount(),
+            q.getCompletedCount(),
+            q.getFailedCount(),
+            q.getDelayedCount(),
+          ])
+          await q.close()
+          return {
+            name,
+            waiting,
+            active,
+            completed,
+            failed,
+            delayed,
+            status: failed > 0 ? 'warning' : 'ok',
+          }
+        } catch {
+          return { name, status: 'unavailable', waiting: 0, active: 0, completed: 0, failed: 0, delayed: 0 }
+        }
+      })
+    )
+  }
+
+  // Simple health check for ELB/Docker
+  app.get('/health', (_req, res) => res.status(200).json({ status: 'ok' }))
+
   // Enhanced Health check
-  app.get('/health', async (_req, res) => {
+  app.get('/api/v1/health', async (_req, res) => {
     const [dbOk, redisOk] = await Promise.all([
       checkDbHealth(),
       (async () => {
@@ -146,18 +182,7 @@ export function createApp() {
       })(),
     ])
 
-    const getQueueCounts = async (q: any) => {
-      try {
-        return await q.getJobCounts('waiting', 'active', 'delayed')
-      } catch {
-        return { waiting: 0, active: 0, delayed: 0 }
-      }
-    }
-    
-    const notifCounts = await getQueueCounts(notificationQueue)
-    const payCounts = await getQueueCounts(paymentDeadlineQueue)
-    const tgCounts = await getQueueCounts(telegramPostQueue)
-
+    const queueStats = await getDetailedQueueStats()
     const status = !dbOk ? 'down' : redisOk === 'down' ? 'degraded' : 'ok'
 
     res.status(status === 'down' ? 503 : 200).json({
@@ -177,15 +202,22 @@ export function createApp() {
           redis: { status: redisOk },
           bullmq: {
             status: 'ok',
-            waiting: notifCounts.waiting + payCounts.waiting + tgCounts.waiting,
-            active: notifCounts.active + payCounts.active + tgCounts.active,
-            delayed: notifCounts.delayed + payCounts.delayed + tgCounts.delayed,
+            queues: queueStats,
           },
           bot: { status: 'ok', username: env.BOT_USERNAME },
         },
       },
       error: null,
     })
+  })
+
+  app.get('/api/v1/admin/queues/stats', requireAdmin, async (req, res) => {
+    try {
+      const data = await getDetailedQueueStats()
+      res.json({ data, error: null })
+    } catch (e: any) {
+      res.status(500).json({ data: null, error: { message: e.message, code: 'QUEUE_STATS_ERROR' } })
+    }
   })
 
   // Bull Board

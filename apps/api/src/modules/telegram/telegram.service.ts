@@ -1,5 +1,12 @@
 import { db } from '../../config/db'
-import { telegramChannels, telegramPosts, telegramPostChannels, products, productRegionalConfigs } from '@mira/db'
+import {
+  telegramChannels,
+  telegramPosts,
+  telegramPostChannels,
+  telegramPostSettings,
+  products,
+  productRegionalConfigs,
+} from '@mira/db'
 import { eq, and, sql, desc, asc, isNull, inArray, count } from 'drizzle-orm'
 import { bot } from '../../bot/bot'
 import { env } from '../../config/env'
@@ -44,47 +51,41 @@ export async function generateCaption(params: {
   const retailPrice = config?.retailPrice || 0n
   const wholesalePrice = config?.wholesalePrice || 0n
 
-  const lang = params.language === 'ko' ? 'Korean' : 'Uzbek'
-  
-  let prompt = `Write a compelling Telegram post for this product in ${lang}:
-Product: ${product.name}
-Brand: ${product.brandName}
-Description: ${product.description || 'No description available'}
+  const AI_PROMPT = `
+Sen Mira Cosmetics marketing mutaxassisisan.
+Quyidagi mahsulot uchun Telegram post matni yoz.
+
+Mahsulot: ${product.name}
+Brend: ${product.brandName}
+Tavsif: ${product.description ?? ''}
+
+QOIDA - aynan shu formatda yoz:
+
+[Qisqa catchphrase — 1 jumla, emoji bilan]
+
+[MAHSULOT NOMI KATTA HARFDA]
+
+[2-3 jumla tavsif, foydalari haqida]
+
+✦ [Xususiyat 1]
+✦ [Xususiyat 2]
+✦ [Xususiyat 3]
+
+Faqat MATN qismini yoz.
+Narxlar, telefon, linklar QO'SHMA.
+Hashtaglar: #${product.brandName?.replace(/\s+/g, '') || 'MiraCosmetics'} #Kosmetika
+Uzbek tilida yoz. Emoji ishlatish mumkin.
+Maksimal 5 qator.
 `
-
-  if (params.showRetail) {
-    prompt += `Retail Price: ₩${Number(retailPrice).toLocaleString()}\n`
-  }
-  if (params.showWholesale) {
-    prompt += `Wholesale Price: ₩${Number(wholesalePrice).toLocaleString()}\n`
-  }
-  if (params.phone) {
-    prompt += `Contact: ${params.phone}\n`
-  }
-
-  prompt += `
-Use emojis, formatting (bold for name), and make it attractive for a cosmetics shop.
-Return ONLY a JSON object with this structure:
-{
-  "caption": "the text of the post",
-  "hashtags": ["list", "of", "tags"]
-}`
 
   try {
     const response = await openai.chat.completions.create({
-      model: 'gpt-4o-mini', // Faster and cheaper for captions
-      messages: [{ role: 'user', content: prompt }],
-      response_format: { type: 'json_object' },
+      model: 'gpt-4o-mini',
+      messages: [{ role: 'user', content: AI_PROMPT }],
     })
 
-    const result = JSON.parse(response.choices[0].message.content || '{}')
-    
-    // Append hashtags to caption if they are not already there
-    if (result.hashtags && result.hashtags.length > 0) {
-      result.caption += '\n\n' + result.hashtags.map((t: string) => `#${t.replace(/\s+/g, '')}`).join(' ')
-    }
-
-    return result
+    const caption = response.choices[0].message.content || ''
+    return { caption }
   } catch (error) {
     logger.error({ error, productId: params.productId }, 'OpenAI caption generation failed')
     throw { status: 502, message: 'AI matn yaratishda xatolik yuz berdi' }
@@ -192,6 +193,31 @@ export async function testChannel(id: string) {
       message: 'Xabar yuborishda xatolik yuz berdi. Bot kanalda adminligini tekshiring.',
     }
   }
+}
+
+// ─── Settings ────────────────────────────────────────────────────────────
+
+export async function getTelegramPostSettings() {
+  const [settings] = await db.select().from(telegramPostSettings).limit(1)
+  return settings
+}
+
+export async function updateTelegramPostSettings(data: {
+  phone?: string
+  link1Label?: string
+  link1Url?: string
+  link2Label?: string
+  link2Url?: string
+  link3Label?: string
+  link3Url?: string
+}) {
+  const [settings] = await db.select().from(telegramPostSettings).limit(1)
+  const [updated] = await db
+    .update(telegramPostSettings)
+    .set({ ...data, updatedAt: new Date() })
+    .where(eq(telegramPostSettings.id, settings.id))
+    .returning()
+  return updated
 }
 
 // ─── Posts ───────────────────────────────────────────────────────────────
@@ -404,9 +430,6 @@ export async function sendPost(postId: string): Promise<void> {
   for (const chan of channels) {
     try {
       let text = post.content
-      if (post.productId) {
-        text += `\n\n🛍 Mahsulotni ko'rish: https://t.me/${env.BOT_USERNAME}?start=p_${post.productId}`
-      }
 
       // Length limits
       const limit = post.imageUrl ? 1024 : 4096

@@ -1,5 +1,5 @@
 import {
-  pgTable, uuid, integer, bigint, boolean, text, varchar, timestamp, uniqueIndex, index, char,
+  pgTable, uuid, integer, bigint, boolean, text, varchar, timestamp, uniqueIndex, index, char, numeric,
 } from 'drizzle-orm/pg-core';
 import { relations, sql } from 'drizzle-orm';
 import { exchangeRateSourceEnum } from './enums';
@@ -59,9 +59,9 @@ export const paymentMethods = pgTable('payment_methods', {
 
 export const exchangeRateSnapshots = pgTable('exchange_rate_snapshots', {
   id: uuid('id').primaryKey().defaultRandom(),
-  krwToUzs: integer('krw_to_uzs').notNull(),
-  usdToKrw: integer('usd_to_krw').notNull(),
-  cargoRateKrwPerKg: integer('cargo_rate_krw_per_kg').notNull(),
+  krwToUzs: numeric('krw_to_uzs', { precision: 10, scale: 4 }).notNull(),
+  usdToKrw: numeric('usd_to_krw', { precision: 10, scale: 2 }).notNull(),
+  cargoRateKrwPerKg: numeric('cargo_rate_krw_per_kg', { precision: 12, scale: 2 }).notNull(),
   source: exchangeRateSourceEnum('source').default('API').notNull(),
   note: text('note'),
   createdBy: uuid('created_by').references(() => adminUsers.id, { onDelete: 'set null' }),

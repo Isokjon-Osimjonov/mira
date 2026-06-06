@@ -255,7 +255,7 @@ export async function getPL(year: number, month?: number) {
 
   const [revenueStats] = await db
     .select({
-      total: sql<string>`COALESCE(SUM(${orders.totalAmount}), 0::bigint)`,
+      total: sql<string>`COALESCE(SUM(${orders.totalAmount})::text, '0')`,
     })
     .from(orders)
     .where(

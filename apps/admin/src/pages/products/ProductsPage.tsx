@@ -77,7 +77,7 @@ export function ProductsPage() {
         showDeleted: activeTab === 'deleted',
         region: 'KOR',
       } as any),
-    staleTime: 30_000,
+
   })
 
   const { data: categories } = useQuery({
@@ -407,8 +407,8 @@ export function ProductsPage() {
                       {/* KOR price */}
                       <td className="px-4 py-3 text-right">
                         <p className="text-sm font-medium text-gray-900">
-                          {p.regionalConfig?.retailPriceKrw
-                            ? formatKRW(p.regionalConfig.retailPriceKrw)
+                          {p.retailPrice
+                            ? formatKRW(p.retailPrice)
                             : '—'}
                         </p>
                       </td>
@@ -419,8 +419,8 @@ export function ProductsPage() {
                                      hidden lg:table-cell"
                       >
                         <p className="text-sm text-muted-foreground">
-                          {p.regionalConfig?.retailPriceKrw && rate
-                            ? formatUZS(Math.round(Number(p.regionalConfig.retailPriceKrw) * rate))
+                          {p.retailPrice && rate
+                            ? formatUZS(Math.round(Number(p.retailPrice) * rate))
                             : '—'}
                         </p>
                       </td>

@@ -162,7 +162,6 @@ export function InventoryPage() {
         page,
         limit: 20,
       }),
-    staleTime: 30_000,
   })
 
   const { data: writeOffReasons = [] } = useQuery({
@@ -175,7 +174,6 @@ export function InventoryPage() {
     queryKey: ['inventory', 'batches', selectedProduct?.productId],
     queryFn: () => inventoryApi.getProductBatches(selectedProduct!.productId),
     enabled: !!selectedProduct?.productId && (batchSheet || writeOffSheet),
-    staleTime: 0,
   })
 
   const { data: movements = [], isLoading: isLoadingMovements } = useQuery({
@@ -187,7 +185,6 @@ export function InventoryPage() {
       return []
     },
     enabled: !!selectedProduct?.productId && (historySheet || viewSheet),
-    staleTime: 0,
   })
 
   // Add batch form

@@ -63,7 +63,6 @@ export function RollarPage() {
   const { data: roles = [], isLoading } = useQuery({
     queryKey: QK.ROLES,
     queryFn: rolesApi.list,
-    staleTime: 60_000,
   })
 
   const {

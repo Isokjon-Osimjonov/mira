@@ -19,7 +19,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Switch } from '@/components/ui/switch'
+import { ToggleSwitch } from '../../components/ui/ToggleSwitch'
 import {
   Select,
   SelectContent,
@@ -504,7 +504,7 @@ export function ProductSheet({ open, onClose, product, categories, onSuccess }: 
                 name="isActive"
                 control={control}
                 render={({ field }) => (
-                  <Switch checked={field.value} onCheckedChange={field.onChange} />
+                  <ToggleSwitch checked={field.value} onChange={field.onChange} />
                 )}
               />
             </div>

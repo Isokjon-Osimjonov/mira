@@ -42,7 +42,7 @@ export function CustomersPage() {
   const { data, isLoading } = useQuery({
     queryKey: QK.CUSTOMERS(queryParams),
     queryFn: () => customersApi.list(queryParams),
-    staleTime: 30_000,
+
   })
 
   const customers = data?.data ?? []

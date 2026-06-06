@@ -21,6 +21,7 @@ import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { ToggleSwitch } from '../../components/ui/ToggleSwitch'
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle
 } from '@/components/ui/sheet'
@@ -122,7 +123,7 @@ export function KupunlarPage() {
     queryKey: ['coupon-usages', viewTarget?.id],
     queryFn: () => couponsApi.getUsages(viewTarget!.id),
     enabled: !!viewTarget?.id,
-    staleTime: 0,
+
   })
   const usages = usagesRes?.data ?? []
 
@@ -347,15 +348,12 @@ export function KupunlarPage() {
                           ) : <span className="text-xs text-muted-foreground">Muddatsiz</span>}
                         </td>
                         <td className="px-4 py-3 text-center">
-                          <button disabled={expired || c.status === 'ARCHIVED'}
-                            onClick={() => statusMutation.mutate({ id: c.id, status: c.status === 'ACTIVE' ? 'PAUSED' : 'ACTIVE' })}
-                            className={cn(
-                              'relative w-10 h-5 rounded-full border-[0.5px] transition-colors',
-                              expired || c.status === 'ARCHIVED' ? 'opacity-40 cursor-not-allowed' : '',
-                              c.status === 'ACTIVE' ? 'bg-primary border-primary' : 'bg-gray-200 border-gray-300'
-                            )}>
-                            <span className={cn('absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform', c.status === 'ACTIVE' ? 'translate-x-5' : 'translate-x-0.5')} />
-                          </button>
+                          <ToggleSwitch
+                            checked={c.status === 'ACTIVE'}
+                            disabled={expired || c.status === 'ARCHIVED' || statusMutation.isPending}
+                            onChange={() => statusMutation.mutate({ id: c.id, status: c.status === 'ACTIVE' ? 'PAUSED' : 'ACTIVE' })}
+                            size="sm"
+                          />
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">

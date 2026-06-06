@@ -1,10 +1,13 @@
 import rateLimit from 'express-rate-limit'
 import slowDown from 'express-slow-down'
+import { env } from '../config/env'
 
 const json = (message: string, code: string) => ({
   data: null,
   error: { message, code },
 })
+
+const isDev = env.NODE_ENV === 'development'
 
 export const speedLimiter = slowDown({
   windowMs: 60 * 1000,    // 1 minute
@@ -12,8 +15,6 @@ export const speedLimiter = slowDown({
   delayMs: (hits) => (hits - 50) * 200,  // +200ms per request
   maxDelayMs: 5000,        // max 5 second delay
 })
-
-const isDev = process.env.NODE_ENV === 'development'
 
 export const adminAuthLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -30,11 +31,16 @@ export const authLimiter = rateLimit({
   message: json("Juda ko'p urinish. 10 daqiqadan keyin qayta urinib ko'ring.", 'RATE_LIMITED'),
 })
 
-// Standard: general API — 100 per minute per IP
+// Standard: general API — 500 per minute per IP (Increased from 100)
 export const apiLimiter = rateLimit({
-  windowMs: 60 * 1000,
-  max: 100,
-  message: json("Juda ko'p so'rov.", 'RATE_LIMITED'),
+  windowMs: 1 * 60 * 1000,
+  max: 500,
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: (req) => {
+    return req.path === '/health'
+  },
+  message: json("Juda ko'p so'rov.", 'RATE_LIMIT_EXCEEDED'),
 })
 
 // Upload: file uploads — 10 per minute per IP
@@ -50,7 +56,6 @@ export const adminLimiter = rateLimit({
   max: isDev ? 1000 : 200,
   message: json('Too many admin requests.', 'RATE_LIMITED'),
 })
-
 
 // AI: image analysis — 10 per minute
 export const imageLimiter = rateLimit({
