@@ -2,20 +2,21 @@ import type { ExpoConfig, ConfigContext } from 'expo/config'
 
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
-  name: 'Mira Cosmetics',
-  slug: 'mira-cosmetics',
-  scheme: 'mira-cosmetics',
+  name: 'Mira Market',
+  slug: 'mira-market',
+  scheme: 'mira-market',
   version: '1.0.0',
   orientation: 'portrait',
   icon: './assets/icon.png',
   userInterfaceStyle: 'light',
+  newArchEnabled: true,
   splash: {
     image: './assets/splash.png',
     resizeMode: 'contain',
-    backgroundColor: '#1A0533',
+    backgroundColor: '#FFF5F9',
   },
   ios: {
-    bundleIdentifier: 'uz.miracosmetics',
+    bundleIdentifier: 'uz.miramarket',
     buildNumber: '1',
     supportsTablet: false,
     infoPlist: {
@@ -25,11 +26,11 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     },
   },
   android: {
-    package: 'uz.miracosmetics',
+    package: 'uz.miramarket',
     versionCode: 1,
     adaptiveIcon: {
-      foregroundImage: './assets/adaptive-icon.png',
-      backgroundColor: '#1A0533',
+      foregroundImage: './assets/icon.png',
+      backgroundColor: '#FFF5F9',
     },
     permissions: ['CAMERA', 'READ_EXTERNAL_STORAGE', 'RECEIVE_BOOT_COMPLETED', 'VIBRATE'],
   },
@@ -38,10 +39,19 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     'expo-secure-store',
     'expo-font',
     [
+      'expo-splash-screen',
+      {
+        image: './assets/splash.png',
+        imageWidth: 400,
+        resizeMode: 'contain',
+        backgroundColor: '#FFF5F9',
+      },
+    ],
+    [
       'expo-notifications',
       {
-        icon: './assets/notification-icon.png',
-        color: '#7C3AED',
+        icon: './assets/icon.png',
+        color: '#FFF5F9',
       },
     ],
   ],
