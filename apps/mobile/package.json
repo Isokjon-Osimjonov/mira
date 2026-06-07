@@ -35,6 +35,7 @@
     "expo-splash-screen": "~0.29.21",
     "expo-status-bar": "~3.0.9",
     "expo-system-ui": "~5.0.7",
+    "@expo/vector-icons": "^14.0.0",
     "jest-expo": "^54.0.17",
     "metro-config": "^0.81.0",
     "metro-resolver": "^0.81.0",

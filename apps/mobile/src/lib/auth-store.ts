@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import * as SecureStore from 'expo-secure-store'
+import axios from 'axios'
 
 const REFRESH_TOKEN_KEY = 'mira_refresh_token'
 
@@ -10,10 +11,10 @@ export interface Customer {
   phoneRegion:     'UZB' | 'KOR'
   firstName:       string
   lastName:        string | null
-  telegramId:      number | null
+  telegramId:      string | null  // server returns string not number
   profileImageUrl: string | null
   referralCode:    string | null
-  isVerified:      boolean
+  isVerified?:     boolean
 }
 
 interface AuthState {
@@ -53,7 +54,6 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   getRefreshToken: () => SecureStore.getItemAsync(REFRESH_TOKEN_KEY),
 
-  // Called on app start — check if refresh token exists
   initialize: async () => {
     try {
       const refreshToken = await SecureStore.getItemAsync(REFRESH_TOKEN_KEY)
@@ -61,12 +61,31 @@ export const useAuthStore = create<AuthState>((set) => ({
         set({ isLoading: false })
         return
       }
-      // Refresh token exists — will be used by axios interceptor on first 401
-      // We don't call refresh here to avoid unnecessary API calls on startup
-      // The first API call will trigger refresh if access token is missing
-      set({ isLoading: false })
+      // Attempt silent refresh on startup
+      // so first screen load has valid access token
+      const res = await axios.post(
+        `${process.env.EXPO_PUBLIC_API_URL}/auth/refresh`,
+        { refreshToken }
+      )
+      const { accessToken, refreshToken: newRefresh, customer }
+        = res.data.data
+      await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, newRefresh)
+      set({
+        accessToken,
+        customer,
+        isAuthenticated: true,
+        isLoading: false,
+      })
     } catch {
-      set({ isLoading: false })
+      // Refresh failed — token expired or invalid
+      // Clear storage and send to login
+      await SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY)
+      set({
+        accessToken: null,
+        customer: null,
+        isAuthenticated: false,
+        isLoading: false,
+      })
     }
   },
 }))

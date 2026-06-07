@@ -8,8 +8,9 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
 import { tokens } from '../../lib/tokens'
-import PhoneInput, { validatePhone } from '../../components/ui/PhoneInput'
+import PhoneInput, { validatePhone, getFullPhone } from '../../components/ui/PhoneInput'
 import PrimaryButton from '../../components/ui/PrimaryButton'
+import { authService } from '../../services/auth.service'
 
 export default function LoginScreen() {
   const [phone, setPhone] = useState('')
@@ -18,21 +19,29 @@ export default function LoginScreen() {
   const [error, setError] = useState('')
   const [focused, setFocused] = useState(false)
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!validatePhone(phone, region)) {
       setError("Telefon raqam noto'g'ri")
       return
     }
-    
     setLoading(true)
-    // Sprint 2: UI Only - simulate API call or just navigate
-    setTimeout(() => {
-      setLoading(false)
+    setError('')
+    try {
+      const fullPhone = getFullPhone(phone, region)
+      const { deepLink } = await authService.requestOtp({
+        phone: fullPhone,
+        region,
+      })
       router.push({
         pathname: '/auth/otp',
-        params: { phone, region },
+        params: { phone: fullPhone, region, deepLink },
       })
-    }, 500)
+    } catch (err: any) {
+      const msg = err?.response?.data?.error?.message
+      setError(msg ?? 'Xatolik yuz berdi. Qayta urinib ko\'ring.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handlePhoneChange = (v: string) => {

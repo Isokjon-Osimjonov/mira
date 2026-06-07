@@ -46,6 +46,7 @@ export function errorHandler(err: any, req: Request, res: Response, _next: NextF
         message,
         method: req.method,
         path: req.path,
+        body: req.body,
         userId: (req as any).user?.sub ?? null,
         status,
       },

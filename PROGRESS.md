@@ -50,6 +50,35 @@
 - [x] Centralized font loading in _layout.tsx (fixed TypeError in PrimaryButton)
 - [x] Removed useFonts from individual components and screens
 
+## Sprint 3 — API Integration
+Status: ✅ Complete
+Date: 2026-06-08
+
+### Completed
+- [x] auth.service.ts — requestOtp, verifyOtp, logout
+- [x] customer.service.ts — getMe, updateProfile, savePushToken
+- [x] index.tsx — useAuthStore.initialize() on splash
+- [x] login.tsx — POST /auth/request-otp, token → otp params
+- [x] otp.tsx — real token in deeplink, POST /auth/verify-otp
+- [x] profile-setup.tsx — PATCH /customers/me
+- [x] notification-permission.tsx — placeholder for dev build
+- [x] .env created with local API URL and bot username
+- [x] Silent refresh implemented in auth-store.ts
+- [x] BASE_URL fallbacks in api.ts for Expo Go/EAS
+- [x] Fixed profile update logic (firstName/lastName splitting)
+- [x] Refined OTP token extraction with 64-char verification
+- [x] Updated Customer type in auth-store for string telegramId support
+- [x] Server-side avatar upload endpoint (Cloudinary)
+- [x] Mobile upload service and profile-setup integration
+- [x] CORS and Error Logging improvements on server
+
+### Critical flow
+Login → requestOtp → token → Telegram deeplink → user gets OTP in Telegram → enters in app → verifyOtp → JWT saved → route to profile or home
+
+### Pending
+- [ ] Push token registration (needs dev build)
+- [ ] Test with real backend running
+
 ### API & Core
 - [x] Auth API (Customer OTP + Admin JWT)
 - [x] Products API (Categories, Products, Inventory, Upload)

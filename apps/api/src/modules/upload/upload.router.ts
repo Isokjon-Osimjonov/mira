@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import { generateSignedUploadParams, type UploadFolder } from '../../config/cloudinary'
-import { requireAdmin } from '../../middleware/auth'
+import { requireAdmin, requireCustomer } from '../../middleware/auth'
+import * as ctrl from './upload.controller'
 
 const router = Router()
 
@@ -20,5 +21,12 @@ router.get('/sign', requireAdmin, async (req, res, next) => {
     next(err)
   }
 })
+
+// Customer avatar upload — authenticated customers only
+router.post(
+  '/avatar',
+  requireCustomer,
+  ctrl.uploadAvatar
+)
 
 export default router

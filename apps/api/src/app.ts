@@ -89,7 +89,7 @@ export function createApp() {
       origin: env.CORS_ORIGINS.split(','),
       credentials: true,
       methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'Authorization'],
+      allowedHeaders: ['Content-Type', 'Authorization', 'X-Client-Type'],
     })
   )
   app.use(speedLimiter)
@@ -131,7 +131,7 @@ export function createApp() {
   
   app.use('/api', apiLimiter)
 
-  const QUEUE_NAMES = ['order-notifications', 'payment-deadlines', 'telegram-posts', 'sales-rollup', 'db-backup', 'exchange-rate']
+  const QUEUE_NAMES = ['notifications', 'payment-deadline', 'telegram-posts', 'sales-rollup', 'db-backup', 'exchange-rate']
 
   const getDetailedQueueStats = async () => {
     return await Promise.all(
@@ -249,6 +249,7 @@ export function createApp() {
   // Auth routes
   app.use('/api/v1/auth', authRouter)
   app.use('/api/v1/admin/auth', adminAuthRouter)
+  app.use('/api/v1/upload', uploadRouter)
 
   // Public Products & Categories
   app.use('/api/v1/categories', categoryRouter)

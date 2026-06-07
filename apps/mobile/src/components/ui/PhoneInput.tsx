@@ -25,6 +25,14 @@ export const validatePhone = (phone: string, region: 'UZB' | 'KOR') => {
   return false
 }
 
+export const getFullPhone = (
+  phone: string,
+  region: 'UZB' | 'KOR'
+): string => {
+  const prefix = region === 'UZB' ? '+998' : '+82'
+  return `${prefix}${phone}`
+}
+
 const PhoneInput: React.FC<PhoneInputProps> = ({
   phone,
   onPhoneChange,

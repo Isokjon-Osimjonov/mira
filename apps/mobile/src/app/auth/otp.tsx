@@ -8,19 +8,47 @@ import {
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLocalSearchParams, router } from 'expo-router'
-import Constants from 'expo-constants'
 import { tokens } from '../../lib/tokens'
 import OtpInput from '../../components/ui/OtpInput'
 import PrimaryButton from '../../components/ui/PrimaryButton'
-import { Feather } from '@expo/vector-icons'
+import { authService } from '../../services/auth.service'
+import { useAuthStore } from '../../lib/auth-store'
 
 export default function OtpScreen() {
-  const { phone, region } = useLocalSearchParams<{ phone: string; region: 'UZB' | 'KOR' }>()
+  const { phone, region, deepLink } = useLocalSearchParams<{
+    phone:    string
+    region:   string
+    deepLink: string
+  }>()
+
   const [otp, setOtp] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [seconds, setSeconds] = useState(300)
   const [attempts, setAttempts] = useState(0)
+
+  // Guard: if params missing redirect back
+  useEffect(() => {
+    if (!phone || !deepLink) {
+      router.replace('/auth/login')
+    }
+  }, [phone, deepLink])
+
+  const extractToken = (deepLink: string): string => {
+    try {
+      const url = new URL(deepLink)
+      const token = url.searchParams.get('start') ?? ''
+      if (token.length !== 64) {
+        console.warn('Token length unexpected:', token.length)
+      }
+      return token
+    } catch {
+      return deepLink
+    }
+  }
+
+  // Cast region safely
+  const safeRegion: 'UZB' | 'KOR' = region === 'KOR' ? 'KOR' : 'UZB'
 
   useEffect(() => {
     if (seconds <= 0) return
@@ -35,48 +63,82 @@ export default function OtpScreen() {
   }, [])
 
   const openTelegram = async () => {
-    const BOT_USERNAME = Constants.expoConfig?.extra?.botUsername ?? ''
-    const tokenStr = '' // Sprint 2: real token from API response
-    const url = `tg://resolve?domain=${BOT_USERNAME}&start=${tokenStr}`
-    const canOpen = await Linking.canOpenURL('tg://')
-    if (!canOpen) {
-      setError('Telegram topilmadi. SMS orqali kod yuboriladi.')
-      return
+    if (!deepLink) return
+    try {
+      // Server returns https://t.me/... URL
+      // Try tg:// deep link first for native app
+      // Fall back to https:// which opens Telegram or browser
+      const canOpenTg = await Linking.canOpenURL('tg://')
+      if (canOpenTg) {
+        // Convert https://t.me/BOT?start=TOKEN
+        // to tg://resolve?domain=BOT&start=TOKEN
+        const urlObj = new URL(deepLink)
+        const botUsername = urlObj.pathname.replace('/', '')
+        const startToken = urlObj.searchParams.get('start') ?? ''
+        const nativeUrl =
+          `tg://resolve?domain=${botUsername}&start=${startToken}`
+        await Linking.openURL(nativeUrl)
+      } else {
+        // Telegram not installed — open https link
+        // Opens in browser or App Store
+        await Linking.openURL(deepLink)
+        setError('Telegram topilmadi. SMS orqali kod yuboriladi.')
+      }
+    } catch {
+      setError('Telegram ochilmadi. Qayta urinib ko\'ring.')
     }
-    await Linking.openURL(url)
   }
 
   const formatMaskedPhone = () => {
     const last4 = phone?.slice(-4) || 'xxxx'
-    if (region === 'UZB') {
+    if (safeRegion === 'UZB') {
       return `+998 ** *** ${last4.slice(0, 2)} ${last4.slice(2)}`
     }
     return `+82 ** **** ${last4.slice(0, 2)} ${last4.slice(2)}`
   }
 
-  const handleVerify = () => {
-    if (otp.length < 6) return
+  const handleVerify = async () => {
+    if (otp.length < 6 || attempts >= 3) return
     setLoading(true)
-    
-    // Sprint 2: UI only
-    setTimeout(() => {
-      setLoading(false)
-      if (otp === '111111') { // Mock success for testing
-        router.push('/auth/profile-setup')
+    setError('')
+    try {
+      const startToken = extractToken(deepLink)
+
+      const result = await authService.verifyOtp({
+        phone,
+        token: startToken,
+        otp,
+        region: safeRegion,
+      })
+      const { accessToken, refreshToken, customer, isNewCustomer } = result
+      await useAuthStore.getState().saveRefresh(refreshToken)
+      useAuthStore.getState().setAuth(accessToken, customer)
+
+      if (isNewCustomer || !customer.firstName) {
+        router.replace('/auth/profile-setup')
       } else {
-        setError('Kod noto\'g\'ri')
-        setAttempts(a => a + 1)
-        setOtp('')
+        router.replace('/(tabs)/home')
       }
-    }, 800)
+    } catch (err: any) {
+      const msg = err?.response?.data?.error?.message
+      const newAttempts = attempts + 1
+      setAttempts(newAttempts)
+      if (newAttempts >= 3) {
+        setError("Juda ko'p urinish. Yangi kod so'rang.")
+      } else {
+        setError(msg ?? "Noto'g'ri kod. Qayta urinib ko'ring.")
+      }
+      setOtp('')
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleOtpChange = (value: string) => {
     setOtp(value)
     setError('')
     if (value.length === 6) {
-      // Small delay to allow user to see the last digit filled
-      setTimeout(() => handleVerify(), 100)
+      handleVerify()
     }
   }
 
@@ -101,7 +163,7 @@ export default function OtpScreen() {
           onPress={() => router.back()}
           style={styles.backButton}
         >
-          <Feather name="chevron-left" size={24} color={tokens.colors.text} />
+          <Text style={{ fontSize: 24, color: tokens.colors.text }}>‹</Text>
         </TouchableOpacity>
       </View>
 

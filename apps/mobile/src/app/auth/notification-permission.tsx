@@ -13,9 +13,13 @@ import { Feather } from '@expo/vector-icons'
 
 export default function NotificationPermissionScreen() {
   const handleAllow = async () => {
-    // expo-notifications not supported in Expo Go
-    // Sprint 3: implement with dev build
-    router.replace('/(tabs)/home')
+    try {
+      // expo-notifications requires dev build
+      // For now just navigate — token save in Sprint 4
+      router.replace('/(tabs)/home')
+    } catch {
+      router.replace('/(tabs)/home')
+    }
   }
 
   const handleSkip = () => {

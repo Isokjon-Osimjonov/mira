@@ -51,11 +51,18 @@ export async function verifyOtp(req: Request, res: Response) {
     // Set httpOnly cookie for refresh token
     setRefreshCookie(res, result.refreshToken)
 
-    return ok(res, {
+    const isMobile = req.headers['x-client-type'] === 'mobile'
+    const responseData: any = {
       accessToken: result.accessToken,
       isNewCustomer: result.isNewCustomer,
       customer: result.customer,
-    })
+    }
+
+    if (isMobile) {
+      responseData.refreshToken = result.refreshToken
+    }
+
+    return ok(res, responseData)
   } catch (e: any) {
     return err(res, e.status ?? 500, e.message ?? 'Xatolik', e.code)
   }
@@ -63,7 +70,9 @@ export async function verifyOtp(req: Request, res: Response) {
 
 // POST /auth/refresh
 export async function refresh(req: Request, res: Response) {
-  const rawToken = getRefreshCookie(req)
+  const isMobile = req.headers['x-client-type'] === 'mobile'
+  const rawToken = isMobile ? req.body.refreshToken : getRefreshCookie(req)
+
   if (!rawToken) {
     return err(res, 401, 'Refresh token topilmadi', 'NO_REFRESH_TOKEN')
   }
@@ -71,7 +80,17 @@ export async function refresh(req: Request, res: Response) {
   try {
     const result = await AuthService.refreshCustomerToken(rawToken)
     setRefreshCookie(res, result.refreshToken)
-    return ok(res, { accessToken: result.accessToken, customer: result.customer })
+
+    const responseData: any = {
+      accessToken: result.accessToken,
+      customer: result.customer,
+    }
+
+    if (isMobile) {
+      responseData.refreshToken = result.refreshToken
+    }
+
+    return ok(res, responseData)
   } catch (e: any) {
     clearRefreshCookie(res)
     return err(res, e.status ?? 401, e.message ?? 'Xatolik', e.code)

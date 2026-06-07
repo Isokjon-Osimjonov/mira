@@ -14,11 +14,16 @@ import * as ImagePicker from 'expo-image-picker'
 import { tokens } from '../../lib/tokens'
 import PrimaryButton from '../../components/ui/PrimaryButton'
 import { Feather } from '@expo/vector-icons'
+import { customerService } from '../../services/customer.service'
+import { uploadService } from '../../services/upload.service'
+import { useAuthStore } from '../../lib/auth-store'
+import { Alert } from 'react-native'
 
 export default function ProfileSetupScreen() {
   const [name, setName] = useState('')
   const [photo, setPhoto] = useState<string | null>(null)
   const [focused, setFocused] = useState(false)
+  const [loading, setLoading] = useState(false)
 
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -33,9 +38,41 @@ export default function ProfileSetupScreen() {
     }
   }
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (name.trim().length < 2) return
-    router.push('/auth/notification-permission')
+    setLoading(true)
+    try {
+      const nameParts = name.trim().split(' ')
+      const firstName = nameParts[0]
+      const lastName = nameParts.length > 1
+        ? nameParts.slice(1).join(' ')
+        : null
+
+      // Upload photo to Cloudinary if selected
+      let profileImageUrl: string | null = null
+      if (photo) {
+        try {
+          profileImageUrl = await uploadService.uploadAvatar(photo)
+        } catch (err) {
+          console.error('Avatar upload failed:', err)
+          // Photo upload failed — continue without it
+          // Don't block profile save for failed photo
+        }
+      }
+
+      const updated = await customerService.updateProfile({
+        firstName,
+        lastName,
+        profileImageUrl,
+      })
+      useAuthStore.getState().setCustomer(updated)
+      router.replace('/auth/notification-permission')
+    } catch (err: any) {
+      const msg = err?.response?.data?.error?.message
+      Alert.alert('Xatolik', msg ?? 'Profil saqlanmadi.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   const getInitials = () => {
@@ -86,6 +123,7 @@ export default function ProfileSetupScreen() {
         <PrimaryButton
           label="Davom etish"
           onPress={handleSubmit}
+          loading={loading}
           disabled={name.trim().length < 2}
         />
       </View>
