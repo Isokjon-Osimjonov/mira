@@ -45,6 +45,10 @@ export const ERROR_MESSAGES: Record<string, string> = {
   COUPON_ONE_PER_CUSTOMER: 'Bu kupondan faqat bir marta foydalanish mumkin',
   COUPON_DUPLICATE_CODE:  'Bu kupon kodi allaqachon mavjud',
   COUPON_ARCHIVED:        'Arxivlangan kuponni o\'zgartirib bo\'lmaydi',
+  COUPON_WRONG_CUSTOMER:  'Bu kupon siz uchun emas',
+  COUPON_WRONG_PRODUCT:   'Bu kupon bu mahsulot uchun emas',
+  COUPON_WRONG_CATEGORY:  'Bu kupon bu kategoriya uchun emas',
+  COUPON_NOT_STARTED:     'Kupon hali faol emas',
 
   // Customers
   CUSTOMER_NOT_FOUND:     'Mijoz topilmadi',

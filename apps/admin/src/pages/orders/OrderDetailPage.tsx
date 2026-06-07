@@ -113,9 +113,8 @@ export function OrderDetailPage({ id }: Props) {
         note: note || undefined,
       }),
     onSuccess: () => {
+      qc.removeQueries()
       toast.success('Holat yangilandi')
-      qc.invalidateQueries({ queryKey: QK.ORDER(id) })
-      qc.invalidateQueries({ queryKey: ['orders'] })
       setConfirmAction(null)
       setNote('')
     },
@@ -128,9 +127,8 @@ export function OrderDetailPage({ id }: Props) {
   const paymentMutation = useMutation({
     mutationFn: (confirmed: boolean) => ordersApi.confirmPayment(id, confirmed, note || undefined),
     onSuccess: (_, confirmed) => {
+      qc.removeQueries()
       toast.success(confirmed ? "To'lov tasdiqlandi" : "To'lov rad etildi")
-      qc.invalidateQueries({ queryKey: QK.ORDER(id) })
-      qc.invalidateQueries({ queryKey: ['orders'] })
       setConfirmAction(null)
       setNote('')
     },

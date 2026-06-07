@@ -62,8 +62,8 @@ export function AdminsPage() {
   const inviteMutation = useMutation({
     mutationFn: adminsApi.invite,
     onSuccess: () => {
+      qc.removeQueries()
       toast.success('Admin taklif qilindi. Email yuborildi.')
-      qc.invalidateQueries({ queryKey: QK.ADMINS })
       reset()
       setInviteSheet(false)
     },
@@ -73,8 +73,8 @@ export function AdminsPage() {
   const deactivateMutation = useMutation({
     mutationFn: (id: string) => adminsApi.deactivate(id),
     onSuccess: () => {
+      qc.removeQueries()
       toast.success('Admin deaktivlashtirildi')
-      qc.invalidateQueries({ queryKey: QK.ADMINS })
       setDeactivateTarget(null)
     },
     onError: (err: any) => toast.error(getErrorMessage(err?.errorCode ?? ''))
@@ -83,16 +83,16 @@ export function AdminsPage() {
   const reactivateMutation = useMutation({
     mutationFn: (id: string) => adminsApi.reactivate(id),
     onSuccess: () => {
+      qc.removeQueries()
       toast.success('Admin aktivlashtirildi')
-      qc.invalidateQueries({ queryKey: QK.ADMINS })
     }
   })
 
   const updateRoleMutation = useMutation({
     mutationFn: ({ id, roleId }: any) => adminsApi.updateRole(id, roleId),
     onSuccess: () => {
+      qc.removeQueries()
       toast.success('Rol yangilandi')
-      qc.invalidateQueries({ queryKey: QK.ADMINS })
     },
     onError: (err: any) => toast.error(getErrorMessage(err?.errorCode ?? ''))
   })

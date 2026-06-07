@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useQuery, useMutation } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -32,6 +32,7 @@ const passwordSchema = z.object({
 })
 
 export function ProfilePage() {
+  const qc = useQueryClient()
   const user    = useAuthStore(s => s.user)
   const setUser = useAuthStore(s => s.setUser)
 
@@ -59,6 +60,7 @@ export function ProfilePage() {
   const profileMutation = useMutation({
     mutationFn: (data: any) => api.patch('/admin/auth/profile', data).then(r => r.data),
     onSuccess: (res) => {
+      qc.removeQueries()
       toast.success('Profil yangilandi')
       if (setUser && res.data) {
         setUser({ ...user, ...res.data } as any)
@@ -73,6 +75,7 @@ export function ProfilePage() {
         newPassword:     data.newPassword,
       }).then(r => r.data),
     onSuccess: () => {
+      qc.removeQueries()
       toast.success('Parol muvaffaqiyatli o\'zgartirildi')
       passwordForm.reset()
       setPwSuccess(true)

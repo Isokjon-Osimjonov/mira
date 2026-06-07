@@ -193,8 +193,8 @@ export function InventoryPage() {
   const deleteBatchMutation = useMutation({
     mutationFn: (batchId: string) => inventoryApi.deleteBatch(batchId),
     onSuccess: () => {
+      qc.removeQueries()
       toast.success("Partiya o'chirildi")
-      qc.invalidateQueries({ queryKey: ['inventory'] })
       setDeleteBatchTarget(null)
     },
     onError: (err: any) => toast.error(getErrorMessage(err?.errorCode ?? '')),
@@ -228,9 +228,8 @@ export function InventoryPage() {
         expiryDate: data.expiryDate || undefined,
       }),
     onSuccess: () => {
+      qc.removeQueries()
       toast.success("Partiya qo'shildi")
-      qc.invalidateQueries({ queryKey: ['inventory'] })
-      qc.invalidateQueries({ queryKey: QK.INVENTORY_STOCK })
       batchForm.reset()
       setBatchSheet(false)
     },
@@ -250,12 +249,11 @@ export function InventoryPage() {
         createExpense: data.createExpense,
       }),
     onSuccess: (res) => {
+      qc.removeQueries()
       const msg = res?.data?.expense
         ? 'Hisobdan chiqarildi va xarajat yaratildi'
         : 'Hisobdan chiqarildi'
       toast.success(msg)
-      qc.invalidateQueries({ queryKey: ['inventory'] })
-      qc.invalidateQueries({ queryKey: ['expenses'] })
       writeOffForm.reset()
       setWriteOffSheet(false)
     },

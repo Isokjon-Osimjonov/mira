@@ -5,6 +5,8 @@ import { relations, sql } from 'drizzle-orm';
 import { couponTypeEnum, couponScopeEnum, couponStatusEnum } from './enums';
 import { customers } from './customers';
 import { adminUsers } from './admin-users';
+import { products } from './products';
+import { categories } from './categories';
 
 export const coupons = pgTable('coupons', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -16,7 +18,10 @@ export const coupons = pgTable('coupons', {
   valueKrw: bigint('value_krw', { mode: 'bigint' }),
   maxDiscountCap: bigint('max_discount_cap', { mode: 'bigint' }),
   maxDiscountKrw: bigint('max_discount_krw', { mode: 'bigint' }),
-  scope: couponScopeEnum('scope').default('ENTIRE_ORDER').notNull(),
+  scope: text('scope').default('ALL').notNull(),
+  productId: uuid('product_id').references(() => products.id, { onDelete: 'set null' }),
+  categoryId: uuid('category_id').references(() => categories.id, { onDelete: 'set null' }),
+  customerId: uuid('customer_id').references(() => customers.id, { onDelete: 'set null' }),
   applicableResourceIds: uuid('applicable_resource_ids').array(),
   applicableBrands: varchar('applicable_brands', { length: 100 }).array(),
   minOrderAmount: bigint('min_order_amount', { mode: 'bigint' }).default(sql`0`).notNull(),

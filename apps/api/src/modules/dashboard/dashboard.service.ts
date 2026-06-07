@@ -973,8 +973,8 @@ export async function getCashFlow(period: Period, dateFrom?: string, dateTo?: st
     .from(purchaseOrders)
     .where(
       and(
-        gte(purchaseOrders.actualDeliveryDate, format(startDate, 'yyyy-MM-dd')),
-        lte(purchaseOrders.actualDeliveryDate, format(endDate, 'yyyy-MM-dd')),
+        gte(purchaseOrders.receivedAt, format(startDate, 'yyyy-MM-dd')),
+        lte(purchaseOrders.receivedAt, format(endDate, 'yyyy-MM-dd')),
         eq(purchaseOrders.status, 'RECEIVED')
       )
     )

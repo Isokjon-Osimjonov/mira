@@ -325,10 +325,6 @@ export async function createPost(data: CreatePostDto, adminId: string) {
     await scheduleTelegramPost(newPost.id, newPost.scheduledAt).catch((e) =>
       console.error('Failed to schedule telegram post:', e)
     )
-  } else {
-    // If immediate, you can trigger sendPost here or leave it to cron if you prefer.
-    // For immediate behavior, trigger it directly:
-    sendPost(newPost.id).catch(console.error)
   }
 
   return newPost
@@ -372,21 +368,19 @@ export async function updatePost(id: string, data: UpdatePostDto) {
       await tx.insert(telegramPostChannels).values(postChannelsToInsert as any)
     }
 
+    // Reschedule if needed
+    if (data.scheduledAt) {
+      const sch = new Date(data.scheduledAt)
+      if (sch > new Date()) {
+        const { scheduleTelegramPost } = await import('../../config/queues')
+        await scheduleTelegramPost(id, sch).catch((e) =>
+          console.error('Failed to reschedule telegram post:', e)
+        )
+      }
+    }
+
     return updated
   })
-}
-
-export async function sendScheduledPosts(): Promise<number> {
-  const posts = await db
-    .select({ id: telegramPosts.id })
-    .from(telegramPosts)
-    .where(and(eq(telegramPosts.status, 'SCHEDULED'), sql`${telegramPosts.scheduledAt} <= NOW()`))
-
-  for (const post of posts) {
-    await sendPost(post.id)
-  }
-
-  return posts.length
 }
 
 export async function deletePost(id: string) {

@@ -55,9 +55,8 @@ export function CustomerDetailPage({ id }: { id: string }) {
   const blockMutation = useMutation({
     mutationFn: (reason?: string) => customersApi.block(id, reason),
     onSuccess: () => {
+      qc.removeQueries()
       toast.success('Mijoz bloklandi')
-      qc.invalidateQueries({ queryKey: QK.CUSTOMER(id) })
-      qc.invalidateQueries({ queryKey: ['customers'] })
       setBlockDialog(false)
     },
     onError: (err: any) => toast.error(getErrorMessage(err?.errorCode ?? '')),
@@ -66,9 +65,8 @@ export function CustomerDetailPage({ id }: { id: string }) {
   const unblockMutation = useMutation({
     mutationFn: () => customersApi.unblock(id),
     onSuccess: () => {
+      qc.removeQueries()
       toast.success('Mijoz blokdan chiqarildi')
-      qc.invalidateQueries({ queryKey: QK.CUSTOMER(id) })
-      qc.invalidateQueries({ queryKey: ['customers'] })
       setUnblockDialog(false)
     },
     onError: (err: any) => toast.error(getErrorMessage(err?.errorCode ?? '')),
@@ -77,8 +75,8 @@ export function CustomerDetailPage({ id }: { id: string }) {
   const addNoteMutation = useMutation({
     mutationFn: () => customersApi.addNote(id, noteInput),
     onSuccess: () => {
+      qc.removeQueries()
       toast.success("Izoh qo'shildi")
-      qc.invalidateQueries({ queryKey: QK.CUSTOMER(id) })
       setNoteInput('')
     },
   })

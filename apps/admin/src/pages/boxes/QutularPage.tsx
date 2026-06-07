@@ -76,8 +76,8 @@ export function QutularPage() {
       ? boxesApi.update(editTarget.id, data)
       : boxesApi.create(data),
     onSuccess: () => {
+      qc.removeQueries()
       toast.success(editTarget ? 'Quti yangilandi' : 'Quti qo\'shildi')
-      qc.invalidateQueries({ queryKey: QK.BOXES })
       resetForm()
     },
     onError: (err: any) => toast.error(getErrorMessage(err?.errorCode ?? ''))
@@ -86,8 +86,8 @@ export function QutularPage() {
   const deleteMutation = useMutation({
     mutationFn: (id: string) => boxesApi.delete(id),
     onSuccess: () => {
+      qc.removeQueries()
       toast.success('Quti o\'chirildi')
-      qc.invalidateQueries({ queryKey: QK.BOXES })
       setDeleteTarget(null)
     }
   })
@@ -95,8 +95,8 @@ export function QutularPage() {
   const adjustMutation = useMutation({
     mutationFn: () => boxesApi.adjustStock(adjustTarget!.id, parseInt(adjustQty), adjustType),
     onSuccess: () => {
+      qc.removeQueries()
       toast.success(adjustType === 'add' ? 'Stok qo\'shildi' : 'Stok ishlatildi')
-      qc.invalidateQueries({ queryKey: QK.BOXES })
       setAdjustTarget(null)
       setAdjustQty('')
     },

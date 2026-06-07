@@ -57,8 +57,8 @@ export function SystemHealthPage() {
 
   const QUEUE_LABELS: Record<string, string> = {
     'telegram-posts': '📱 Telegram postlar',
-    'order-notifications': '📦 Buyurtma bildirish',
-    'payment-deadlines': "⏰ To'lov muddatlari",
+    notifications: '📦 Bildirishnomalar',
+    'payment-deadline': "⏰ To'lov muddatlari",
     'sales-rollup': '📊 Savdo hisoboti',
     'db-backup': '💾 DB zaxira nusxasi',
     'exchange-rate': '💱 Valyuta kursi',
@@ -259,11 +259,15 @@ export function SystemHealthPage() {
                       color: q.waiting > 0 ? 'text-blue-600' : 'text-gray-500',
                     },
                     {
+                      label: 'Rejalashtirilgan',
+                      value: q.delayed,
+                      color: q.delayed > 0 ? 'text-purple-600' : 'text-gray-500',
+                    },
+                    {
                       label: 'Faol',
                       value: q.active,
                       color: q.active > 0 ? 'text-green-600' : 'text-gray-500',
                     },
-                    { label: 'Bajarildi', value: q.completed, color: 'text-gray-500' },
                     {
                       label: 'Xato',
                       value: q.failed,

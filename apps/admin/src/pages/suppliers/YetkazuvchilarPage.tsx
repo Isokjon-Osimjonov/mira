@@ -73,8 +73,8 @@ export function YetkazuvchilarPage() {
       ? suppliersApi.update(editTarget.id, data)
       : suppliersApi.create(data),
     onSuccess: () => {
+      qc.removeQueries()
       toast.success(editTarget ? 'Yetkazuvchi yangilandi' : 'Yetkazuvchi qo\'shildi')
-      qc.invalidateQueries({ queryKey: QK.SUPPLIERS() })
       resetForm()
     },
     onError: (err: any) => toast.error(getErrorMessage(err?.errorCode ?? ''))
@@ -83,8 +83,8 @@ export function YetkazuvchilarPage() {
   const deleteMutation = useMutation({
     mutationFn: (id: string) => suppliersApi.delete(id),
     onSuccess: () => {
+      qc.removeQueries()
       toast.success('Yetkazuvchi o\'chirildi')
-      qc.invalidateQueries({ queryKey: QK.SUPPLIERS() })
       setDeleteTarget(null)
     }
   })

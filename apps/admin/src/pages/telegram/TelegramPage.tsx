@@ -165,8 +165,8 @@ export function TelegramPage() {
   const addChannelMutation = useMutation({
     mutationFn: () => telegramApi.addChannel({ chatId, channelName: chatName }),
     onSuccess: () => {
+      qc.removeQueries()
       toast.success('Kanal qo\'shildi')
-      qc.invalidateQueries({ queryKey: QK.TELEGRAM_CHANNELS })
       setAddChannelSheet(false)
       setChatId('')
       setChatName('')
@@ -177,8 +177,8 @@ export function TelegramPage() {
   const removeChannelMutation = useMutation({
     mutationFn: (id: string) => telegramApi.removeChannel(id),
     onSuccess: () => {
+      qc.removeQueries()
       toast.success('Kanal o\'chirildi')
-      qc.invalidateQueries({ queryKey: QK.TELEGRAM_CHANNELS })
     },
     onError: (err: any) => toast.error(getErrorMessage(err?.errorCode ?? ''))
   })
@@ -255,12 +255,30 @@ export function TelegramPage() {
       })
     },
     onSuccess: () => {
+      qc.invalidateQueries()
       toast.success(watchSendNow ? 'Post yuborildi! 🚀' : 'Post rejalashtirildi ✅')
-      qc.invalidateQueries({ queryKey: QK.TELEGRAM_POSTS() })
-      reset({ sendNow: true, caption: '' })
+
+      // Reset form fields
+      reset({
+        sendNow: true,
+        caption: '',
+        channelId: '',
+        phoneNumber: watchPhone, // Keep phone
+        productId: '',
+      })
+
+      // Reset manual states
       setSelectedProduct(null)
       setProductSearch('')
       setIsSubmitted(false)
+
+      // Reset price toggles to default
+      setShowKorRetail(true)
+      setShowKorWholesale(true)
+      setShowUzbRetail(true)
+      setShowUzbWholesale(true)
+
+      // Channel selection is reset via the form reset above
     },
     onError: (err: any) => toast.error(getErrorMessage(err?.errorCode ?? ''))
   })
@@ -268,8 +286,8 @@ export function TelegramPage() {
   const deleteMutation = useMutation({
     mutationFn: (id: string) => telegramApi.deletePost(id),
     onSuccess: () => {
+      qc.removeQueries()
       toast.success('Post o\'chirildi')
-      qc.invalidateQueries({ queryKey: QK.TELEGRAM_POSTS() })
       setDeleteTarget(null)
     },
     onError: (err: any) => toast.error(getErrorMessage(err?.errorCode ?? ''))
@@ -326,12 +344,10 @@ export function TelegramPage() {
       lines.push(`📞 ${activePhone}`)
     }
 
-    // Links as TEXT (not buttons)
-    const activeLinks = [0,1,2]
-      .filter(i =>
-        linksEnabled[i] && linkUrls[i]?.trim())
-      .map(i => linkLabels[i] || ['Telegram',
-        'Instagram','Website'][i])
+    // Links as HTML
+    const activeLinks = [0, 1, 2]
+      .filter(i => linksEnabled[i] && linkUrls[i]?.trim() && linkLabels[i]?.trim())
+      .map(i => `<a href="${linkUrls[i]}">${linkLabels[i]}</a>`)
 
     if (activeLinks.length > 0) {
       lines.push('')
@@ -375,7 +391,11 @@ export function TelegramPage() {
         {/* LEFT: Create post form */}
         <div className="lg:col-span-3 bg-white rounded-xl border-[0.5px] border-border p-5">
           <h2 className="text-sm font-semibold text-gray-900 mb-4">Yangi post</h2>
-          <form onSubmit={handleSubmit(data => { setIsSubmitted(true); createMutation.mutate(data) })} className="space-y-4">
+          <form onSubmit={handleSubmit(data => { 
+            if (createMutation.isPending) return;
+            setIsSubmitted(true); 
+            createMutation.mutate(data) 
+          })} className="space-y-4">
             <div>
               <Label className="text-xs mb-1.5 block">Mahsulot *</Label>
               <div className="relative product-search-container">
@@ -586,8 +606,28 @@ export function TelegramPage() {
             <div className="space-y-3">
               <Controller name="sendNow" control={control} render={({ field }) => (
                 <div className="flex gap-2">
-                  <button type="button" onClick={() => field.onChange(true)} className={cn('flex-1 flex items-center gap-2 py-2.5 px-4 rounded-lg text-sm font-medium border-[0.5px] transition-all', field.value ? 'bg-primary/10 border-primary/40 text-primary' : 'bg-white border-border text-gray-600')}><Send className="h-3.5 w-3.5" strokeWidth={1.5} />Hozir yuborish</button>
-                  <button type="button" onClick={() => field.onChange(false)} className={cn('flex-1 flex items-center gap-2 py-2.5 px-4 rounded-lg text-sm font-medium border-[0.5px] transition-all', !field.value ? 'bg-primary/10 border-primary/40 text-primary' : 'bg-white border-border text-gray-600')}><Clock className="h-3.5 w-3.5" strokeWidth={1.5} />Rejalashtirish</button>
+                  <button type="button" 
+                    disabled={createMutation.isPending}
+                    onClick={() => field.onChange(true)} 
+                    className={cn(
+                      'flex-1 flex items-center gap-2 py-2.5 px-4 rounded-lg text-sm font-medium border-[0.5px] transition-all', 
+                      field.value ? 'bg-primary/10 border-primary/40 text-primary' : 'bg-white border-border text-gray-600',
+                      createMutation.isPending && 'opacity-50 cursor-not-allowed'
+                    )}
+                  >
+                    <Send className="h-3.5 w-3.5" strokeWidth={1.5} />Hozir yuborish
+                  </button>
+                  <button type="button" 
+                    disabled={createMutation.isPending}
+                    onClick={() => field.onChange(false)} 
+                    className={cn(
+                      'flex-1 flex items-center gap-2 py-2.5 px-4 rounded-lg text-sm font-medium border-[0.5px] transition-all', 
+                      !field.value ? 'bg-primary/10 border-primary/40 text-primary' : 'bg-white border-border text-gray-600',
+                      createMutation.isPending && 'opacity-50 cursor-not-allowed'
+                    )}
+                  >
+                    <Clock className="h-3.5 w-3.5" strokeWidth={1.5} />Rejalashtirish
+                  </button>
                 </div>
               )} />
               {!watchSendNow && (
@@ -621,9 +661,14 @@ export function TelegramPage() {
               ) : (
                 <div className="bg-[#EFFDDE] rounded-2xl rounded-tr-sm p-3 max-w-[280px] ml-auto shadow-sm">
                   {selectedProduct?.imageUrls?.[0] && <img src={selectedProduct.imageUrls[0]} alt="product" className="w-full rounded-xl object-cover mb-2 max-h-48" />}
-                  <div className="text-[13px] text-gray-900 leading-relaxed whitespace-pre-wrap font-sans">
-                    {previewCaption || <span className="text-muted-foreground text-xs italic">Matn yo'q</span>}
-                  </div>
+                  <div
+                    className="text-[12px] leading-relaxed text-gray-900 whitespace-pre-wrap font-sans [&_a]:text-blue-500 [&_a]:underline"
+                    dangerouslySetInnerHTML={{
+                      __html: previewCaption
+                        ? previewCaption.replace(/\n/g, '<br/>')
+                        : '<span class="text-muted-foreground text-xs italic">Mahsulot tanlang yoki matn yozing</span>'
+                    }}
+                  />
 
                   <p className="text-[10px] text-gray-400 text-right mt-1.5">{new Date().toLocaleTimeString('uz',{hour:'2-digit', minute:'2-digit'})} ✓✓</p>
                 </div>

@@ -56,7 +56,10 @@ export interface CouponCreatePayload {
   valueKrw?:         number | null
   maxDiscountCap?:   number | null
   maxDiscountKrw?:   number | null
-  scope:             'ENTIRE_ORDER' | 'PRODUCTS' | 'CATEGORIES' | 'BRANDS'
+  scope:             'ALL' | 'PRODUCT' | 'CATEGORY' | 'CUSTOMER'
+  productId?:        string | null
+  categoryId?:       string | null
+  customerId?:       string | null
   applicableResourceIds?: string[] | null
   applicableBrands?: string[] | null
   minOrderAmount?:   number

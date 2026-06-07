@@ -179,8 +179,8 @@ export function BuyurtmaBerish() {
         notes: data.notes || undefined,
       }),
     onSuccess: () => {
+      qc.removeQueries()
       toast.success('Buyurtma yaratildi')
-      qc.invalidateQueries({ queryKey: ['purchase-orders'] })
       reset()
       setCreateSheet(false)
     },
@@ -190,19 +190,16 @@ export function BuyurtmaBerish() {
   const statusMutation = useMutation({
     mutationFn: ({ id, status }: any) => purchaseOrdersApi.updateStatus(id, status),
     onSuccess: () => {
+      qc.removeQueries()
       toast.success('Holat yangilandi')
-      qc.invalidateQueries({ queryKey: ['purchase-orders'] })
-      qc.invalidateQueries({ queryKey: ['po-detail', selectedPO?.id] })
     },
   })
 
   const receiveMutation = useMutation({
     mutationFn: (payload: any) => purchaseOrdersApi.receiveItems(selectedPO!.id, payload),
     onSuccess: () => {
+      qc.removeQueries()
       toast.success('Mahsulotlar qabul qilindi! Inventar yangilandi ✅')
-      qc.invalidateQueries({ queryKey: ['purchase-orders'] })
-      qc.invalidateQueries({ queryKey: ['po-detail', selectedPO?.id] })
-      qc.invalidateQueries({ queryKey: QK.INVENTORY() })
       setReceiveMode(false)
       setReceivedQtys({})
     },
@@ -212,9 +209,8 @@ export function BuyurtmaBerish() {
   const paymentMutation = useMutation({
     mutationFn: () => purchaseOrdersApi.recordPayment(selectedPO!.id, parseInt(payAmount)),
     onSuccess: () => {
+      qc.removeQueries()
       toast.success("To'lov qayd etildi ✅")
-      qc.invalidateQueries({ queryKey: ['purchase-orders'] })
-      qc.invalidateQueries({ queryKey: ['po-detail', selectedPO?.id] })
       setPaymentMode(false)
       setPayAmount('')
     },
@@ -320,8 +316,8 @@ export function BuyurtmaBerish() {
                   const statusInfo = PO_STATUS[po.status] ?? PO_STATUS.DRAFT
                   const payInfo = PAYMENT_STATUS[po.paymentStatus] ?? PAYMENT_STATUS.UNPAID
                   const isOverdue =
-                    po.expectedDeliveryDate &&
-                    new Date(po.expectedDeliveryDate) < new Date() &&
+                    po.expectedAt &&
+                    new Date(po.expectedAt) < new Date() &&
                     po.status !== 'RECEIVED' &&
                     po.status !== 'CANCELLED'
 
@@ -341,7 +337,7 @@ export function BuyurtmaBerish() {
                           {po.orderNumber}
                         </p>
                         <p className="text-[11px] text-muted-foreground">
-                          {formatDate(po.orderDate)}
+                          {formatDate(po.createdAt)}
                         </p>
                       </td>
                       <td className="px-4 py-3 hidden md:table-cell">
@@ -366,7 +362,7 @@ export function BuyurtmaBerish() {
                         </span>
                       </td>
                       <td className="px-4 py-3 text-center hidden md:table-cell">
-                        {po.expectedDeliveryDate ? (
+                        {po.expectedAt ? (
                           <span
                             className={cn(
                               'text-xs',
@@ -374,7 +370,7 @@ export function BuyurtmaBerish() {
                             )}
                           >
                             {isOverdue && '⚠️ '}
-                            {formatDate(po.expectedDeliveryDate)}
+                            {formatDate(po.expectedAt)}
                           </span>
                         ) : (
                           '—'
@@ -612,7 +608,7 @@ export function BuyurtmaBerish() {
                   <div>
                     <SheetTitle className="font-mono">{poDetail.orderNumber}</SheetTitle>
                     <p className="text-xs text-muted-foreground">
-                      {poDetail.supplier?.name} · {formatDate(poDetail.orderDate)}
+                      {poDetail.supplier?.name} · {formatDate(poDetail.createdAt)}
                     </p>
                   </div>
                   <span

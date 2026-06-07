@@ -1,4 +1,5 @@
 import type { Request, Response } from 'express'
+import { logger } from '../../config/logger'
 import * as service from './telegram.service'
 import {
   createChannelSchema,
@@ -142,10 +143,9 @@ export async function createPost(req: Request, res: Response) {
     const adminId = (req.user as any).sub
     const data = await service.createPost(validated, adminId)
 
-    // If immediate, trigger send
-    const scheduledAt = validated.scheduledAt ? new Date(validated.scheduledAt) : null
-    if (!scheduledAt || scheduledAt <= new Date()) {
-      service.sendPost(data.id) // Fire and forget
+    // Send immediately if no schedule
+    if (!validated.scheduledAt || new Date(validated.scheduledAt) <= new Date()) {
+      service.sendPost(data.id).catch((err) => logger.error({ err }, 'sendPost failed'))
     }
 
     return res.json({ data, error: null })

@@ -90,8 +90,8 @@ export function ProductsPage() {
   const deleteMutation = useMutation({
     mutationFn: (id: string) => productsApi.delete(id),
     onSuccess: () => {
+      qc.removeQueries()
       toast.success("Mahsulot o'chirildi")
-      qc.invalidateQueries({ queryKey: ['products'] })
       setDeleteTarget(null)
     },
     onError: (err: any) => {
@@ -103,8 +103,8 @@ export function ProductsPage() {
   const restoreMutation = useMutation({
     mutationFn: (id: string) => productsApi.restore(id),
     onSuccess: () => {
+      qc.removeQueries()
       toast.success('Mahsulot tiklandi')
-      qc.invalidateQueries({ queryKey: ['products'] })
     },
     onError: (err: any) => {
       toast.error(getErrorMessage(err?.errorCode ?? ''))
@@ -118,8 +118,8 @@ export function ProductsPage() {
       return productsApi.aiFill({ productId: id })
     },
     onSuccess: () => {
+      qc.removeQueries()
       toast.success("AI ma'lumotlarni to'ldirdi ✨")
-      qc.invalidateQueries({ queryKey: ['products'] })
     },
     onError: (err: any) => {
       toast.error(getErrorMessage(err?.errorCode ?? ''))
@@ -556,7 +556,7 @@ export function ProductsPage() {
         product={editProduct}
         categories={flatCategories}
         onSuccess={() => {
-          qc.invalidateQueries({ queryKey: ['products'] })
+          qc.removeQueries()
           setSheetOpen(false)
           setEditProduct(null)
         }}

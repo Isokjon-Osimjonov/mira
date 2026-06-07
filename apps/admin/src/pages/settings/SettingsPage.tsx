@@ -90,8 +90,8 @@ function PaymentMethodsTab() {
   const updateMutation = useMutation({
     mutationFn: ({ method, payload }: any) => settingsApi.updatePaymentMethod(method, payload),
     onSuccess: () => {
+      qc.removeQueries()
       toast.success('Saqlandi')
-      qc.invalidateQueries({ queryKey: QK.PAYMENT_METHODS })
     },
     onError: (err: any) => toast.error(getErrorMessage(err?.errorCode ?? '')),
   })
@@ -298,8 +298,8 @@ function ShippingTiersTab() {
         currency: region === 'KOR' ? 'KRW' : 'UZS',
       }),
     onSuccess: () => {
+      qc.removeQueries()
       toast.success("Tier qo'shildi")
-      qc.invalidateQueries({ queryKey: QK.SHIPPING_TIERS })
       setNewTier({ minOrderAmount: '', shippingCost: '' })
       setAdding(false)
     },
@@ -309,8 +309,8 @@ function ShippingTiersTab() {
   const deleteMutation = useMutation({
     mutationFn: (id: string) => settingsApi.deleteShippingTier(id),
     onSuccess: () => {
+      qc.removeQueries()
       toast.success("Tier o'chirildi")
-      qc.invalidateQueries({ queryKey: QK.SHIPPING_TIERS })
     },
   })
 
@@ -495,9 +495,8 @@ function ExchangeRateTab() {
   const updateMutation = useMutation({
     mutationFn: () => settingsApi.updateExchangeRate(parseFloat(newRate)),
     onSuccess: () => {
+      qc.removeQueries()
       toast.success('Valyuta kursi yangilandi')
-      qc.invalidateQueries({ queryKey: QK.EXCHANGE_RATES })
-      qc.invalidateQueries({ queryKey: ['exchange-rates'] })
       setNewRate('')
       setLiveRate(null)
     },
@@ -674,8 +673,8 @@ function OrderSettingsTab() {
   const saveMutation = useMutation({
     mutationFn: settingsApi.updateOrderSettings,
     onSuccess: () => {
+      qc.removeQueries()
       toast.success('Sozlamalar saqlandi')
-      qc.invalidateQueries({ queryKey: QK.ORDER_SETTINGS })
     },
     onError: (err: any) => toast.error(getErrorMessage(err?.errorCode ?? '')),
   })

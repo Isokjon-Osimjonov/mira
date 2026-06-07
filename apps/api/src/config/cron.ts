@@ -10,7 +10,6 @@ import {
   sendDeadlineReminders,
 } from '../modules/orders/orders.service'
 import { fetchAndSaveExchangeRate } from '../modules/exchange-rates/exchange-rates.service'
-import { sendScheduledPosts } from '../modules/telegram/telegram.service'
 import { checkExpiringBatches } from '../modules/inventory/inventory.service'
 import { bot } from '../bot/bot'
 import { sendAdminAlert } from '../bot/helpers/notify'
@@ -44,22 +43,6 @@ export function initCronJobs(): void {
         logger.info(`Kurs yangilandi: 1 KRW = ${rate.krwToUzs} UZS`)
       } catch (err: any) {
         logger.error({ err: err.message }, 'Exchange rate cron error')
-      }
-    },
-    { timezone: 'Asia/Seoul' }
-  )
-
-  // 3. Scheduled telegram posts — every 5 min
-  cron.schedule(
-    '*/5 * * * *',
-    async () => {
-      try {
-        const count = await sendScheduledPosts()
-        if (count > 0) {
-          logger.info(`${count} ta post yuborildi`)
-        }
-      } catch (err: any) {
-        logger.error({ err: err.message }, 'Telegram posts cron error')
       }
     },
     { timezone: 'Asia/Seoul' }

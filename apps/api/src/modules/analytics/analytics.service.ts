@@ -91,12 +91,14 @@ export async function getOverview(from: string, to: string) {
   const grossMargin = revenueTotal > 0n ? Number((grossProfit * 10000n) / revenueTotal) / 100 : 0
 
   // 3. Expenses
-  const [expensesTotal] = await db
-    .select({ total: sql<string>`COALESCE(SUM(${expenses.amountKrw})::text, '0')` })
-    .from(expenses)
-    .where(and(gte(expenses.expenseDate, from), lte(expenses.expenseDate, to)))
-
-  const totalExpenses = BigInt(expensesTotal?.total || '0')
+  const expResult = await db.execute(
+    sql`SELECT COALESCE(SUM(amount_krw)::text,'0')
+        as total FROM expenses
+        WHERE created_at >= ${from}::date
+        AND created_at <= (${to}::date
+          + INTERVAL '1 day')`
+  )
+  const totalExpenses = BigInt((expResult.rows[0] as any)?.total ?? '0')
   const netProfit = grossProfit - totalExpenses
   const netMargin = revenueTotal > 0n ? Number((netProfit * 10000n) / revenueTotal) / 100 : 0
 
@@ -286,7 +288,7 @@ export async function getPL(year: number, month?: number) {
     })
     .from(expenses)
     .innerJoin(expenseCategories, eq(expenses.categoryId, expenseCategories.id))
-    .where(and(gte(expenses.expenseDate, from), lte(expenses.expenseDate, to)))
+    .where(and(gte(expenses.createdAt, sql`${from}::date`), lte(expenses.createdAt, sql`(${to}::date + INTERVAL '1 day')`)))
     .groupBy(expenseCategories.name)
 
   const totalExpenses = expensesByCategory.reduce((acc, e) => acc + Number(e.amount), 0)
@@ -607,12 +609,12 @@ export async function exportCSV(type: 'pl' | 'orders' | 'products' | 'revenue' |
         category: expenseCategories.name,
         amount: expenses.amountKrw,
         description: expenses.description,
-        date: expenses.expenseDate,
+        date: expenses.createdAt,
       })
       .from(expenses)
       .leftJoin(expenseCategories, eq(expenses.categoryId, expenseCategories.id))
-      .where(and(gte(expenses.expenseDate, from), lte(expenses.expenseDate, to)))
-      .orderBy(desc(expenses.expenseDate))
+      .where(and(gte(expenses.createdAt, sql`${from}::date`), lte(expenses.createdAt, sql`(${to}::date + INTERVAL '1 day')`)))
+      .orderBy(desc(expenses.createdAt))
 
     let csv = 'Sana,Kategoriya,Tavsif,Miqdor (KRW)\n'
     items.forEach((e: any) => {

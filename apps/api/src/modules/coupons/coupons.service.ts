@@ -71,11 +71,19 @@ export async function validateCoupon(params: {
   }
 
   // 7. Target Customer
-  if (coupon.targetCustomerIds && coupon.targetCustomerIds.length > 0) {
+  if (coupon.scope === 'CUSTOMER' && coupon.customerId) {
+    if (coupon.customerId !== params.customerId) {
+      throw {
+        status: 400,
+        code: 'COUPON_WRONG_CUSTOMER',
+        message: 'Bu kupon siz uchun emas',
+      }
+    }
+  } else if (coupon.targetCustomerIds && coupon.targetCustomerIds.length > 0) {
     if (!coupon.targetCustomerIds.includes(params.customerId)) {
       throw {
         status: 400,
-        code: 'COUPON_NOT_ELIGIBLE_CUSTOMER',
+        code: 'COUPON_WRONG_CUSTOMER',
         message: 'Siz ushbu kupondan foydalana olmaysiz',
       }
     }
@@ -132,17 +140,18 @@ export async function validateCoupon(params: {
 
     let isEligible = false
     switch (coupon.scope) {
-      case 'ENTIRE_ORDER':
+      case 'ALL':
+      case 'CUSTOMER':
         isEligible = true
         break
-      case 'PRODUCTS':
-        isEligible = !!coupon.applicableResourceIds?.includes(item.productId)
+      case 'PRODUCT':
+        isEligible = item.productId === coupon.productId
         break
-      case 'CATEGORIES':
-        isEligible = !!coupon.applicableResourceIds?.includes(item.categoryId)
+      case 'CATEGORY':
+        isEligible = item.categoryId === coupon.categoryId
         break
-      case 'BRANDS':
-        isEligible = !!coupon.applicableBrands?.includes(item.brandName)
+      default:
+        isEligible = true
         break
     }
 
@@ -154,10 +163,21 @@ export async function validateCoupon(params: {
 
   if (eligibleSubtotal === 0n) {
     // If the cart has no eligible items based on scope
+    let errorCode = 'COUPON_MIN_ORDER_NOT_MET'
+    let message = "Savatda ushbu kupon uchun mos mahsulotlar yo'q"
+
+    if (coupon.scope === 'PRODUCT') {
+      errorCode = 'COUPON_WRONG_PRODUCT'
+      message = 'Bu kupon tanlangan mahsulotga emas'
+    } else if (coupon.scope === 'CATEGORY') {
+      errorCode = 'COUPON_WRONG_CATEGORY'
+      message = 'Bu kupon bu kategoriya uchun emas'
+    }
+
     throw {
       status: 400,
-      code: 'COUPON_MIN_ORDER_NOT_MET',
-      message: "Savatda ushbu kupon uchun mos mahsulotlar yo'q",
+      code: errorCode,
+      message,
     }
   }
 

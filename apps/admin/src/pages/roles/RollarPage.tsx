@@ -99,8 +99,8 @@ export function RollarPage() {
             permissions: editPermissions,
           }),
     onSuccess: () => {
+      qc.removeQueries()
       toast.success(editTarget ? 'Rol yangilandi' : 'Rol yaratildi')
-      qc.invalidateQueries({ queryKey: QK.ROLES })
       resetForm()
     },
     onError: (err: any) => toast.error(getErrorMessage(err?.errorCode ?? '')),
@@ -110,7 +110,7 @@ export function RollarPage() {
     mutationFn: ({ id, resource, action, operation }: any) =>
       rolesApi.updateGranular(id, { resource, action, operation }),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: QK.ROLES })
+      qc.removeQueries()
     },
     onError: (err: any) => toast.error(getErrorMessage(err?.errorCode ?? '')),
   })
@@ -118,8 +118,8 @@ export function RollarPage() {
   const deleteMutation = useMutation({
     mutationFn: (id: string) => rolesApi.delete(id),
     onSuccess: () => {
+      qc.removeQueries()
       toast.success("Rol o'chirildi")
-      qc.invalidateQueries({ queryKey: QK.ROLES })
       setDeleteTarget(null)
     },
     onError: (err: any) => toast.error(getErrorMessage(err?.errorCode ?? '')),

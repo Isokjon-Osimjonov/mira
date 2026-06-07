@@ -69,9 +69,8 @@ export function CategoriesPage() {
         : categoriesApi.create(payload)
     },
     onSuccess: () => {
+      qc.removeQueries()
       toast.success(editTarget ? 'Kategoriya yangilandi' : 'Kategoriya yaratildi')
-      qc.invalidateQueries({ queryKey: QK.CATEGORIES })
-      qc.invalidateQueries({ queryKey: ['products'] })
       resetForm()
     },
     onError: (err: any) => {
@@ -82,8 +81,8 @@ export function CategoriesPage() {
   const deleteMutation = useMutation({
     mutationFn: (id: string) => categoriesApi.delete(id),
     onSuccess: () => {
+      qc.removeQueries()
       toast.success("Kategoriya o'chirildi")
-      qc.invalidateQueries({ queryKey: QK.CATEGORIES })
       setDeleteTarget(null)
     },
     onError: (err: any) => {

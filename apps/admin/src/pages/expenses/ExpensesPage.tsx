@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { queryClient } from '../../lib/query-client'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -139,10 +140,9 @@ export function ExpensesPage() {
       note:        data.note,
     }),
     onSuccess: () => {
-      toast.success('Xarajat qo\'shildi')
-      qc.invalidateQueries({ queryKey: ['expenses'] })
-      qc.invalidateQueries({ queryKey: ['analytics'] })
-      qc.invalidateQueries({ queryKey: ['dashboard'] })
+      queryClient.invalidateQueries()
+      queryClient.refetchQueries({ type: 'active' })
+      toast.success('Xarajat saqlandi')
       reset({ date: now.toISOString().split('T')[0], amountKrw: 0, category: '', description: '', note: '' })
       setSheet(false)
     },
@@ -152,10 +152,9 @@ export function ExpensesPage() {
   const deleteMutation = useMutation({
     mutationFn: (id: string) => expensesApi.delete(id),
     onSuccess: () => {
-      toast.success('Xarajat o\'chirildi')
-      qc.invalidateQueries({ queryKey: ['expenses'] })
-      qc.invalidateQueries({ queryKey: ['analytics'] })
-      qc.invalidateQueries({ queryKey: ['dashboard'] })
+      queryClient.invalidateQueries()
+      queryClient.refetchQueries({ type: 'active' })
+      toast.success('Xarajat saqlandi')
       setDeleteTarget(null)
     },
     onError: (err: any) => toast.error(getErrorMessage(err?.errorCode ?? ''))
@@ -463,11 +462,9 @@ function ExpenseCategoriesManager() {
       ? expensesApi.updateCategory(editTarget.id, data)
       : expensesApi.createCategory(data),
     onSuccess: () => {
-      toast.success(editTarget ? 'Kategoriya yangilandi' : 'Kategoriya yaratildi')
-      qc.invalidateQueries({ queryKey: QK.EXPENSE_CATEGORIES })
-      qc.invalidateQueries({ queryKey: ['expenses'] })
-      qc.invalidateQueries({ queryKey: ['analytics'] })
-      qc.invalidateQueries({ queryKey: ['dashboard'] })
+      queryClient.invalidateQueries()
+      queryClient.refetchQueries({ type: 'active' })
+      toast.success('Xarajat saqlandi')
       resetForm()
     },
     onError: (err: any) => toast.error(getErrorMessage(err?.errorCode ?? ''))
@@ -476,11 +473,9 @@ function ExpenseCategoriesManager() {
   const deleteMutation = useMutation({
     mutationFn: (id: string) => expensesApi.deleteCategory(id),
     onSuccess: () => {
-      toast.success('Kategoriya o\'chirildi')
-      qc.invalidateQueries({ queryKey: QK.EXPENSE_CATEGORIES })
-      qc.invalidateQueries({ queryKey: ['expenses'] })
-      qc.invalidateQueries({ queryKey: ['analytics'] })
-      qc.invalidateQueries({ queryKey: ['dashboard'] })
+      queryClient.invalidateQueries()
+      queryClient.refetchQueries({ type: 'active' })
+      toast.success('Xarajat saqlandi')
       setDeleteTarget(null)
     },
     onError: (err: any) => toast.error(getErrorMessage(err?.errorCode ?? ''))

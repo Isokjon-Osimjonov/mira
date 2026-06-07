@@ -38,10 +38,10 @@ export const couponTypeEnum = pgEnum('coupon_type', [
 ]);
 
 export const couponScopeEnum = pgEnum('coupon_scope', [
-  'ENTIRE_ORDER',
-  'PRODUCTS',
-  'CATEGORIES',
-  'BRANDS',
+  'ALL',
+  'PRODUCT',
+  'CATEGORY',
+  'CUSTOMER',
 ]);
 
 export const couponStatusEnum = pgEnum('coupon_status', [

@@ -50,8 +50,8 @@ export function WalkInPage() {
   const mutation = useMutation({
     mutationFn: (data: WalkInForm) => customersApi.createWalkIn(data),
     onSuccess: (res) => {
+      qc.removeQueries()
       toast.success("Mijoz yaratildi")
-      qc.invalidateQueries({ queryKey: ['customers'] })
       navigate({
         to: '/customers/$id',
         params: { id: res.data.id },

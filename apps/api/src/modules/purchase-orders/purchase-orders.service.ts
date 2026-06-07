@@ -38,20 +38,25 @@ export async function getPurchaseOrders(query: {
   let where: any = sql`1=1`
   if (query.status) where = and(where, eq(purchaseOrders.status, query.status))
   if (query.supplierId) where = and(where, eq(purchaseOrders.supplierId, query.supplierId))
-  if (query.dateFrom) where = and(where, sql`${purchaseOrders.orderDate} >= ${query.dateFrom}`)
-  if (query.dateTo) where = and(where, sql`${purchaseOrders.orderDate} <= ${query.dateTo}`)
+  if (query.dateFrom) where = and(where, sql`${purchaseOrders.createdAt} >= ${query.dateFrom}`)
+  if (query.dateTo) where = and(where, sql`${purchaseOrders.createdAt} <= ${query.dateTo}`)
 
   const itemsQuery = await db
     .select({
-      order: purchaseOrders,
-      supplierName: suppliers.name,
-      itemCount:
-        sql<number>`(SELECT SUM(quantity_ordered) FROM purchase_order_items WHERE purchase_order_id = ${purchaseOrders.id})`.mapWith(
-          Number
-        ),
+      id:             purchaseOrders.id,
+      orderNumber:    purchaseOrders.orderNumber,
+      supplierId:     purchaseOrders.supplierId,
+      status:         purchaseOrders.status,
+      paymentStatus:  purchaseOrders.paymentStatus,
+      totalCostKrw:   purchaseOrders.totalCostKrw,
+      paidAmountKrw:  purchaseOrders.paidAmountKrw,
+      notes:          purchaseOrders.notes,
+      createdAt:      purchaseOrders.createdAt,
+      updatedAt:      purchaseOrders.updatedAt,
+      supplierName:   suppliers.name,
     })
     .from(purchaseOrders)
-    .innerJoin(suppliers, eq(purchaseOrders.supplierId, suppliers.id))
+    .leftJoin(suppliers, eq(purchaseOrders.supplierId, suppliers.id))
     .where(where)
     .orderBy(desc(purchaseOrders.createdAt))
     .limit(limit)
@@ -61,10 +66,10 @@ export async function getPurchaseOrders(query: {
   const total = Number(countRes?.count || 0)
 
   const items = itemsQuery.map((row) => ({
-    ...row.order,
-    totalCostKrw: Number(row.order.totalCostKrw),
+    ...row,
+    totalCostKrw: Number(row.totalCostKrw),
+    paidAmountKrw: Number(row.paidAmountKrw),
     supplierName: row.supplierName,
-    itemCount: row.itemCount,
   }))
 
   return { items, meta: { page, limit, total, hasNext: offset + limit < total, hasPrev: page > 1 } }
@@ -128,8 +133,8 @@ export async function createPurchaseOrder(data: CreatePurchaseOrderDto, adminId:
       .values({
         orderNumber,
         supplierId: data.supplierId,
-        orderDate: data.orderDate,
-        expectedDeliveryDate: data.expectedDeliveryDate,
+        createdAt: data.orderDate,
+        expectedAt: data.expectedDeliveryDate,
         notes: data.notes,
         totalCostKrw,
         status: 'DRAFT',
@@ -186,9 +191,9 @@ export async function updatePurchaseOrder(id: string, data: UpdatePurchaseOrderD
 
     const updates: any = { updatedAt: new Date() }
     if (data.supplierId) updates.supplierId = data.supplierId
-    if (data.orderDate) updates.orderDate = data.orderDate
+    if (data.orderDate) updates.createdAt = data.orderDate
     if (data.expectedDeliveryDate !== undefined)
-      updates.expectedDeliveryDate = data.expectedDeliveryDate
+      updates.expectedAt = data.expectedDeliveryDate
     if (data.notes !== undefined) updates.notes = data.notes
     updates.totalCostKrw = totalCostKrw
 
@@ -381,7 +386,7 @@ export async function receivePurchaseOrder(id: string, data: ReceivePODto, admin
       .update(purchaseOrders)
       .set({
         status: newStatus,
-        actualDeliveryDate: data.actualDeliveryDate,
+        receivedAt: data.actualDeliveryDate,
         totalCostKrw: newTotalCostKrw,
         updatedAt: new Date(),
       })

@@ -188,7 +188,7 @@ export function OrdersPage() {
     const socket = getSocket()
     if (!socket) return
     const refresh = () => {
-      queryClient.invalidateQueries({ queryKey: ['orders'] })
+      queryClient.removeQueries()
     }
     socket.on('order:new', refresh)
     socket.on('payment:receipt_uploaded', refresh)
@@ -225,8 +225,8 @@ export function OrdersPage() {
     mutationFn: (data: { ids: string[]; status: string }) =>
       api.post('/admin/orders/bulk-status', data).then((r) => r.data),
     onSuccess: (_, vars) => {
+      queryClient.removeQueries()
       toast.success(`${vars.ids.length} ta buyurtma yangilandi`)
-      queryClient.invalidateQueries({ queryKey: QK.ORDERS() })
       setSelected(new Set())
     },
     onError: (err: any) => toast.error(getErrorMessage(err?.errorCode ?? ''))

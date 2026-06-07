@@ -9,6 +9,9 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { couponsApi, CouponCreatePayload } from '../../api/coupons.api'
+import { productsApi } from '../../api/products.api'
+import { categoriesApi } from '../../api/categories.api'
+import { customersApi } from '../../api/customers.api'
 import { QK } from '../../constants/query-keys'
 import { formatKRW } from '../../utils/currency'
 import { formatDate } from '../../utils/date'
@@ -37,7 +40,10 @@ const couponSchema = z.object({
   name: z.string().min(1, 'Nom kiriting'),
   type: z.enum(['PERCENTAGE', 'FIXED', 'FREE_SHIPPING']),
   value: z.coerce.number().min(0).default(0),
-  scope: z.enum(['ENTIRE_ORDER', 'PRODUCTS', 'CATEGORIES', 'BRANDS']),
+  scope: z.enum(['ALL', 'PRODUCT', 'CATEGORY', 'CUSTOMER']),
+  productId: z.string().uuid().optional().nullable(),
+  categoryId: z.string().uuid().optional().nullable(),
+  customerId: z.string().uuid().optional().nullable(),
   regionCode: z.string().optional().nullable(),
   minOrderAmount: z.coerce.number().int().min(0).default(0),
   maxUsesTotal: z.coerce.number().int().min(0).optional().nullable(),
@@ -100,6 +106,43 @@ export function KupunlarPage() {
   const [deleteTarget, setDeleteTarget] = useState<any>(null)
   const [generatingCode, setGeneratingCode] = useState(false)
 
+  const [productSearch, setProductSearch] = useState('')
+  const [productResults, setProductResults] = useState<any[]>([])
+  const [customerSearch, setCustomerSearch] = useState('')
+  const [customerResults, setCustomerResults] = useState<any[]>([])
+
+  const { data: categoriesRes } = useQuery({
+    queryKey: ['categories-list'],
+    queryFn: () => categoriesApi.getFlat(),
+  })
+  const categories = categoriesRes ?? []
+
+  const searchProducts = async (q: string) => {
+    if (q.length < 2) {
+      setProductResults([])
+      return
+    }
+    try {
+      const res = await productsApi.list({ q, limit: 10 })
+      setProductResults(res.data ?? [])
+    } catch {
+      toast.error('Mahsulotlarni qidirishda xatolik')
+    }
+  }
+
+  const searchCustomers = async (q: string) => {
+    if (q.length < 2) {
+      setCustomerResults([])
+      return
+    }
+    try {
+      const res = await customersApi.list({ search: q, limit: 10 })
+      setCustomerResults(res.data ?? [])
+    } catch {
+      toast.error('Mijozlarni qidirishda xatolik')
+    }
+  }
+
   useEffect(() => {
     const t = setTimeout(() => setDebSearch(search), 400)
     return () => clearTimeout(t)
@@ -123,7 +166,6 @@ export function KupunlarPage() {
     queryKey: ['coupon-usages', viewTarget?.id],
     queryFn: () => couponsApi.getUsages(viewTarget!.id),
     enabled: !!viewTarget?.id,
-
   })
   const usages = usagesRes?.data ?? []
 
@@ -131,15 +173,21 @@ export function KupunlarPage() {
     resolver: zodResolver(couponSchema),
     defaultValues: {
       type: 'PERCENTAGE',
-      scope: 'ENTIRE_ORDER',
+      scope: 'ALL',
       regionCode: null,
       isActive: true,
       maxUsesPerCustomer: 1,
       minOrderAmount: 0,
+      productId: null,
+      categoryId: null,
+      customerId: null,
     }
   })
 
   const watchType = watch('type')
+  const watchScope = watch('scope')
+  const watchProductId = watch('productId')
+  const watchCustomerId = watch('customerId')
 
   const saveMutation = useMutation({
     mutationFn: (data: CouponForm) => {
@@ -148,14 +196,14 @@ export function KupunlarPage() {
         code: data.code.toUpperCase(),
         startsAt: data.startsAt ? new Date(data.startsAt).toISOString() : null,
         expiresAt: data.expiresAt ? new Date(data.expiresAt).toISOString() : null,
-      }
+      } as any
       return editTarget
         ? couponsApi.update(editTarget.id, payload)
         : couponsApi.create(payload)
     },
     onSuccess: () => {
+      qc.removeQueries()
       toast.success(editTarget ? 'Kupon yangilandi' : 'Kupon yaratildi')
-      qc.invalidateQueries({ queryKey: ['coupons'] })
       resetForm()
     },
     onError: (err: any) => toast.error(getErrorMessage(err?.errorCode ?? ''))
@@ -164,7 +212,7 @@ export function KupunlarPage() {
   const statusMutation = useMutation({
     mutationFn: ({ id, status }: any) => couponsApi.updateStatus(id, status),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['coupons'] })
+      qc.removeQueries()
     },
     onError: (err: any) => toast.error(getErrorMessage(err?.errorCode ?? ''))
   })
@@ -172,8 +220,8 @@ export function KupunlarPage() {
   const deleteMutation = useMutation({
     mutationFn: (id: string) => couponsApi.delete(id),
     onSuccess: () => {
+      qc.removeQueries()
       toast.success('Kupon o\'chirildi')
-      qc.invalidateQueries({ queryKey: ['coupons'] })
       setDeleteTarget(null)
     },
     onError: (err: any) => toast.error(getErrorMessage(err?.errorCode ?? ''))
@@ -193,10 +241,13 @@ export function KupunlarPage() {
 
   const resetForm = () => {
     reset({
-      type: 'PERCENTAGE', scope: 'ENTIRE_ORDER', regionCode: null,
+      type: 'PERCENTAGE', scope: 'ALL', regionCode: null,
       isActive: true, maxUsesPerCustomer: 1, minOrderAmount: 0,
-      code: '', name: '', value: 0, startsAt: null, expiresAt: null, description: null
+      code: '', name: '', value: 0, startsAt: null, expiresAt: null, description: null,
+      productId: null, categoryId: null, customerId: null
     })
+    setProductSearch('')
+    setCustomerSearch('')
     setEditTarget(null)
     setSheet(false)
   }
@@ -209,6 +260,9 @@ export function KupunlarPage() {
       type: coupon.type,
       value: coupon.value,
       scope: coupon.scope,
+      productId: coupon.productId,
+      categoryId: coupon.categoryId,
+      customerId: coupon.customerId,
       regionCode: coupon.regionCode,
       minOrderAmount: coupon.minOrderAmount,
       maxUsesTotal: coupon.maxUsesTotal,
@@ -218,6 +272,8 @@ export function KupunlarPage() {
       description: coupon.description,
       isActive: coupon.status === 'ACTIVE',
     })
+    setProductSearch(coupon.productName || '')
+    setCustomerSearch(coupon.customerName || '')
     setSheet(true)
   }
 
@@ -238,6 +294,13 @@ export function KupunlarPage() {
     PERCENTAGE: { label: 'Foiz', color: 'bg-blue-50 text-blue-700' },
     FIXED: { label: 'Summa', color: 'bg-green-50 text-green-700' },
     FREE_SHIPPING: { label: 'Yetkazish', color: 'bg-purple-50 text-purple-700' },
+  }
+
+  const SCOPE_LABELS: Record<string, any> = {
+    ALL:      { label: '🌐 Barchasi', color: 'bg-gray-100 text-gray-700' },
+    PRODUCT:  { label: '📦 Mahsulot', color: 'bg-indigo-50 text-indigo-700' },
+    CATEGORY: { label: '🏷 Kategoriya', color: 'bg-amber-50 text-amber-700' },
+    CUSTOMER: { label: '👤 Mijoz', color: 'bg-green-50 text-green-700' },
   }
 
   const formatValue = (c: any) => {
@@ -303,6 +366,7 @@ export function KupunlarPage() {
                   <tr className="border-b border-border/50 bg-gray-50/80">
                     <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Kupon</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground w-28">Tur</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground w-28">Doira</th>
                     <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground w-24">Chegirma</th>
                     <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground hidden md:table-cell w-28">Foydalanish</th>
                     <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground hidden lg:table-cell w-24">Hudud</th>
@@ -327,6 +391,11 @@ export function KupunlarPage() {
                         <td className="px-4 py-3">
                           <span className={cn('text-[11px] font-medium px-2 py-0.5 rounded-full', typeInfo?.color ?? 'bg-gray-100 text-gray-600')}>
                             {typeInfo?.label ?? c.type}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className={cn('text-[11px] font-medium px-2 py-0.5 rounded-full whitespace-nowrap', SCOPE_LABELS[c.scope]?.color ?? 'bg-gray-100 text-gray-600')}>
+                            {SCOPE_LABELS[c.scope]?.label ?? c.scope}
                           </span>
                         </td>
                         <td className="px-4 py-3 text-center">
@@ -414,6 +483,126 @@ export function KupunlarPage() {
                 </div>
               )} />
             </div>
+
+            {/* Scope */}
+            <div>
+              <Label className="text-xs mb-1.5 block">Qo'llanish doirasi *</Label>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { value: 'ALL',      label: '🌐 Barchasi', desc: 'Barcha mahsulotlar' },
+                  { value: 'PRODUCT',  label: '📦 Mahsulot', desc: 'Bitta mahsulot' },
+                  { value: 'CATEGORY', label: '🏷 Kategoriya', desc: 'Kategoriya' },
+                  { value: 'CUSTOMER', label: '👤 Mijoz', desc: 'Bitta mijoz' },
+                ].map(s => (
+                  <button key={s.value} type="button"
+                    onClick={() => {
+                      setValue('scope', s.value)
+                      setValue('productId', null)
+                      setValue('categoryId', null)
+                      setValue('customerId', null)
+                      setProductSearch('')
+                      setCustomerSearch('')
+                    }}
+                    className={cn(
+                      'p-2.5 rounded-xl border-[0.5px] text-left transition-all',
+                      watchScope === s.value ? 'border-primary bg-primary/5' : 'border-border bg-white'
+                    )}>
+                    <p className="text-xs font-semibold">{s.label}</p>
+                    <p className="text-[10px] text-muted-foreground">{s.desc}</p>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Conditional scope target */}
+            {watchScope === 'PRODUCT' && (
+              <div className="space-y-2">
+                <Label className="text-xs block">Mahsulot tanlang *</Label>
+                <div className="relative">
+                  <Input
+                    value={productSearch}
+                    onChange={e => {
+                      setProductSearch(e.target.value)
+                      searchProducts(e.target.value)
+                    }}
+                    placeholder="Mahsulot nomini yozing..."
+                    className="h-9 text-sm rounded-lg border-[0.5px]"
+                  />
+                  {productResults.length > 0 && (
+                    <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-xl border-[0.5px] border-border shadow-xl z-50 max-h-48 overflow-y-auto">
+                      {productResults.map((p: any) => (
+                        <button key={p.id} type="button"
+                          onMouseDown={() => {
+                            setValue('productId', p.id)
+                            setProductSearch(p.name)
+                            setProductResults([])
+                          }}
+                          className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-gray-50 text-sm border-b border-gray-100 last:border-0">
+                          <span className="flex-1">{p.name}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                {watchProductId && <p className="text-[10px] text-green-600 font-medium flex items-center gap-1"><Check className="h-3 w-3" /> Mahsulot tanlandi</p>}
+              </div>
+            )}
+
+            {watchScope === 'CATEGORY' && (
+              <div className="space-y-2">
+                <Label className="text-xs block">Kategoriya tanlang *</Label>
+                <Controller name="categoryId" control={control}
+                  render={({ field }) => (
+                    <Select value={field.value ?? ''} onValueChange={field.onChange}>
+                      <SelectTrigger className="h-9 text-sm rounded-lg border-[0.5px]">
+                        <SelectValue placeholder="Kategoriya tanlang" />
+                      </SelectTrigger>
+                      <SelectContent className="rounded-xl">
+                        {categories.map((c: any) => (
+                          <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )} />
+              </div>
+            )}
+
+            {watchScope === 'CUSTOMER' && (
+              <div className="space-y-2">
+                <Label className="text-xs block">Mijoz tanlang *</Label>
+                <div className="relative">
+                  <Input
+                    value={customerSearch}
+                    onChange={e => {
+                      setCustomerSearch(e.target.value)
+                      searchCustomers(e.target.value)
+                    }}
+                    placeholder="Ism yoki telefon..."
+                    className="h-9 text-sm rounded-lg border-[0.5px]"
+                  />
+                  {customerResults.length > 0 && (
+                    <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-xl border-[0.5px] border-border shadow-xl z-50 max-h-48 overflow-y-auto">
+                      {customerResults.map((c: any) => (
+                        <button key={c.id} type="button"
+                          onMouseDown={() => {
+                            setValue('customerId', c.id)
+                            setCustomerSearch(`${c.firstName} ${c.lastName || ''}`)
+                            setCustomerResults([])
+                          }}
+                          className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-gray-50 text-sm border-b border-gray-100 last:border-0">
+                          <div>
+                            <p className="font-medium">{c.firstName} {c.lastName || ''}</p>
+                            <p className="text-[10px] text-muted-foreground">{c.phone}</p>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                {watchCustomerId && <p className="text-[10px] text-green-600 font-medium flex items-center gap-1"><Check className="h-3 w-3" /> Mijoz tanlandi</p>}
+              </div>
+            )}
+
             {watchType !== 'FREE_SHIPPING' && (
               <div>
                 <Label className="text-xs mb-1.5 block">{watchType === 'PERCENTAGE' ? 'Chegirma foizi (%)' : 'Chegirma summasi (KRW)'}</Label>
