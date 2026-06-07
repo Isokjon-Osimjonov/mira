@@ -19,7 +19,7 @@
 | Notifications | ✅ Done | 100% |
 | Automation | ✅ Done | 100% |
 | Admin Panel | 🟡 Setup Only | 5% |
-| Mobile App | 🟡 Setup Only | 5% |
+| Mobile App | 🟢 Auth Done | 25% |
 | Telegram Bot | ✅ Done | 100% |
 | CI/CD | ✅ Done | 95% |
 | DevOps/Docker | 🟡 Local Only | 20% |
@@ -27,6 +27,28 @@
 ---
 
 ## ✅ Completed
+
+### Mobile App (Sprint 2 — Auth Flow UI)
+- [x] PrimaryButton component (styled, no-animation version)
+- [x] PhoneInput component (UZB/KOR region toggle, prefix prefilled)
+- [x] OtpInput component (6 boxes, hidden input)
+- [x] login.tsx — phone + region input
+- [x] otp.tsx — 6-box OTP, timer, attempts guard, Telegram deeplink check
+- [x] profile-setup.tsx — name + avatar picker
+- [x] notification-permission.tsx — Expo notifications permission
+- [x] auth/_layout.tsx — Stack navigator
+- [x] iOS Telegram deeplink safety (Linking.canOpenURL check)
+- [x] 3 attempts lockout on OTP
+- [x] 5-minute countdown timer with cleanup
+- [x] Fixed gesture-handler version (~2.16.0)
+- [x] Simplified root layout (removed GestureHandlerRootView for now)
+- [x] Verified all auth screen default exports
+- [x] Updated notification-permission for Expo Go compatibility
+- [x] Downgraded Reanimated to ~3.10.1 for stability
+- [x] Removed Reanimated from PrimaryButton and OtpInput (to prevent crashes)
+- [x] Migrated SafeAreaView to react-native-safe-area-context across all screens
+- [x] Centralized font loading in _layout.tsx (fixed TypeError in PrimaryButton)
+- [x] Removed useFonts from individual components and screens
 
 ### API & Core
 - [x] Auth API (Customer OTP + Admin JWT)

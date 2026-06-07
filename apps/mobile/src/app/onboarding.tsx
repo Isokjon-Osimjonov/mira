@@ -5,14 +5,13 @@ import {
   Image,
   Dimensions,
   TouchableOpacity,
-  SafeAreaView,
   StyleSheet,
   StatusBar,
 } from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
 import * as ExpoStorage from 'expo-secure-store'
 import { tokens } from '../lib/tokens'
-import { useFonts, Inter_400Regular, Inter_700Bold } from '@expo-google-fonts/inter'
 
 const { width: screenWidth } = Dimensions.get('window')
 
@@ -63,15 +62,6 @@ const slides: Slide[] = [
 export default function OnboardingScreen() {
   const [currentIndex, setCurrentIndex] = useState(0)
   const slide = slides[currentIndex]
-
-  const [fontsLoaded] = useFonts({
-    Inter_400Regular,
-    Inter_700Bold,
-  })
-
-  if (!fontsLoaded) {
-    return null
-  }
 
   const handleNext = async () => {
     if (currentIndex < slides.length - 1) {
