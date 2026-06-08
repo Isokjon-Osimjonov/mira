@@ -339,3 +339,19 @@ Login → requestOtp → token → Telegram deeplink → user gets OTP in Telegr
 - Initial monorepo setup
 - 39-table PostgreSQL schema
 - CI/CD pipelines
+
+---
+
+## Sprint 4 — Auth hardening
+Status: ✅ Complete
+Date: 2026-06-08
+
+### Fixed
+- [x] initialize() sends X-Client-Type: mobile header
+- [x] Session expired → router.replace('/auth/login')
+- [x] Logout invalidates token on server (mobile body)
+- [x] handleResend requests fresh OTP token
+- [x] profileImageUrl not overwritten on name update
+- [x] refreshToken optional guard in verifyOtp
+- [x] home.tsx shows customer name + logout button
+

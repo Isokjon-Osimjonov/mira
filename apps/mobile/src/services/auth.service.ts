@@ -1,5 +1,6 @@
 import api from '../lib/api'
 import type { ApiResponse } from '@mira/shared-types'
+import { useAuthStore } from '../lib/auth-store'
 import type { Customer } from '../lib/auth-store'
 
 export interface RequestOtpPayload {
@@ -21,7 +22,7 @@ export interface VerifyOtpPayload {
 
 export interface VerifyOtpResponse {
   accessToken:  string
-  refreshToken: string
+  refreshToken?: string
   customer:     Customer
   isNewCustomer: boolean  // true = show profile setup
 }
@@ -56,6 +57,14 @@ export const authService = {
   },
 
   logout: async (): Promise<void> => {
-    await api.post('/auth/logout')
+    try {
+      const refreshToken = await
+        useAuthStore.getState().getRefreshToken()
+      await api.post('/auth/logout', {
+        refreshToken: refreshToken ?? '',
+      })
+    } catch {
+      // Logout best-effort — clear local state regardless
+    }
   },
 }

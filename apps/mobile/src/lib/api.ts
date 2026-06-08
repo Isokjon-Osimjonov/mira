@@ -65,6 +65,15 @@ const refreshAuthLogic = async (failedRequest: any): Promise<void> => {
     throw new Error('Refresh response invalid')
   } catch {
     await logoutCustomer()
+    // Navigate to login — dynamic import to avoid
+    // circular dependency with expo-router
+    try {
+      const { router } = await import('expo-router')
+      router.replace('/auth/login')
+    } catch {
+      // Router not ready yet — login redirect
+      // will happen via initialize() on next launch
+    }
     return Promise.reject()
   }
 }

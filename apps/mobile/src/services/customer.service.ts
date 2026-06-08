@@ -18,13 +18,23 @@ export const customerService = {
 
   updateProfile: async (payload: UpdateProfilePayload):
     Promise<Customer> => {
+    const body: Record<string, any> = {
+      firstName: payload.firstName,
+    }
+    if (payload.lastName !== undefined) {
+      body.lastName = payload.lastName
+    }
+    // Only include profileImageUrl if explicitly provided
+    // Never send null — would erase existing photo
+    if (
+      payload.profileImageUrl !== undefined &&
+      payload.profileImageUrl !== null
+    ) {
+      body.profileImageUrl = payload.profileImageUrl
+    }
     const res = await api.patch<ApiResponse<Customer>>(
       '/auth/profile',
-      {
-        firstName: payload.firstName,
-        lastName:  payload.lastName ?? null,
-        profileImageUrl: payload.profileImageUrl ?? null,
-      }
+      body
     )
     return res.data.data!
   },

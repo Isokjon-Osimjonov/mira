@@ -27,6 +27,10 @@ export default function OtpScreen() {
   const [seconds, setSeconds] = useState(300)
   const [attempts, setAttempts] = useState(0)
 
+  const [currentDeepLink, setCurrentDeepLink] = useState(
+    deepLink ?? ''
+  )
+
   // Guard: if params missing redirect back
   useEffect(() => {
     if (!phone || !deepLink) {
@@ -34,16 +38,16 @@ export default function OtpScreen() {
     }
   }, [phone, deepLink])
 
-  const extractToken = (deepLink: string): string => {
+  const extractToken = (url: string): string => {
     try {
-      const url = new URL(deepLink)
-      const token = url.searchParams.get('start') ?? ''
+      const urlObj = new URL(url)
+      const token = urlObj.searchParams.get('start') ?? ''
       if (token.length !== 64) {
         console.warn('Token length unexpected:', token.length)
       }
       return token
     } catch {
-      return deepLink
+      return url
     }
   }
 
@@ -62,32 +66,30 @@ export default function OtpScreen() {
     openTelegram()
   }, [])
 
-  const openTelegram = async () => {
-    if (!deepLink) return
+  const openTelegramUrl = async (url: string) => {
+    if (!url) return
     try {
-      // Server returns https://t.me/... URL
-      // Try tg:// deep link first for native app
-      // Fall back to https:// which opens Telegram or browser
       const canOpenTg = await Linking.canOpenURL('tg://')
       if (canOpenTg) {
-        // Convert https://t.me/BOT?start=TOKEN
-        // to tg://resolve?domain=BOT&start=TOKEN
-        const urlObj = new URL(deepLink)
+        const urlObj = new URL(url)
         const botUsername = urlObj.pathname.replace('/', '')
-        const startToken = urlObj.searchParams.get('start') ?? ''
+        const startToken =
+          urlObj.searchParams.get('start') ?? ''
         const nativeUrl =
           `tg://resolve?domain=${botUsername}&start=${startToken}`
         await Linking.openURL(nativeUrl)
       } else {
-        // Telegram not installed — open https link
-        // Opens in browser or App Store
-        await Linking.openURL(deepLink)
-        setError('Telegram topilmadi. SMS orqali kod yuboriladi.')
+        await Linking.openURL(url)
+        setError(
+          'Telegram topilmadi. SMS orqali kod yuboriladi.'
+        )
       }
     } catch {
-      setError('Telegram ochilmadi. Qayta urinib ko\'ring.')
+      setError("Telegram ochilmadi. Qayta urinib ko'ring.")
     }
   }
+
+  const openTelegram = () => openTelegramUrl(currentDeepLink)
 
   const formatMaskedPhone = () => {
     const last4 = phone?.slice(-4) || 'xxxx'
@@ -102,7 +104,7 @@ export default function OtpScreen() {
     setLoading(true)
     setError('')
     try {
-      const startToken = extractToken(deepLink)
+      const startToken = extractToken(currentDeepLink)
 
       const result = await authService.verifyOtp({
         phone,
@@ -111,7 +113,9 @@ export default function OtpScreen() {
         region: safeRegion,
       })
       const { accessToken, refreshToken, customer, isNewCustomer } = result
-      await useAuthStore.getState().saveRefresh(refreshToken)
+      if (refreshToken) {
+        await useAuthStore.getState().saveRefresh(refreshToken)
+      }
       useAuthStore.getState().setAuth(accessToken, customer)
 
       if (isNewCustomer || !customer.firstName) {
@@ -142,12 +146,25 @@ export default function OtpScreen() {
     }
   }
 
-  const handleResend = () => {
-    setSeconds(300)
-    setOtp('')
-    setError('')
-    setAttempts(0)
-    openTelegram()
+  const handleResend = async () => {
+    try {
+      // Request fresh OTP — old token is expired
+      const { deepLink: newDeepLink } =
+        await authService.requestOtp({
+          phone,
+          region: safeRegion,
+        })
+      // Update deepLink in state for next verify call
+      setCurrentDeepLink(newDeepLink)
+      setSeconds(300)
+      setOtp('')
+      setError('')
+      setAttempts(0)
+      // Open Telegram with new token
+      await openTelegramUrl(newDeepLink)
+    } catch (err: any) {
+      setError('Qayta yuborishda xatolik. Orqaga qayting.')
+    }
   }
 
   const formatTime = (s: number) => {

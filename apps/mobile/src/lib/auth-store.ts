@@ -61,24 +61,36 @@ export const useAuthStore = create<AuthState>((set) => ({
         set({ isLoading: false })
         return
       }
-      // Attempt silent refresh on startup
-      // so first screen load has valid access token
+
+      const BASE_URL =
+        process.env.EXPO_PUBLIC_API_URL ||
+        'http://127.0.0.1:4000/api/v1'
+
       const res = await axios.post(
-        `${process.env.EXPO_PUBLIC_API_URL}/auth/refresh`,
-        { refreshToken }
+        `${BASE_URL}/auth/refresh`,
+        { refreshToken },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Client-Type': 'mobile', // ← CRITICAL
+          },
+        }
       )
-      const { accessToken, refreshToken: newRefresh, customer }
-        = res.data.data
-      await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, newRefresh)
+
+      const data = res.data?.data
+      if (!data?.accessToken) throw new Error('Invalid refresh response')
+
+      if (data.refreshToken) {
+        await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, data.refreshToken)
+      }
+
       set({
-        accessToken,
-        customer,
+        accessToken: data.accessToken,
+        customer: data.customer,
         isAuthenticated: true,
         isLoading: false,
       })
     } catch {
-      // Refresh failed — token expired or invalid
-      // Clear storage and send to login
       await SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY)
       set({
         accessToken: null,
