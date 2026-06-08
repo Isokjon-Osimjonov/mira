@@ -99,7 +99,13 @@ export async function refresh(req: Request, res: Response) {
 
 // POST /auth/logout
 export async function logout(req: Request, res: Response) {
-  const rawToken = getRefreshCookie(req)
+  const isMobile = req.headers['x-client-type'] === 'mobile'
+
+  // Mobile sends token in body, web sends cookie
+  const rawToken = isMobile
+    ? req.body.refreshToken
+    : getRefreshCookie(req)
+
   if (rawToken) {
     await AuthService.logoutCustomer(rawToken).catch(() => {})
   }
