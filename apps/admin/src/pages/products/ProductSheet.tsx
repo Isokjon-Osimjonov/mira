@@ -45,6 +45,8 @@ const productSchema = z.object({
   weightGrams: z.coerce.number().min(0).default(0),
   volumeMl: z.coerce.number().min(0).optional(),
   isActive: z.boolean().default(true),
+  isNew: z.boolean().default(false),
+  isFeatured: z.boolean().default(false),
   imageUrls: z.array(z.string()).default([]),
   // Regional configs (flattened in form, all optional).
   // Only KOR pricing is now manually managed.
@@ -83,6 +85,8 @@ export function ProductSheet({ open, onClose, product, categories, onSuccess }: 
       barcode: '',
       brandName: '',
       isActive: true,
+      isNew: false,
+      isFeatured: false,
       imageUrls: [],
       minOrderQty: 1,
       minWholesaleQty: 5,
@@ -116,6 +120,8 @@ export function ProductSheet({ open, onClose, product, categories, onSuccess }: 
         weightGrams: product.weightGrams ?? 0,
         volumeMl: product.volumeMl ?? undefined,
         isActive: product.isActive ?? true,
+        isNew: product.isNew ?? false,
+        isFeatured: product.isFeatured ?? false,
         imageUrls: product.imageUrls ?? [],
         korRetailPrice: kor?.retailPriceKrw ?? kor?.retailPrice ?? undefined,
         korWholesalePrice: kor?.wholesalePriceKrw ?? kor?.wholesalePrice ?? undefined,
@@ -129,6 +135,8 @@ export function ProductSheet({ open, onClose, product, categories, onSuccess }: 
         sku: '',
         brandName: '',
         isActive: true,
+        isNew: false,
+        isFeatured: false,
         imageUrls: [],
         minOrderQty: 1,
         minWholesaleQty: 5,
@@ -495,18 +503,48 @@ export function ProductSheet({ open, onClose, product, categories, onSuccess }: 
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
               Sozlamalar
             </p>
-            <div className="flex items-center justify-between p-3 rounded-lg border-[0.5px] border-border bg-gray-50/30">
-              <div>
-                <p className="text-sm font-medium text-gray-900">Aktiv mahsulot</p>
-                <p className="text-xs text-muted-foreground">Mijozlar ushbu mahsulotni ko'ra oladilar</p>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between p-3 rounded-lg border-[0.5px] border-border bg-gray-50/30">
+                <div>
+                  <p className="text-sm font-medium text-gray-900">Aktiv mahsulot</p>
+                  <p className="text-xs text-muted-foreground">Mijozlar ushbu mahsulotni ko'ra oladilar</p>
+                </div>
+                <Controller
+                  name="isActive"
+                  control={control}
+                  render={({ field }) => (
+                    <ToggleSwitch checked={field.value} onChange={field.onChange} />
+                  )}
+                />
               </div>
-              <Controller
-                name="isActive"
-                control={control}
-                render={({ field }) => (
-                  <ToggleSwitch checked={field.value} onChange={field.onChange} />
-                )}
-              />
+
+              <div className="flex items-center justify-between p-3 rounded-lg border-[0.5px] border-border bg-gray-50/30">
+                <div>
+                  <p className="text-sm font-medium text-gray-900">Yangi mahsulot</p>
+                  <p className="text-xs text-muted-foreground">"Yangi" belgisi bilan ko'rsatiladi</p>
+                </div>
+                <Controller
+                  name="isNew"
+                  control={control}
+                  render={({ field }) => (
+                    <ToggleSwitch checked={field.value} onChange={field.onChange} />
+                  )}
+                />
+              </div>
+
+              <div className="flex items-center justify-between p-3 rounded-lg border-[0.5px] border-border bg-gray-50/30">
+                <div>
+                  <p className="text-sm font-medium text-gray-900">Featured (Bosh sahifa)</p>
+                  <p className="text-xs text-muted-foreground">Bosh sahifada ko'rsatiladi</p>
+                </div>
+                <Controller
+                  name="isFeatured"
+                  control={control}
+                  render={({ field }) => (
+                    <ToggleSwitch checked={field.value} onChange={field.onChange} />
+                  )}
+                />
+              </div>
             </div>
           </div>
         </form>
