@@ -6,6 +6,7 @@ const publicRouter = Router()
 const adminRouter = Router()
 
 // Public
+publicRouter.get('/current', ctrl.getCurrentRate)
 publicRouter.get('/latest', ctrl.getLatest)
 
 // Admin

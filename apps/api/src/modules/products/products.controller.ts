@@ -4,7 +4,7 @@ import { CreateProductSchema, UpdateProductSchema, UpdatePricingSchema } from '.
 
 export async function getProducts(req: Request, res: Response, next: NextFunction) {
   try {
-    const { page, limit, category, brand, region, sort, q } = req.query
+    const { page, limit, category, brand, region, sort, q, featured } = req.query
     const result = await service.getProducts({
       page: page ? Number(page) : undefined,
       limit: limit ? Number(limit) : undefined,
@@ -12,6 +12,7 @@ export async function getProducts(req: Request, res: Response, next: NextFunctio
       brand: brand as string,
       region: (region as 'UZB' | 'KOR') || 'KOR',
       sort: sort as string,
+      featured: featured === 'true',
       q: q as string,
       isAdmin: false,
     })

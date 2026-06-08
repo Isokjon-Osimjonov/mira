@@ -77,6 +77,7 @@ export async function getProducts(query: {
   brand?: string
   region?: 'UZB' | 'KOR'
   sort?: string
+  featured?: boolean
   q?: string
   isActive?: string
   showDeleted?: boolean
@@ -100,6 +101,10 @@ export async function getProducts(query: {
     where = and(where, eq(products.brandName, query.brand))
   }
 
+  if (query.featured === true) {
+    where = and(where, eq(products.isFeatured, true))
+  }
+
   if (query.isActive !== undefined) {
     where = and(where, eq(products.isActive, query.isActive === 'true'))
   }
@@ -115,22 +120,31 @@ export async function getProducts(query: {
   if (sortField === 'name') orderBy = asc(products.name)
   if (sortField === 'price') orderBy = asc(productRegionalConfigs.retailPrice)
   if (sortField === 'brandName') orderBy = asc(products.brandName)
+  if (query.sort === 'newest') orderBy = desc(products.createdAt)
+  if (query.sort === 'bestselling') {
+    orderBy = desc(sql`total_stock`)
+  }
 
   const items = await db
     .select({
       id: products.id,
       name: products.name,
       brandName: products.brandName,
+      categoryName: categories.name,
       barcode: products.barcode,
       sku: products.sku,
       imageUrls: products.imageUrls,
       isActive: products.isActive,
+      isNew: products.isNew,
+      isFeatured: products.isFeatured,
       createdAt: products.createdAt,
       retailPrice: productRegionalConfigs.retailPrice,
       wholesalePrice: productRegionalConfigs.wholesalePrice,
+      isAvailable: productRegionalConfigs.isAvailable,
       totalStock: sql<number>`(SELECT COALESCE(SUM(current_qty), 0) FROM inventory_batches WHERE product_id = ${products.id})`,
     })
     .from(products)
+    .leftJoin(categories, eq(products.categoryId, categories.id))
     .leftJoin(
       productRegionalConfigs,
       and(
@@ -152,6 +166,7 @@ export async function getProducts(query: {
       retailPrice: i.retailPrice ? Number(i.retailPrice) : null,
       wholesalePrice: i.wholesalePrice ? Number(i.wholesalePrice) : null,
       totalStock: Number(i.totalStock || 0),
+      isAvailable: i.isAvailable ?? true,
     })),
     meta: {
       total,

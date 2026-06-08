@@ -19,6 +19,8 @@ export const CreateProductSchema = z.object({
   volumeUnit: z.string().optional().nullable(),
   imageUrls: z.array(z.string()).default([]),
   isActive: z.boolean().default(true),
+  isNew: z.boolean().default(false),
+  isFeatured: z.boolean().default(false),
   showStockCount: z.boolean().default(false),
   sortOrder: z.number().int().default(0),
 

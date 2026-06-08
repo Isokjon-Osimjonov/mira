@@ -21,6 +21,8 @@ export const products = pgTable('products', {
   volumeUnit: varchar('volume_unit', { length: 10 }),
   imageUrls: jsonb('image_urls').$type<string[]>().default([]).notNull(),
   isActive: boolean('is_active').default(true).notNull(),
+  isNew: boolean('is_new').default(false).notNull(),
+  isFeatured: boolean('is_featured').default(false).notNull(),
   showStockCount: boolean('show_stock_count').default(false).notNull(),
   sortOrder: integer('sort_order').default(0).notNull(),
   deletedAt: timestamp('deleted_at', { withTimezone: true }),
