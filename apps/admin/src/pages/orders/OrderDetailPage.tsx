@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
@@ -10,7 +10,11 @@ import {
   CheckCircle,
   XCircle,
   ExternalLink,
+  ScanBarcode,
+  Camera,
+  X,
 } from 'lucide-react'
+import { BrowserMultiFormatReader } from '@zxing/browser'
 import { toast } from 'sonner'
 import { ordersApi } from '../../api/orders.api'
 import { QK } from '../../constants/query-keys'
@@ -28,6 +32,7 @@ import { formatDateTime } from '../../utils/date'
 import { useAuthStore } from '../../stores/auth.store'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 
 // ── Receipt image lightbox ─────────────────────────────────
 
@@ -83,6 +88,13 @@ export function OrderDetailPage({ id }: Props) {
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null)
   const [note, setNote] = useState('')
 
+  const [barcodeInput, setBarcodeInput] = useState('')
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  const [showCamera, setShowCamera] = useState(false)
+  const videoRef = useRef<HTMLVideoElement>(null)
+  const readerRef = useRef<BrowserMultiFormatReader | null>(null)
+
   const { data, isLoading } = useQuery({
     queryKey: QK.ORDER(id),
     queryFn: () => ordersApi.getById(id),
@@ -90,6 +102,91 @@ export function OrderDetailPage({ id }: Props) {
   })
 
   const order = data?.data
+
+  const scanMutation = useMutation({
+    mutationFn: (barcode: string) => ordersApi.scanOrderItem(id, barcode),
+    onSuccess: (res) => {
+      if (res.data.alreadyScanned) {
+        toast.info(`${res.data.productName || 'Mahsulot'} allaqachon skanerlangan`)
+      } else {
+        toast.success(`${res.data.productName || 'Mahsulot'} skanerlandi ✓`)
+        if (res.data.allScanned) {
+          toast.success("Barcha mahsulotlar skanerlandi!", {
+            description: "Endi buyurtmani jo'natishingiz mumkin",
+            duration: 5000,
+          })
+        }
+      }
+      setBarcodeInput('')
+      qc.invalidateQueries({ queryKey: QK.ORDER(id) })
+      if (!showCamera) {
+        inputRef.current?.focus()
+      }
+    },
+    onError: (err: any) => {
+      const msg = err.response?.data?.error?.message || 'Skanerlashda xatolik'
+      toast.error(msg)
+      setBarcodeInput('')
+      if (!showCamera) {
+        inputRef.current?.focus()
+      }
+    },
+  })
+
+  const handleScan = (overrideBarcode?: string) => {
+    const code = overrideBarcode ?? barcodeInput.trim()
+    if (!code || scanMutation.isPending) return
+    scanMutation.mutate(code)
+  }
+
+  const handleCameraOpen = async () => {
+    setShowCamera(true)
+    const reader = new BrowserMultiFormatReader()
+    readerRef.current = reader
+    try {
+      // Need to wait for the videoRef to be available in the DOM
+      setTimeout(async () => {
+        if (!videoRef.current) return
+        await reader.decodeFromVideoDevice(
+          undefined,
+          videoRef.current,
+          (result) => {
+            if (result) {
+              const code = result.getText()
+              stopCamera()
+              setBarcodeInput(code)
+              // Auto-scan after small delay to let UI update
+              setTimeout(() => handleScan(code), 300)
+            }
+          }
+        )
+      }, 100)
+    } catch (err) {
+      console.error('Camera error:', err)
+      toast.error('Kamerani yoqishda xatolik')
+      setShowCamera(false)
+    }
+  }
+
+  const stopCamera = () => {
+    readerRef.current?.reset()
+    setShowCamera(false)
+  }
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      readerRef.current?.reset()
+    }
+  }, [])
+
+  // Auto-focus input when component mounts or status changes to Packing/Confirmed
+  useEffect(() => {
+    if ((order?.status === 'PAYMENT_CONFIRMED' || order?.status === 'PACKING') && !showCamera) {
+      const timer = setTimeout(() => inputRef.current?.focus(), 500)
+      return () => clearTimeout(timer)
+    }
+  }, [order?.status, showCamera])
 
   const [invoiceLoading, setInvoiceLoading] = useState(false)
 
@@ -141,19 +238,13 @@ export function OrderDetailPage({ id }: Props) {
     return (
       <div className="flex flex-col gap-4 animate-pulse">
         <div className="h-8 w-48 bg-gray-100 rounded-lg" />
-        <div
-          className="h-48 bg-white rounded-xl
-                        border-[0.5px] border-border"
-        />
-        <div
-          className="h-64 bg-white rounded-xl
-                        border-[0.5px] border-border"
-        />
+        <div className="h-48 bg-white rounded-xl border-[0.5px] border-border" />
+        <div className="h-64 bg-white rounded-xl border-[0.5px] border-border" />
       </div>
     )
   }
 
-  if (!order)
+  if (!order) {
     return (
       <EmptyState
         message="Buyurtma topilmadi"
@@ -164,9 +255,11 @@ export function OrderDetailPage({ id }: Props) {
         }
       />
     )
+  }
 
   const nextStatuses = VALID_TRANSITIONS[order.status] ?? []
   const isUZB = order.deliveryRegion === 'UZB'
+  const allScanned = (order.items ?? []).every((i: any) => i.isScanned)
 
   return (
     <>
@@ -213,175 +306,227 @@ export function OrderDetailPage({ id }: Props) {
 
         {/* 2-column grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          {/* LEFT: Products */}
-          <div
-            className="lg:col-span-2 bg-white rounded-xl
-                          border-[0.5px] border-border overflow-hidden"
-          >
-            <div
-              className="flex items-center justify-between
-                            px-4 py-3 border-b border-border/50"
-            >
-              <p
-                className="text-xs font-semibold text-gray-900
-                            uppercase tracking-wide"
-              >
-                Mahsulotlar
-              </p>
-              <span className="text-xs text-muted-foreground">
-                {order.items?.length ?? 0} ta
-              </span>
-            </div>
-
-            {/* Products table */}
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border/50 bg-gray-50/50">
-                    <th className="w-12 px-4 py-2.5" />
-                    <th
-                      className="px-4 py-2.5 text-left text-xs
-                                   font-medium text-muted-foreground"
-                    >
-                      Mahsulot
-                    </th>
-                    <th
-                      className="px-4 py-2.5 text-center text-xs
-                                   font-medium text-muted-foreground
-                                   w-16"
-                    >
-                      Miqdor
-                    </th>
-                    <th
-                      className="px-4 py-2.5 text-right text-xs
-                                   font-medium text-muted-foreground
-                                   w-24"
-                    >
-                      Narx
-                    </th>
-                    <th
-                      className="px-4 py-2.5 text-right text-xs
-                                   font-medium text-muted-foreground
-                                   w-24"
-                    >
-                      Jami
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border/30">
-                  {(order.items ?? []).map((item: any) => (
-                    <tr key={item.id}>
-                      <td className="px-4 py-3">
-                        {item.imageUrl ? (
-                          <img
-                            src={item.imageUrl}
-                            alt={item.productName}
-                            className="w-10 h-10 rounded-lg
-                                       object-cover border-[0.5px]
-                                       border-border"
-                          />
-                        ) : (
-                          <div
-                            className="w-10 h-10 rounded-lg
-                                          bg-gray-100 flex items-center
-                                          justify-center"
-                          >
-                            <Package className="h-4 w-4 text-gray-400" strokeWidth={1.5} />
-                          </div>
-                        )}
-                      </td>
-                      <td className="px-4 py-3">
-                        <p className="text-sm font-medium text-gray-900">{item.productName}</p>
-                        <p className="text-[11px] text-muted-foreground">
-                          {item.brandName} · {item.barcode}
-                        </p>
-                      </td>
-                      <td className="px-4 py-3 text-center">
-                        <span className="text-sm font-medium text-gray-900">{item.quantity}</span>
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        <span className="text-xs text-muted-foreground">
-                          {formatKRW(item.unitPrice)}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        <span className="text-sm font-semibold text-gray-900">
-                          {formatKRW(item.subtotal)}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Totals row */}
-            <div
-              className="px-4 py-3 border-t border-border/50
-                            bg-gray-50/50 space-y-1.5"
-            >
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span>Mahsulotlar jami</span>
-                <span>{formatKRW(order.subtotal)}</span>
-              </div>
-              {(order.discountAmount ?? 0) > 0 && (
-                <div className="flex justify-between text-xs text-green-600">
-                  <span>Kupon {order.couponCode ? `(${order.couponCode})` : ''}</span>
-                  <span>-{formatKRW(order.discountAmount)}</span>
-                </div>
-              )}
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span>Kargo</span>
-                <span>{(order.cargoFee ?? 0) > 0 ? formatKRW(order.cargoFee) : '0 ₩'}</span>
-              </div>
-              <div
-                className="flex justify-between font-bold
-                              text-sm text-gray-900 pt-1.5
-                              border-t border-border/50"
-              >
-                <span>JAMI</span>
-                <div className="text-right">
-                  <p>{formatKRW(order.totalAmount)}</p>
-                  {isUZB && order.krwToUzsRate && (
-                    <p className="text-[11px] font-normal text-muted-foreground">
-                      ≈ {formatUZS(Math.round(order.totalAmount * order.krwToUzsRate))}
+          {/* LEFT: Products & Scanning */}
+          <div className="lg:col-span-2 flex flex-col gap-4">
+            {/* Scanning section (only for Confirmed or Packing) */}
+            {(order.status === 'PAYMENT_CONFIRMED' || order.status === 'PACKING') && (
+              <div className="bg-white rounded-xl border-[0.5px] border-border overflow-hidden p-4">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <ScanBarcode className="h-4 w-4 text-primary" strokeWidth={1.5} />
+                    <p className="text-xs font-semibold text-gray-900 uppercase tracking-wide">
+                      Mahsulotlarni skanerlash
                     </p>
+                  </div>
+                  {allScanned && (
+                    <span className="text-[11px] font-medium text-green-600 bg-green-50 px-2 py-0.5 rounded-full border border-green-100 flex items-center gap-1">
+                      <CheckCircle className="h-3 w-3" />
+                      Hammasi tayyor
+                    </span>
                   )}
                 </div>
-              </div>
-              
-              {isUZB && order.krwToUzsRate && (
-                <div className="flex justify-between text-[11px] text-muted-foreground pt-1 border-t border-dashed border-border/50">
-                  <span>Valyuta kursi (to'lov kuni)</span>
-                  <span>1 ₩ = {order.krwToUzsRate.toLocaleString()} so'm</span>
-                </div>
-              )}
 
-              {order.paymentConfirmedAt && (
-                <div className="flex justify-between text-[11px] text-muted-foreground">
-                  <span>To'lov tasdiqlangan</span>
-                  <span>{formatDateTime(order.paymentConfirmedAt)}</span>
+                <div className="space-y-2 mb-4">
+                  {(order.items ?? []).map((item: any) => (
+                    <div
+                      key={item.id}
+                      className={cn(
+                        "flex items-center gap-3 p-2 rounded-lg border-[0.5px] transition-colors",
+                        item.isScanned ? "bg-green-50/30 border-green-100" : "bg-gray-50/30 border-border/50"
+                      )}
+                    >
+                      <img
+                        src={item.imageUrl}
+                        alt={item.productName}
+                        className="w-10 h-10 rounded-md object-cover border-[0.5px] border-border bg-white"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 truncate">
+                          {item.productName}
+                        </p>
+                        <p className="text-[11px] text-muted-foreground">
+                          {item.barcode} · {item.quantity} ta
+                        </p>
+                      </div>
+                      {item.isScanned ? (
+                        <div className="flex items-center gap-1 text-[11px] font-medium text-green-600 bg-white px-2 py-1 rounded-md border border-green-100 shadow-sm">
+                          <CheckCircle className="h-3 w-3" />
+                          Skanerlandi
+                        </div>
+                      ) : (
+                        <div className="text-[11px] font-medium text-muted-foreground bg-white px-2 py-1 rounded-md border border-border shadow-sm">
+                          Kutilmoqda
+                        </div>
+                      )}
+                    </div>
+                  ))}
                 </div>
-              )}
+
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <Input
+                      ref={inputRef}
+                      placeholder="Barkodni skanerlang yoki kiriting"
+                      value={barcodeInput}
+                      onChange={(e) => setBarcodeInput(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleScan()}
+                      className="h-9 text-sm pr-10 rounded-lg border-border/50 focus:ring-primary"
+                      disabled={scanMutation.isPending}
+                    />
+                    <ScanBarcode className="absolute right-3 top-2.5 h-4 w-4 text-muted-foreground pointer-events-none" />
+                  </div>
+                  <Button
+                    size="sm"
+                    onClick={() => handleScan()}
+                    disabled={!barcodeInput || scanMutation.isPending}
+                    className="rounded-lg h-9 px-4"
+                  >
+                    {scanMutation.isPending ? '...' : 'Skanerlash'}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className={cn(
+                      "rounded-lg h-9 px-3 border-border/50",
+                      showCamera && "bg-primary text-white border-primary hover:bg-primary/90 hover:text-white"
+                    )}
+                    onClick={showCamera ? stopCamera : handleCameraOpen}
+                  >
+                    <Camera className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                {showCamera && (
+                  <div className="mt-4 relative rounded-xl overflow-hidden bg-black aspect-video">
+                    <video
+                      ref={videoRef}
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                      <div className="w-48 h-48 border-2 border-white/50 rounded-lg shadow-[0_0_0_9999px_rgba(0,0,0,0.4)]" />
+                      <div className="absolute top-1/2 left-0 right-0 h-[0.5px] bg-red-500/50 animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.5)]" />
+                    </div>
+                    <Button
+                      variant="secondary"
+                      size="icon"
+                      className="absolute top-2 right-2 h-7 w-7 rounded-full bg-black/40 text-white hover:bg-black/60 border-none"
+                      onClick={stopCamera}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                    <div className="absolute bottom-2 left-0 right-0 text-center">
+                      <p className="text-[10px] text-white/80 font-medium">
+                        Skanerlash uchun barkodni kvadratga joylashtiring
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div className="bg-white rounded-xl border-[0.5px] border-border overflow-hidden">
+              <div className="flex items-center justify-between px-4 py-3 border-b border-border/50">
+                <p className="text-xs font-semibold text-gray-900 uppercase tracking-wide">
+                  Mahsulotlar
+                </p>
+                <span className="text-xs text-muted-foreground">{order.items?.length ?? 0} ta</span>
+              </div>
+
+              {/* Products table */}
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-border/50 bg-gray-50/50">
+                      <th className="w-12 px-4 py-2.5" />
+                      <th className="px-4 py-2.5 text-left text-xs font-medium text-muted-foreground">Mahsulot</th>
+                      <th className="px-4 py-2.5 text-center text-xs font-medium text-muted-foreground w-16">Miqdor</th>
+                      <th className="px-4 py-2.5 text-right text-xs font-medium text-muted-foreground w-24">Narx</th>
+                      <th className="px-4 py-2.5 text-right text-xs font-medium text-muted-foreground w-24">Jami</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border/30">
+                    {(order.items ?? []).map((item: any) => (
+                      <tr key={item.id}>
+                        <td className="px-4 py-3">
+                          {item.imageUrl ? (
+                            <img src={item.imageUrl} alt={item.productName} className="w-10 h-10 rounded-lg object-cover border-[0.5px] border-border" />
+                          ) : (
+                            <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
+                              <Package className="h-4 w-4 text-gray-400" strokeWidth={1.5} />
+                            </div>
+                          )}
+                        </td>
+                        <td className="px-4 py-3">
+                          <p className="text-sm font-medium text-gray-900">{item.productName}</p>
+                          <p className="text-[11px] text-muted-foreground">{item.brandName} · {item.barcode}</p>
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <span className="text-sm font-medium text-gray-900">{item.quantity}</span>
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <span className="text-xs text-muted-foreground">{formatKRW(item.unitPrice)}</span>
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <span className="text-sm font-semibold text-gray-900">{formatKRW(item.subtotal)}</span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Totals row */}
+              <div className="px-4 py-3 border-t border-border/50 bg-gray-50/50 space-y-1.5">
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>Mahsulotlar jami</span>
+                  <span>{formatKRW(order.subtotal)}</span>
+                </div>
+                {(order.discountAmount ?? 0) > 0 && (
+                  <div className="flex justify-between text-xs text-green-600">
+                    <span>Kupon {order.couponCode ? `(${order.couponCode})` : ''}</span>
+                    <span>-{formatKRW(order.discountAmount)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>Kargo</span>
+                  <span>{(order.cargoFee ?? 0) > 0 ? formatKRW(order.cargoFee) : '0 ₩'}</span>
+                </div>
+                <div className="flex justify-between font-bold text-sm text-gray-900 pt-1.5 border-t border-border/50">
+                  <span>JAMI</span>
+                  <div className="text-right">
+                    <p>{formatKRW(order.totalAmount)}</p>
+                    {isUZB && order.krwToUzsRate && (
+                      <p className="text-[11px] font-normal text-muted-foreground">
+                        ≈ {formatUZS(Math.round(order.totalAmount * order.krwToUzsRate))}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {isUZB && order.krwToUzsRate && (
+                  <div className="flex justify-between text-[11px] text-muted-foreground pt-1 border-t border-dashed border-border/50">
+                    <span>Valyuta kursi (to'lov kuni)</span>
+                    <span>1 ₩ = {order.krwToUzsRate.toLocaleString()} so'm</span>
+                  </div>
+                )}
+
+                {order.paymentConfirmedAt && (
+                  <div className="flex justify-between text-[11px] text-muted-foreground">
+                    <span>To'lov tasdiqlangan</span>
+                    <span>{formatDateTime(order.paymentConfirmedAt)}</span>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
           {/* RIGHT: Summary cards */}
           <div className="flex flex-col gap-3">
-            {/* Card 1: Customer */}
+            {/* Mijoz Card */}
             <div className="bg-white rounded-xl border-[0.5px] border-border p-4">
-              <p
-                className="text-xs font-semibold text-muted-foreground
-                            uppercase tracking-wide mb-3"
-              >
-                Mijoz
-              </p>
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">Mijoz</p>
               <div className="flex items-center gap-3">
-                <div
-                  className="w-9 h-9 rounded-full bg-primary/10
-                                flex items-center justify-center
-                                text-sm font-bold text-primary shrink-0"
-                >
+                <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold text-primary shrink-0">
                   {order.customerName?.[0]?.toUpperCase()}
                 </div>
                 <div>
@@ -391,28 +536,18 @@ export function OrderDetailPage({ id }: Props) {
                     {order.customerPhone}
                   </p>
                 </div>
-                <span
-                  className={cn(
-                    'ml-auto text-[10px] font-medium px-1.5 py-0.5',
-                    'rounded border-[0.5px] shrink-0',
-                    order.deliveryRegion === 'KOR'
-                      ? 'bg-blue-50 text-blue-600 border-blue-200'
-                      : 'bg-green-50 text-green-600 border-green-200'
-                  )}
-                >
+                <span className={cn(
+                  'ml-auto text-[10px] font-medium px-1.5 py-0.5 rounded border-[0.5px] shrink-0',
+                  order.deliveryRegion === 'KOR' ? 'bg-blue-50 text-blue-600 border-blue-200' : 'bg-green-50 text-green-600 border-green-200'
+                )}>
                   {order.deliveryRegion}
                 </span>
               </div>
             </div>
 
-            {/* Card 2: Delivery address */}
+            {/* Address Card */}
             <div className="bg-white rounded-xl border-[0.5px] border-border p-4">
-              <p
-                className="text-xs font-semibold text-muted-foreground
-                            uppercase tracking-wide mb-3"
-              >
-                Yetkazib berish manzili
-              </p>
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">Yetkazib berish manzili</p>
               <div className="space-y-1">
                 <p className="text-sm font-medium text-gray-900">{order.deliveryFullName}</p>
                 <p className="text-xs text-muted-foreground flex items-center gap-1">
@@ -431,86 +566,30 @@ export function OrderDetailPage({ id }: Props) {
               </div>
             </div>
 
-            {/* Card 3: Receipt (if exists) */}
+            {/* Receipt Card */}
             {order.receiptUrl && (
               <div className="bg-white rounded-xl border-[0.5px] border-border p-4">
-                <p
-                  className="text-xs font-semibold text-muted-foreground
-                              uppercase tracking-wide mb-3"
-                >
-                  Kvitansiya
-                </p>
-                <div
-                  onClick={() => setLightboxUrl(order.receiptUrl)}
-                  className="cursor-pointer group relative
-                             rounded-xl overflow-hidden
-                             border-[0.5px] border-border"
-                >
-                  <img
-                    src={order.receiptUrl}
-                    alt="Kvitansiya"
-                    className="w-full h-36 object-cover
-                               group-hover:scale-105
-                               transition-transform duration-200"
-                  />
-                  <div
-                    className="absolute inset-0 bg-black/0
-                                  group-hover:bg-black/10
-                                  transition-colors flex items-end
-                                  justify-center pb-2"
-                  >
-                    <span
-                      className="text-white text-xs opacity-0
-                                     group-hover:opacity-100
-                                     transition-opacity font-medium"
-                    >
-                      Kattalashtirish uchun bosing
-                    </span>
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">Kvitansiya</p>
+                <div onClick={() => setLightboxUrl(order.receiptUrl)} className="cursor-pointer group relative rounded-xl overflow-hidden border-[0.5px] border-border">
+                  <img src={order.receiptUrl} alt="Kvitansiya" className="w-full h-36 object-cover group-hover:scale-105 transition-transform duration-200" />
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-end justify-center pb-2">
+                    <span className="text-white text-xs opacity-0 group-hover:opacity-100 transition-opacity font-medium">Kattalashtirish uchun bosing</span>
                   </div>
                 </div>
-                <button
-                  onClick={() => setLightboxUrl(order.receiptUrl)}
-                  className="flex items-center gap-1.5 mt-2
-                             text-xs text-primary hover:underline"
-                >
+                <button onClick={() => setLightboxUrl(order.receiptUrl)} className="flex items-center gap-1.5 mt-2 text-xs text-primary hover:underline">
                   <ExternalLink className="h-3 w-3" strokeWidth={1.5} />
                   Chekni ochish
                 </button>
 
-                {/* Payment action buttons */}
                 {order.status === 'PAYMENT_SUBMITTED' && canWrite('orders') && (
-                  <div
-                    className="flex gap-2 mt-3 pt-3
-                                  border-t border-border/50"
-                  >
-                    <Button
-                      size="sm"
-                      className="flex-1 rounded-lg gap-1.5 h-8
-                                 text-xs bg-green-600
-                                 hover:bg-green-700"
-                      onClick={() =>
-                        setConfirmAction({
-                          type: 'CONFIRM_PAYMENT',
-                          label: "To'lovni tasdiqlash",
-                        })
-                      }
-                    >
+                  <div className="flex gap-2 mt-3 pt-3 border-t border-border/50">
+                    <Button size="sm" className="flex-1 rounded-lg gap-1.5 h-8 text-xs bg-green-600 hover:bg-green-700"
+                      onClick={() => setConfirmAction({ type: 'CONFIRM_PAYMENT', label: "To'lovni tasdiqlash" })}>
                       <CheckCircle className="h-3.5 w-3.5" strokeWidth={1.5} />
                       Tasdiqlash
                     </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="flex-1 rounded-lg gap-1.5 h-8
-                                 text-xs border-red-200 text-red-600
-                                 hover:bg-red-50"
-                      onClick={() =>
-                        setConfirmAction({
-                          type: 'REJECT_PAYMENT',
-                          label: "To'lovni rad etish",
-                        })
-                      }
-                    >
+                    <Button size="sm" variant="outline" className="flex-1 rounded-lg gap-1.5 h-8 text-xs border-red-200 text-red-600 hover:bg-red-50"
+                      onClick={() => setConfirmAction({ type: 'REJECT_PAYMENT', label: "To'lovni rad etish" })}>
                       <XCircle className="h-3.5 w-3.5" strokeWidth={1.5} />
                       Rad etish
                     </Button>
@@ -519,15 +598,10 @@ export function OrderDetailPage({ id }: Props) {
               </div>
             )}
 
-            {/* Card 4: Status actions */}
+            {/* Actions Card */}
             {nextStatuses.length > 0 && canWrite('orders') && (
               <div className="bg-white rounded-xl border-[0.5px] border-border p-4">
-                <p
-                  className="text-xs font-semibold text-muted-foreground
-                              uppercase tracking-wide mb-3"
-                >
-                  Harakatlar
-                </p>
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">Harakatlar</p>
                 <div className="flex flex-col gap-2">
                   {nextStatuses
                     .filter((s) => s !== 'PAYMENT_CONFIRMED' && s !== 'PAYMENT_REJECTED')
@@ -536,13 +610,11 @@ export function OrderDetailPage({ id }: Props) {
                         key={nextStatus}
                         size="sm"
                         variant={TRANSITION_VARIANTS[nextStatus]}
-                        className="rounded-lg w-full h-8 text-xs"
-                        onClick={() =>
-                          setConfirmAction({
-                            type: nextStatus,
-                            label: TRANSITION_LABELS[nextStatus],
-                          })
-                        }
+                        className={cn(
+                          "rounded-lg w-full h-8 text-xs",
+                          nextStatus === 'SHIPPED' && allScanned && "ring-2 ring-primary ring-offset-2 bg-primary hover:bg-primary/90 text-white font-bold"
+                        )}
+                        onClick={() => setConfirmAction({ type: nextStatus, label: TRANSITION_LABELS[nextStatus] })}
                       >
                         {TRANSITION_LABELS[nextStatus]}
                       </Button>
@@ -554,7 +626,6 @@ export function OrderDetailPage({ id }: Props) {
         </div>
       </div>
 
-      {/* Confirm dialog */}
       <ConfirmDialog
         open={!!confirmAction}
         onClose={() => setConfirmAction(null)}
@@ -564,16 +635,10 @@ export function OrderDetailPage({ id }: Props) {
             ? "To'lov rad etiladi. Mijozga xabar yuboriladi."
             : confirmAction?.type === 'CANCELED'
             ? "Buyurtma bekor qilinadi. Bu amalni qaytarib bo'lmaydi."
-            : `Buyurtma holati "${
-                ORDER_STATUS_LABELS[confirmAction?.type ?? '']
-              }" ga o'zgaradi.`
+            : `Buyurtma holati "${ORDER_STATUS_LABELS[confirmAction?.type ?? '']}" ga o'zgaradi.`
         }
         loading={statusMutation.isPending || paymentMutation.isPending}
-        variant={
-          confirmAction?.type === 'CANCELED' || confirmAction?.type === 'REJECT_PAYMENT'
-            ? 'destructive'
-            : 'default'
-        }
+        variant={confirmAction?.type === 'CANCELED' || confirmAction?.type === 'REJECT_PAYMENT' ? 'destructive' : 'default'}
         onConfirm={() => {
           if (!confirmAction) return
           if (confirmAction.type === 'CONFIRM_PAYMENT') {

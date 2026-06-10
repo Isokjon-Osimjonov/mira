@@ -75,7 +75,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   title: {
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Inter_400Regular',
+    fontWeight: '500',
     fontSize: 26,
     color: tokens.colors.text,
     textAlign: 'center',
@@ -83,6 +84,7 @@ const styles = StyleSheet.create({
   },
   description: {
     fontFamily: 'Inter_400Regular',
+    fontWeight: '300',
     fontSize: 14,
     color: tokens.colors.textMuted,
     textAlign: 'center',
@@ -100,6 +102,7 @@ const styles = StyleSheet.create({
   },
   skipText: {
     fontFamily: 'Inter_400Regular',
+    fontWeight: '300',
     fontSize: 14,
     color: tokens.colors.textMuted,
     textAlign: 'center',

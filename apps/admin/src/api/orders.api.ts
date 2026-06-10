@@ -66,4 +66,9 @@ export const ordersApi = {
     const res = await api.post('/admin/orders/manual', payload)
     return res.data
   },
+
+  scanOrderItem: async (id: string, barcode: string) => {
+    const res = await api.post(`/admin/orders/${id}/scan-item`, { barcode })
+    return res.data
+  },
 }

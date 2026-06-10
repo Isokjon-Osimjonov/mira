@@ -115,7 +115,8 @@ const styles = StyleSheet.create({
     borderRightColor: tokens.colors.primaryLight,
   },
   regionText: {
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Inter_400Regular',
+    fontWeight: '400',
     fontSize: 15,
     color: tokens.colors.text,
   },
@@ -126,12 +127,14 @@ const styles = StyleSheet.create({
   },
   input: {
     fontFamily: 'Inter_400Regular',
+    fontWeight: '400',
     fontSize: 15,
     color: tokens.colors.text,
     height: '100%',
   },
   errorText: {
     fontFamily: 'Inter_400Regular',
+    fontWeight: '300',
     fontSize: 12,
     color: tokens.colors.primaryDark,
     marginTop: 4,

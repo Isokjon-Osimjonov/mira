@@ -107,13 +107,15 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   title: {
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Inter_400Regular',
+    fontWeight: '500',
     fontSize: 28,
     color: tokens.colors.text,
     marginTop: 24,
   },
   subtitle: {
     fontFamily: 'Inter_400Regular',
+    fontWeight: '300',
     fontSize: 14,
     color: tokens.colors.textMuted,
     marginTop: 8,
@@ -129,6 +131,7 @@ const styles = StyleSheet.create({
   },
   bottomText: {
     fontFamily: 'Inter_400Regular',
+    fontWeight: '300',
     fontSize: 12,
     color: tokens.colors.textMuted,
   },

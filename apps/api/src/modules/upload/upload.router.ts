@@ -29,4 +29,11 @@ router.post(
   ctrl.uploadAvatar
 )
 
+// Order receipt upload
+router.post(
+  '/receipt',
+  requireCustomer,
+  ctrl.uploadReceipt
+)
+
 export default router

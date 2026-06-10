@@ -7,7 +7,7 @@ import * as SecureStore from 'expo-secure-store'
 export default function SplashScreen() {
   useEffect(() => {
     const init = async () => {
-      await new Promise(resolve => setTimeout(resolve, 1500))
+      await new Promise((resolve) => setTimeout(resolve, 1500))
       await useAuthStore.getState().initialize()
 
       const { isAuthenticated } = useAuthStore.getState()
@@ -39,7 +39,7 @@ export default function SplashScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFF5F9',
+    backgroundColor: '#ffffff',
     alignItems: 'center',
     justifyContent: 'center',
   },

@@ -399,20 +399,14 @@ export async function createOrder(params: {
         paymentDeadline,
         paymentConfirmedAt: isImmediate ? new Date() : null,
         paymentConfirmedBy: isImmediate ? params.adminId : null,
-        deliveryFullName: address?.recipientName ?? `${customer.firstName} ${customer.lastName || ''}`.trim(),
-        deliveryPhone: address?.phone ?? customer.phone,
-        deliveryAddressLine1: address
-          ? address.regionCode === 'UZB'
-            ? `${address.uzbRegion}, ${address.uzbCity}`
-            : address.korRoadAddress
-          : "Do'kondan olib ketish",
-        deliveryAddressLine2: address
-          ? address.regionCode === 'UZB'
-            ? `${address.uzbDistrict}, ${address.uzbStreet}`
-            : `${address.korDetail} ${address.korBuilding}`
-          : null,
-        deliveryCity: address ? (address.regionCode === 'UZB' ? address.uzbCity : null) : null,
-        deliveryPostalCode: address ? (address.regionCode === 'KOR' ? address.korPostalCode : null) : null,
+        deliveryFullName: address
+          ? address.fullName
+          : `${customer.firstName} ${customer.lastName ?? ''}`.trim(),
+        deliveryPhone: address ? address.phone : customer.phone,
+        deliveryAddressLine1: address ? address.addressLine1 ?? '' : null,
+        deliveryAddressLine2: address ? address.addressLine2 ?? null : null,
+        deliveryCity: address ? address.city ?? null : null,
+        deliveryPostalCode: address ? address.postalCode ?? null : null,
         customerNote: params.customerNote,
         adminNote: params.adminNote,
         createdBy: params.adminId,
@@ -1907,6 +1901,7 @@ export async function adminGetOrderDetail(orderId: string) {
       quantity: orderItems.quantity,
       unitPrice: orderItems.unitPriceSnapshot,
       subtotal: orderItems.subtotalSnapshot,
+      isScanned: orderItems.isScanned,
       isWholesale: sql<boolean>`${orderItems.quantity} >= ${productRegionalConfigs.minWholesaleQty}`,
     })
     .from(orderItems)
@@ -1983,6 +1978,7 @@ const [rateSnapshot] = order.rateSnapshotId
       quantity: item.quantity,
       unitPrice: Number(item.unitPrice),
       subtotal: Number(item.subtotal),
+      isScanned: item.isScanned,
       isWholesale: item.isWholesale,
     })),
 
@@ -2191,4 +2187,46 @@ export async function reconcileDailySummary(): Promise<void> {
         })
     }
   }
+}
+
+export async function scanOrderItem(orderId: string, barcode: string) {
+  return await db.transaction(async (tx) => {
+    // Find order
+    const [order] = await tx.select().from(orders).where(eq(orders.id, orderId)).limit(1)
+    if (!order) throw { status: 404, code: 'ORDER_NOT_FOUND', message: 'Buyurtma topilmadi' }
+
+    // Find product by barcode
+    const [product] = await tx.select().from(products).where(eq(products.barcode, barcode)).limit(1)
+    if (!product) throw { status: 404, code: 'PRODUCT_NOT_FOUND', message: `Barkod topilmadi: ${barcode}` }
+
+    // Find order item
+    const [item] = await tx
+      .select()
+      .from(orderItems)
+      .where(and(eq(orderItems.orderId, orderId), eq(orderItems.productId, product.id)))
+      .limit(1)
+    if (!item) throw { status: 400, code: 'ITEM_NOT_IN_ORDER', message: "Bu mahsulot buyurtmada yo'q" }
+
+    if (item.isScanned) {
+      return { alreadyScanned: true, item }
+    }
+
+    // Mark as scanned
+    const [updated] = await tx
+      .update(orderItems)
+      .set({ isScanned: true, scannedAt: new Date() })
+      .where(eq(orderItems.id, item.id))
+      .returning()
+
+    // Check if all items scanned
+    const allItems = await tx.select().from(orderItems).where(eq(orderItems.orderId, orderId))
+    const allScanned = allItems.every((i) => i.isScanned)
+
+    return {
+      alreadyScanned: false,
+      item: updated,
+      allScanned,
+      productName: product.name,
+    }
+  })
 }

@@ -121,7 +121,8 @@ const styles = StyleSheet.create({
     paddingTop: 24,
   },
   title: {
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Inter_400Regular',
+    fontWeight: '500',
     fontSize: 42,
     lineHeight: 46,
     textAlign: 'left',
@@ -130,6 +131,7 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontFamily: 'Inter_400Regular',
+    fontWeight: '300',
     fontSize: 11,
     letterSpacing: 2,
     textAlign: 'left',
@@ -154,6 +156,7 @@ const styles = StyleSheet.create({
   },
   counter: {
     fontFamily: 'Inter_400Regular',
+    fontWeight: '400',
     fontSize: 13,
     letterSpacing: 2,
   },

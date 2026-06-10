@@ -112,7 +112,8 @@ const styles = StyleSheet.create({
     borderColor: tokens.colors.primaryDark,
   },
   boxText: {
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Inter_400Regular',
+    fontWeight: '400',
     fontSize: 20,
     color: tokens.colors.text,
   },

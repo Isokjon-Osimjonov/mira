@@ -122,7 +122,11 @@ export async function getProducts(query: {
   if (sortField === 'brandName') orderBy = asc(products.brandName)
   if (query.sort === 'newest') orderBy = desc(products.createdAt)
   if (query.sort === 'bestselling') {
-    orderBy = desc(sql`total_stock`)
+    orderBy = desc(
+      sql`(SELECT COALESCE(SUM(ib.current_qty), 0)
+           FROM inventory_batches ib
+           WHERE ib.product_id = ${products.id})`
+    )
   }
 
   const items = await db
@@ -181,38 +185,35 @@ export async function getProducts(query: {
 
 export async function getProductById(id: string, region: 'UZB' | 'KOR' = 'UZB') {
   const [product] = await db
-    .select({
-      product: products,
-      regionalConfig: productRegionalConfigs,
-    })
+    .select()
     .from(products)
-    .leftJoin(
-      productRegionalConfigs,
-      and(
-        eq(products.id, productRegionalConfigs.productId),
-        eq(productRegionalConfigs.regionCode, region)
-      )
-    )
     .where(and(eq(products.id, id), isNull(products.deletedAt)))
     .limit(1)
 
   if (!product) throw { status: 404, message: 'Mahsulot topilmadi' }
+
+  const configs = await db
+    .select()
+    .from(productRegionalConfigs)
+    .where(eq(productRegionalConfigs.productId, id))
 
   const stock = await db
     .select({ total: sql<number>`SUM(current_qty)` })
     .from(inventoryBatches)
     .where(eq(inventoryBatches.productId, id))
 
+  const currentRegionConfig = configs.find(c => c.regionCode === region) || configs[0]
+
   return {
-    ...product.product,
+    ...product,
     currentStock: Number(stock[0]?.total || 0),
-    regionalConfig: product.regionalConfig
-      ? {
-          ...product.regionalConfig,
-          retailPrice: Number(product.regionalConfig.retailPrice),
-          wholesalePrice: Number(product.regionalConfig.wholesalePrice),
-        }
-      : null,
+    retailPrice: currentRegionConfig ? Number(currentRegionConfig.retailPrice) : null,
+    wholesalePrice: currentRegionConfig ? Number(currentRegionConfig.wholesalePrice) : null,
+    regionalConfigs: configs.map(c => ({
+      ...c,
+      retailPrice: Number(c.retailPrice),
+      wholesalePrice: Number(c.wholesalePrice)
+    })),
   }
 }
 

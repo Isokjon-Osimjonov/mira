@@ -251,18 +251,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
   },
   title: {
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Inter_400Regular',
+    fontWeight: '500',
     fontSize: 28,
     color: tokens.colors.text,
   },
   subtitle: {
     fontFamily: 'Inter_400Regular',
+    fontWeight: '300',
     fontSize: 14,
     color: tokens.colors.textMuted,
     marginTop: 8,
   },
   maskedPhone: {
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Inter_400Regular',
+    fontWeight: '400',
     fontSize: 14,
     color: tokens.colors.primary,
     marginTop: 4,
@@ -273,6 +276,7 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontFamily: 'Inter_400Regular',
+    fontWeight: '300',
     fontSize: 12,
     color: tokens.colors.primaryDark,
     marginTop: 8,
@@ -284,11 +288,13 @@ const styles = StyleSheet.create({
   },
   timerText: {
     fontFamily: 'Inter_400Regular',
+    fontWeight: '300',
     fontSize: 14,
     color: tokens.colors.textMuted,
   },
   resendText: {
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Inter_400Regular',
+    fontWeight: '400',
     fontSize: 14,
     color: tokens.colors.primary,
   },
@@ -298,6 +304,7 @@ const styles = StyleSheet.create({
   },
   lockoutText: {
     fontFamily: 'Inter_400Regular',
+    fontWeight: '400',
     fontSize: 13,
     color: tokens.colors.primaryDark,
     textAlign: 'center',

@@ -50,5 +50,6 @@ adminRouter.patch('/:id/refund', requirePermission('orders', 'write'), ctrl.refu
 
 adminRouter.get('/:id/expenses', requirePermission('orders', 'read'), ctrl.getOrderExpenses)
 adminRouter.post('/:id/expenses', requirePermission('orders', 'write'), ctrl.addOrderExpense)
+adminRouter.post('/:id/scan-item', requireAdmin, ctrl.scanOrderItem)
 
 export { adminRouter as ordersAdminRouter }

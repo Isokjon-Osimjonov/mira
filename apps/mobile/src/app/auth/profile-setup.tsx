@@ -27,7 +27,7 @@ export default function ProfileSetupScreen() {
 
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ['images'],
       allowsEditing: true,
       aspect: [1, 1],
       quality: 0.8,
@@ -141,12 +141,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
   },
   title: {
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Inter_400Regular',
+    fontWeight: '500',
     fontSize: 28,
     color: tokens.colors.text,
   },
   subtitle: {
     fontFamily: 'Inter_400Regular',
+    fontWeight: '300',
     fontSize: 14,
     color: tokens.colors.textMuted,
     marginTop: 8,
@@ -173,7 +175,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   avatarInitials: {
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Inter_400Regular',
+    fontWeight: '500',
     fontSize: 36,
     color: tokens.colors.primary,
   },
@@ -196,6 +199,7 @@ const styles = StyleSheet.create({
   },
   label: {
     fontFamily: 'Inter_400Regular',
+    fontWeight: '300',
     fontSize: 14,
     color: tokens.colors.textMuted,
     marginBottom: 8,
@@ -207,6 +211,7 @@ const styles = StyleSheet.create({
     borderColor: tokens.colors.primaryLight,
     paddingHorizontal: 16,
     fontFamily: 'Inter_400Regular',
+    fontWeight: '400',
     fontSize: 16,
     color: tokens.colors.text,
     backgroundColor: tokens.colors.white,

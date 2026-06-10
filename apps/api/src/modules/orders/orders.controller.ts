@@ -525,3 +525,23 @@ export async function addOrderExpense(req: Request, res: Response) {
       .json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
   }
 }
+
+export async function scanOrderItem(req: Request, res: Response) {
+  try {
+    const { id } = req.params
+    const { barcode } = req.body
+    if (!barcode) {
+      return res.status(400).json({
+        data: null,
+        error: { message: 'Barkod kiriting', code: 'MISSING_BARCODE' },
+      })
+    }
+    const result = await service.scanOrderItem(id, barcode)
+    return res.json({ data: result, error: null })
+  } catch (e: any) {
+    return res.status(e.status ?? 500).json({
+      data: null,
+      error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' },
+    })
+  }
+}
