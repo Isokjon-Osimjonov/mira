@@ -13,6 +13,10 @@ jobs:
     runs-on: ubuntu-latest
     environment: production
     steps:
+      - name: Set lowercase repo owner
+        id: vars
+        run: echo "owner=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1
         with:
@@ -25,6 +29,6 @@ jobs:
             git pull origin main
             cd infra
             export IMAGE_TAG=${{ github.event.inputs.image_tag }}
-            export GITHUB_REPOSITORY_OWNER=${{ github.repository_owner }}
+            export GITHUB_REPOSITORY_OWNER=${{ steps.vars.outputs.owner }}
             chmod +x deploy.sh
             ./deploy.sh
