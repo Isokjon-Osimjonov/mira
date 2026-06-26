@@ -6,6 +6,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Feather } from '@expo/vector-icons'
 import { tokens } from '../../lib/tokens'
 import { orderService } from '../../services/order.service'
+import { productService } from '../../services/product.service'
 import { formatKRW } from '../../lib/price'
 import PrimaryButton from '../../components/ui/PrimaryButton'
 
@@ -14,6 +15,12 @@ export default function OrderConfirmedScreen() {
     orderId: string
     paymentInfoJson?: string 
   }>()
+
+  const { data: paymentSettings } = useQuery({
+    queryKey: ['payment-settings'],
+    queryFn: productService.getPaymentInfo,
+    staleTime: 10 * 60 * 1000,
+  })
 
   const paymentInfo = paymentInfoJson ? JSON.parse(paymentInfoJson) : null
 
@@ -27,15 +34,15 @@ export default function OrderConfirmedScreen() {
   const [timeLeft, setTimeLeft] = useState<number | null>(null)
 
   useEffect(() => {
-    if (!order?.paymentExpiresAt) return
+    if (!order?.paymentDeadline) return
     const updateTimer = () => {
-      const diff = new Date(order.paymentExpiresAt!).getTime() - Date.now()
+      const diff = new Date(order.paymentDeadline!).getTime() - Date.now()
       setTimeLeft(Math.max(0, Math.floor(diff / 1000)))
     }
     updateTimer()
     const interval = setInterval(updateTimer, 1000)
     return () => clearInterval(interval)
-  }, [order?.paymentExpiresAt])
+  }, [order?.paymentDeadline])
 
   const formatCountdown = (seconds: number) => {
     const m = Math.floor(seconds / 60)
@@ -88,28 +95,28 @@ export default function OrderConfirmedScreen() {
             <Text style={styles.instructionsTitle}>To'lov ma'lumotlari</Text>
             {paymentInfo?.method === 'KOREAN_BANK' && (
               <>
-                {infoRow("Hisob raqam:", paymentInfo.korBankNumber)}
-                {infoRow("Bank:", paymentInfo.korBankName)}
-                {infoRow("Egasi:", paymentInfo.korBankHolder)}
+                {infoRow("Hisob raqam:", paymentInfo.korBankNumber ?? paymentSettings?.kor.bankNumber)}
+                {infoRow("Bank:", paymentInfo.korBankName ?? paymentSettings?.kor.bankName)}
+                {infoRow("Egasi:", paymentInfo.korBankHolder ?? paymentSettings?.kor.bankHolder)}
               </>
             )}
             {paymentInfo?.method === 'UZB_BANK' && (
               <>
-                {infoRow("Hisob:", paymentInfo.uzbBankNumber)}
-                {infoRow("Bank:", paymentInfo.uzbBankName)}
-                {infoRow("Egasi:", paymentInfo.uzbBankHolder)}
+                {infoRow("Hisob:", paymentInfo.uzbBankNumber ?? paymentSettings?.uzb.bankNumber)}
+                {infoRow("Bank:", paymentInfo.uzbBankName ?? paymentSettings?.uzb.bankName)}
+                {infoRow("Egasi:", paymentInfo.uzbBankHolder ?? paymentSettings?.uzb.bankHolder)}
               </>
             )}
             {paymentInfo?.method === 'E9PAY' && (
               <>
-                {infoRow("E9Pay:", paymentInfo.korE9payAccount)}
-                {infoRow("Egasi:", paymentInfo.korE9payName)}
+                {infoRow("E9Pay:", paymentInfo.korE9payAccount ?? paymentSettings?.e9pay.account)}
+                {infoRow("Egasi:", paymentInfo.korE9payName ?? paymentSettings?.e9pay.name)}
               </>
             )}
             {!paymentInfo && (
               <>
-                <Text style={styles.instructionDetail}>Hisob raqam: 1234 5678 9012 3456</Text>
-                <Text style={styles.instructionDetailSub}>Bank: Kapitalbank</Text>
+                {infoRow("Hisob raqam:", (paymentSettings?.uzb.bankNumber ?? paymentSettings?.kor.bankNumber) ?? null)}
+                {infoRow("Bank:", (paymentSettings?.uzb.bankName ?? paymentSettings?.kor.bankName) ?? null)}
               </>
             )}
             <View style={{ marginTop: 10, paddingTop: 10, borderTopWidth: 0.5, borderTopColor: tokens.colors.border }}>

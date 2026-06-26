@@ -26,6 +26,8 @@ const boxSchema = z.object({
   lengthCm:   z.coerce.number().min(0).optional().nullable(),
   widthCm:    z.coerce.number().min(0).optional().nullable(),
   heightCm:   z.coerce.number().min(0).optional().nullable(),
+  maxWeightKg: z.coerce.number().min(0).default(0),
+  boxWeightKg: z.coerce.number().min(0).default(0),
   costKrw:    z.coerce.number().int().min(0).default(0),
   stockCount: z.coerce.number().int().min(0).default(0),
   minStock:   z.coerce.number().int().min(0).default(10),
@@ -104,7 +106,19 @@ export function QutularPage() {
   })
 
   const resetForm = () => {
-    reset({ costKrw: 0, stockCount: 0, minStock: 10, name: '', sizeLabel: '', lengthCm: null, widthCm: null, heightCm: null, imageUrls: [] })
+    reset({
+      costKrw: 0,
+      stockCount: 0,
+      minStock: 10,
+      name: '',
+      sizeLabel: '',
+      lengthCm: null,
+      widthCm: null,
+      heightCm: null,
+      maxWeightKg: 0,
+      boxWeightKg: 0,
+      imageUrls: []
+    })
     setEditTarget(null)
     setShowForm(false)
   }
@@ -117,6 +131,8 @@ export function QutularPage() {
       lengthCm:   box.lengthCm ?? null,
       widthCm:    box.widthCm ?? null,
       heightCm:   box.heightCm ?? null,
+      maxWeightKg: box.maxWeightKg ?? 0,
+      boxWeightKg: box.boxWeightKg ?? 0,
       costKrw:    box.costKrw ?? 0,
       stockCount: box.stockCount ?? 0,
       minStock:   box.minStock ?? 10,
@@ -311,6 +327,17 @@ export function QutularPage() {
                     <Input {...register('lengthCm')} type="number" placeholder="L" className="h-9 text-sm rounded-lg border-[0.5px]" />
                     <Input {...register('widthCm')} type="number" placeholder="W" className="h-9 text-sm rounded-lg border-[0.5px]" />
                     <Input {...register('heightCm')} type="number" placeholder="H" className="h-9 text-sm rounded-lg border-[0.5px]" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-xs mb-1.5 block">Maksimal og'irlik (kg)</Label>
+                    <Input {...register('maxWeightKg')} type="number" step="0.1" min="0" placeholder="10.0" className="h-9 text-sm rounded-lg border-[0.5px]" />
+                    <p className="text-[10px] text-muted-foreground mt-1">Bu qutiga sig'adigan maksimal tovar og'irligi</p>
+                  </div>
+                  <div>
+                    <Label className="text-xs mb-1.5 block">Quti o'z og'irligi (kg)</Label>
+                    <Input {...register('boxWeightKg')} type="number" step="0.1" min="0" placeholder="0.5" className="h-9 text-sm rounded-lg border-[0.5px]" />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">

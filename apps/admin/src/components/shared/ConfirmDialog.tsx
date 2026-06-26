@@ -19,11 +19,12 @@ interface ConfirmDialogProps {
   description: string
   loading?:    boolean
   variant?:    'default' | 'destructive'
+  customBody?: React.ReactNode
 }
 
 export function ConfirmDialog({
   open, onClose, onConfirm, title,
-  description, loading, variant = 'default'
+  description, loading, variant = 'default', customBody
 }: ConfirmDialogProps) {
   return (
     <AlertDialog open={open} onOpenChange={onClose}>
@@ -35,6 +36,7 @@ export function ConfirmDialog({
           <AlertDialogDescription className="text-sm">
             {description}
           </AlertDialogDescription>
+          {customBody}
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel disabled={loading}

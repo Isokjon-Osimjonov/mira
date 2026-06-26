@@ -1,0 +1,26 @@
+name: Deploy to Production
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: 'Image tag to deploy (default: latest)'
+        required: false
+        default: 'latest'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            cd /opt/mira
+            export IMAGE_TAG=${{ github.event.inputs.image_tag }}
+            export GITHUB_REPOSITORY_OWNER=${{ github.repository_owner }}
+            chmod +x deploy.sh
+            ./deploy.sh

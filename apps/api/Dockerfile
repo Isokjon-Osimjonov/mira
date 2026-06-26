@@ -1,75 +1,55 @@
 # apps/api/Dockerfile
-# Multi-stage build — production image
+# Production image — runs via tsx, matches dev pattern.
+# apps/api has zero runtime imports from monorepo libs
+# (confirmed via grep audit), so only apps/api itself
+# needs to be in the image.
 
-# ─── Stage 1: Dependencies ───────────────────────────────────
 FROM node:20-alpine AS deps
 
 RUN npm install -g pnpm@10
-
 WORKDIR /app
 
-# Copy workspace config
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
-COPY tsconfig.base.json ./
-
-# Copy all package.json files (workspace packages)
 COPY apps/api/package.json ./apps/api/
+COPY libs/db/package.json ./libs/db/
 COPY libs/shared-types/package.json ./libs/shared-types/
 COPY libs/shared-utils/package.json ./libs/shared-utils/
-COPY libs/db/package.json ./libs/db/
-COPY libs/ui-config/package.json ./libs/ui-config/
 
-# Install only production deps
-RUN pnpm install --frozen-lockfile --prod
+RUN pnpm install --frozen-lockfile --filter @mira/api --prod
 
-# ─── Stage 2: Build ──────────────────────────────────────────
-FROM node:20-alpine AS builder
-
-RUN npm install -g pnpm@10
-
-WORKDIR /app
-
-COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /app/apps/api/node_modules ./apps/api/node_modules
-
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
-COPY tsconfig.base.json ./
-COPY apps/api ./apps/api
-COPY libs/shared-types ./libs/shared-types
-COPY libs/shared-utils ./libs/shared-utils
-COPY libs/db ./libs/db
-COPY libs/ui-config ./libs/ui-config
-
-# Install all deps (including dev) for build
-RUN pnpm install --frozen-lockfile
-
-# Build
-RUN cd apps/api && pnpm exec tsc -p tsconfig.json --outDir dist
-
-# ─── Stage 3: Production ─────────────────────────────────────
 FROM node:20-alpine AS runner
 
-RUN apk add --no-cache dumb-init
+RUN apk add --no-cache dumb-init wget
 
 WORKDIR /app
 
 ENV NODE_ENV=production
 
-# Copy built files
-COPY --from=builder /app/apps/api/dist ./dist
 COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/apps/api/node_modules ./apps/api/node_modules
+COPY apps/api/src ./apps/api/src
+COPY apps/api/package.json ./apps/api/package.json
+COPY apps/api/tsconfig.json ./apps/api/tsconfig.json
+COPY tsconfig.base.json ./
+COPY libs/db ./libs/db
+COPY libs/shared-types ./libs/shared-types
+COPY libs/shared-utils ./libs/shared-utils
 
-# Non-root user
+# Build arg for tracking which commit this image came from
+ARG GIT_SHA=unknown
+LABEL git_sha=$GIT_SHA
+ENV GIT_SHA=$GIT_SHA
+
 RUN addgroup -g 1001 -S nodejs && \
     adduser -S nodejs -u 1001
 USER nodejs
 
+WORKDIR /app/apps/api
+
 EXPOSE 4000
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
   CMD wget -qO- http://localhost:4000/health || exit 1
 
-# dumb-init prevents zombie processes
 ENTRYPOINT ["dumb-init", "--"]
-CMD ["node", "dist/main.js"]
+CMD ["npx", "tsx", "src/main.ts"]

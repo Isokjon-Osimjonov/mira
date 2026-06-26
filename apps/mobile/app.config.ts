@@ -15,8 +15,13 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     resizeMode: 'contain',
     backgroundColor: '#FFF5F9',
   },
+  notification: {
+    icon: './assets/notification-icon.png',
+    color: '#E11D74',
+    androidMode: 'default',
+  },
   ios: {
-    bundleIdentifier: 'uz.miramarket',
+    bundleIdentifier: 'uz.miramarket.app',
     buildNumber: '1',
     supportsTablet: false,
     infoPlist: {
@@ -26,7 +31,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     },
   },
   android: {
-    package: 'uz.miramarket',
+    package: 'uz.miramarket.app',
     versionCode: 1,
     adaptiveIcon: {
       foregroundImage: './assets/icon.png',
@@ -50,8 +55,9 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     [
       'expo-notifications',
       {
-        icon: './assets/icon.png',
-        color: '#FFF5F9',
+        icon: './assets/notification-icon.png',
+        color: '#E11D74',
+        sounds: [],
       },
     ],
   ],

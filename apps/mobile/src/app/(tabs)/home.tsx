@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useRef } from 'react'
 import {
   ScrollView,
   View,
@@ -8,6 +8,8 @@ import {
   Dimensions,
   FlatList,
   Pressable,
+  Linking,
+  Animated,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Image } from 'expo-image'
@@ -17,31 +19,46 @@ import { router } from 'expo-router'
 import { useAuthStore } from '../../lib/auth-store'
 import { useExchangeStore } from '../../lib/exchange-store'
 import { productService } from '../../services/product.service'
+import { bannerService, Banner } from '../../services/banner.service'
 import { ProductCard } from '../../components/ui/ProductCard'
 import { SectionHeader } from '../../components/ui/SectionHeader'
 import SkeletonLoader from '../../components/ui/SkeletonLoader'
+import EmptyState from '../../components/ui/EmptyState'
 import { tokens } from '../../lib/tokens'
 import { formatKRW, formatUZS } from '../../lib/price'
+import { notificationService } from '../../services/notification.service'
 
 import { Alert } from 'react-native'
 import { useCartStore } from '../../lib/cart-store'
+import { useWishlistStore } from '../../lib/wishlist-store'
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
 
 export default function HomeScreen() {
   const customer = useAuthStore((s) => s.customer)
   const setRate = useExchangeStore((s) => s.setRate)
-  const addItem = useCartStore(s => s.addItem)
+  const addItem = useCartStore((s) => s.addItem)
   const [addingId, setAddingId] = useState<string | null>(null)
+  const [activeBannerIdx, setActiveBannerIdx] = useState(0)
+  const bannerScrollRef = useRef<FlatList>(null)
 
-  const fetchCart = useCartStore(s => s.fetchCart)
+  const fetchCart = useCartStore((s) => s.fetchCart)
+  const fetchWishlist = useWishlistStore((s) => s.fetchWishlist)
+
   useEffect(() => {
     fetchCart()
-  }, [])
+    fetchWishlist()
+  }, [fetchCart, fetchWishlist])
 
   const { data: categoriesData, isLoading: categoriesLoading } = useQuery({
     queryKey: ['categories'],
     queryFn: productService.getCategories,
+    staleTime: 5 * 60 * 1000,
+  })
+
+  const { data: bannersData } = useQuery({
+    queryKey: ['banners'],
+    queryFn: bannerService.getBanners,
     staleTime: 5 * 60 * 1000,
   })
 
@@ -76,9 +93,31 @@ export default function HomeScreen() {
   }, [rateData, setRate])
 
   const categories = categoriesData ?? []
+  const banners = bannersData ?? []
   const newProducts = newProductsData?.data ?? []
   const bestsellerProducts = bestsellerData?.data ?? []
   const featuredProduct = featuredData?.data?.[0] ?? null
+
+  useEffect(() => {
+    if (banners.length <= 1) return
+    const interval = setInterval(() => {
+      const nextIdx = (activeBannerIdx + 1) % banners.length
+      setActiveBannerIdx(nextIdx)
+      bannerScrollRef.current?.scrollToIndex({
+        index: nextIdx,
+        animated: true,
+      })
+    }, 4000)
+    return () => clearInterval(interval)
+  }, [activeBannerIdx, banners.length])
+
+  const { data: unreadData } = useQuery({
+    queryKey: ['notifications-unread'],
+    queryFn: notificationService.getUnreadCount,
+    staleTime: 60_000,
+    refetchInterval: 60_000,
+  })
+  const unreadCount = unreadData ?? 0
 
   const handleAddToCart = async (productId: string) => {
     if (addingId) return
@@ -90,38 +129,54 @@ export default function HomeScreen() {
       if (code === 'REGION_MISMATCH') {
         Alert.alert(
           'Hudud mos kelmaydi',
-          'Savatingizda boshqa hududdan mahsulot bor. Savatni tozalab qayta urinib ko\'ring.',
+          "Savatingizda boshqa hududdan mahsulot bor. Savatni tozalab qayta urinib ko'ring.",
           [{ text: 'OK' }]
         )
       } else {
-        Alert.alert(
-          'Xatolik',
-          err?.response?.data?.error?.message ?? 'Savatga qo\'shib bo\'lmadi'
-        )
+        Alert.alert('Xatolik', err?.response?.data?.error?.message ?? "Savatga qo'shib bo'lmadi")
       }
     } finally {
       setAddingId(null)
     }
   }
 
+  const handleBannerPress = (banner: Banner) => {
+    switch (banner.linkType) {
+      case 'product':
+        if (banner.linkValue) {
+          router.push('/product/' + banner.linkValue)
+        }
+        break
+      case 'category':
+        router.push('/(tabs)/categories')
+        break
+      case 'external':
+      case 'wholesale':
+        if (banner.linkValue) {
+          Linking.openURL(banner.linkValue)
+        }
+        break
+      default:
+        break
+    }
+  }
+
   const renderCategoryItem = ({ item }: { item: any }) => (
     <TouchableOpacity
       style={styles.categoryCard}
-      onPress={() => router.push({
-        pathname: '/(tabs)/categories',
-        params: { categoryId: item.id }
-      })}
+      onPress={() =>
+        router.push({
+          pathname: '/(tabs)/categories',
+          params: { categoryId: item.id },
+        })
+      }
       activeOpacity={0.8}
     >
       <View style={styles.categoryIconCircle}>
         {item.imageUrl ? (
-          <Image
-            source={item.imageUrl}
-            style={styles.categoryIcon}
-            contentFit="cover"
-          />
+          <Image source={item.imageUrl} style={styles.categoryIcon} contentFit="cover" />
         ) : (
-          <Feather name="grid" size={18} color={tokens.colors.primary} />
+          <Feather name="grid" size={18} color={tokens.colors.textMuted} />
         )}
       </View>
       <Text style={styles.categoryName} numberOfLines={2}>
@@ -156,12 +211,19 @@ export default function HomeScreen() {
               <Text style={styles.userName}>{customer?.firstName ?? 'Mehmon'}</Text>
             </View>
           </View>
-          <TouchableOpacity 
-            style={styles.notificationBtn} 
+          <TouchableOpacity
+            style={styles.notificationBtn}
             activeOpacity={0.7}
             onPress={() => router.push('/notifications')}
           >
-            <Feather name="bell" size={20} color={tokens.colors.text} />
+            <View>
+              <Feather name="bell" size={20} color={tokens.colors.text} />
+              {unreadCount > 0 && (
+                <View style={styles.badge}>
+                  <Text style={styles.badgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
+                </View>
+              )}
+            </View>
           </TouchableOpacity>
         </View>
 
@@ -200,6 +262,13 @@ export default function HomeScreen() {
                 </View>
               ))}
             </ScrollView>
+          ) : categories.length === 0 ? (
+            <EmptyState
+              compact
+              icon="layers"
+              heading="Kategoriyalar tayyorlanmoqda"
+              subtitle="Tez orada bu yerda paydo bo'ladi"
+            />
           ) : (
             <FlatList
               horizontal
@@ -212,28 +281,51 @@ export default function HomeScreen() {
           )}
         </View>
 
-        {/* PROMO BANNER */}
-        <View style={styles.promoBanner}>
-          <View style={styles.promoLeft}>
-            <View style={styles.promoBadge}>
-              <Feather name="truck" size={12} color={tokens.colors.white} />
-              <Text style={styles.promoBadgeText}>Bepul yetkazib berish</Text>
-            </View>
-            <Text style={styles.promoTitle}>Yangi kolleksiya{'\n'}Nozik teri uchun</Text>
-            <TouchableOpacity style={styles.promoBtn} activeOpacity={0.8}>
-              <Text style={styles.promoBtnText}>Hozir xarid</Text>
-            </TouchableOpacity>
-          </View>
-          <View style={styles.promoRight}>
-            {featuredProduct?.imageUrls[0] && (
-              <Image
-                source={featuredProduct.imageUrls[0]}
-                style={styles.promoImage}
-                contentFit="contain"
-              />
+        {/* DYNAMIC BANNERS */}
+        {banners.length > 0 && (
+          <View style={styles.bannerSection}>
+            <FlatList
+              ref={bannerScrollRef}
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              data={banners}
+              keyExtractor={(item) => item.id}
+              onMomentumScrollEnd={(e) => {
+                const idx = Math.round(e.nativeEvent.contentOffset.x / (SCREEN_WIDTH - 48))
+                setActiveBannerIdx(idx)
+              }}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  activeOpacity={0.92}
+                  onPress={() => handleBannerPress(item)}
+                  style={styles.bannerCard}
+                >
+                  <Image
+                    source={item.imageUrl}
+                    style={styles.bannerImage}
+                    contentFit="cover"
+                  />
+                </TouchableOpacity>
+              )}
+            />
+
+            {/* Dot indicators (only if multiple banners) */}
+            {banners.length > 1 && (
+              <View style={styles.bannerDots}>
+                {banners.map((_, idx) => (
+                  <View
+                    key={idx}
+                    style={[
+                      styles.bannerDot,
+                      idx === activeBannerIdx ? styles.bannerDotActive : styles.bannerDotInactive,
+                    ]}
+                  />
+                ))}
+              </View>
             )}
           </View>
-        </View>
+        )}
 
         {/* NEW ARRIVALS */}
         <View style={styles.section}>
@@ -264,6 +356,13 @@ export default function HomeScreen() {
                 </View>
               ))}
             </ScrollView>
+          ) : newProducts.length === 0 ? (
+            <EmptyState
+              compact
+              icon="gift"
+              heading="Yangi mahsulotlar kutilmoqda"
+              subtitle="Yaqin kunlarda qo'shiladi"
+            />
           ) : (
             <FlatList
               horizontal
@@ -313,6 +412,13 @@ export default function HomeScreen() {
                 </View>
               ))}
             </ScrollView>
+          ) : bestsellerProducts.length === 0 ? (
+            <EmptyState
+              compact
+              icon="star"
+              heading="Hali ommabop mahsulot yo'q"
+              subtitle="Birinchi xaridorlardan biri bo'ling"
+            />
           ) : (
             <FlatList
               horizontal
@@ -405,6 +511,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  badge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: tokens.colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: tokens.colors.surface,
+  },
+  badgeText: {
+    color: tokens.colors.white,
+    fontSize: 8,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
   searchBar: {
     height: 48,
     borderRadius: 24,
@@ -436,28 +561,28 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   categoryCard: {
-    width: 140,
-    height: 110,
+    width: 160,
+    height: 130,
     borderRadius: 16,
     backgroundColor: tokens.colors.surface,
     borderWidth: 0.5,
     borderColor: tokens.colors.border,
-    padding: 14,
+    padding: 10,
     justifyContent: 'space-between',
   },
   categoryIconCircle: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: tokens.colors.primaryLight,
+    width: '100%',
+    height: 82,
+    borderRadius: 10,
+    backgroundColor: tokens.colors.skeleton,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
     alignSelf: 'flex-start',
   },
   categoryIcon: {
-    width: 52,
-    height: 52,
+    width: '100%',
+    height: 82,
   },
   categoryName: {
     fontSize: 13,
@@ -467,58 +592,36 @@ const styles = StyleSheet.create({
     textAlign: 'left',
     alignSelf: 'flex-start',
   },
-  promoBanner: {
+  bannerSection: {
     marginHorizontal: 24,
     marginTop: 20,
-    height: 140,
+  },
+  bannerCard: {
+    width: SCREEN_WIDTH - 48,
+    height: ((SCREEN_WIDTH - 48) * 7) / 16,
     borderRadius: 20,
-    backgroundColor: tokens.colors.primary,
-    flexDirection: 'row',
     overflow: 'hidden',
   },
-  promoLeft: {
-    flex: 1,
-    padding: 20,
-    justifyContent: 'center',
+  bannerImage: {
+    width: '100%',
+    height: '100%',
   },
-  promoBadge: {
+  bannerDots: {
     flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  promoBadgeText: {
-    fontSize: 10,
-    fontFamily: 'Inter_400Regular',
-    color: tokens.colors.white,
-    marginLeft: 4,
-  },
-  promoTitle: {
-    fontSize: 18,
-    fontFamily: 'Inter_400Regular',
-    fontWeight: '400',
-    color: tokens.colors.white,
-    lineHeight: 24,
-  },
-  promoBtn: {
-    marginTop: 12,
-    backgroundColor: tokens.colors.white,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: tokens.radius.full,
-    alignSelf: 'flex-start',
-  },
-  promoBtnText: {
-    fontSize: 12,
-    fontFamily: 'Inter_600SemiBold',
-    color: tokens.colors.primary,
-  },
-  promoRight: {
-    width: 120,
     justifyContent: 'center',
-    alignItems: 'center',
+    gap: 6,
+    marginTop: 10,
   },
-  promoImage: {
-    width: 120,
-    height: 140,
+  bannerDot: {
+    height: 6,
+    borderRadius: 3,
+  },
+  bannerDotActive: {
+    width: 20,
+    backgroundColor: tokens.colors.primary,
+  },
+  bannerDotInactive: {
+    width: 6,
+    backgroundColor: tokens.colors.border,
   },
 })

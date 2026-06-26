@@ -82,8 +82,29 @@ export async function getOrderSettings() {
   const s = await getSettings()
   return {
     paymentTimeoutMinutes: s.paymentTimeoutMinutes,
+    lowStockThreshold: s.lowStockThreshold,
+    cargoTransitDaysMin: s.cargoTransitDaysMin,
+    cargoTransitDaysMax: s.cargoTransitDaysMax,
+    uzbCargoUsdPerKg: s.uzbCargoUsdPerKg,
+    usdToKrw: s.usdToKrw,
+    standardShippingFeeKrw: Number(s.standardShippingFeeKrw),
+    freeShippingThresholdKrw: Number(s.freeShippingThresholdKrw),
     minOrderKorKrw: Number(s.minOrderKorKrw),
     minOrderUzbUzs: Number(s.minOrderUzbUzs),
+    korBankEnabled: s.korBankEnabled,
+    korBankName: s.korBankName,
+    korBankHolder: s.korBankHolder,
+    korBankNumber: s.korBankNumber,
+    korE9payEnabled: s.korE9payEnabled,
+    korE9payName: s.korE9payName,
+    korE9payAccount: s.korE9payAccount,
+    uzbBankEnabled: s.uzbBankEnabled,
+    uzbBankName: s.uzbBankName,
+    uzbBankHolder: s.uzbBankHolder,
+    uzbBankNumber: s.uzbBankNumber,
+    telegramUrl: s.telegramUrl,
+    instagramUrl: s.instagramUrl,
+    websiteUrl: s.websiteUrl,
   }
 }
 
@@ -92,12 +113,37 @@ export async function updateOrderSettings(data: any) {
   const update: any = { updatedAt: new Date() }
 
   if (data.paymentTimeoutMinutes !== undefined) update.paymentTimeoutMinutes = data.paymentTimeoutMinutes
+  if (data.lowStockThreshold !== undefined) update.lowStockThreshold = data.lowStockThreshold
+  if (data.cargoTransitDaysMin !== undefined) update.cargoTransitDaysMin = data.cargoTransitDaysMin
+  if (data.cargoTransitDaysMax !== undefined) update.cargoTransitDaysMax = data.cargoTransitDaysMax
+  if (data.uzbCargoUsdPerKg !== undefined) update.uzbCargoUsdPerKg = data.uzbCargoUsdPerKg
+  if (data.usdToKrw !== undefined) update.usdToKrw = data.usdToKrw
+  if (data.standardShippingFeeKrw !== undefined) update.standardShippingFeeKrw = BigInt(data.standardShippingFeeKrw)
+  if (data.freeShippingThresholdKrw !== undefined) update.freeShippingThresholdKrw = BigInt(data.freeShippingThresholdKrw)
   if (data.minOrderKorKrw !== undefined) update.minOrderKorKrw = data.minOrderKorKrw
   if (data.minOrderUzbUzs !== undefined) update.minOrderUzbUzs = data.minOrderUzbUzs
+  
+  if (data.korBankEnabled !== undefined) update.korBankEnabled = data.korBankEnabled
+  if (data.korBankName !== undefined) update.korBankName = data.korBankName
+  if (data.korBankHolder !== undefined) update.korBankHolder = data.korBankHolder
+  if (data.korBankNumber !== undefined) update.korBankNumber = data.korBankNumber
+  
+  if (data.korE9payEnabled !== undefined) update.korE9payEnabled = data.korE9payEnabled
+  if (data.korE9payName !== undefined) update.korE9payName = data.korE9payName
+  if (data.korE9payAccount !== undefined) update.korE9payAccount = data.korE9payAccount
+  
+  if (data.uzbBankEnabled !== undefined) update.uzbBankEnabled = data.uzbBankEnabled
+  if (data.uzbBankName !== undefined) update.uzbBankName = data.uzbBankName
+  if (data.uzbBankHolder !== undefined) update.uzbBankHolder = data.uzbBankHolder
+  if (data.uzbBankNumber !== undefined) update.uzbBankNumber = data.uzbBankNumber
+  
+  if (data.telegramUrl !== undefined) update.telegramUrl = data.telegramUrl
+  if (data.instagramUrl !== undefined) update.instagramUrl = data.instagramUrl
+  if (data.websiteUrl !== undefined) update.websiteUrl = data.websiteUrl
 
   await db.update(settings).set(update).where(eq(settings.id, current.id))
   await cacheDelete(CACHE_KEY)
-  return { success: true }
+  return await getOrderSettings()
 }
 
 export async function fetchLiveExchangeRate() {

@@ -33,6 +33,7 @@ export async function getCart(customerId: string, regionCode: 'UZB' | 'KOR') {
         imageUrls: products.imageUrls,
         categoryId: products.categoryId,
         isActive: products.isActive,
+        weightGrams: products.weightGrams,
         deletedAt: products.deletedAt,
       },
       regionalConfig: {
@@ -89,6 +90,7 @@ export async function getCart(customerId: string, regionCode: 'UZB' | 'KOR') {
       isWholesale,
       subtotal: itemSubtotal,
       currency: config.currency,
+      weightGrams: row.product.weightGrams ?? 0,
       stockAvailable: row.stockAvailable,
       inStock: row.stockAvailable > 0,
       isActive: row.product.isActive && row.product.deletedAt === null && config.isAvailable,

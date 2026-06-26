@@ -52,6 +52,8 @@ const productSchema = z.object({
   // Only KOR pricing is now manually managed.
   korRetailPrice: z.coerce.number().min(0).optional(),
   korWholesalePrice: z.coerce.number().min(0).optional(),
+  uzbRetailPrice: z.coerce.number().min(0).optional(),
+  uzbWholesalePrice: z.coerce.number().min(0).optional(),
   minOrderQty: z.coerce.number().min(1).default(1),
   minWholesaleQty: z.coerce.number().min(1).default(5),
 })
@@ -105,6 +107,12 @@ export function ProductSheet({ open, onClose, product, categories, onSuccess }: 
         product.regionalConfig ??
         null
 
+      const uzb =
+        product.uzbRegionalConfig ??
+        product.regionalConfigs?.find?.((c: any) => c.regionCode === 'UZB') ??
+        (product.regionalConfig?.regionCode === 'UZB' ? product.regionalConfig : null) ??
+        null
+
       reset({
         name: product.name ?? '',
         nameUz: product.nameUz ?? '',
@@ -125,8 +133,10 @@ export function ProductSheet({ open, onClose, product, categories, onSuccess }: 
         imageUrls: product.imageUrls ?? [],
         korRetailPrice: kor?.retailPriceKrw ?? kor?.retailPrice ?? undefined,
         korWholesalePrice: kor?.wholesalePriceKrw ?? kor?.wholesalePrice ?? undefined,
-        minOrderQty: kor?.minOrderQty ?? 1,
-        minWholesaleQty: kor?.minWholesaleQty ?? 5,
+        uzbRetailPrice: uzb?.retailPriceKrw ?? uzb?.retailPrice ?? undefined,
+        uzbWholesalePrice: uzb?.wholesalePriceKrw ?? uzb?.wholesalePrice ?? undefined,
+        minOrderQty: kor?.minOrderQty ?? uzb?.minOrderQty ?? 1,
+        minWholesaleQty: kor?.minWholesaleQty ?? uzb?.minWholesaleQty ?? 5,
       })
     } else {
       reset({
@@ -154,6 +164,8 @@ export function ProductSheet({ open, onClose, product, categories, onSuccess }: 
         ...data,
         korRetailPrice: cleanPrice(data.korRetailPrice),
         korWholesalePrice: cleanPrice(data.korWholesalePrice),
+        uzbRetailPrice: cleanPrice(data.uzbRetailPrice),
+        uzbWholesalePrice: cleanPrice(data.uzbWholesalePrice),
         ingredients: data.ingredients
           ? data.ingredients.split(',').map((s) => s.trim()).filter(Boolean)
           : [],
@@ -473,9 +485,41 @@ export function ProductSheet({ open, onClose, product, categories, onSuccess }: 
                 />
               </div>
             </div>
-            <p className="text-[11px] text-muted-foreground">
-              UZS narx = KRW × valyuta kursi (har kuni yangilanadi)
+          </div>
+
+          {/* SECTION 3.5: Narxlar va Miqdorlar (UZB) */}
+          <div className="space-y-4">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
+              Narxlar va Miqdorlar (UZB) 🇺🇿
             </p>
+            <div className="grid grid-cols-2 sm:grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs mb-1.5 block">UZB Retail narx (₩) *</Label>
+                <Input
+                  {...register('uzbRetailPrice')}
+                  type="number"
+                  placeholder="12000"
+                  className="h-9 text-sm rounded-lg border-[0.5px]"
+                />
+              </div>
+              <div>
+                <Label className="text-xs mb-1.5 block">UZB Wholesale narx (₩) *</Label>
+                <Input
+                  {...register('uzbWholesalePrice')}
+                  type="number"
+                  placeholder="10000"
+                  className="h-9 text-sm rounded-lg border-[0.5px]"
+                />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <p className="text-[11px] text-muted-foreground">
+                UZB narx = KRW × valyuta kursi (har kuni yangilanadi)
+              </p>
+              <p className="text-[11px] text-muted-foreground">
+                Bo'sh qoldirsangiz mahsulot UZB uchun mavjud bo'lmaydi
+              </p>
+            </div>
           </div>
 
           {/* SECTION 4: Rasmlar */}

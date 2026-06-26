@@ -6,7 +6,9 @@ export async function getWishlist(customerId: string, regionCode: 'UZB' | 'KOR')
   const stockSq = db
     .select({
       productId: inventoryBatches.productId,
-      totalStock: sql<number>`SUM(${inventoryBatches.currentQty})`.as('total_stock'),
+      totalStock: sql<number>`COALESCE(SUM(
+        ${inventoryBatches.currentQty}
+      ), 0)`.mapWith(Number).as('total_stock'),
     })
     .from(inventoryBatches)
     .groupBy(inventoryBatches.productId)
@@ -20,7 +22,9 @@ export async function getWishlist(customerId: string, regionCode: 'UZB' | 'KOR')
       imageUrls: products.imageUrls,
       retailPrice: productRegionalConfigs.retailPrice,
       currency: productRegionalConfigs.currency,
-      inStock: sql<boolean>`COALESCE(${stockSq.totalStock}, 0) > 0`,
+      totalStock: sql<number>`COALESCE(
+        ${stockSq.totalStock}, 0
+      )`.mapWith(Number),
     })
     .from(wishlists)
     .innerJoin(products, eq(wishlists.productId, products.id))
@@ -34,7 +38,11 @@ export async function getWishlist(customerId: string, regionCode: 'UZB' | 'KOR')
     .leftJoin(stockSq, eq(products.id, stockSq.productId))
     .where(and(eq(wishlists.customerId, customerId), isNull(products.deletedAt)))
 
-  return items
+  return items.map(item => ({
+    ...item,
+    inStock: Number(item.totalStock) > 0,
+    isAvailable: Number(item.totalStock) > 0,
+  }))
 }
 
 export async function addToWishlist(customerId: string, productId: string) {

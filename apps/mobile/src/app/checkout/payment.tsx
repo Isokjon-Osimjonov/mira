@@ -15,6 +15,7 @@ import { Feather } from '@expo/vector-icons'
 import * as ImagePicker from 'expo-image-picker'
 import { useQuery } from '@tanstack/react-query'
 import { tokens } from '../../lib/tokens'
+import api from '../../lib/api'
 import { useCartStore } from '../../lib/cart-store'
 import { useExchangeStore } from '../../lib/exchange-store'
 import { formatKRW, formatUZS, krwToUzs } from '../../lib/price'
@@ -24,6 +25,7 @@ import PrimaryButton from '../../components/ui/PrimaryButton'
 import { cartService } from '../../services/cart.service'
 import { useAuthStore } from '../../lib/auth-store'
 import { uploadService } from '../../services/upload.service'
+import { boxService } from '../../services/box.service'
 
 export default function CheckoutPaymentScreen() {
   const { addressId, couponCode: initialCouponCode, boxId } = useLocalSearchParams<{
@@ -51,6 +53,22 @@ export default function CheckoutPaymentScreen() {
     queryFn: productService.getKorShippingTiers,
     enabled: !isUZB,
   })
+
+  const { data: paymentSettings } = useQuery({
+    queryKey: ['payment-settings'],
+    queryFn: async () => {
+      const res = await api.get('/settings/payment-info')
+      return res.data.data
+    },
+    staleTime: 10 * 60 * 1000,
+  })
+
+  const { data: boxes } = useQuery({
+    queryKey: ['boxes'],
+    queryFn: boxService.getBoxes,
+    enabled: !!boxId,
+  })
+  const selectedBox = boxes?.find((b) => b.id === boxId)
 
   React.useEffect(() => {
     if (initialCouponCode) {
@@ -99,11 +117,20 @@ export default function CheckoutPaymentScreen() {
       setPaymentInfo(result.paymentInfo)
 
       // Step 3: Link receipt
-      await orderService.uploadReceipt(result.order.id, {
+      const orderTotalKrw = Number(result.order.totalAmount)
+      const currentExchangeRate = useExchangeStore.getState().rate
+
+      const paymentAmountForReceipt = isUZB
+        ? krwToUzs(orderTotalKrw, currentExchangeRate)
+        : orderTotalKrw
+      const paymentCurrencyForReceipt: 'KRW' | 'UZS' = isUZB ? 'UZS' : 'KRW'
+
+      await orderService.uploadReceipt(
+        result.order.id,
         receiptUrl,
-        paymentAmount: result.order.totalAmount,
-        paymentCurrency: isUZB ? 'UZS' : 'KRW',
-      })
+        paymentAmountForReceipt,
+        paymentCurrencyForReceipt
+      )
 
       await useCartStore.getState().clearCart()
 
@@ -124,7 +151,27 @@ export default function CheckoutPaymentScreen() {
   const subtotal = cart?.summary.subtotal ?? 0
   const discount = couponResult?.discountAmount ?? 0
   const korCargoFee = tiers ? calculateKorCargo(subtotal, tiers) : 0
-  const total = subtotal - discount + (isUZB ? 0 : korCargoFee)
+  
+  // Calculate cargo estimate for UZB
+  const totalWeightKg = (cart?.items ?? []).reduce(
+    (acc, item) => acc + ((item.weightGrams ?? 0) * item.quantity) / 1000,
+    0
+  )
+  const selectedBoxWeight = selectedBox?.boxWeightKg ?? 0
+  const totalWeightWithBox = totalWeightKg + Number(selectedBoxWeight)
+  
+  const cargoUsdPerKg = paymentSettings?.cargo?.uzbCargoUsdPerKg ?? 3
+  const usdToKrw = paymentSettings?.rates?.usdToKrw ?? 1350
+  
+  const estimatedCargoKrw = isUZB
+    ? Math.round(totalWeightWithBox * cargoUsdPerKg * usdToKrw / 100) * 100
+    : null
+
+  const boxAndCargo = (selectedBox?.costKrw ?? 0) + (estimatedCargoKrw ?? 0)
+
+  const total = isUZB
+    ? subtotal - discount + boxAndCargo
+    : subtotal - discount + korCargoFee
 
   const infoRow = (label: string, value: string | null) => (
     <View style={styles.infoRow}>
@@ -139,6 +186,27 @@ export default function CheckoutPaymentScreen() {
     subLabel: string
   ) => {
     const selected = selectedPaymentMethod === id
+    
+    let displaySub = subLabel
+    if (paymentSettings) {
+      if (id === 'KOREAN_BANK') {
+        const korLast4 = paymentSettings.kor?.bankNumber
+          ? paymentSettings.kor.bankNumber.slice(-4)
+          : null
+        displaySub = (paymentSettings.kor?.bankName || '') + (korLast4 ? ' · ...' + korLast4 : '')
+      } else if (id === 'UZB_BANK') {
+        const uzbLast4 = paymentSettings.uzb?.bankNumber
+          ? paymentSettings.uzb.bankNumber.slice(-4)
+          : null
+        displaySub = (paymentSettings.uzb?.bankName || 'Humo') + (uzbLast4 ? ' · ...' + uzbLast4 : '')
+      } else if (id === 'E9PAY') {
+        const e9Last4 = paymentSettings.e9pay?.account
+          ? paymentSettings.e9pay.account.slice(-4)
+          : null
+        displaySub = e9Last4 ? '...' + e9Last4 : '---'
+      }
+    }
+
     return (
       <View key={id}>
         <TouchableOpacity
@@ -151,33 +219,57 @@ export default function CheckoutPaymentScreen() {
           </View>
           <View style={styles.methodInfo}>
             <Text style={styles.methodLabel}>{label}</Text>
-            <Text style={styles.methodSubLabel}>{subLabel}</Text>
+            <Text style={styles.methodSubLabel}>{displaySub}</Text>
           </View>
           {selected && (
             <Feather name="check" size={16} color={tokens.colors.primary} />
           )}
         </TouchableOpacity>
 
-        {selected && id === 'KOREAN_BANK' && paymentInfo && (
+        {selected && id === 'KOREAN_BANK' && (paymentInfo || paymentSettings) && (
           <View style={styles.inlineInfo}>
-            {infoRow("Bank:", paymentInfo.korBankName)}
-            {infoRow("Hisob:", paymentInfo.korBankNumber)}
-            {infoRow("Egasi:", paymentInfo.korBankHolder)}
+            {infoRow(
+              'Bank:',
+              paymentInfo?.korBankName || paymentSettings?.kor?.bankName || '---'
+            )}
+            {infoRow(
+              'Hisob:',
+              paymentInfo?.korBankNumber || paymentSettings?.kor?.bankNumber || '---'
+            )}
+            {infoRow(
+              'Egasi:',
+              paymentInfo?.korBankHolder || paymentSettings?.kor?.bankHolder || '---'
+            )}
           </View>
         )}
 
-        {selected && id === 'UZB_BANK' && paymentInfo && (
+        {selected && id === 'UZB_BANK' && (paymentInfo || paymentSettings) && (
           <View style={styles.inlineInfo}>
-            {infoRow("Bank:", paymentInfo.uzbBankName)}
-            {infoRow("Hisob:", paymentInfo.uzbBankNumber)}
-            {infoRow("Egasi:", paymentInfo.uzbBankHolder)}
+            {infoRow(
+              'Bank:',
+              paymentInfo?.uzbBankName || paymentSettings?.uzb?.bankName || '---'
+            )}
+            {infoRow(
+              'Hisob:',
+              paymentInfo?.uzbBankNumber || paymentSettings?.uzb?.bankNumber || '---'
+            )}
+            {infoRow(
+              'Egasi:',
+              paymentInfo?.uzbBankHolder || paymentSettings?.uzb?.bankHolder || '---'
+            )}
           </View>
         )}
 
-        {selected && id === 'E9PAY' && paymentInfo && (
+        {selected && id === 'E9PAY' && (paymentInfo || paymentSettings) && (
           <View style={styles.inlineInfo}>
-            {infoRow("E9Pay:", paymentInfo.korE9payAccount)}
-            {infoRow("Egasi:", paymentInfo.korE9payName)}
+            {infoRow(
+              'E9Pay:',
+              paymentInfo?.korE9payAccount || paymentSettings?.e9pay?.account || '---'
+            )}
+            {infoRow(
+              'Egasi:',
+              paymentInfo?.korE9payName || paymentSettings?.e9pay?.name || '---'
+            )}
           </View>
         )}
       </View>
@@ -241,10 +333,12 @@ export default function CheckoutPaymentScreen() {
             </View>
           )}
 
-          {isUZB && (
+          {isUZB && boxAndCargo > 0 && (
             <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Kargo:</Text>
-              <Text style={styles.summaryValue}>Server tomonidan hisoblanadi</Text>
+              <Text style={styles.summaryLabel}>Yetkazib berish:</Text>
+              <Text style={styles.summaryValue}>
+                {'≈ ' + formatKRW(boxAndCargo)}
+              </Text>
             </View>
           )}
 
@@ -510,6 +604,14 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontFamily: 'Inter_400Regular',
     color: tokens.colors.textMuted,
+  },
+  cargoNotice: {
+    fontSize: 11,
+    fontFamily: 'Inter_400Regular',
+    color: tokens.colors.textMuted,
+    textAlign: 'right',
+    marginTop: -4,
+    marginBottom: 8,
   },
   totalRow: {
     marginTop: 8,

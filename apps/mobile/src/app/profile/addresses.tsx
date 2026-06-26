@@ -15,10 +15,15 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { tokens } from '../../lib/tokens'
 import { addressService, type Address } from '../../services/address.service'
 import PrimaryButton from '../../components/ui/PrimaryButton'
+import EmptyState from '../../components/ui/EmptyState'
 
 export default function AddressesScreen() {
   const queryClient = useQueryClient()
-  const { data: addresses = [], isLoading, refetch } = useQuery({
+  const {
+    data: addresses = [],
+    isLoading,
+    refetch,
+  } = useQuery({
     queryKey: ['addresses'],
     queryFn: addressService.getAddresses,
   })
@@ -33,10 +38,10 @@ export default function AddressesScreen() {
   }
 
   const handleDelete = (id: string) => {
-    Alert.alert('O\'chirish', 'Ushbu manzilni o\'chirmoqchimisiz?', [
+    Alert.alert("O'chirish", "Ushbu manzilni o'chirmoqchimisiz?", [
       { text: 'Bekor', style: 'cancel' },
       {
-        text: 'O\'chirish',
+        text: "O'chirish",
         style: 'destructive',
         onPress: async () => {
           try {
@@ -57,13 +62,9 @@ export default function AddressesScreen() {
         <View style={styles.cardHeader}>
           <View style={styles.cardHeaderLeft}>
             <View style={styles.flagBadge}>
-              <Text style={{ fontSize: 14 }}>
-                {item.regionCode === 'KOR' ? '🇰🇷' : '🇺🇿'}
-              </Text>
+              <Text style={{ fontSize: 14 }}>{item.regionCode === 'KOR' ? '🇰🇷' : '🇺🇿'}</Text>
             </View>
-            <Text style={styles.addressLabel}>
-              {item.label || item.fullName}
-            </Text>
+            <Text style={styles.addressLabel}>{item.label || item.fullName}</Text>
           </View>
           {isDefault && (
             <View style={styles.defaultBadge}>
@@ -78,16 +79,14 @@ export default function AddressesScreen() {
         </Text>
         {item.city && (
           <Text style={styles.cityText}>
-            {item.city}{item.province ? `, ${item.province}` : ''}
+            {item.city}
+            {item.province ? `, ${item.province}` : ''}
           </Text>
         )}
 
         <View style={styles.cardActions}>
           {!isDefault && (
-            <TouchableOpacity
-              onPress={() => handleSetDefault(item.id)}
-              style={styles.actionBtn}
-            >
+            <TouchableOpacity onPress={() => handleSetDefault(item.id)} style={styles.actionBtn}>
               <Text style={styles.actionBtnText}>Asosiy qilish</Text>
             </TouchableOpacity>
           )}
@@ -133,15 +132,14 @@ export default function AddressesScreen() {
           <ActivityIndicator color={tokens.colors.primary} />
         </View>
       ) : addresses.length === 0 ? (
-        <View style={styles.emptyState}>
-          <Feather name="map-pin" size={48} color={tokens.colors.textLight} />
-          <Text style={styles.emptyTitle}>Manzil qo'shilmagan</Text>
-          <TouchableOpacity
-            onPress={() => router.push('/profile/address-form')}
-            style={{ marginTop: 20, width: '100%', paddingHorizontal: 40 }}
-          >
-            <PrimaryButton label="Manzil qo'shish" onPress={() => router.push('/profile/address-form')} />
-          </TouchableOpacity>
+        <View style={{ flex: 1, justifyContent: 'center' }}>
+          <EmptyState
+            icon="map-pin"
+            heading="Manzil qo'shilmagan"
+            subtitle="Yetkazib berish uchun manzil qo'shing"
+            actionLabel="Manzil qo'shish"
+            onAction={() => router.push('/profile/address-form')}
+          />
         </View>
       ) : (
         <FlatList
@@ -159,7 +157,7 @@ export default function AddressesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: tokens.colors.white,
+    backgroundColor: tokens.colors.background,
   },
   header: {
     flexDirection: 'row',
@@ -274,7 +272,7 @@ const styles = StyleSheet.create({
   },
   actionBtn: {
     borderWidth: 0.5,
-    borderColor: tokens.colors.border,
+    borderColor: tokens.colors.textLight,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 6,

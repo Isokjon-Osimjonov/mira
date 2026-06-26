@@ -12,7 +12,11 @@ export const settings = pgTable('settings', {
   paymentTimeoutMinutes: integer('payment_timeout_minutes').default(30).notNull(),
   lowStockThreshold: integer('low_stock_threshold').default(10).notNull(),
   
+  cargoTransitDaysMin: integer('cargo_transit_days_min').default(7).notNull(),
+  cargoTransitDaysMax: integer('cargo_transit_days_max').default(10).notNull(),
+
   uzbCargoUsdPerKg: integer('uzb_cargo_usd_per_kg').default(10).notNull(),
+  usdToKrw: integer('usd_to_krw').default(1350).notNull(),
   
   standardShippingFeeKrw: bigint('standard_shipping_fee_krw', { mode: 'bigint' }).default(sql`3000`).notNull(),
   freeShippingThresholdKrw: bigint('free_shipping_threshold_krw', { mode: 'bigint' }).default(sql`50000`).notNull(),

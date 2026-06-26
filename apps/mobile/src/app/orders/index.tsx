@@ -1,65 +1,55 @@
-import React, { useCallback } from 'react'
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  FlatList,
-  ActivityIndicator,
-} from 'react-native'
+import React, { useState, useCallback, useEffect } from 'react'
+import { FlatList, View, Text, TouchableOpacity, StyleSheet, RefreshControl } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { router, useFocusEffect } from 'expo-router'
+import { Image } from 'expo-image'
 import { Feather } from '@expo/vector-icons'
 import { useQuery } from '@tanstack/react-query'
-import { tokens } from '../../lib/tokens'
-import { orderService, type Order } from '../../services/order.service'
+import { router, useFocusEffect } from 'expo-router'
+import { orderService } from '../../services/order.service'
 import { formatKRW, formatDate, formatCountdown } from '../../lib/price'
+import { tokens } from '../../lib/tokens'
 import PrimaryButton from '../../components/ui/PrimaryButton'
+import EmptyState from '../../components/ui/EmptyState'
 
 const STATUS_MAP: Record<string, { label: string; bg: string; color: string }> = {
-  PENDING_PAYMENT: {
-    label: "To'lov kutilmoqda",
-    bg: '#FFF7ED',
-    color: '#C2410C',
-  },
-  PAYMENT_SUBMITTED: {
-    label: 'Tekshirilmoqda',
-    bg: '#FEFCE8',
-    color: '#A16207',
-  },
-  PAYMENT_REJECTED: {
-    label: 'Rad etildi',
-    bg: '#FEF2F2',
-    color: '#DC2626',
-  },
-  PAYMENT_CONFIRMED: {
-    label: 'Tasdiqlandi',
-    bg: '#EFF6FF',
-    color: '#2563EB',
-  },
-  PACKING: {
-    label: 'Tayyorlanmoqda',
-    bg: '#F5F3FF',
-    color: '#7C3AED',
-  },
-  SHIPPED: {
-    label: "Yo'lda",
-    bg: '#F0F9FF',
-    color: '#0369A1',
-  },
-  DELIVERED: {
-    label: 'Yetkazildi',
-    bg: '#F0FDF4',
-    color: '#16A34A',
-  },
-  CANCELED: {
-    label: 'Bekor qilindi',
-    bg: '#FEF2F2',
-    color: '#DC2626',
-  },
+  PENDING_PAYMENT: { label: "To'lov kutilmoqda", bg: '#FFF7ED', color: '#C2410C' },
+  PAYMENT_SUBMITTED: { label: 'Tekshirilmoqda', bg: '#FEFCE8', color: '#A16207' },
+  PAYMENT_REJECTED: { label: 'Rad etildi', bg: '#FEF2F2', color: '#DC2626' },
+  PAYMENT_CONFIRMED: { label: 'Tasdiqlandi', bg: '#EFF6FF', color: '#2563EB' },
+  PACKING: { label: 'Tayyorlanmoqda', bg: '#F5F3FF', color: '#7C3AED' },
+  SHIPPED: { label: "Yo'lda", bg: '#F0F9FF', color: '#0369A1' },
+  DELIVERED: { label: 'Yetkazildi', bg: '#F0FDF4', color: '#16A34A' },
+  CANCELED: { label: 'Bekor qilindi', bg: '#FEF2F2', color: '#DC2626' },
+}
+
+function CountdownBadge({ deadline }: { deadline: string }) {
+  const [now, setNow] = useState(Date.now())
+
+  useEffect(() => {
+    const interval = setInterval(() => setNow(Date.now()), 1000)
+    return () => clearInterval(interval)
+  }, [])
+
+  return (
+    <View style={styles.countdownBadge}>
+      <Text style={styles.countdownText}>⏰ {formatCountdown(deadline)}</Text>
+    </View>
+  )
+}
+
+function SkeletonLoader() {
+  return (
+    <View style={styles.skeletonCard}>
+      <View style={styles.skeletonHeader} />
+      <View style={styles.skeletonDate} />
+      <View style={styles.skeletonFooter} />
+    </View>
+  )
 }
 
 export default function OrdersScreen() {
+  const [refreshing, setRefreshing] = useState(false)
+
   const { data, isLoading, refetch } = useQuery({
     queryKey: ['orders'],
     queryFn: () => orderService.getOrders(),
@@ -74,11 +64,17 @@ export default function OrdersScreen() {
 
   const orders = data?.items ?? []
 
-  const renderOrderCard = ({ item }: { item: Order }) => {
+  const handleRefresh = async () => {
+    setRefreshing(true)
+    await refetch()
+    setRefreshing(false)
+  }
+
+  const renderItem = ({ item }: { item: any }) => {
     const status = STATUS_MAP[item.status] || {
       label: item.status,
-      bg: '#F3F4F6',
-      color: '#374151',
+      bg: tokens.colors.background,
+      color: tokens.colors.text,
     }
 
     return (
@@ -90,9 +86,7 @@ export default function OrdersScreen() {
         <View style={styles.cardHeader}>
           <Text style={styles.orderNumber}>#{item.orderNumber}</Text>
           <View style={[styles.statusBadge, { backgroundColor: status.bg }]}>
-            <Text style={[styles.statusText, { color: status.color }]}>
-              {status.label}
-            </Text>
+            <Text style={[styles.statusText, { color: status.color }]}>{status.label}</Text>
           </View>
         </View>
 
@@ -101,18 +95,12 @@ export default function OrdersScreen() {
         <View style={styles.divider} />
 
         <View style={styles.cardFooter}>
-          <Text style={styles.itemCount}>
-            {(item as any).itemCount || item.items?.length || 0} ta mahsulot
-          </Text>
+          <Text style={styles.itemCount}>{item.itemCount} ta mahsulot</Text>
           <Text style={styles.totalAmount}>{formatKRW(item.totalAmount)}</Text>
         </View>
 
-        {item.status === 'PENDING_PAYMENT' && item.paymentExpiresAt && (
-          <View style={styles.deadlineBox}>
-            <Text style={styles.deadlineText}>
-              ⏰ {formatCountdown(item.paymentExpiresAt)}
-            </Text>
-          </View>
+        {item.status === 'PENDING_PAYMENT' && item.paymentDeadline && (
+          <CountdownBadge deadline={item.paymentDeadline} />
         )}
       </TouchableOpacity>
     )
@@ -125,30 +113,38 @@ export default function OrdersScreen() {
           <Feather name="arrow-left" size={22} color={tokens.colors.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Buyurtmalarim</Text>
-        <View style={{ width: 40 }} />
+        <View style={{ width: 24 }} />
       </View>
 
-      {isLoading ? (
-        <View style={styles.center}>
-          <ActivityIndicator color={tokens.colors.primary} />
+      {isLoading && !refreshing ? (
+        <View style={{ paddingHorizontal: 24, paddingTop: 16 }}>
+          <SkeletonLoader />
+          <SkeletonLoader />
+          <SkeletonLoader />
         </View>
-      ) : orders.length === 0 ? (
-        <View style={styles.emptyState}>
-          <Feather name="shopping-bag" size={48} color={tokens.colors.textLight} />
-          <Text style={styles.emptyTitle}>Buyurtmalar yo'q</Text>
-          <View style={{ marginTop: 24, width: '100%', paddingHorizontal: 40 }}>
-            <PrimaryButton
-              label="Xarid qilish"
-              onPress={() => router.replace('/(tabs)/home')}
-            />
-          </View>
+      ) : !isLoading && orders.length === 0 ? (
+        <View style={{ flex: 1, justifyContent: 'center' }}>
+          <EmptyState
+            icon="shopping-bag"
+            heading="Hali buyurtma yo'q"
+            subtitle="Birinchi xaridingizni amalga oshiring"
+            actionLabel="Xarid qilish"
+            onAction={() => router.replace('/(tabs)/home')}
+          />
         </View>
       ) : (
         <FlatList
           data={orders}
           keyExtractor={(item) => item.id}
-          renderItem={renderOrderCard}
+          renderItem={renderItem}
           contentContainerStyle={styles.listContent}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              tintColor={tokens.colors.primary}
+            />
+          }
           showsVerticalScrollIndicator={false}
         />
       )}
@@ -167,40 +163,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: 16,
     paddingBottom: 12,
-    backgroundColor: tokens.colors.white,
+    backgroundColor: tokens.colors.background,
   },
   backBtn: {
-    width: 40,
+    width: 24,
     height: 40,
     justifyContent: 'center',
-    alignItems: 'flex-start',
   },
   headerTitle: {
     flex: 1,
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '500',
     color: tokens.colors.text,
     textAlign: 'center',
   },
-  center: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  emptyState: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingTop: 80,
-  },
-  emptyTitle: {
-    fontSize: 15,
-    color: tokens.colors.textSecondary,
-    marginTop: 16,
-  },
   listContent: {
     paddingHorizontal: 24,
-    paddingVertical: 16,
+    paddingTop: 16,
     paddingBottom: 100,
   },
   orderCard: {
@@ -210,6 +189,7 @@ const styles = StyleSheet.create({
     borderColor: tokens.colors.border,
     padding: 16,
     marginBottom: 12,
+    overflow: 'hidden',
   },
   cardHeader: {
     flexDirection: 'row',
@@ -223,13 +203,13 @@ const styles = StyleSheet.create({
     color: tokens.colors.text,
   },
   statusBadge: {
-    borderRadius: 10,
     paddingHorizontal: 8,
     paddingVertical: 3,
+    borderRadius: 8,
   },
   statusText: {
     fontSize: 11,
-    fontFamily: 'Inter_400Regular',
+    fontWeight: '500',
   },
   dateText: {
     fontSize: 12,
@@ -243,27 +223,71 @@ const styles = StyleSheet.create({
   },
   cardFooter: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    marginTop: 8,
   },
   itemCount: {
     fontSize: 13,
     color: tokens.colors.textSecondary,
+    flex: 1,
   },
   totalAmount: {
     fontSize: 15,
     fontWeight: '500',
     color: tokens.colors.text,
   },
-  deadlineBox: {
-    marginTop: 8,
+  countdownBadge: {
     backgroundColor: '#FFF7ED',
     borderRadius: 8,
     paddingHorizontal: 10,
-    paddingVertical: 6,
+    paddingVertical: 5,
+    marginTop: 8,
+    alignSelf: 'flex-start',
   },
-  deadlineText: {
+  countdownText: {
     fontSize: 12,
     color: '#C2410C',
+    fontWeight: '500',
+  },
+  emptyState: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: 80,
+  },
+  emptyTitle: {
+    fontSize: 15,
+    color: tokens.colors.textLight,
+    marginTop: 16,
+  },
+  skeletonCard: {
+    height: 100,
+    backgroundColor: tokens.colors.white,
+    borderRadius: 14,
+    borderWidth: 0.5,
+    borderColor: tokens.colors.border,
+    padding: 16,
+    marginBottom: 12,
+    opacity: 0.6,
+  },
+  skeletonHeader: {
+    height: 16,
+    width: '60%',
+    backgroundColor: tokens.colors.background,
+    borderRadius: 4,
+    marginBottom: 12,
+  },
+  skeletonDate: {
+    height: 12,
+    width: '40%',
+    backgroundColor: tokens.colors.background,
+    borderRadius: 4,
+    marginBottom: 12,
+  },
+  skeletonFooter: {
+    height: 16,
+    width: '100%',
+    backgroundColor: tokens.colors.background,
+    borderRadius: 4,
   },
 })

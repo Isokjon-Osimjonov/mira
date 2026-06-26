@@ -16,7 +16,7 @@ const envSchema = z.object({
   // ─── JWT ──────────────────────────────────────────────
   JWT_SECRET: z.string().min(32, 'JWT_SECRET min 32 chars'),
   JWT_REFRESH_SECRET: z.string().min(32, 'JWT_REFRESH_SECRET min 32 chars'),
-  JWT_ACCESS_EXPIRES: z.string().default('15m'),
+  JWT_ACCESS_EXPIRES: z.string().default('2h'),
   JWT_REFRESH_EXPIRES: z.string().default('7d'),
 
   // ─── Telegram ─────────────────────────────────────────

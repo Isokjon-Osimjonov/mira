@@ -76,6 +76,8 @@ export const settingsApi = {
     paymentTimeoutMinutes?: number
     minOrderKorKrw?: number
     minOrderUzbUzs?: number
+    usdToKrw?: number
+    uzbCargoUsdPerKg?: number
   }) => {
     const res = await api.patch('/admin/settings/order', payload)
     return res.data

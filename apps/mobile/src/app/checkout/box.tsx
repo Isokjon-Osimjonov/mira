@@ -32,6 +32,19 @@ export default function CheckoutBoxScreen() {
   const cart = useCartStore((s) => s.cart)
   const [selectedBoxId, setSelectedBoxId] = useState<string | null>(null)
 
+  const totalWeightKg = cart?.items.reduce((acc, item) => {
+    // weightGrams not available yet — use 0
+    // return acc + (item.product.weightGrams * item.quantity) / 1000
+    return acc
+  }, 0) ?? 0
+
+  const isBoxValid = (box: any): boolean => {
+    if (!box.maxWeightKg || Number(box.maxWeightKg) === 0) {
+      return true // no limit set = always valid
+    }
+    return totalWeightKg <= Number(box.maxWeightKg)
+  }
+
   const selectedBox = boxes.find((b) => b.id === selectedBoxId)
 
   const handleContinue = () => {
@@ -63,63 +76,73 @@ export default function CheckoutBoxScreen() {
         {isLoading ? (
           <ActivityIndicator color={tokens.colors.primary} style={{ marginTop: 40 }} />
         ) : (
-          boxes.map((box) => (
-            <TouchableOpacity
-              key={box.id}
-              activeOpacity={0.8}
-              onPress={() => setSelectedBoxId(box.id)}
-              style={[
-                styles.boxCard,
-                selectedBoxId === box.id
-                  ? styles.boxCardSelected
-                  : styles.boxCardUnselected,
-              ]}
-            >
-              <View style={styles.boxImageContainer}>
-                {box.imageUrls[0] ? (
-                  <Image
-                    source={box.imageUrls[0]}
-                    style={styles.boxImage}
-                    contentFit="cover"
-                  />
-                ) : (
-                  <Feather name="package" size={28} color={tokens.colors.textLight} />
-                )}
-              </View>
+          boxes.map((box) => {
+            const valid = isBoxValid(box)
+            return (
+              <TouchableOpacity
+                key={box.id}
+                activeOpacity={0.8}
+                onPress={() => setSelectedBoxId(box.id)}
+                disabled={!valid}
+                style={[
+                  styles.boxCard,
+                  selectedBoxId === box.id
+                    ? styles.boxCardSelected
+                    : styles.boxCardUnselected,
+                  !valid && { opacity: 0.4 }
+                ]}
+              >
+                <View style={styles.boxImageContainer}>
+                  {box.imageUrls[0] ? (
+                    <Image
+                      source={box.imageUrls[0]}
+                      style={styles.boxImage}
+                      contentFit="cover"
+                    />
+                  ) : (
+                    <Feather name="package" size={28} color={tokens.colors.textLight} />
+                  )}
+                </View>
 
-              <View style={styles.boxInfo}>
-                <View style={styles.boxHeaderRow}>
-                  <Text style={styles.boxName}>{box.name}</Text>
-                  {selectedBoxId === box.id && (
-                    <View style={styles.checkCircle}>
-                      <Feather name="check" size={12} color={tokens.colors.white} />
+                <View style={styles.boxInfo}>
+                  <View style={styles.boxHeaderRow}>
+                    <Text style={styles.boxName}>{box.name}</Text>
+                    {selectedBoxId === box.id && (
+                      <View style={styles.checkCircle}>
+                        <Feather name="check" size={12} color={tokens.colors.white} />
+                      </View>
+                    )}
+                  </View>
+
+                  {box.sizeLabel && (
+                    <Text style={styles.sizeLabel}>{box.sizeLabel}</Text>
+                  )}
+
+                <View style={styles.specsRow}>
+                  {Boolean(box.lengthCm && box.widthCm && box.heightCm) && (
+                    <Text style={styles.specText}>
+                      {String(box.lengthCm) + '×' + String(box.widthCm) + '×' + String(box.heightCm) + 'sm'}
+                    </Text>
+                  )}
+                  {Boolean(box.maxWeightKg && Number(box.maxWeightKg) > 0) && (
+                    <Text style={styles.specText}>
+                      {'Max: ' + String(box.maxWeightKg) + 'kg'}
+                    </Text>
+                  )}
+                </View>
+
+                  {!valid && (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 }}>
+                      <Feather name="alert-circle" size={12} color={tokens.colors.error} />
+                      <Text style={{ fontSize: 11, color: tokens.colors.error }}>
+                        Sig'imi yetarli emas (max {box.maxWeightKg}kg)
+                      </Text>
                     </View>
                   )}
                 </View>
-
-                {box.sizeLabel && (
-                  <Text style={styles.sizeLabel}>{box.sizeLabel}</Text>
-                )}
-
-                <View style={styles.specsRow}>
-                  {box.lengthCm && (
-                    <Text style={styles.specText}>
-                      {box.lengthCm}×{box.widthCm}×{box.heightCm}sm
-                    </Text>
-                  )}
-                  {box.maxWeightKg && box.maxWeightKg > 0 && (
-                    <Text style={styles.specText}>Max: {box.maxWeightKg}kg</Text>
-                  )}
-                </View>
-
-                {box.costKrw > 0 && (
-                  <Text style={styles.costText}>
-                    Quti narxi: {formatKRW(box.costKrw)}
-                  </Text>
-                )}
-              </View>
-            </TouchableOpacity>
-          ))
+              </TouchableOpacity>
+            )
+          })
         )}
       </ScrollView>
 

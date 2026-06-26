@@ -261,6 +261,7 @@ export async function createOrder(params: {
 
     // 3. Cargo Calc
     let cargoFeeKrw = 0n
+    let boxCostKrw = 0n
     let boxWeightSnapshot: number | undefined
     let boxPriceSnapshot: bigint | undefined
 
@@ -275,14 +276,31 @@ export async function createOrder(params: {
         (acc, item) => acc + item.product.weightGrams * item.quantity,
         0
       )
+      const totalProductWeightKg = totalProductWeightGrams / 1000
+
+      // Validate box capacity
+      if (
+        box.maxWeightKg &&
+        Number(box.maxWeightKg) > 0 &&
+        totalProductWeightKg > Number(box.maxWeightKg)
+      ) {
+        throw {
+          status: 400,
+          code: 'BOX_CAPACITY_EXCEEDED',
+          message: `Tanlangan quti yetarli emas. Mahsulotlar og'irligi: ${totalProductWeightKg.toFixed(2)}kg, quti sig'imi: ${box.maxWeightKg}kg`,
+        }
+      }
+
       const totalWeightKg = totalProductWeightGrams / 1000 + Number(box.boxWeightKg)
 
+      const usdToKrw = rate ? Number(rate.usdToKrw) : 1350
       const cargoUsd = totalWeightKg * appSettings.uzbCargoUsdPerKg
-      const calculatedCargoKrw = Math.round(cargoUsd * rate.usdToKrw)
+      const calculatedCargoKrw = Math.round(cargoUsd * usdToKrw)
       cargoFeeKrw = BigInt(Math.round(calculatedCargoKrw / 100) * 100) // round to 100
 
       boxWeightSnapshot = Number(box.boxWeightKg)
-      boxPriceSnapshot = BigInt(Math.round(Number(box.priceUsd) * rate.usdToKrw))
+      boxPriceSnapshot = BigInt(Math.round(Number(box.priceUsd) * usdToKrw))
+      boxCostKrw = BigInt(Math.round(Number(box.costKrw ?? 0)))
     } else {
       const subtotalCheck = itemsData.reduce((acc, item) => acc + item.subtotal, 0n)
       const tiers = await tx
@@ -356,7 +374,7 @@ export async function createOrder(params: {
     }
 
     const totalDiscount = discountAmount + orderLevelDiscount
-    let totalAmount = subtotal - totalDiscount + cargoFeeKrw
+    let totalAmount = subtotal - totalDiscount + cargoFeeKrw + boxCostKrw
     if (totalAmount < 0n) totalAmount = 0n
 
     // 7. Order Number
@@ -383,6 +401,7 @@ export async function createOrder(params: {
         orderDiscountPct: params.orderDiscountPct ?? null,
         orderDiscountFlat: orderLevelDiscount > 0n ? orderLevelDiscount : null,
         cargoFee: cargoFeeKrw,
+        boxCostKrw,
         totalAmount,
         currency: 'KRW',
         totalWeightGrams: itemsData.reduce(
@@ -854,10 +873,13 @@ export async function getCustomerOrderDetail(orderId: string, customerId: string
   const items = await db
     .select({
       id: orderItems.id,
+      productId: products.id,
+      productName: products.name,
+      brandName: products.brandName,
+      imageUrls: products.imageUrls,
       quantity: orderItems.quantity,
       unitPriceSnapshot: orderItems.unitPriceSnapshot,
       subtotalSnapshot: orderItems.subtotalSnapshot,
-      product: { id: products.id, name: products.name, imageUrls: products.imageUrls },
     })
     .from(orderItems)
     .innerJoin(products, eq(orderItems.productId, products.id))
@@ -869,7 +891,32 @@ export async function getCustomerOrderDetail(orderId: string, customerId: string
     .where(eq(orderStatusHistory.orderId, orderId))
     .orderBy(asc(orderStatusHistory.createdAt))
 
-  return { ...order, items, statusHistory: history }
+  return {
+    ...order,
+    estimatedDeliveryStart: order.estimatedDeliveryStart,
+    estimatedDeliveryEnd: order.estimatedDeliveryEnd,
+    regionCode: order.deliveryRegion,
+    subtotal: Number(order.subtotal),
+    cargoFee: Number(order.cargoFee),
+    boxCostKrw: Number(order.boxCostKrw || 0),
+    discountAmount: Number(order.discountAmount),
+    totalAmount: Number(order.totalAmount),
+    items: items.map((item) => ({
+      id: item.id,
+      productId: item.productId,
+      productName: item.productName,
+      brandName: item.brandName,
+      imageUrl: (item.imageUrls as string[])?.[0] || null,
+      quantity: item.quantity,
+      unitPrice: Number(item.unitPriceSnapshot),
+      subtotal: Number(item.subtotalSnapshot),
+    })),
+    statusHistory: history.map((h) => ({
+      fromStatus: h.fromStatus,
+      toStatus: h.toStatus,
+      createdAt: h.createdAt,
+    })),
+  }
 }
 
 export async function cancelOrderByCustomer(
@@ -1155,6 +1202,31 @@ export async function confirmPayment(
       .where(eq(orders.id, orderId))
       .returning()
 
+    if (updated.deliveryRegion === 'UZB') {
+      const { getNextCargoDateFrom } = await import('../cargo-dates/cargo-dates.service')
+      const nextCargo = await getNextCargoDateFrom(new Date())
+      const { getSettings } = await import('../settings/settings.service')
+      const settings = await getSettings()
+      const transitMin = settings.cargoTransitDaysMin ?? 7
+      const transitMax = settings.cargoTransitDaysMax ?? 10
+
+      if (nextCargo) {
+        const cargoDateObj = new Date(nextCargo.cargoDate)
+        const deliveryStart = new Date(cargoDateObj)
+        deliveryStart.setDate(deliveryStart.getDate() + transitMin)
+        const deliveryEnd = new Date(cargoDateObj)
+        deliveryEnd.setDate(deliveryEnd.getDate() + transitMax)
+
+        await tx.update(orders)
+          .set({
+            cargoDateId: nextCargo.id,
+            estimatedDeliveryStart: deliveryStart.toISOString().split('T')[0],
+            estimatedDeliveryEnd: deliveryEnd.toISOString().split('T')[0],
+          })
+          .where(eq(orders.id, order.id))
+      }
+    }
+
     await tx.insert(orderStatusHistory).values({
       orderId,
       fromStatus: 'PAYMENT_SUBMITTED',
@@ -1199,6 +1271,63 @@ export async function confirmPayment(
     const discountShare = order.discountAmount / BigInt(items.length || 1)
 
     for (const item of items) {
+      const reservations = await tx
+        .select()
+        .from(stockReservations)
+        .where(
+          and(eq(stockReservations.orderItemId, item.id), eq(stockReservations.status, 'ACTIVE'))
+        )
+
+      let totalCostKrw = 0n
+      let totalQty = 0
+
+      for (const res of reservations) {
+        const [batch] = await tx
+          .select()
+          .from(inventoryBatches)
+          .where(eq(inventoryBatches.id, res.batchId))
+          .limit(1)
+        if (!batch) continue
+
+        // Deduct stock
+        await tx
+          .update(inventoryBatches)
+          .set({ currentQty: batch.currentQty - res.quantity })
+          .where(eq(inventoryBatches.id, batch.id))
+
+        await tx.insert(stockMovements).values({
+          batchId: batch.id,
+          productId: item.productId,
+          orderId: order.id,
+          movementType: 'DEDUCTED',
+          quantityDelta: -res.quantity,
+          qtyBefore: batch.currentQty,
+          qtyAfter: batch.currentQty - res.quantity,
+          performedBy: adminId,
+          note: `Order ${order.orderNumber}`,
+        })
+
+        await tx
+          .update(stockReservations)
+          .set({ status: 'CONVERTED' })
+          .where(eq(stockReservations.id, res.id))
+
+        totalCostKrw += batch.costPrice * BigInt(res.quantity)
+        totalQty += res.quantity
+
+        // Update item with first batch found (simplified)
+        await tx.update(orderItems).set({ batchId: batch.id }).where(eq(orderItems.id, item.id))
+      }
+
+      if (totalQty > 0) {
+        const avgCost = totalCostKrw / BigInt(totalQty)
+        await tx
+          .update(orderItems)
+          .set({ costAtSaleKrw: avgCost })
+          .where(eq(orderItems.id, item.id))
+        item.costAtSaleKrw = avgCost // Update in-memory for analytics insertion
+      }
+
       const cogs = (item.costAtSaleKrw || 0n) * BigInt(item.quantity)
 
       await tx
@@ -1351,80 +1480,7 @@ export async function startPacking(orderId: string, adminId: string, adminName?:
         message: 'Faqat PAYMENT_CONFIRMED holatida qadoqlashni boshlash mumkin',
       }
 
-    const items = await tx.select().from(orderItems).where(eq(orderItems.orderId, orderId))
 
-    for (const item of items) {
-      const reservations = await tx
-        .select()
-        .from(stockReservations)
-        .where(
-          and(eq(stockReservations.orderItemId, item.id), eq(stockReservations.status, 'ACTIVE'))
-        )
-
-      let totalCostKrw = 0n
-      let totalQty = 0
-
-      for (const res of reservations) {
-        const [batch] = await tx
-          .select()
-          .from(inventoryBatches)
-          .where(eq(inventoryBatches.id, res.batchId))
-          .limit(1)
-        if (!batch) continue
-
-        // Deduct stock
-        await tx
-          .update(inventoryBatches)
-          .set({ currentQty: batch.currentQty - res.quantity })
-          .where(eq(inventoryBatches.id, batch.id))
-
-        await tx.insert(stockMovements).values({
-          batchId: batch.id,
-          productId: item.productId,
-          orderId: order.id,
-          movementType: 'DEDUCTED',
-          quantityDelta: -res.quantity,
-          qtyBefore: batch.currentQty,
-          qtyAfter: batch.currentQty - res.quantity,
-          performedBy: adminId,
-          note: `Order ${order.orderNumber}`,
-        })
-
-        await tx
-          .update(stockReservations)
-          .set({ status: 'CONVERTED' })
-          .where(eq(stockReservations.id, res.id))
-
-        totalCostKrw += batch.costPrice * BigInt(res.quantity)
-        totalQty += res.quantity
-
-        // Update item with first batch found (simplified)
-        await tx.update(orderItems).set({ batchId: batch.id }).where(eq(orderItems.id, item.id))
-      }
-
-      if (totalQty > 0) {
-        const avgCost = totalCostKrw / BigInt(totalQty)
-        await tx
-          .update(orderItems)
-          .set({ costAtSaleKrw: avgCost })
-          .where(eq(orderItems.id, item.id))
-
-        // Update COGS in analytics (since revenue was recognized at PAYMENT_CONFIRMED)
-        const confirmedDate = order.paymentConfirmedAt!.toISOString().split('T')[0]
-        await tx
-          .update(dailySalesSummary)
-          .set({
-            cogsKrw: sql`${dailySalesSummary.cogsKrw} + ${avgCost * BigInt(item.quantity)}`,
-          })
-          .where(
-            and(
-              eq(dailySalesSummary.date, confirmedDate),
-              eq(dailySalesSummary.regionCode, order.deliveryRegion),
-              eq(dailySalesSummary.productId, item.productId)
-            )
-          )
-      }
-    }
 
     const [updated] = await tx
       .update(orders)
@@ -1961,6 +2017,7 @@ const [rateSnapshot] = order.rateSnapshotId
     subtotal: Number(order.subtotal || 0),
     discountAmount: Number(order.discountAmount || 0),
     cargoFee: Number(order.cargoFee || 0),
+    boxCostKrw: Number(order.boxCostKrw || 0),
     totalAmount: Number(order.totalAmount || 0),
     couponCode: order.couponCode,
 
@@ -2031,6 +2088,7 @@ export async function getInvoiceData(orderId: string, userId: string, isAdmin: b
       totalAmount: order.totalAmount,
       discountAmount: order.discountAmount ?? 0n,
       cargoFee: order.cargoFee ?? 0n,
+      boxCostKrw: order.boxCostKrw ?? 0n,
       currency: 'KRW',
     },
     items: items.map((i) => ({

@@ -1,0 +1,80 @@
+version: '3.9'
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: mira_postgres_prod
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: mira_db
+    volumes:
+      - mira_postgres_prod_data:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: mira_redis_prod
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - mira_redis_prod_data:/data
+    ports:
+      - "127.0.0.1:6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api_blue:
+    image: ghcr.io/${GITHUB_REPOSITORY_OWNER}/mira-api:${IMAGE_TAG:-latest}
+    container_name: mira_api_blue
+    restart: unless-stopped
+    env_file:
+      - .env.production
+    ports:
+      - "127.0.0.1:4000:4000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    profiles:
+      - blue
+
+  api_green:
+    image: ghcr.io/${GITHUB_REPOSITORY_OWNER}/mira-api:${IMAGE_TAG:-latest}
+    container_name: mira_api_green
+    restart: unless-stopped
+    env_file:
+      - .env.production
+    ports:
+      - "127.0.0.1:4001:4000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    profiles:
+      - green
+
+  admin:
+    image: ghcr.io/${GITHUB_REPOSITORY_OWNER}/mira-admin:${IMAGE_TAG:-latest}
+    container_name: mira_admin_prod
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8081:80"
+
+volumes:
+  mira_postgres_prod_data:
+    name: mira_postgres_prod_data
+  mira_redis_prod_data:
+    name: mira_redis_prod_data

@@ -42,6 +42,11 @@ export const ordersApi = {
     return res.data
   },
 
+  updateDeliveryEstimate: async (id: string, estimatedDeliveryStart: string, estimatedDeliveryEnd: string) => {
+    const res = await api.patch(`/admin/orders/${id}/delivery-estimate`, { estimatedDeliveryStart, estimatedDeliveryEnd })
+    return res.data
+  },
+
   getStatusCounts: async () => {
     const res = await api.get('/admin/orders/status-counts')
     return res.data.data as Record<string, number>

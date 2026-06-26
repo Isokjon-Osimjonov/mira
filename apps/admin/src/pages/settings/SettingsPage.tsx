@@ -649,6 +649,8 @@ function OrderSettingsTab() {
     paymentTimeoutMinutes: z.coerce.number().int().min(5).max(1440),
     minOrderKorKrw: z.coerce.number().int().min(0),
     minOrderUzbUzs: z.coerce.number().int().min(0),
+    usdToKrw: z.coerce.number().min(0),
+    uzbCargoUsdPerKg: z.coerce.number().min(0),
   })
 
   const { data, isLoading } = useQuery({
@@ -703,6 +705,37 @@ function OrderSettingsTab() {
           {errors.paymentTimeoutMinutes && (
             <p className="text-xs text-red-500 font-bold">5-1440 daqiqa oralig'ida bo'lishi kerak</p>
           )}
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-2">
+          <div className="space-y-2">
+            <Label className="text-sm font-bold text-gray-900">USD → KRW kursi</Label>
+            <Input
+              {...register('usdToKrw')}
+              type="number"
+              step="1"
+              min="0"
+              placeholder="1350"
+              className="h-11 rounded-xl border-[0.5px] focus:ring-primary/20"
+            />
+            <p className="text-[11px] text-muted-foreground font-medium">
+              1 USD necha KRW ga teng (cargo hisoblash uchun)
+            </p>
+          </div>
+          <div className="space-y-2">
+            <Label className="text-sm font-bold text-gray-900">🇺🇿 UZB Kargo tarixi (USD/kg)</Label>
+            <Input
+              {...register('uzbCargoUsdPerKg')}
+              type="number"
+              step="0.1"
+              min="0"
+              placeholder="3"
+              className="h-11 rounded-xl border-[0.5px] focus:ring-primary/20"
+            />
+            <p className="text-[11px] text-muted-foreground font-medium">
+              1 kg yuk uchun USD narxi (Koreadan O'zbekistonga)
+            </p>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-2">

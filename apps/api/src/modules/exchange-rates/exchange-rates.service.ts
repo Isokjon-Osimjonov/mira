@@ -55,8 +55,13 @@ export async function createManualExchangeRate(dto: CreateExchangeRateDto, admin
   
   let usdToKrw = dto.usdToKrw
   if (!usdToKrw) {
-    const latest = await getLatestExchangeRate()
-    usdToKrw = latest.usdToKrw
+    const [latest] = await db
+      .select()
+      .from(exchangeRateSnapshots)
+      .orderBy(desc(exchangeRateSnapshots.createdAt))
+      .limit(1)
+    
+    usdToKrw = latest ? Number(latest.usdToKrw) : 1350
   }
 
   const cargoRateKrwPerKg = Math.round(uzbCargoUsdPerKg * (usdToKrw as number))

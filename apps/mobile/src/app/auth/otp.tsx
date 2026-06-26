@@ -107,16 +107,13 @@ export default function OtpScreen() {
       const startToken = extractToken(currentDeepLink)
 
       const result = await authService.verifyOtp({
-        phone,
+        phone: phone ?? '',
         token: startToken,
         otp,
         region: safeRegion,
       })
       const { accessToken, refreshToken, customer, isNewCustomer } = result
-      if (refreshToken) {
-        await useAuthStore.getState().saveRefresh(refreshToken)
-      }
-      useAuthStore.getState().setAuth(accessToken, customer)
+      useAuthStore.getState().setAuth(accessToken, refreshToken ?? '', customer)
 
       if (isNewCustomer || !customer.firstName) {
         router.replace('/auth/profile-setup')
@@ -151,7 +148,7 @@ export default function OtpScreen() {
       // Request fresh OTP — old token is expired
       const { deepLink: newDeepLink } =
         await authService.requestOtp({
-          phone,
+          phone: phone ?? '',
           region: safeRegion,
         })
       // Update deepLink in state for next verify call

@@ -10,7 +10,6 @@ import {
   Platform,
   Alert,
   Switch,
-  FlatList,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLocalSearchParams, router } from 'expo-router'
@@ -115,10 +114,7 @@ export default function AddressFormScreen() {
       queryClient.invalidateQueries({ queryKey: ['addresses'] })
       router.back()
     } catch (err: any) {
-      Alert.alert(
-        'Xatolik',
-        err?.response?.data?.error?.message ?? 'Saqlab bo\'lmadi'
-      )
+      Alert.alert('Xatolik', err?.response?.data?.error?.message ?? "Saqlab bo'lmadi")
     } finally {
       setIsSubmitting(false)
     }
@@ -142,7 +138,7 @@ export default function AddressFormScreen() {
             <Feather name="arrow-left" size={22} color={tokens.colors.text} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>
-            {addressId ? 'Manzilni tahrirlash' : 'Manzil qo\'shish'}
+            {addressId ? 'Manzilni tahrirlash' : "Manzil qo'shish"}
           </Text>
           <View style={{ width: 40 }} />
         </View>
@@ -152,33 +148,17 @@ export default function AddressFormScreen() {
           <View style={styles.regionSelector}>
             <TouchableOpacity
               onPress={() => setRegionCode('UZB')}
-              style={[
-                styles.regionPill,
-                regionCode === 'UZB' && styles.regionPillActive,
-              ]}
+              style={[styles.regionPill, regionCode === 'UZB' && styles.regionPillActive]}
             >
-              <Text
-                style={[
-                  styles.regionText,
-                  regionCode === 'UZB' && styles.regionTextActive,
-                ]}
-              >
+              <Text style={[styles.regionText, regionCode === 'UZB' && styles.regionTextActive]}>
                 🇺🇿 O'zbekiston
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={() => setRegionCode('KOR')}
-              style={[
-                styles.regionPill,
-                regionCode === 'KOR' && styles.regionPillActive,
-              ]}
+              style={[styles.regionPill, regionCode === 'KOR' && styles.regionPillActive]}
             >
-              <Text
-                style={[
-                  styles.regionText,
-                  regionCode === 'KOR' && styles.regionTextActive,
-                ]}
-              >
+              <Text style={[styles.regionText, regionCode === 'KOR' && styles.regionTextActive]}>
                 🇰🇷 Korea
               </Text>
             </TouchableOpacity>
@@ -261,9 +241,7 @@ export default function AddressFormScreen() {
                   editable={false}
                 />
 
-                <Text style={styles.inputLabel}>
-                  Qo'shimcha manzil (xona/kvartira) *
-                </Text>
+                <Text style={styles.inputLabel}>Qo'shimcha manzil (xona/kvartira) *</Text>
                 <TextInput
                   style={styles.input}
                   placeholder="Xona raqami, bino..."
@@ -314,9 +292,7 @@ export default function AddressFormScreen() {
                 onValueChange={(v) => setForm((p) => ({ ...p, isDefault: v }))}
                 trackColor={{ true: tokens.colors.primary }}
               />
-              <Text style={styles.defaultText}>
-                Asosiy manzil sifatida saqlash
-              </Text>
+              <Text style={styles.defaultText}>Asosiy manzil sifatida saqlash</Text>
             </View>
 
             <View style={{ marginTop: 12, marginBottom: 40 }}>
@@ -337,7 +313,7 @@ export default function AddressFormScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: tokens.colors.white,
+    backgroundColor: tokens.colors.background,
   },
   header: {
     flexDirection: 'row',
@@ -345,8 +321,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: 16,
     paddingBottom: 12,
-    borderBottomWidth: 0.5,
-    borderBottomColor: tokens.colors.border,
   },
   backBtn: {
     width: 40,

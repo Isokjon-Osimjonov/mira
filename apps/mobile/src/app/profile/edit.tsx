@@ -67,10 +67,7 @@ export default function EditProfileScreen() {
       }
       router.back()
     } catch (err: any) {
-      Alert.alert(
-        'Xatolik',
-        err?.response?.data?.error?.message ?? 'Saqlab bo\'lmadi'
-      )
+      Alert.alert('Xatolik', err?.response?.data?.error?.message ?? "Saqlab bo'lmadi")
     } finally {
       setIsSubmitting(false)
     }
@@ -96,27 +93,20 @@ export default function EditProfileScreen() {
           <View style={{ width: 40 }} />
         </View>
 
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+        >
           <View style={styles.avatarSection}>
             <View style={styles.avatarContainer}>
               {avatarSource ? (
-                <Image
-                  source={avatarSource}
-                  style={styles.avatar}
-                  contentFit="cover"
-                />
+                <Image source={avatarSource} style={styles.avatar} contentFit="cover" />
               ) : (
                 <View style={styles.initialsContainer}>
-                  <Text style={styles.initialsText}>
-                    {getInitials(customer?.firstName || '')}
-                  </Text>
+                  <Text style={styles.initialsText}>{getInitials(customer?.firstName || '')}</Text>
                 </View>
               )}
-              <TouchableOpacity
-                style={styles.pickBtn}
-                onPress={pickAvatar}
-                activeOpacity={0.8}
-              >
+              <TouchableOpacity style={styles.pickBtn} onPress={pickAvatar} activeOpacity={0.8}>
                 <View style={styles.pickBtnInner}>
                   <Feather name="camera" size={14} color={tokens.colors.white} />
                 </View>
@@ -144,9 +134,7 @@ export default function EditProfileScreen() {
             <View style={styles.phoneBox}>
               <Text style={styles.phoneLabel}>Telefon raqam</Text>
               <Text style={styles.phoneValue}>{customer?.phone}</Text>
-              <Text style={styles.phoneHint}>
-                Telefon raqamni o'zgartirib bo'lmaydi
-              </Text>
+              <Text style={styles.phoneHint}>Telefon raqamni o'zgartirib bo'lmaydi</Text>
             </View>
 
             <View style={{ marginTop: 32 }}>
@@ -167,7 +155,7 @@ export default function EditProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: tokens.colors.white,
+    backgroundColor: tokens.colors.background,
   },
   header: {
     flexDirection: 'row',
@@ -175,8 +163,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: 16,
     paddingBottom: 12,
-    borderBottomWidth: 0.5,
-    borderBottomColor: tokens.colors.border,
   },
   backBtn: {
     width: 40,
@@ -261,7 +247,7 @@ const styles = StyleSheet.create({
   },
   phoneBox: {
     marginTop: 16,
-    padding: 16,
+
     borderRadius: 12,
     backgroundColor: tokens.colors.background,
   },

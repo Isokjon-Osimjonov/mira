@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   View,
   Text,
@@ -7,28 +7,85 @@ import {
   Dimensions,
   TouchableOpacity,
   FlatList,
+  ActivityIndicator,
 } from 'react-native'
 import { useLocalSearchParams, router } from 'expo-router'
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Image } from 'expo-image'
 import { Feather } from '@expo/vector-icons'
 import { useQuery } from '@tanstack/react-query'
 import { tokens } from '../../lib/tokens'
 import { productService } from '../../services/product.service'
+import { waitlistService } from '../../services/waitlist.service'
 import { useAuthStore } from '../../lib/auth-store'
 import { useExchangeStore } from '../../lib/exchange-store'
 import { useCartStore } from '../../lib/cart-store'
+import { useWishlistStore } from '../../lib/wishlist-store'
 import { formatKRW, formatUZS, krwToUzs } from '../../lib/price'
 import SkeletonLoader from '../../components/ui/SkeletonLoader'
+import { Toast, useToast } from '../../components/ui/Toast'
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window')
 
-const TABS = [
-  { key: 'tavsif', label: 'Tavsif' },
-  { key: 'ishlatish', label: 'Ishlatish' },
-  { key: 'teri', label: 'Teri turi' },
-  { key: 'foydalar', label: 'Foydalar' },
-]
+const WaitlistButton = ({ productId, showToast }: { productId: string; showToast: any }) => {
+  const [isOnWaitlist, setIsOnWaitlist] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+
+  useEffect(() => {
+    waitlistService
+      .getWaitlist()
+      .then((items) => {
+        setIsOnWaitlist(items.some((i) => i.id === productId))
+      })
+      .catch(() => {})
+  }, [productId])
+
+  const handlePress = async () => {
+    if (isOnWaitlist) return
+    setIsLoading(true)
+    try {
+      const result = await waitlistService.addToWaitlist(productId)
+      if (result.inStock) {
+        showToast("Mahsulot mavjud! Savatga qo'shishingiz mumkin", 'info')
+      } else {
+        setIsOnWaitlist(true)
+        showToast("Kutish ro'yxatiga qo'shildingiz ✓", 'success')
+      }
+    } catch (err: any) {
+      const code = err?.response?.data?.error?.code
+      if (code === 'WAITLIST_ALREADY_EXISTS') {
+        setIsOnWaitlist(true)
+      } else {
+        showToast(err?.response?.data?.error?.message ?? 'Xatolik', 'error')
+      }
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  return (
+    <TouchableOpacity
+      style={[styles.waitlistBtn, isOnWaitlist && styles.waitlistBtnActive]}
+      onPress={handlePress}
+      disabled={isOnWaitlist || isLoading}
+    >
+      {isLoading ? (
+        <ActivityIndicator color={tokens.colors.primary} />
+      ) : (
+        <>
+          <Feather
+            name={isOnWaitlist ? 'check' : 'bell'}
+            size={18}
+            color={isOnWaitlist ? tokens.colors.success : tokens.colors.white}
+          />
+          <Text style={[styles.waitlistBtnText, isOnWaitlist && { color: tokens.colors.success }]}>
+            {isOnWaitlist ? "Kutish ro'yxatidasiz" : "Mavjud bo'lganda xabardor qiling"}
+          </Text>
+        </>
+      )}
+    </TouchableOpacity>
+  )
+}
 
 export default function ProductDetailScreen() {
   const { id } = useLocalSearchParams()
@@ -36,46 +93,49 @@ export default function ProductDetailScreen() {
   const customer = useAuthStore((s) => s.customer)
   const exchangeRate = useExchangeStore((s) => s.rate)
   const [activeImageIndex, setActiveImageIndex] = useState(0)
-  const [activeTab, setActiveTab] = useState('tavsif')
 
-  const addItem = useCartStore(s => s.addItem)
+  const { toast, showToast, hideToast } = useToast()
+
+  const addItem = useCartStore((s) => s.addItem)
   const [isAdding, setIsAdding] = useState(false)
+
+  const toggleWishlist = useWishlistStore((s) => s.toggle)
+  const productIds = useWishlistStore((s) => s.productIds)
 
   const { data: product, isLoading } = useQuery({
     queryKey: ['product', id],
     queryFn: () => productService.getProductById(id as string),
     enabled: !!id,
+    staleTime: 0,
+    refetchOnMount: true,
   })
+
+  const isWishlisted = product ? productIds.has(product.id) : false
 
   const showUzs = customer?.phoneRegion === 'UZB'
 
+  console.log('product.totalStock:', product?.totalStock)
+  console.log('isOutOfStock:', product?.totalStock === 0)
+
+  const totalStock = Number(product?.totalStock ?? 0)
+  const isOutOfStock = totalStock === 0
+
   const handleAddToCart = async () => {
-    if (isAdding || !id) return
+    if (isAdding || !id || isOutOfStock) return
     setIsAdding(true)
     try {
       await addItem(id as string, 1)
-      Alert.alert('Muvaffaqiyatli', 'Mahsulot savatga qo\'shildi', [{ text: 'OK' }])
+      showToast("Savatga qo'shildi ✓", 'success')
     } catch (err: any) {
       const code = err?.response?.data?.error?.code
       if (code === 'REGION_MISMATCH') {
-        Alert.alert(
-          'Hudud mos kelmaydi',
-          'Savatingizda boshqa hududdan mahsulot bor. Savatni tozalab qayta urinib ko\'ring.',
-          [{ text: 'OK' }]
-        )
+        showToast('Savatda boshqa hududdan mahsulot bor', 'error')
       } else {
-        Alert.alert(
-          'Xatolik',
-          err?.response?.data?.error?.message ?? 'Savatga qo\'shib bo\'lmadi'
-        )
+        showToast(err?.response?.data?.error?.message ?? "Savatga qo'shib bo'lmadi", 'error')
       }
     } finally {
       setIsAdding(false)
     }
-  }
-
-  const handleBuyNow = () => {
-    console.log('Buy now:', id)
   }
 
   if (isLoading) {
@@ -101,58 +161,58 @@ export default function ProductDetailScreen() {
     )
   }
 
-  // Get price from regional configs or flat field
   const getPrice = () => {
-    // Try flat retailPrice first (from list endpoint format)
-    if (product?.retailPrice) {
-      return Number(product.retailPrice)
-    }
-    // Fall back to regionalConfigs
+    if (product?.retailPrice) return Number(product.retailPrice)
     const customerRegion = customer?.phoneRegion ?? 'UZB'
-    const config = product?.regionalConfigs?.find(
-      c => c.regionCode === customerRegion
-    ) ?? product?.regionalConfigs?.[0]
-    if (config?.retailPrice) {
-      return Number(config.retailPrice)
-    }
-    return null
+    const config =
+      product?.regionalConfigs?.find((c) => c.regionCode === customerRegion) ??
+      product?.regionalConfigs?.[0]
+    return config?.retailPrice ? Number(config.retailPrice) : null
   }
 
-  const price = product ? getPrice() : null
-
+  const price = getPrice()
   const customerRegion = customer?.phoneRegion ?? 'UZB'
-  const activeConfig = product?.regionalConfigs?.find(
-    c => c.regionCode === customerRegion
-  ) ?? product?.regionalConfigs?.[0]
-  const wholesalePrice = activeConfig?.wholesalePrice
-    ? Number(activeConfig.wholesalePrice)
-    : null
+  const activeConfig =
+    product?.regionalConfigs?.find((c) => c.regionCode === customerRegion) ??
+    product?.regionalConfigs?.[0]
+  const wholesalePrice = activeConfig?.wholesalePrice ? Number(activeConfig.wholesalePrice) : null
 
   return (
     <View style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false}>
-        {/* IMAGE AREA */}
         <View style={styles.imageArea}>
           <Image
             source={product.imageUrls[activeImageIndex]}
             style={styles.mainImage}
             contentFit="contain"
           />
-
           <TouchableOpacity
             style={[styles.backBtn, { top: insets.top + 12 }]}
             onPress={() => router.back()}
           >
             <Feather name="arrow-left" size={20} color={tokens.colors.text} />
           </TouchableOpacity>
-
           <TouchableOpacity
+            onPress={() => {
+              if (!product) return
+              toggleWishlist(product.id)
+            }}
             style={[styles.wishlistBtn, { top: insets.top + 12 }]}
-            onPress={() => {}}
+            activeOpacity={0.7}
           >
-            <Feather name="heart" size={20} color={tokens.colors.textLight} />
+            <View
+              style={[
+                styles.wishlistIconCircle,
+                isWishlisted ? styles.wishlistIconCircleActive : undefined
+              ]}
+            >
+              <Feather
+                name="heart"
+                size={18}
+                color={isWishlisted ? tokens.colors.white : tokens.colors.text}
+              />
+            </View>
           </TouchableOpacity>
-
           <View style={styles.thumbContainer}>
             <FlatList
               horizontal
@@ -172,7 +232,6 @@ export default function ProductDetailScreen() {
           </View>
         </View>
 
-        {/* CONTENT */}
         <View style={styles.content}>
           <Text style={styles.brandName}>{product.brandName}</Text>
           <Text style={styles.name}>{product.name}</Text>
@@ -186,13 +245,9 @@ export default function ProductDetailScreen() {
             )}
           </View>
 
-          {/* Wholesale price row */}
           {wholesalePrice && wholesalePrice !== price && (
             <View style={styles.priceRow}>
-              <Text style={styles.priceLabel}>Ulgurji narx:</Text>
-              <Text style={styles.wholesalePrice}>
-                {formatKRW(wholesalePrice)}
-              </Text>
+              <Text style={styles.wholesalePrice}>{formatKRW(wholesalePrice)}</Text>
               {showUzs && (
                 <Text style={styles.wholesalePriceUzs}>
                   ≈ {formatUZS(krwToUzs(wholesalePrice, exchangeRate))}
@@ -201,147 +256,123 @@ export default function ProductDetailScreen() {
             </View>
           )}
 
-          {/* Min order qty */}
-          {activeConfig?.minOrderQty > 1 && (
-            <Text style={styles.minQty}>
-              Minimal buyurtma: {activeConfig.minOrderQty} ta
+          {Boolean(activeConfig?.minWholesaleQty) && (
+            <Text style={styles.wholesaleQtyText}>
+              {'Ulgurji: ' + String(activeConfig?.minWholesaleQty) + ' tadan boshlab'}
             </Text>
           )}
 
-          {/* Wholesale min qty */}
-          {activeConfig?.minWholesaleQty && (
-            <Text style={styles.minQty}>
-              Ulgurji: {activeConfig.minWholesaleQty} tadan
-            </Text>
+          {(activeConfig?.minOrderQty ?? 0) > 1 && (
+            <Text style={styles.minQty}>Minimal buyurtma: {activeConfig?.minOrderQty} ta</Text>
           )}
 
-          {/* Stock */}
-          {product?.totalStock !== undefined && (
-            <View style={styles.stockRow}>
-              <View style={[
-                styles.stockDot,
-                {
-                  backgroundColor:
-                    product.totalStock === 0
-                      ? tokens.colors.error
-                      : product.totalStock <= 5
-                      ? tokens.colors.warning
-                      : tokens.colors.success
-                }
-              ]} />
-              <Text style={styles.stockText}>
-                {product.totalStock === 0
-                  ? 'Tugagan'
-                  : product.totalStock <= 5
-                  ? `Faqat ${product.totalStock} ta qoldi`
-                  : 'Mavjud'}
-              </Text>
-            </View>
-          )}
-
-          {/* TAB BAR */}
-          <View style={styles.tabBar}>
-            {TABS.map((tab) => {
-              const isActive = activeTab === tab.key
-              return (
-                <TouchableOpacity
-                  key={tab.key}
-                  style={styles.tabItem}
-                  onPress={() => setActiveTab(tab.key)}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[styles.tabText, isActive && styles.tabTextActive]}>
-                    {tab.label}
-                  </Text>
-                  <View style={[styles.tabIndicator, isActive && styles.tabIndicatorActive]} />
-                </TouchableOpacity>
-              )
-            })}
-          </View>
-
-          {/* TAB CONTENT */}
-          <View style={styles.tabContent}>
-            {activeTab === 'tavsif' && (
-              <Text style={styles.contentText}>
-                {product.descriptionUz || "Ma'lumot mavjud emas"}
-              </Text>
+          <View style={styles.detailSections}>
+            {/* Tavsif */}
+            {Boolean(product.descriptionUz) && (
+              <View style={styles.detailSection}>
+                <Text style={styles.sectionHeading}>Tavsif</Text>
+                <Text style={styles.sectionBody}>{product.descriptionUz}</Text>
+              </View>
             )}
 
-            {activeTab === 'ishlatish' && (
-              <Text style={styles.contentText}>{product.howToUseUz || "Ma'lumot mavjud emas"}</Text>
+            {/* Qo'llash usuli */}
+            {Boolean(product.howToUseUz) && (
+              <View style={styles.detailSection}>
+                <Text style={styles.sectionHeading}>Qo'llash usuli</Text>
+                <Text style={styles.sectionBody}>{product.howToUseUz}</Text>
+              </View>
             )}
 
-            {activeTab === 'teri' && (
-              <View style={styles.pillWrap}>
-                {product.skinTypes && product.skinTypes.length > 0 ? (
-                  product.skinTypes.map((type, i) => (
+            {/* Tarkibi */}
+            {Boolean(product.ingredients?.length) && (
+              <View style={styles.detailSection}>
+                <Text style={styles.sectionHeading}>Tarkibi</Text>
+                <View style={styles.pillWrap}>
+                  {product.ingredients!.map((item, i) => (
+                    <View key={i} style={styles.pillBadge}>
+                      <Text style={styles.pillBadgeText}>{item}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            )}
+
+            {/* Teri turlari */}
+            {Boolean(product.skinTypes?.length) && (
+              <View style={styles.detailSection}>
+                <Text style={styles.sectionHeading}>Teri turlari</Text>
+                <View style={styles.pillWrap}>
+                  {product.skinTypes!.map((type, i) => (
                     <View key={i} style={styles.pillBadge}>
                       <Text style={styles.pillBadgeText}>{type}</Text>
                     </View>
-                  ))
-                ) : (
-                  <Text style={styles.contentText}>Ma'lumot mavjud emas</Text>
-                )}
+                  ))}
+                </View>
               </View>
             )}
 
-            {activeTab === 'foydalar' && (
-              <View style={styles.benefitsWrap}>
-                {product.benefits && product.benefits.length > 0 ? (
-                  product.benefits.map((benefit, i) => (
-                    <View key={i} style={styles.benefitRow}>
-                      <View style={styles.benefitDot} />
-                      <Text style={styles.contentText}>{benefit}</Text>
-                    </View>
-                  ))
-                ) : (
-                  <Text style={styles.contentText}>Ma'lumot mavjud emas</Text>
-                )}
+            {/* Foydali xususiyatlari */}
+            {Boolean(product.benefits?.length) && (
+              <View style={styles.detailSection}>
+                <Text style={styles.sectionHeading}>Foydali xususiyatlari</Text>
+                <View style={styles.benefitsList}>
+                  {product.benefits!.map((benefit, i) => (
+                    <Text key={i} style={styles.sectionBody}>
+                      {benefit}
+                    </Text>
+                  ))}
+                </View>
               </View>
             )}
           </View>
 
+          {/* Weight — standalone, below all sections */}
           {product.weightGrams ? (
-            <Text style={styles.weightText}>Og'irligi: {product.weightGrams}g</Text>
+            <Text style={styles.weightText}>{"Og'irligi: " + product.weightGrams + 'g'}</Text>
           ) : null}
-
-          <View style={{ height: 120 }} />
+          <View style={{ height: 140 }} />
         </View>
       </ScrollView>
 
-      {/* FIXED BOTTOM BAR */}
-      <View style={[styles.bottomBar, { paddingBottom: insets.bottom + 8 }]}>
-        <TouchableOpacity style={styles.addToCartBtn} onPress={handleAddToCart} activeOpacity={0.8}>
-          <Text style={styles.addToCartText}>Savatga qo'shish</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.buyNowBtn} onPress={handleBuyNow} activeOpacity={0.8}>
-          <Text style={styles.buyNowText}>Sotib olish</Text>
-        </TouchableOpacity>
+      <View style={[styles.bottomBar, { paddingBottom: insets.bottom + 12 }]}>
+        {isOutOfStock ? (
+          <View style={styles.oosContainer}>
+            <Text style={styles.oosText}>Bu mahsulot hozir mavjud emas</Text>
+            <WaitlistButton productId={product.id} showToast={showToast} />
+          </View>
+        ) : (
+          <TouchableOpacity
+            style={styles.addToCartBtnMain}
+            onPress={handleAddToCart}
+            disabled={isAdding}
+            activeOpacity={0.8}
+          >
+            {isAdding ? (
+              <ActivityIndicator color={tokens.colors.white} />
+            ) : (
+              <Feather name="shopping-bag" size={18} color={tokens.colors.white} />
+            )}
+            <Text style={styles.addToCartTextMain}>
+              {isAdding ? "Qo'shilmoqda..." : "Savatga qo'shish"}
+            </Text>
+          </TouchableOpacity>
+        )}
       </View>
+
+      <Toast message={toast.message} type={toast.type} visible={toast.visible} onHide={hideToast} />
     </View>
   )
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: tokens.colors.background,
-  },
-  center: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  container: { flex: 1, backgroundColor: tokens.colors.background },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   imageArea: {
-    height: SCREEN_HEIGHT * 0.45,
-    backgroundColor: tokens.colors.surface,
+    height: SCREEN_HEIGHT * 0.46,
+    backgroundColor: tokens.colors.background,
     position: 'relative',
   },
-  mainImage: {
-    width: '100%',
-    height: '100%',
-  },
+  mainImage: { width: '100%', height: '100%' },
   backBtn: {
     position: 'absolute',
     left: 24,
@@ -353,30 +384,29 @@ const styles = StyleSheet.create({
     borderColor: tokens.colors.border,
     alignItems: 'center',
     justifyContent: 'center',
+    zIndex: 10,
   },
   wishlistBtn: {
     position: 'absolute',
     right: 24,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: tokens.colors.white,
-    borderWidth: 0.5,
-    borderColor: tokens.colors.border,
+    zIndex: 10,
+  },
+  wishlistIconCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: tokens.colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 0.5,
+    borderColor: tokens.colors.border,
   },
-  thumbContainer: {
-    position: 'absolute',
-    bottom: 12,
-    left: 0,
-    right: 0,
-    alignItems: 'center',
+  wishlistIconCircleActive: {
+    backgroundColor: tokens.colors.primary,
+    borderColor: tokens.colors.primary,
   },
-  thumbList: {
-    paddingHorizontal: 24,
-    gap: 12,
-  },
+  thumbContainer: { position: 'absolute', bottom: 12, left: 0, right: 0, alignItems: 'center' },
+  thumbList: { paddingHorizontal: 24, gap: 12 },
   thumbItem: {
     width: 52,
     height: 52,
@@ -386,46 +416,36 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
     overflow: 'hidden',
   },
-  thumbItemActive: {
-    borderColor: tokens.colors.primary,
-  },
-  thumbImage: {
-    width: '100%',
-    height: '100%',
-  },
-  content: {
-    paddingHorizontal: 24,
-    paddingTop: 20,
-  },
+  thumbItemActive: { borderColor: tokens.colors.primary },
+  thumbImage: { width: '100%', height: '100%' },
+  content: { paddingHorizontal: 24, paddingTop: 20 },
+
   brandName: {
-    fontSize: 12,
+    fontSize: 10,
     fontFamily: 'Inter_400Regular',
     color: tokens.colors.textMuted,
     textTransform: 'uppercase',
   },
   name: {
-    fontSize: 22,
-    fontFamily: 'Inter_400Regular',
+    fontSize: 18,
+    fontFamily: 'Inter_500Medium',
     fontWeight: '500',
     color: tokens.colors.text,
     marginTop: 4,
   },
-  priceRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 12,
-  },
+  priceRow: { flexDirection: 'row', alignItems: 'center', marginTop: 12 },
+
   priceKrw: {
-    fontSize: 20,
+    fontSize: 16,
     fontFamily: 'Inter_400Regular',
     fontWeight: '500',
-    color: tokens.colors.primary,
+    color: tokens.colors.amber,
   },
   priceUzs: {
     fontSize: 12,
     fontFamily: 'Inter_400Regular',
     fontWeight: '400',
-    color: tokens.colors.textMuted,
+    color: tokens.colors.amber,
     marginLeft: 8,
     marginTop: 4,
   },
@@ -433,17 +453,25 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontFamily: 'Inter_400Regular',
     color: tokens.colors.textMuted,
+    marginRight: 6,
   },
   wholesalePrice: {
-    fontSize: 13,
+    fontSize: 16,
     fontFamily: 'Inter_400Regular',
     fontWeight: '500',
-    color: tokens.colors.textSecondary,
+    color: tokens.colors.green,
   },
   wholesalePriceUzs: {
     fontSize: 12,
     fontFamily: 'Inter_400Regular',
+    color: tokens.colors.green,
+    marginLeft: 6,
+  },
+  wholesaleQtyText: {
+    fontSize: 12,
+    fontFamily: 'Inter_400Regular',
     color: tokens.colors.textMuted,
+    marginTop: 2,
   },
   minQty: {
     fontSize: 12,
@@ -451,64 +479,28 @@ const styles = StyleSheet.create({
     color: tokens.colors.textMuted,
     marginTop: 4,
   },
-  stockRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginTop: 8,
+  detailSections: {
+    marginTop: 20,
   },
-  stockDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+  detailSection: {
+    marginBottom: 24,
   },
-  stockText: {
+  sectionHeading: {
+    fontSize: 15,
+    fontFamily: 'Inter_500Medium',
+    fontWeight: '500',
+    color: tokens.colors.text,
+    marginBottom: 8,
+  },
+  sectionBody: {
     fontSize: 13,
     fontFamily: 'Inter_400Regular',
-    color: tokens.colors.textSecondary,
-  },
-  tabBar: {
-    flexDirection: 'row',
-    marginTop: 20,
-    borderBottomWidth: 0.5,
-    borderBottomColor: tokens.colors.border,
-  },
-  tabItem: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: 10,
-  },
-  tabText: {
-    fontSize: 14,
-    fontFamily: 'Inter_400Regular',
     fontWeight: '400',
-    color: tokens.colors.textMuted,
-  },
-  tabTextActive: {
-    fontFamily: 'Inter_400Regular',
-    fontWeight: '500',
-    color: tokens.colors.primary,
-  },
-  tabIndicator: {
-    position: 'absolute',
-    bottom: -0.5,
-    left: 0,
-    right: 0,
-    height: 2,
-    backgroundColor: 'transparent',
-  },
-  tabIndicatorActive: {
-    backgroundColor: tokens.colors.primary,
-  },
-  tabContent: {
-    marginTop: 16,
-    minHeight: 60,
-  },
-  contentText: {
-    fontSize: 14,
-    fontFamily: 'Inter_400Regular',
     color: tokens.colors.textSecondary,
-    lineHeight: 22,
+    lineHeight: 21,
+  },
+  benefitsList: {
+    gap: 6,
   },
   pillWrap: {
     flexDirection: 'row',
@@ -516,36 +508,28 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   pillBadge: {
-    borderWidth: 0.5,
+    backgroundColor: '#FAFAFA',
+    borderWidth: 1,
     borderColor: tokens.colors.border,
-    borderRadius: tokens.radius.full,
+    borderRadius: 6,
     paddingHorizontal: 12,
-    paddingVertical: 5,
+    paddingVertical: 8,
+    flexGrow: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   pillBadgeText: {
     fontSize: 13,
     fontFamily: 'Inter_400Regular',
+    fontWeight: '400',
     color: tokens.colors.textSecondary,
-  },
-  benefitsWrap: {
-    gap: 8,
-  },
-  benefitRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  benefitDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: tokens.colors.primary,
+    textAlign: 'center',
   },
   weightText: {
-    fontSize: 13,
+    fontSize: 12,
     fontFamily: 'Inter_400Regular',
     color: tokens.colors.textMuted,
-    marginTop: 16,
+    marginTop: 4,
   },
   bottomBar: {
     position: 'absolute',
@@ -556,36 +540,50 @@ const styles = StyleSheet.create({
     borderTopWidth: 0.5,
     borderTopColor: tokens.colors.border,
     paddingHorizontal: 24,
-    paddingVertical: 12,
+    paddingTop: 12,
+    zIndex: 10,
+  },
+  addToCartBtnMain: {
     flexDirection: 'row',
-    gap: 12,
-  },
-  addToCartBtn: {
-    flex: 1,
-    height: 52,
-    borderRadius: 12,
-    backgroundColor: tokens.colors.white,
-    borderWidth: 1,
-    borderColor: tokens.colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  addToCartText: {
-    fontSize: 15,
-    fontFamily: 'Inter_600SemiBold',
-    color: tokens.colors.primary,
-  },
-  buyNowBtn: {
-    flex: 1,
+    gap: 8,
     height: 52,
-    borderRadius: 12,
+    borderRadius: 14,
     backgroundColor: tokens.colors.primary,
+  },
+  addToCartTextMain: {
+    fontSize: 15,
+    fontFamily: 'Inter_400Regular',
+    fontWeight: '500',
+    color: tokens.colors.white,
+  },
+  oosContainer: { gap: 8 },
+  oosText: {
+    fontSize: 13,
+    fontFamily: 'Inter_400Regular',
+    color: tokens.colors.textMuted,
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  waitlistBtn: {
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 8,
+    height: 52,
+    borderRadius: 14,
+    backgroundColor: tokens.colors.primary,
   },
-  buyNowText: {
-    fontSize: 15,
-    fontFamily: 'Inter_600SemiBold',
+  waitlistBtnActive: {
+    backgroundColor: '#F0FDF4',
+    borderWidth: 1,
+    borderColor: tokens.colors.success,
+  },
+  waitlistBtnText: {
+    fontSize: 14,
+    fontFamily: 'Inter_400Regular',
+    fontWeight: '500',
     color: tokens.colors.white,
   },
 })

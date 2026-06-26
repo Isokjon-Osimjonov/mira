@@ -19,10 +19,12 @@ import {
   sendAdminAlert,
   notifyCustomerFull,
 } from '../../bot/helpers/notify'
-import type { CreateBatchDto, UpdateBatchDto } from './inventory.schema'
+import { CreateBatchDto, UpdateBatchDto } from './inventory.schema'
 import { createNotification } from '../admin-notifications/admin-notifications.service'
+import { notifyWaitlist } from '../waitlists/waitlists.service'
 
 export async function getStockSummary(query: {
+
   filter?: 'low' | 'out' | 'expiring'
   search?: string
   categoryId?: string
@@ -203,55 +205,12 @@ export async function createBatch(data: CreateBatchDto, adminId: string) {
     await checkLowStock(tx, data.productId)
 
     // 4. Notify waitlist
-    const [product] = await tx.select().from(products).where(eq(products.id, data.productId)).limit(1)
-    if (product) {
-      notifyWaitlistCustomers(data.productId, product.name).catch(console.error)
-    }
+    notifyWaitlist(data.productId).catch((err) =>
+      console.error('Failed to notify waitlist', err)
+    )
 
     return newBatch
   })
-}
-
-export async function notifyWaitlistCustomers(productId: string, productName: string): Promise<void> {
-  const list = await db
-    .select({
-      customerId: waitlists.customerId,
-      telegramId: customers.telegramId,
-      expoPushToken: customers.expoPushToken,
-      firstName: customers.firstName,
-    })
-    .from(waitlists)
-    .innerJoin(customers, eq(customers.id, waitlists.customerId))
-    .where(and(eq(waitlists.productId, productId), eq(waitlists.notified, false)))
-
-  if (list.length === 0) return
-
-  for (const w of list) {
-    try {
-      await notifyCustomerFull({
-        customerId: w.customerId,
-        telegramId: w.telegramId,
-        expoPushToken: w.expoPushToken,
-        type: 'STOCK_BACK',
-        channel: 'BOTH',
-        title: `${productName} mavjud! 🎉`,
-        body: `Siz kutgan mahsulot sotuvga chiqdi. Tez buyurtma bering!`,
-        telegramMessage:
-          `🎉 <b>Mahsulot mavjud!</b>\n\n` +
-          `📦 <b>${productName}</b>\n` +
-          `Siz kutgan mahsulot omborda bor.\n` +
-          `Tez buyurtma bering! 👇`,
-        data: { productId, type: 'WAITLIST_AVAILABLE' },
-      })
-
-      await db
-        .update(waitlists)
-        .set({ notified: true, notifiedAt: new Date() })
-        .where(and(eq(waitlists.customerId, w.customerId), eq(waitlists.productId, productId)))
-    } catch (err) {
-      console.error(`Waitlist notify failed for customer ${w.customerId}:`, err)
-    }
-  }
 }
 
 export async function getBatchesByProduct(productId: string) {

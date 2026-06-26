@@ -43,24 +43,42 @@ export interface CheckoutResult {
   }
 }
 
+export interface OrderItem {
+  id: string
+  productId: string
+  productName: string
+  brandName: string
+  imageUrl: string | null
+  quantity: number
+  unitPrice: number
+  subtotal: number
+}
+
 export interface Order {
   id: string
   orderNumber: string
   status: string
-  paymentExpiresAt: string | null
-  totalAmount: number
   currency: string
+  paymentMethod: string
+  subtotal: number
+  cargoFee: number
+  discountAmount: number
+  totalAmount: number
+  paymentDeadline: string | null
+  paymentReceiptUrl: string | null
+  paymentRejectedReason: string | null
+  trackingNumber: string | null
+  estimatedDeliveryStart: string | null
+  estimatedDeliveryEnd: string | null
+  refundRequestedAt: string | null
+  deliveryFullName: string | null
+  deliveryPhone: string | null
+  deliveryAddressLine1: string | null
+  deliveryAddressLine2: string | null
+  deliveryCity: string | null
+  deliveryPostalCode: string | null
   createdAt: string
-  items: Array<{
-    id: string
-    productName: string
-    brandName: string
-    imageUrl: string
-    quantity: number
-    unitPrice: number
-    subtotal: number
-  }>
-  address: OrderAddress
+  items: OrderItem[]
 }
 
 export const orderService = {
@@ -76,7 +94,10 @@ export const orderService = {
     meta: { total: number; page: number }
   }> => {
     const res = await api.get('/orders', { params: { page, limit: 20 } })
-    return res.data
+    return {
+      items: res.data.data,
+      meta: res.data.meta,
+    }
   },
 
   getOrderById: async (id: string): Promise<Order> => {
@@ -86,13 +107,15 @@ export const orderService = {
 
   uploadReceipt: async (
     orderId: string,
-    data: {
-      receiptUrl: string
-      paymentAmount: number
-      paymentCurrency: 'KRW' | 'UZS'
-    }
+    receiptUrl: string,
+    paymentAmount: number,
+    paymentCurrency: 'KRW' | 'UZS'
   ): Promise<void> => {
-    await api.post(`/orders/${orderId}/receipt`, data)
+    await api.post(`/orders/${orderId}/receipt`, {
+      receiptUrl,
+      paymentAmount,
+      paymentCurrency,
+    })
   },
 
   cancelOrder: async (orderId: string, reason?: string): Promise<void> => {

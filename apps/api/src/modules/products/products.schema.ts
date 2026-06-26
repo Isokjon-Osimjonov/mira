@@ -29,6 +29,8 @@ export const CreateProductSchema = z.object({
   // Wholesale is required when retail is set, and must be <= retail (DB CHECK).
   korRetailPrice: priceField,
   korWholesalePrice: priceField,
+  uzbRetailPrice: priceField,
+  uzbWholesalePrice: priceField,
   minOrderQty: z.coerce.number().int().min(1).default(1),
   minWholesaleQty: z.coerce.number().int().min(1).default(5),
 })

@@ -54,10 +54,7 @@ export const notificationWorker = new Worker(
       await sendAdminAlert(params.message)
     }
 
-    if (type === 'WAITLIST') {
-      const { notifyWaitlistCustomers } = await import('../modules/inventory/inventory.service')
-      await notifyWaitlistCustomers(params.productId, params.productName)
-    }
+    // Waitlist notification removed
 
     queueLogger.info({ jobId: job.id, type }, 'Notification processed')
   },

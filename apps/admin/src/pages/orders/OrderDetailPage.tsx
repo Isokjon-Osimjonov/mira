@@ -95,6 +95,10 @@ export function OrderDetailPage({ id }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const readerRef = useRef<BrowserMultiFormatReader | null>(null)
 
+  const [estimateDialog, setEstimateDialog] = useState(false)
+  const [estStart, setEstStart] = useState('')
+  const [estEnd, setEstEnd] = useState('')
+
   const { data, isLoading } = useQuery({
     queryKey: QK.ORDER(id),
     queryFn: () => ordersApi.getById(id),
@@ -109,10 +113,9 @@ export function OrderDetailPage({ id }: Props) {
       if (res.data.alreadyScanned) {
         toast.info(`${res.data.productName || 'Mahsulot'} allaqachon skanerlangan`)
       } else {
-        toast.success(`${res.data.productName || 'Mahsulot'} skanerlandi ✓`)
+        toast.success(`${res.data.productName || 'Mahsulot'} ✓ skanerlandi`)
         if (res.data.allScanned) {
-          toast.success("Barcha mahsulotlar skanerlandi!", {
-            description: "Endi buyurtmani jo'natishingiz mumkin",
+          toast.success("🎉 Barcha mahsulotlar skanerlandi! Qadoqlashni boshlashingiz mumkin.", {
             duration: 5000,
           })
         }
@@ -169,21 +172,25 @@ export function OrderDetailPage({ id }: Props) {
   }
 
   const stopCamera = () => {
-    readerRef.current?.reset()
     setShowCamera(false)
   }
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      readerRef.current?.reset()
+      // clean up logic if needed
     }
   }, [])
+
+  useEffect(() => {
+    if (order?.estimatedDeliveryStart) setEstStart(order.estimatedDeliveryStart)
+    if (order?.estimatedDeliveryEnd) setEstEnd(order.estimatedDeliveryEnd)
+  }, [order])
 
   // Auto-focus input when component mounts or status changes to Packing/Confirmed
   useEffect(() => {
     if ((order?.status === 'PAYMENT_CONFIRMED' || order?.status === 'PACKING') && !showCamera) {
-      const timer = setTimeout(() => inputRef.current?.focus(), 500)
+      const timer = setTimeout(() => inputRef.current?.focus(), 300)
       return () => clearTimeout(timer)
     }
   }, [order?.status, showCamera])
@@ -234,6 +241,16 @@ export function OrderDetailPage({ id }: Props) {
     },
   })
 
+  // ── Delivery Estimate mutation ─────────────────────────
+  const estimateMut = useMutation({
+    mutationFn: () => ordersApi.updateDeliveryEstimate(id, estStart, estEnd),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: QK.ORDER(id) })
+      toast.success('Yetkazib berish muddati yangilandi')
+      setEstimateDialog(false)
+    },
+  })
+
   if (isLoading) {
     return (
       <div className="flex flex-col gap-4 animate-pulse">
@@ -257,9 +274,13 @@ export function OrderDetailPage({ id }: Props) {
     )
   }
 
+  const orderItems = order?.items ?? []
+  const scannedCount = orderItems.filter((item: any) => item.isScanned).length
+  const totalCount = orderItems.length
+  const allScanned = totalCount > 0 && orderItems.every((item: any) => item.isScanned)
+
   const nextStatuses = VALID_TRANSITIONS[order.status] ?? []
-  const isUZB = order.deliveryRegion === 'UZB'
-  const allScanned = (order.items ?? []).every((i: any) => i.isScanned)
+  const isUZB = order.deliveryRegion === 'UZB' 
 
   return (
     <>
@@ -317,6 +338,12 @@ export function OrderDetailPage({ id }: Props) {
                     <p className="text-xs font-semibold text-gray-900 uppercase tracking-wide">
                       Mahsulotlarni skanerlash
                     </p>
+                    <span className={cn(
+                      "text-[11px] font-bold ml-2",
+                      allScanned ? "text-[#16A34A]" : "text-[#D97706]"
+                    )}>
+                      {scannedCount} / {totalCount} ta skanerlandi
+                    </span>
                   </div>
                   {allScanned && (
                     <span className="text-[11px] font-medium text-green-600 bg-green-50 px-2 py-0.5 rounded-full border border-green-100 flex items-center gap-1">
@@ -332,7 +359,7 @@ export function OrderDetailPage({ id }: Props) {
                       key={item.id}
                       className={cn(
                         "flex items-center gap-3 p-2 rounded-lg border-[0.5px] transition-colors",
-                        item.isScanned ? "bg-green-50/30 border-green-100" : "bg-gray-50/30 border-border/50"
+                        item.isScanned ? "bg-[#F0FDF4] border-green-200" : "bg-gray-50/30 border-border/50"
                       )}
                     >
                       <img
@@ -351,7 +378,7 @@ export function OrderDetailPage({ id }: Props) {
                       {item.isScanned ? (
                         <div className="flex items-center gap-1 text-[11px] font-medium text-green-600 bg-white px-2 py-1 rounded-md border border-green-100 shadow-sm">
                           <CheckCircle className="h-3 w-3" />
-                          Skanerlandi
+                          ✓ Skanerlandi
                         </div>
                       ) : (
                         <div className="text-[11px] font-medium text-muted-foreground bg-white px-2 py-1 rounded-md border border-border shadow-sm">
@@ -566,6 +593,27 @@ export function OrderDetailPage({ id }: Props) {
               </div>
             </div>
 
+            {/* Delivery Estimate Card */}
+            {isUZB && (
+              <div className="bg-white rounded-xl border-[0.5px] border-border p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Yetkazib berish muddati</p>
+                  {canWrite('orders') && (
+                    <Button variant="ghost" size="sm" className="h-6 text-xs px-2 text-primary" onClick={() => setEstimateDialog(true)}>
+                      Tahrirlash
+                    </Button>
+                  )}
+                </div>
+                {order.estimatedDeliveryStart && order.estimatedDeliveryEnd ? (
+                  <p className="text-sm font-medium text-gray-900">
+                    {formatDateTime(order.estimatedDeliveryStart).split(' ')[0]} — {formatDateTime(order.estimatedDeliveryEnd).split(' ')[0]}
+                  </p>
+                ) : (
+                  <p className="text-xs text-muted-foreground">Belgilanmagan</p>
+                )}
+              </div>
+            )}
+
             {/* Receipt Card */}
             {order.receiptUrl && (
               <div className="bg-white rounded-xl border-[0.5px] border-border p-4">
@@ -605,20 +653,33 @@ export function OrderDetailPage({ id }: Props) {
                 <div className="flex flex-col gap-2">
                   {nextStatuses
                     .filter((s) => s !== 'PAYMENT_CONFIRMED' && s !== 'PAYMENT_REJECTED')
-                    .map((nextStatus) => (
-                      <Button
-                        key={nextStatus}
-                        size="sm"
-                        variant={TRANSITION_VARIANTS[nextStatus]}
-                        className={cn(
-                          "rounded-lg w-full h-8 text-xs",
-                          nextStatus === 'SHIPPED' && allScanned && "ring-2 ring-primary ring-offset-2 bg-primary hover:bg-primary/90 text-white font-bold"
-                        )}
-                        onClick={() => setConfirmAction({ type: nextStatus, label: TRANSITION_LABELS[nextStatus] })}
-                      >
-                        {TRANSITION_LABELS[nextStatus]}
-                      </Button>
-                    ))}
+                    .map((nextStatus) => {
+                      const isPacking = nextStatus === 'PACKING'
+                      const packingDisabled = isPacking && !allScanned
+                      
+                      return (
+                        <div key={nextStatus} className="space-y-1">
+                          <Button
+                            size="sm"
+                            variant={TRANSITION_VARIANTS[nextStatus]}
+                            className={cn(
+                              "rounded-lg w-full h-8 text-xs",
+                              nextStatus === 'SHIPPED' && allScanned && "ring-2 ring-primary ring-offset-2 bg-primary hover:bg-primary/90 text-white font-bold",
+                              isPacking && allScanned && "bg-primary hover:bg-primary/90 text-white"
+                            )}
+                            disabled={packingDisabled || statusMutation.isPending}
+                            onClick={() => setConfirmAction({ type: nextStatus, label: TRANSITION_LABELS[nextStatus] })}
+                          >
+                            {isPacking && allScanned ? "✓ Barcha skanerlandi — Qadoqlashni boshlash" : TRANSITION_LABELS[nextStatus]}
+                          </Button>
+                          {isPacking && !allScanned && order.status === 'PAYMENT_CONFIRMED' && (
+                            <p className="text-[10px] text-[#D97706] text-center font-medium">
+                              Barcha mahsulotlarni skanerlang
+                            </p>
+                          )}
+                        </div>
+                      )
+                    })}
                 </div>
               </div>
             )}
@@ -649,6 +710,27 @@ export function OrderDetailPage({ id }: Props) {
             statusMutation.mutate(confirmAction.type)
           }
         }}
+      />
+
+      <ConfirmDialog
+        open={estimateDialog}
+        onClose={() => setEstimateDialog(false)}
+        title="Yetkazib berish muddatini tahrirlash"
+        description="Mijozga ko'rinadigan taxminiy yetkazib berish vaqtini o'zgartiring"
+        loading={estimateMut.isPending}
+        onConfirm={() => estimateMut.mutate()}
+        customBody={
+          <div className="flex flex-col gap-3 py-4">
+            <div className="space-y-1">
+              <label className="text-xs font-medium">Boshlanish sanasi</label>
+              <Input type="date" value={estStart} onChange={e => setEstStart(e.target.value)} />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium">Tugash sanasi</label>
+              <Input type="date" value={estEnd} onChange={e => setEstEnd(e.target.value)} />
+            </div>
+          </div>
+        }
       />
     </>
   )

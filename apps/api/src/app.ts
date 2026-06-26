@@ -25,6 +25,8 @@ import { productRouter, productAdminRouter } from './modules/products/products.r
 import inventoryRouter from './modules/inventory/inventory.router'
 import uploadRouter from './modules/upload/upload.router'
 import { settingsRouter, settingsAdminRouter } from './modules/settings/settings.router'
+import { bannersRouter, bannersAdminRouter } from './modules/banners/banners.router'
+import { cargoDatesRouter, cargoDatesAdminRouter } from './modules/cargo-dates/cargo-dates.router'
 import {
   exchangeRateRouter,
   exchangeRateAdminRouter,
@@ -258,6 +260,8 @@ export function createApp() {
     import('./modules/products/products.controller').then((ctrl) => ctrl.getBrands(req, res, next))
   })
   app.use('/api/v1/settings', settingsRouter)
+  app.use('/api/v1/banners', bannersRouter)
+  app.use('/api/v1/cargo-dates', cargoDatesRouter)
   app.use('/api/v1/exchange-rates', exchangeRateRouter)
 
   // Customer specific
@@ -274,6 +278,8 @@ export function createApp() {
   app.use('/api/v1/admin/inventory', inventoryRouter)
   app.use('/api/v1/admin/upload', uploadRouter)
   app.use('/api/v1/admin/settings', settingsAdminRouter)
+  app.use('/api/v1/admin/banners', bannersAdminRouter)
+  app.use('/api/v1/admin/cargo-dates', cargoDatesAdminRouter)
   app.use('/api/v1/admin/exchange-rates', exchangeRateAdminRouter)
   app.use('/api/v1/admin/coupons', couponsAdminRouter)
   app.use('/api/v1/admin/orders', ordersAdminRouter)

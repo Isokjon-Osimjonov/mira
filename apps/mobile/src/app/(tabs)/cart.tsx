@@ -19,15 +19,18 @@ import { useExchangeStore } from '../../lib/exchange-store'
 import { formatKRW, formatUZS, krwToUzs } from '../../lib/price'
 import { tokens } from '../../lib/tokens'
 import { cartService } from '../../services/cart.service'
+import { productService, calculateKorCargo } from '../../services/product.service'
+import { useQuery } from '@tanstack/react-query'
 import PrimaryButton from '../../components/ui/PrimaryButton'
+import EmptyState from '../../components/ui/EmptyState'
 
 export default function CartScreen() {
   const insets = useSafeAreaInsets()
-  const { cart, isLoading, fetchCart, updateItem, removeItem, clearCart } =
-    useCartStore()
+  const { cart, isLoading, fetchCart, updateItem, removeItem, clearCart } = useCartStore()
   const customer = useAuthStore((s) => s.customer)
   const exchangeRate = useExchangeStore((s) => s.rate)
   const showUzs = customer?.phoneRegion === 'UZB'
+  const isKOR = customer?.phoneRegion === 'KOR'
 
   const [couponCode, setCouponCode] = useState('')
   const [couponResult, setCouponResult] = useState<{
@@ -37,6 +40,13 @@ export default function CartScreen() {
   const [couponError, setCouponError] = useState('')
   const [validatingCoupon, setValidatingCoupon] = useState(false)
 
+  const { data: tiers } = useQuery({
+    queryKey: ['kor-shipping-tiers'],
+    queryFn: productService.getKorShippingTiers,
+    enabled: isKOR,
+    staleTime: 10 * 60 * 1000,
+  })
+
   useFocusEffect(
     useCallback(() => {
       fetchCart()
@@ -44,33 +54,25 @@ export default function CartScreen() {
   )
 
   const handleClearCart = () => {
-    Alert.alert(
-      'Savatni tozalash',
-      "Haqiqatan ham barcha mahsulotlarni o'chirmoqchimisiz?",
-      [
-        { text: 'Bekor qilish', style: 'cancel' },
-        {
-          text: "O'chirish",
-          style: 'destructive',
-          onPress: clearCart,
-        },
-      ]
-    )
+    Alert.alert('Savatni tozalash', "Haqiqatan ham barcha mahsulotlarni o'chirmoqchimisiz?", [
+      { text: 'Bekor qilish', style: 'cancel' },
+      {
+        text: "O'chirish",
+        style: 'destructive',
+        onPress: clearCart,
+      },
+    ])
   }
 
   const handleRemoveItem = (id: string) => {
-    Alert.alert(
-      "Mahsulotni o'chirish",
-      "Ushbu mahsulotni savatdan o'chirmoqchimisiz?",
-      [
-        { text: 'Bekor qilish', style: 'cancel' },
-        {
-          text: "O'chirish",
-          style: 'destructive',
-          onPress: () => removeItem(id),
-        },
-      ]
-    )
+    Alert.alert("Mahsulotni o'chirish", "Ushbu mahsulotni savatdan o'chirmoqchimisiz?", [
+      { text: 'Bekor qilish', style: 'cancel' },
+      {
+        text: "O'chirish",
+        style: 'destructive',
+        onPress: () => removeItem(id),
+      },
+    ])
   }
 
   const handleValidateCoupon = async () => {
@@ -82,9 +84,7 @@ export default function CartScreen() {
       const result = await cartService.validateCoupon(couponCode)
       setCouponResult(result)
     } catch (err: any) {
-      setCouponError(
-        err?.response?.data?.error?.message ?? 'Kupon topilmadi yoki muddati tugagan'
-      )
+      setCouponError(err?.response?.data?.error?.message ?? 'Kupon topilmadi yoki muddati tugagan')
     } finally {
       setValidatingCoupon(false)
     }
@@ -92,9 +92,12 @@ export default function CartScreen() {
 
   const items = cart?.items ?? []
   const summary = cart?.summary ?? { itemCount: 0, subtotal: 0, currency: 'KRW' }
+
+  const korCargo = isKOR && tiers ? calculateKorCargo(summary.subtotal, tiers) : null
+
   const finalTotal = couponResult
-    ? summary.subtotal - couponResult.discountAmount
-    : summary.subtotal
+    ? summary.subtotal - couponResult.discountAmount + (korCargo ?? 0)
+    : summary.subtotal + (korCargo ?? 0)
 
   if (isLoading && !cart) {
     return (
@@ -112,22 +115,14 @@ export default function CartScreen() {
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Savat</Text>
         </View>
-        <View style={styles.emptyContainer}>
-          <Feather
-            name="shopping-bag"
-            size={56}
-            color={tokens.colors.textLight}
+        <View style={{ flex: 1, justifyContent: 'center' }}>
+          <EmptyState
+            icon="shopping-bag"
+            heading="Savat bo'sh"
+            subtitle="Mahsulot qo'shish uchun katalogga o'ting"
+            actionLabel="Katalogga o'tish"
+            onAction={() => router.push('/(tabs)/categories')}
           />
-          <Text style={styles.emptyTitle}>Savat bo'sh</Text>
-          <Text style={styles.emptySub}>
-            Mahsulot qo'shish uchun katalogga o'ting
-          </Text>
-          <View style={{ marginTop: 24, width: '100%', paddingHorizontal: 40 }}>
-            <PrimaryButton
-              label="Katalogga o'tish"
-              onPress={() => router.push('/(tabs)/categories')}
-            />
-          </View>
         </View>
       </SafeAreaView>
     )
@@ -148,27 +143,19 @@ export default function CartScreen() {
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={[styles.scrollContent, { paddingBottom: 220 }]}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: 280 }]}
       >
         {items.map((item) => (
           <View key={item.id} style={styles.cartCard}>
             <View style={styles.cardContent}>
               <View style={styles.imageContainer}>
-                <Image
-                  source={item.imageUrls[0]}
-                  style={styles.itemImage}
-                  contentFit="cover"
-                />
+                <Image source={item.imageUrls[0]} style={styles.itemImage} contentFit="cover" />
               </View>
               <View style={styles.itemInfo}>
                 <View style={styles.itemInfoHeader}>
                   <Text style={styles.brandName}>{item.brandName}</Text>
                   <TouchableOpacity onPress={() => handleRemoveItem(item.id)}>
-                    <Feather
-                      name="trash-2"
-                      size={15}
-                      color={tokens.colors.textMuted}
-                    />
+                    <Feather name="trash-2" size={15} color={tokens.colors.textMuted} />
                   </TouchableOpacity>
                 </View>
 
@@ -176,48 +163,33 @@ export default function CartScreen() {
                   {item.name}
                 </Text>
 
-                {item.isWholesale && (
-                  <Text style={styles.wholesaleBadge}>Ulgurji</Text>
-                )}
+                {item.isWholesale && <Text style={styles.wholesaleBadge}>Ulgurji</Text>}
 
                 <View style={styles.priceRow}>
-                  <Text style={styles.unitPrice}>
-                    {formatKRW(item.unitPrice)}
-                  </Text>
+                  <Text style={styles.unitPrice}>{formatKRW(item.unitPrice)}</Text>
 
                   <View style={styles.qtyRow}>
                     <TouchableOpacity
                       style={styles.qtyBtn}
                       onPress={() => updateItem(item.id, item.quantity - 1)}
                     >
-                      <Feather
-                        name="minus"
-                        size={13}
-                        color={tokens.colors.textMuted}
-                      />
+                      <Feather name="minus" size={13} color={tokens.colors.textMuted} />
                     </TouchableOpacity>
                     <Text style={styles.qtyText}>{item.quantity}</Text>
                     <TouchableOpacity
                       style={[
                         styles.qtyBtn,
-                        item.quantity >= item.stockAvailable &&
-                          styles.qtyBtnDisabled,
+                        item.quantity >= item.stockAvailable && styles.qtyBtnDisabled,
                       ]}
                       onPress={() => updateItem(item.id, item.quantity + 1)}
                       disabled={item.quantity >= item.stockAvailable}
                     >
-                      <Feather
-                        name="plus"
-                        size={13}
-                        color={tokens.colors.textMuted}
-                      />
+                      <Feather name="plus" size={13} color={tokens.colors.textMuted} />
                     </TouchableOpacity>
                   </View>
                 </View>
 
-                {!item.inStock && (
-                  <Text style={styles.errorText}>Tugagan</Text>
-                )}
+                {!item.inStock && <Text style={styles.errorText}>Tugagan</Text>}
               </View>
             </View>
           </View>
@@ -251,30 +223,39 @@ export default function CartScreen() {
               )}
             </TouchableOpacity>
           </View>
-          {couponError ? (
-            <Text style={styles.couponErrorText}>{couponError}</Text>
-          ) : null}
+          {couponError ? <Text style={styles.couponErrorText}>{couponError}</Text> : null}
           {couponResult ? (
             <View style={styles.couponSuccessRow}>
-              <Feather
-                name="check-circle"
-                size={14}
-                color={tokens.colors.success}
-              />
+              <Feather name="check-circle" size={14} color={tokens.colors.success} />
               <Text style={styles.couponSuccessText}>
-                Kupon qo'llanildi — {formatKRW(couponResult.discountAmount)}{' '}
-                chegirma
+                Kupon qo'llanildi — {formatKRW(couponResult.discountAmount)} chegirma
               </Text>
             </View>
           ) : null}
         </View>
       </ScrollView>
 
-      <View style={[styles.bottomSummary, { bottom: 56 + insets.bottom, paddingBottom: 14 }]}>
+      <View style={[styles.bottomSummary, { paddingBottom: insets.bottom + 60 }]}>
         <View style={styles.summaryRow}>
           <Text style={styles.summaryLabel}>Mahsulotlar:</Text>
           <Text style={styles.summaryValue}>{formatKRW(summary.subtotal)}</Text>
         </View>
+
+        {isKOR && korCargo !== null && (
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryLabel}>Yetkazib berish:</Text>
+            <Text style={[styles.summaryValue, korCargo === 0 && { color: '#16A34A' }]}>
+              {korCargo === 0 ? 'Bepul ✓' : formatKRW(korCargo)}
+            </Text>
+          </View>
+        )}
+
+        {!isKOR && (
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryLabel}>Kargo:</Text>
+            <Text style={styles.summaryValue}>Quti tanlanganda</Text>
+          </View>
+        )}
 
         {couponResult && (
           <View style={styles.summaryRow}>
@@ -295,17 +276,13 @@ export default function CartScreen() {
         </View>
 
         {showUzs && (
-          <Text style={styles.totalUzs}>
-            ≈ {formatUZS(krwToUzs(finalTotal, exchangeRate))}
-          </Text>
+          <Text style={styles.totalUzs}>≈ {formatUZS(krwToUzs(finalTotal, exchangeRate))}</Text>
         )}
 
         <View style={{ marginTop: 0 }}>
           <PrimaryButton
             label="Buyurtma berish"
-            disabled={
-              items.length === 0 || items.some((i) => !i.inStock)
-            }
+            disabled={items.length === 0 || items.some((i) => !i.inStock)}
             onPress={() =>
               router.push({
                 pathname: '/checkout/address',
@@ -343,6 +320,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '500',
     color: tokens.colors.text,
+    margin: 'auto',
   },
   clearBtn: {
     fontSize: 13,
@@ -410,6 +388,13 @@ const styles = StyleSheet.create({
     color: tokens.colors.text,
     fontFamily: 'Inter_400Regular',
     marginTop: 2,
+  },
+  wholesaleBadge: {
+    backgroundColor: tokens.colors.primaryLight,
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    alignSelf: 'flex-start',
   },
   wholesaleBadgeContainer: {
     backgroundColor: '#F0FDF4',
@@ -518,14 +503,14 @@ const styles = StyleSheet.create({
   },
   bottomSummary: {
     position: 'absolute',
-    bottom: 56,
+    bottom: 0,
     left: 0,
     right: 0,
     backgroundColor: tokens.colors.surface,
     borderTopWidth: 0.5,
     borderTopColor: tokens.colors.border,
     paddingHorizontal: 24,
-    paddingTop: 14,
+    paddingTop: 16,
   },
   summaryRow: {
     flexDirection: 'row',

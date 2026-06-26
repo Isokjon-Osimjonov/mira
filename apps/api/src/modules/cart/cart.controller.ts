@@ -30,6 +30,33 @@ export async function getCart(req: Request, res: Response) {
   }
 }
 
+export async function getCartWeight(req: Request, res: Response) {
+  try {
+    const customerId = (req.user as any).sub
+    const regionCode = (req.user as any).region
+    const cart = await service.getCart(customerId, regionCode)
+
+    const totalWeightGrams = cart.items.reduce((acc, item) => {
+      // weightGrams not in cart item response yet
+      // Return 0 for now — Sprint 9 adds weight to cart items
+      return acc
+    }, 0)
+
+    return res.json({
+      data: {
+        totalWeightGrams,
+        totalWeightKg: totalWeightGrams / 1000,
+      },
+      error: null,
+    })
+  } catch (e: any) {
+    return res.status(e.status ?? 500).json({
+      data: null,
+      error: { message: e.message, code: e.code },
+    })
+  }
+}
+
 export async function addItem(req: Request, res: Response) {
   try {
     const validated = addCartItemSchema.parse(req.body)

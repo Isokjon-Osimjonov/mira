@@ -36,4 +36,11 @@ router.post(
   ctrl.uploadReceipt
 )
 
+// Admin banner upload
+router.post(
+  '/banner',
+  requireAdmin,
+  ctrl.uploadBanner
+)
+
 export default router

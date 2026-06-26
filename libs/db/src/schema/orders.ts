@@ -1,5 +1,5 @@
 import {
-  pgTable, uuid, varchar, integer, bigint, decimal, timestamp, text, boolean, uniqueIndex, index, check,
+  pgTable, uuid, varchar, integer, bigint, decimal, timestamp, text, boolean, uniqueIndex, index, check, date,
 } from 'drizzle-orm/pg-core';
 import { relations, sql } from 'drizzle-orm';
 import { orderStatusEnum, orderSourceEnum, paymentMethodEnum, deliveryCoveredByEnum, orderExpenseTypeEnum } from './enums';
@@ -9,6 +9,7 @@ import { exchangeRateSnapshots } from './settings';
 import { adminUsers } from './admin-users';
 import { products } from './products';
 import { inventoryBatches } from './inventory';
+import { cargoDates } from './cargo-dates';
 
 export const orders = pgTable('orders', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -31,6 +32,7 @@ export const orders = pgTable('orders', {
   boxId: uuid('box_id').references(() => boxes.id, { onDelete: 'set null' }),
   boxWeightSnapshot: decimal('box_weight_snapshot', { precision: 8, scale: 3 }),
   boxPriceSnapshot: bigint('box_price_snapshot', { mode: 'bigint' }),
+  boxCostKrw: bigint('box_cost_krw', { mode: 'number' }).default(0),
   
   couponId: uuid('coupon_id'), // NO FK — circular dep
   couponCode: varchar('coupon_code', { length: 50 }),
@@ -58,6 +60,10 @@ export const orders = pgTable('orders', {
   trackingNumber: varchar('tracking_number', { length: 100 }),
   shippedAt: timestamp('shipped_at', { withTimezone: true }),
   deliveredAt: timestamp('delivered_at', { withTimezone: true }),
+  
+  estimatedDeliveryStart: date('estimated_delivery_start', { mode: 'string' }),
+  estimatedDeliveryEnd: date('estimated_delivery_end', { mode: 'string' }),
+  cargoDateId: uuid('cargo_date_id').references(() => cargoDates.id, { onDelete: 'set null' }),
   
   deliveryFullName: text('delivery_full_name'),
   deliveryPhone: text('delivery_phone'),
@@ -176,6 +182,10 @@ export const ordersRelations = relations(orders, ({ one, many }) => ({
   items: many(orderItems),
   statusHistory: many(orderStatusHistory),
   expenses: many(orderExpenses),
+  cargoDate: one(cargoDates, {
+    fields: [orders.cargoDateId],
+    references: [cargoDates.id],
+  }),
 }));
 
 export const orderItemsRelations = relations(orderItems, ({ one }) => ({

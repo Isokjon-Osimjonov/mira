@@ -2,6 +2,9 @@ import type { Request, Response } from 'express'
 import * as service from './settings.service'
 import { updateSettingsSchema } from './settings.schema'
 import { emit } from '../../config/socket'
+import { db } from '../../config/db'
+import { exchangeRateSnapshots, paymentMethods } from '@mira/db'
+import { desc } from 'drizzle-orm'
 
 export async function getPaymentMethods(_req: Request, res: Response) {
   try {
@@ -11,6 +14,58 @@ export async function getPaymentMethods(_req: Request, res: Response) {
     return res
       .status(e.status ?? 500)
       .json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
+  }
+}
+
+export async function getPaymentInfo(req: Request, res: Response) {
+  try {
+    const methods = await db.select().from(paymentMethods)
+
+    const findMethod = (key: string) => methods.find((m) => m.method === key)
+
+    const korBank = findMethod('BANK_CARD_KOR')
+    const uzbBank = findMethod('BANK_CARD_UZB')
+    const e9pay = findMethod('E9PAY')
+
+    const settings = await service.getSettings()
+
+    // Fetch latest exchange rate
+    const [rate] = await db
+      .select()
+      .from(exchangeRateSnapshots)
+      .orderBy(desc(exchangeRateSnapshots.createdAt))
+      .limit(1)
+
+    return res.json({
+      data: {
+        kor: {
+          bankName: korBank?.bankName ?? '',
+          bankNumber: korBank?.accountNumber ?? '',
+          bankHolder: korBank?.holderName ?? '',
+        },
+        uzb: {
+          bankName: uzbBank?.bankName ?? '',
+          bankNumber: uzbBank?.accountNumber ?? '',
+          bankHolder: uzbBank?.holderName ?? '',
+        },
+        e9pay: {
+          name: e9pay?.holderName ?? '',
+          account: e9pay?.accountNumber ?? '',
+        },
+        cargo: {
+          uzbCargoUsdPerKg: settings.uzbCargoUsdPerKg ?? 3,
+        },
+        rates: {
+          krwToUzs: rate ? Number(rate.krwToUzs) : 7.62,
+        },
+      },
+      error: null,
+    })
+  } catch (e: any) {
+    return res.status(500).json({
+      data: null,
+      error: { message: e.message },
+    })
   }
 }
 

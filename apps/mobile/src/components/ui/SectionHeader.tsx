@@ -34,9 +34,9 @@ const styles = StyleSheet.create({
     color: tokens.colors.text,
   },
   seeAll: {
-    fontSize: 13,
+    fontSize: 10,
     fontFamily: 'Inter_400Regular',
     fontWeight: '300',
-    color: tokens.colors.primary,
+    color: tokens.colors.textLight,
   },
 })

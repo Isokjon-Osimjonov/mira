@@ -13,6 +13,7 @@ import { Feather } from '@expo/vector-icons'
 import { router } from 'expo-router'
 import { useAuthStore } from '../../lib/auth-store'
 import { useCartStore } from '../../lib/cart-store'
+import { useWishlistStore } from '../../lib/wishlist-store'
 import { authService } from '../../services/auth.service'
 import { tokens } from '../../lib/tokens'
 
@@ -35,6 +36,17 @@ export default function ProfileScreen() {
           }
           await logout()
           await clearCart()
+
+          useCartStore.getState().setCart({
+            id: null,
+            regionCode: 'KOR',
+            items: [],
+            summary: { itemCount: 0, subtotal: 0, currency: 'KRW' },
+            autoApplyCoupons: [],
+          })
+
+          useWishlistStore.setState({ items: [], productIds: new Set() })
+
           router.replace('/auth/login')
         },
       },
@@ -56,6 +68,13 @@ export default function ProfileScreen() {
           label: 'Buyurtmalarim',
           onPress: () => router.push('/orders'),
         },
+        {
+          icon: 'calendar',
+          iconBg: '#F0FDF4',
+          iconColor: '#16A34A',
+          label: 'Yuk jadvali',
+          onPress: () => router.push('/profile/cargo-schedule'),
+        },
       ],
     },
     {
@@ -63,8 +82,8 @@ export default function ProfileScreen() {
       items: [
         {
           icon: 'map-pin',
-          iconBg: '#F0FDF4',
-          iconColor: '#16A34A',
+          iconBg: tokens.colors.primaryLight,
+          iconColor: tokens.colors.primary,
           label: 'Manzillarim',
           onPress: () => router.push('/profile/addresses'),
         },
@@ -74,6 +93,20 @@ export default function ProfileScreen() {
           iconColor: tokens.colors.primary,
           label: 'Profilni tahrirlash',
           onPress: () => router.push('/profile/edit'),
+        },
+        {
+          icon: 'heart',
+          iconBg: '#FEF2F2',
+          iconColor: '#DC2626',
+          label: 'Sevimlilar',
+          onPress: () => router.push('/profile/wishlist'),
+        },
+        {
+          icon: 'bell',
+          iconBg: '#FFF7ED',
+          iconColor: '#D97706',
+          label: "Kutish ro'yxati",
+          onPress: () => router.push('/profile/waitlist'),
         },
         {
           icon: 'bell',
@@ -92,7 +125,7 @@ export default function ProfileScreen() {
           iconBg: '#F5F5F5',
           iconColor: '#6B7280',
           label: 'Yordam',
-          onPress: () => {},
+          onPress: () => router.push('/help'),
         },
         {
           icon: 'log-out',

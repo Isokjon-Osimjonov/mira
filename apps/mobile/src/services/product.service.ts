@@ -100,6 +100,15 @@ export const productService = {
     const res = await api.get('/kor-shipping-tiers')
     return res.data.data ?? []
   },
+
+  getPaymentInfo: async (): Promise<{
+    kor: { bankName: string; bankNumber: string; bankHolder: string }
+    uzb: { bankName: string; bankNumber: string; bankHolder: string }
+    e9pay: { name: string; account: string }
+  }> => {
+    const res = await api.get('/settings/payment-info')
+    return res.data.data
+  },
 }
 
 export const calculateKorCargo = (

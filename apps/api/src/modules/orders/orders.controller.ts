@@ -109,8 +109,8 @@ export async function getCustomerOrderDetail(req: Request, res: Response) {
       boxPriceSnapshot: data.boxPriceSnapshot ? Number(data.boxPriceSnapshot) : null,
       items: data.items.map((item) => ({
         ...item,
-        unitPriceSnapshot: Number(item.unitPriceSnapshot),
-        subtotalSnapshot: Number(item.subtotalSnapshot),
+        unitPrice: Number(item.unitPrice),
+        subtotal: Number(item.subtotal),
       })),
     }
 
@@ -545,3 +545,28 @@ export async function scanOrderItem(req: Request, res: Response) {
     })
   }
 }
+
+export async function updateDeliveryEstimate(req: Request, res: Response) {
+  try {
+    const { id } = req.params
+    const { estimatedDeliveryStart, estimatedDeliveryEnd } = req.body
+
+    const [updated] = await db.update(orders)
+      .set({ estimatedDeliveryStart, estimatedDeliveryEnd })
+      .where(eq(orders.id, id))
+      .returning()
+
+    if (!updated) {
+      return res.status(404).json({
+        data: null, error: { message: "Buyurtma topilmadi" }
+      })
+    }
+
+    return res.json({ data: updated, error: null })
+  } catch (e: any) {
+    return res.status(500).json({
+      data: null, error: { message: e.message }
+    })
+  }
+}
+

@@ -13,6 +13,7 @@ import {
   Receipt,
   TrendingUp,
   FileSpreadsheet,
+  Image as ImageIcon,
   Send,
   Settings2,
   Shield,
@@ -56,6 +57,7 @@ const navMain = [
       { title: 'Inventar', url: '/inventory', icon: Boxes },
       { title: 'Qutular', url: '/boxes', icon: Box },
       { title: 'Yetkazuvchilar', url: '/suppliers', icon: Building2 },
+      { title: 'Yuk sanalari', url: '/cargo-dates', icon: Package },
       { title: 'Buyurtma berish', url: '/purchase-orders', icon: ClipboardList },
     ],
   },
@@ -69,7 +71,10 @@ const navMain = [
   },
   {
     title: 'Marketing',
-    items: [{ title: 'Telegram', url: '/telegram', icon: Send }],
+    items: [
+      { title: 'Telegram', url: '/telegram', icon: Send },
+      { title: 'Bannerlar', url: '/banners', icon: ImageIcon },
+    ],
   },
   {
     title: 'Tizim',

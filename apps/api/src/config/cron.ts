@@ -14,8 +14,20 @@ import { checkExpiringBatches } from '../modules/inventory/inventory.service'
 import { bot } from '../bot/bot'
 import { sendAdminAlert } from '../bot/helpers/notify'
 
+// Store tasks globally to prevent duplicates during development hot-reloads
+declare global {
+  var __cronInitialized: boolean | undefined
+}
+
 export function initCronJobs(): void {
   if (env.NODE_ENV === 'test') return
+
+  if (global.__cronInitialized) {
+    logger.info('Cron jobs already initialized, skipping...')
+    return
+  }
+
+  global.__cronInitialized = true
 
   // 1. Auto-cancel — every minute
   cron.schedule(
@@ -102,7 +114,7 @@ export function initCronJobs(): void {
     { timezone: 'Asia/Seoul' }
   )
 
-  logger.info('Cron jobs started')
+  logger.info('Cron jobs initialized')
 }
 
 export async function backupDatabase(): Promise<void> {

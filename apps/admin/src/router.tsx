@@ -19,8 +19,10 @@ import { RollarPage } from './pages/roles/RollarPage'
 import { QutularPage } from './pages/boxes/QutularPage'
 import { YetkazuvchilarPage } from './pages/suppliers/YetkazuvchilarPage'
 import { KupunlarPage } from './pages/coupons/KupunlarPage'
+import { BannersPage } from './pages/banners/BannersPage'
 import { TelegramPage } from './pages/telegram/TelegramPage'
 import { BuyurtmaBerish } from './pages/purchase-orders/BuyurtmaBerish'
+import { CargoDatesPage } from './pages/cargo-dates/CargoDatesPage'
 import { HisobotlarPage } from './pages/reports/HisobotlarPage'
 import { ProfilePage } from './pages/profile/ProfilePage'
 import { AuditLogPage } from './pages/audit/AuditLogPage'
@@ -134,6 +136,16 @@ const couponsRoute = createRoute({
   )
 })
 
+const bannersRoute = createRoute({
+  getParentRoute: () => protectedRoute,
+  path: '/banners',
+  component: () => (
+    <ErrorBoundary>
+      <BannersPage />
+    </ErrorBoundary>
+  )
+})
+
 const telegramRoute = createRoute({
   getParentRoute: () => protectedRoute,
   path: '/telegram',
@@ -150,6 +162,16 @@ const purchaseOrdersRoute = createRoute({
   component: () => (
     <ErrorBoundary>
       <BuyurtmaBerish />
+    </ErrorBoundary>
+  )
+})
+
+const cargoDatesRoute = createRoute({
+  getParentRoute: () => protectedRoute,
+  path: '/cargo-dates',
+  component: () => (
+    <ErrorBoundary>
+      <CargoDatesPage />
     </ErrorBoundary>
   )
 })
@@ -320,8 +342,10 @@ const routeTree = rootRoute.addChildren([
     boxesRoute,
     suppliersRoute,
     couponsRoute,
+    bannersRoute,
     telegramRoute,
     purchaseOrdersRoute,
+    cargoDatesRoute,
     reportsRoute,
     inventoryRoute,
     settingsRoute,

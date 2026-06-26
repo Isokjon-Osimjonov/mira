@@ -34,6 +34,7 @@ const PAGE_TITLES: Record<string, { parent?: string; title: string }> = {
   '/analytics': { parent: 'Moliya', title: 'Analitika' },
   '/reports': { parent: 'Moliya', title: 'Hisobotlar' },
   '/telegram': { parent: 'Marketing', title: 'Telegram' },
+  '/banners': { parent: 'Marketing', title: 'Bannerlar' },
   '/settings': { parent: 'Tizim', title: 'Sozlamalar' },
   '/exchange-rates': { parent: 'Tizim', title: 'Valyuta kursi' },
   '/admin-users': { parent: 'Tizim', title: 'Adminlar' },

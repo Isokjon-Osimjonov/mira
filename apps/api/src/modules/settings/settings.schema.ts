@@ -4,6 +4,7 @@ export const updateSettingsSchema = z.object({
   paymentTimeoutMinutes: z.number().optional(),
   lowStockThreshold: z.number().optional(),
   uzbCargoUsdPerKg: z.number().optional(),
+  usdToKrw: z.number().optional(),
 
   standardShippingFeeKrw: z.coerce.number().optional(),
   freeShippingThresholdKrw: z.coerce.number().optional(),

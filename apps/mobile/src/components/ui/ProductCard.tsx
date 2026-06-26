@@ -12,6 +12,7 @@ import { Feather } from '@expo/vector-icons'
 import { tokens } from '../../lib/tokens'
 import { formatKRW, formatUZS, krwToUzs } from '../../lib/price'
 import type { Product } from '../../services/product.service'
+import { useWishlistStore } from '../../lib/wishlist-store'
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
 const CARD_WIDTH = (SCREEN_WIDTH - 48) / 2
@@ -23,6 +24,7 @@ interface ProductCardProps {
   showUzs?: boolean
   wishlisted?: boolean
   onToggleWishlist?: () => void
+  onLongPress?: () => void
 }
 
 export const ProductCard = ({
@@ -30,9 +32,23 @@ export const ProductCard = ({
   onPress,
   onAddToCart,
   showUzs,
-  wishlisted,
-  onToggleWishlist,
+  wishlisted: wishlistedProp,
+  onToggleWishlist: onToggleWishlistProp,
+  onLongPress,
 }: ProductCardProps) => {
+  const toggle = useWishlistStore((s) => s.toggle)
+  const productIds = useWishlistStore((s) => s.productIds)
+  const isWishlistedStore = productIds.has(product.id)
+
+  const isWishlisted = wishlistedProp ?? isWishlistedStore
+  const handleToggle = () => {
+    if (onToggleWishlistProp) {
+      onToggleWishlistProp()
+    } else {
+      toggle(product.id)
+    }
+  }
+
   const uzsPrice = showUzs ? krwToUzs(product.retailPrice, 12) : 0 // Fallback rate 12, will be handled by store in screens
 
   const getBadge = () => {
@@ -54,7 +70,12 @@ export const ProductCard = ({
   const badge = getBadge()
 
   return (
-    <Pressable onPress={onPress} style={styles.container}>
+    <Pressable 
+      onPress={onPress} 
+      onLongPress={onLongPress}
+      delayLongPress={500}
+      style={styles.container}
+    >
       {/* Image Area */}
       <View style={styles.imageContainer}>
         <Image
@@ -72,14 +93,20 @@ export const ProductCard = ({
 
         <TouchableOpacity
           style={styles.wishlistBtn}
-          onPress={onToggleWishlist}
+          onPress={handleToggle}
           activeOpacity={0.7}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
-          <Feather
-            name="heart"
-            size={14}
-            color={wishlisted ? tokens.colors.primary : tokens.colors.textLight}
-          />
+          <View style={[
+            styles.wishlistIconCircle,
+            isWishlisted && styles.wishlistIconCircleActive
+          ]}>
+            <Feather
+              name="heart"
+              size={14}
+              color={isWishlisted ? tokens.colors.white : tokens.colors.textMuted}
+            />
+          </View>
         </TouchableOpacity>
       </View>
 
@@ -161,12 +188,23 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 8,
     right: 8,
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: tokens.colors.white,
+    zIndex: 10,
+  },
+  wishlistIconCircle: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: 'rgba(255,255,255,0.95)',
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  wishlistIconCircleActive: {
+    backgroundColor: tokens.colors.primary,
   },
   info: {
     padding: tokens.spacing.sm,

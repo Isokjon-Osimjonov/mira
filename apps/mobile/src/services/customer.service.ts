@@ -1,6 +1,15 @@
 import { Platform } from 'react-native'
 import api from '../lib/api'
-import type { ApiResponse } from '@mira/shared-types'
+export interface ApiResponse<T = any> {
+  success: boolean
+  data?: T
+  error?: {
+    code: string
+    message: string
+    details?: any
+  }
+  meta?: any
+}
 import type { Customer } from '../lib/auth-store'
 
 export interface UpdateProfilePayload {

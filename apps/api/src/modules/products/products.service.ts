@@ -18,6 +18,8 @@ import { logAudit } from '../../lib/audit'
 const REGIONAL_PRICE_KEYS = [
   'korRetailPrice',
   'korWholesalePrice',
+  'uzbRetailPrice',
+  'uzbWholesalePrice',
   'minOrderQty',
   'minWholesaleQty',
 ] as const
@@ -28,6 +30,8 @@ const REGIONAL_PRICE_KEYS = [
 type RegionalPriceInput = {
   korRetailPrice?: number
   korWholesalePrice?: number
+  uzbRetailPrice?: number
+  uzbWholesalePrice?: number
   minOrderQty?: number
   minWholesaleQty?: number
 }
@@ -56,6 +60,24 @@ export function buildRegionalConfigs(
       regionCode: 'KOR',
       retailPrice: BigInt(data.korRetailPrice),
       wholesalePrice: BigInt(data.korWholesalePrice),
+      minOrderQty: data.minOrderQty || 1,
+      minWholesaleQty: data.minWholesaleQty || 5,
+    })
+  }
+
+  // UZBEKISTAN
+  if (data.uzbRetailPrice && data.uzbRetailPrice > 0) {
+    if (!data.uzbWholesalePrice || data.uzbWholesalePrice <= 0) {
+      throw {
+        status: 400,
+        code: 'BAD_REQUEST',
+        message: "O'zbekiston uchun ulgurji narx kiritilishi shart",
+      }
+    }
+    configs.push({
+      regionCode: 'UZB',
+      retailPrice: BigInt(data.uzbRetailPrice),
+      wholesalePrice: BigInt(data.uzbWholesalePrice),
       minOrderQty: data.minOrderQty || 1,
       minWholesaleQty: data.minWholesaleQty || 5,
     })
@@ -197,8 +219,10 @@ export async function getProductById(id: string, region: 'UZB' | 'KOR' = 'UZB') 
     .from(productRegionalConfigs)
     .where(eq(productRegionalConfigs.productId, id))
 
-  const stock = await db
-    .select({ total: sql<number>`SUM(current_qty)` })
+  const [stockRes] = await db
+    .select({
+      total: sql<number>`COALESCE(SUM(${inventoryBatches.currentQty}), 0)`.mapWith(Number)
+    })
     .from(inventoryBatches)
     .where(eq(inventoryBatches.productId, id))
 
@@ -206,7 +230,8 @@ export async function getProductById(id: string, region: 'UZB' | 'KOR' = 'UZB') 
 
   return {
     ...product,
-    currentStock: Number(stock[0]?.total || 0),
+    totalStock: Number(stockRes?.total ?? 0),
+    currentStock: Number(stockRes?.total ?? 0),
     retailPrice: currentRegionConfig ? Number(currentRegionConfig.retailPrice) : null,
     wholesalePrice: currentRegionConfig ? Number(currentRegionConfig.wholesalePrice) : null,
     regionalConfigs: configs.map(c => ({

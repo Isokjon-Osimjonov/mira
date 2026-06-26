@@ -40,6 +40,8 @@ adminRouter.post('/', requirePermission('orders', 'write'), ctrl.adminCreateOrde
 
 adminRouter.patch('/:id/status', requirePermission('orders', 'write'), ctrl.adminUpdateStatus)
 adminRouter.post('/:id/confirm-payment', requirePermission('orders', 'write'), ctrl.confirmPayment)
+adminRouter.patch('/:id/delivery-estimate', requirePermission('orders', 'write'), ctrl.updateDeliveryEstimate)
+
 
 adminRouter.patch('/:id/reject-payment', requirePermission('orders', 'write'), ctrl.rejectPayment)
 adminRouter.patch('/:id/start-packing', requirePermission('orders', 'write'), ctrl.startPacking)

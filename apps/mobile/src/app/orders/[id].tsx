@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, Fragment } from 'react'
 import {
   ScrollView,
   View,
@@ -13,16 +13,14 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { Image } from 'expo-image'
 import { Feather } from '@expo/vector-icons'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { router, useLocalSearchParams, useFocusEffect } from 'expo-router'
-import { orderService } from '../../services/order.service'
-import { uploadService } from '../../services/upload.service'
+import { router, useLocalSearchParams } from 'expo-router'
 import * as ImagePicker from 'expo-image-picker'
+import { orderService } from '../../services/order.service'
 import { tokens } from '../../lib/tokens'
-import { formatKRW, formatUZS, formatDate, formatCountdown, krwToUzs } from '../../lib/price'
+import { formatKRW, formatUZS, formatCountdown, krwToUzs } from '../../lib/price'
 import { useAuthStore } from '../../lib/auth-store'
 import { useExchangeStore } from '../../lib/exchange-store'
 import api from '../../lib/api'
-import StatusBadge from '../../components/ui/StatusBadge'
 
 const STATUS_MAP: Record<string, { label: string; bg: string; color: string }> = {
   PENDING_PAYMENT: { label: "To'lov kutilmoqda", bg: '#FFF7ED', color: '#C2410C' },
@@ -35,47 +33,63 @@ const STATUS_MAP: Record<string, { label: string; bg: string; color: string }> =
   CANCELED: { label: 'Bekor qilindi', bg: '#FEF2F2', color: '#DC2626' },
 }
 
-const STEPS = ['PENDING_PAYMENT', 'PAYMENT_SUBMITTED', 'PAYMENT_CONFIRMED', 'PACKING', 'SHIPPED', 'DELIVERED']
+const STEPS = [
+  { key: 'PENDING_PAYMENT', label: "To'lov" },
+  { key: 'PAYMENT_CONFIRMED', label: 'Tasdiqlandi' },
+  { key: 'PACKING', label: 'Tayyorlanmoqda' },
+  { key: 'SHIPPED', label: "Jo'natildi" },
+  { key: 'DELIVERED', label: 'Yetkazildi' },
+]
+
+function StatusBadge({ status }: { status: string }) {
+  const config = STATUS_MAP[status] || { label: status, bg: '#F3F4F6', color: '#374151' }
+  return (
+    <View style={[styles.statusBadge, { backgroundColor: config.bg, marginTop: 4 }]}>
+      <Text style={[styles.statusText, { color: config.color }]}>{config.label}</Text>
+    </View>
+  )
+}
 
 export default function OrderDetailScreen() {
   const { id } = useLocalSearchParams()
-  const customer = useAuthStore(s => s.customer)
-  const exchangeRate = useExchangeStore(s => s.rate)
-  const showUzs = customer?.phoneRegion === 'UZB'
+  const customer = useAuthStore((s) => s.customer)
+  const exchangeRate = useExchangeStore((s) => s.rate)
+  const isUZB = customer?.phoneRegion === 'UZB'
+  const showUzs = isUZB
   const queryClient = useQueryClient()
 
-  const { data: order, isLoading, refetch } = useQuery({
+  const {
+    data: order,
+    isLoading,
+    refetch,
+  } = useQuery({
     queryKey: ['order', id],
     queryFn: () => orderService.getOrderById(id as string),
     enabled: !!id,
     staleTime: 0,
-    refetchInterval: (data) =>
-      data?.status === 'PENDING_PAYMENT' || data?.status === 'PAYMENT_REJECTED'
-        ? 15000 : false,
+    refetchInterval: (query) => {
+      const status = query.state.data?.status
+      return ['PENDING_PAYMENT', 'PAYMENT_REJECTED', 'PAYMENT_SUBMITTED'].includes(status ?? '')
+        ? 15000
+        : false
+    },
   })
 
-  const [timeLeft, setTimeLeft] = useState<number>(0)
+  const [timeLeft, setTimeLeft] = useState(0)
   const [isUploading, setIsUploading] = useState(false)
   const [isCanceling, setIsCanceling] = useState(false)
+  const [isRefunding, setIsRefunding] = useState(false)
 
-  // Focus effect for refetching
-  useFocusEffect(
-    useCallback(() => {
-      refetch()
-    }, [refetch])
-  )
-
-  // Countdown timer
   useEffect(() => {
-    if (!order?.paymentExpiresAt) return
+    if (!order?.paymentDeadline) return
     const update = () => {
-      const diff = new Date(order.paymentExpiresAt!).getTime() - Date.now()
+      const diff = new Date(order.paymentDeadline!).getTime() - Date.now()
       setTimeLeft(Math.max(0, Math.floor(diff / 1000)))
     }
     update()
     const interval = setInterval(update, 1000)
     return () => clearInterval(interval)
-  }, [order?.paymentExpiresAt])
+  }, [order?.paymentDeadline])
 
   const handleUploadReceipt = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -85,63 +99,101 @@ export default function OrderDetailScreen() {
     if (result.canceled) return
     setIsUploading(true)
     try {
-      // 1. Upload to cloudinary
-      const localUri = result.assets[0].uri
-      const receiptUrl = await uploadService.uploadReceipt(localUri)
+      // Step 1: Upload to Cloudinary
+      const formData = new FormData()
+      formData.append('receipt', {
+        uri: result.assets[0].uri,
+        name: 'receipt.jpg',
+        type: 'image/jpeg',
+      } as any)
 
-      // 2. Link to order
-      await orderService.uploadReceipt(id as string, {
-        receiptUrl,
-        paymentAmount: Number(order?.totalAmount ?? 0),
-        paymentCurrency: 'KRW',
+      const uploadRes = await api.post('/upload/receipt', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
       })
-      
+      const receiptUrl = uploadRes.data.data.url
+
+      // Step 2: Link to order
+      const totalKrw = Number(order?.totalAmount ?? 0)
+      await orderService.uploadReceipt(
+        id as string,
+        receiptUrl,
+        isUZB ? Math.round(totalKrw * exchangeRate) : totalKrw,
+        isUZB ? 'UZS' : 'KRW'
+      )
       await refetch()
       Alert.alert('✓', 'Chek muvaffaqiyatli yuklandi')
     } catch (err: any) {
-      Alert.alert('Xatolik', err?.response?.data?.error?.message ?? 'Yuklashda xatolik')
+      Alert.alert('Xatolik', err?.response?.data?.error?.message ?? 'Xatolik')
     } finally {
       setIsUploading(false)
     }
   }
 
   const handleCancel = () => {
-    Alert.alert(
-      'Bekor qilish',
-      'Buyurtmani bekor qilmoqchimisiz?',
-      [
-        { text: 'Yo\'q', style: 'cancel' },
-        {
-          text: 'Ha, bekor qilish',
-          style: 'destructive',
-          onPress: async () => {
-            setIsCanceling(true)
-            try {
-              await orderService.cancelOrder(id as string)
-              await refetch()
-              Alert.alert('✓', 'Buyurtma bekor qilindi')
-            } catch (err: any) {
-              Alert.alert('Xatolik', err?.response?.data?.error?.message ?? 'Xatolik yuz berdi')
-            } finally {
-              setIsCanceling(false)
-            }
+    Alert.alert('Bekor qilish', 'Buyurtmani bekor qilmoqchimisiz?', [
+      { text: "Yo'q", style: 'cancel' },
+      {
+        text: 'Ha',
+        style: 'destructive',
+        onPress: async () => {
+          setIsCanceling(true)
+          try {
+            await orderService.cancelOrder(id as string)
+            await refetch()
+            Alert.alert('✓', 'Buyurtma bekor qilindi')
+          } catch (err: any) {
+            Alert.alert('Xatolik', err?.response?.data?.error?.message ?? 'Xatolik')
+          } finally {
+            setIsCanceling(false)
           }
-        }
-      ]
+        },
+      },
+    ])
+  }
+
+  const handleRefundRequest = () => {
+    Alert.prompt(
+      "Qaytarish so'rovi",
+      'Qaytarish sababini kiriting',
+      [
+        { text: 'Bekor', style: 'cancel' },
+        {
+          text: 'Yuborish',
+          onPress: async (reason?: string) => {
+            if (!reason?.trim()) return
+            setIsRefunding(true)
+            try {
+              await api.post(`/orders/${id}/request-refund`, { reason: reason.trim() })
+              await refetch()
+              Alert.alert('✓', "So'rov yuborildi")
+            } catch (err: any) {
+              Alert.alert('Xatolik', err?.response?.data?.error?.message ?? 'Xatolik')
+            } finally {
+              setIsRefunding(false)
+            }
+          },
+        },
+      ],
+      'plain-text'
     )
   }
 
-  const infoRow = (label: string, value: string) => (
-    <View style={styles.infoRow}>
-      <Text style={styles.infoLabel}>{label}</Text>
-      <Text style={styles.infoValue}>{value}</Text>
-    </View>
-  )
+  const infoRow = (label: string, value: string | null) => {
+    if (!value) return null
+    return (
+      <View style={styles.infoRow}>
+        <Text style={styles.infoLabel}>{label}</Text>
+        <Text style={styles.infoValue}>{value}</Text>
+      </View>
+    )
+  }
 
-  const priceRow = (label: string, value: string, bold?: boolean, color?: string) => (
-    <View style={styles.priceRow}>
-      <Text style={[styles.priceLabel, bold && styles.boldText]}>{label}</Text>
-      <Text style={[styles.priceValue, bold && styles.boldText, color ? { color } : {}]}>{value}</Text>
+  const summaryRow = (label: string, value: string, bold = false, color?: string) => (
+    <View style={styles.summaryRow}>
+      <Text style={[styles.summaryLabel, bold && { fontWeight: '500' }]}>{label}</Text>
+      <Text style={[styles.summaryValue, bold && { fontWeight: '500' }, color ? { color } : {}]}>
+        {value}
+      </Text>
     </View>
   )
 
@@ -155,8 +207,12 @@ export default function OrderDetailScreen() {
     )
   }
 
-  const currentStepIndex = STEPS.indexOf(order.status)
-  const statusConfig = STATUS_MAP[order.status] || { label: order.status, bg: tokens.colors.background, color: tokens.colors.text }
+  const currentIdx = STEPS.findIndex(
+    (s) =>
+      s.key === order.status ||
+      (order.status === 'PAYMENT_SUBMITTED' && s.key === 'PENDING_PAYMENT') ||
+      (order.status === 'PAYMENT_REJECTED' && s.key === 'PENDING_PAYMENT')
+  )
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -165,30 +221,37 @@ export default function OrderDetailScreen() {
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
           <Feather name="arrow-left" size={22} color={tokens.colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>#{order.orderNumber}</Text>
-        <View style={[styles.statusBadge, { backgroundColor: statusConfig.bg }]}>
-          <Text style={[styles.statusText, { color: statusConfig.color }]}>{statusConfig.label}</Text>
+        <View style={styles.headerTitleContainer}>
+          <Text style={styles.headerTitle}>#{order.orderNumber}</Text>
+          <StatusBadge status={order.status} />
         </View>
       </View>
 
-      <ScrollView 
+      <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 120 }}
+        contentContainerStyle={{ paddingBottom: 140 }}
       >
         {/* PAYMENT COUNTDOWN */}
-        {(order.status === 'PENDING_PAYMENT' || order.status === 'PAYMENT_REJECTED') && order.paymentExpiresAt && (
-          <View style={styles.countdownBox}>
-            <View style={styles.countdownRow}>
-              <Text style={styles.countdownLabel}>⏰ To'lov muddati:</Text>
-              <Text style={styles.countdownValue}>{formatCountdown(order.paymentExpiresAt)}</Text>
+        {(order.status === 'PENDING_PAYMENT' || order.status === 'PAYMENT_REJECTED') &&
+          order.paymentDeadline && (
+            <View style={styles.countdownBox}>
+              <View style={styles.countdownInner}>
+                <View style={styles.countdownHeader}>
+                  <Text style={styles.countdownLabel}>⏰ To'lov muddati:</Text>
+                  <Text style={styles.countdownValue}>
+                    {formatCountdown(order.paymentDeadline)}
+                  </Text>
+                </View>
+                <Text style={styles.countdownSub}>Muddat o'tsa buyurtma bekor qilinadi</Text>
+              </View>
             </View>
-            <Text style={styles.countdownSub}>Muddat o'tsa buyurtma bekor qilinadi</Text>
-          </View>
-        )}
+          )}
 
         {order.status === 'PAYMENT_REJECTED' && (
           <View style={styles.rejectBox}>
-            <Text style={styles.rejectText}>❌ Rad etildi: {order.paymentRejectedReason ?? 'Sabab ko\'rsatilmadi'}</Text>
+            <Text style={styles.rejectText}>
+              ❌ {order.paymentRejectedReason ?? "To'lov rad etildi"}
+            </Text>
           </View>
         )}
 
@@ -196,72 +259,89 @@ export default function OrderDetailScreen() {
         {order.status !== 'CANCELED' && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Buyurtma holati</Text>
-            <View style={styles.timelineRow}>
-              {STEPS.map((step, idx) => {
-                const isCompleted = idx < currentStepIndex || order.status === 'DELIVERED'
-                const isCurrent = idx === currentStepIndex && order.status !== 'DELIVERED'
-                
-                return (
-                  <React.Fragment key={step}>
-                    <View style={styles.timelineItem}>
-                      <View style={[
+            <View style={styles.timelineContainer}>
+              {STEPS.map((step, idx) => (
+                <Fragment key={step.key}>
+                  <View style={styles.timelineItem}>
+                    <View
+                      style={[
                         styles.timelineCircle,
-                        isCompleted && styles.circleCompleted,
-                        isCurrent && styles.circleCurrent,
-                        !isCompleted && !isCurrent && styles.circleFuture
-                      ]}>
-                        {isCompleted ? (
-                          <Feather name="check" size={14} color={tokens.colors.white} />
-                        ) : isCurrent ? (
-                          <View style={styles.circleDotActive} />
-                        ) : (
-                          <View style={styles.circleDotInactive} />
-                        )}
-                      </View>
+                        idx < currentIdx
+                          ? styles.circleDone
+                          : idx === currentIdx
+                            ? styles.circleActive
+                            : styles.circleNext,
+                      ]}
+                    >
+                      {idx < currentIdx ? (
+                        <Feather name="check" size={14} color="white" />
+                      ) : (
+                        <View style={idx === currentIdx ? styles.dotActive : styles.dotNext} />
+                      )}
                     </View>
-                    {idx < STEPS.length - 1 && (
-                      <View style={[styles.timelineLine, isCompleted && styles.lineCompleted]} />
-                    )}
-                  </React.Fragment>
-                )
-              })}
-            </View>
-            <View style={styles.timelineLabels}>
-               <Text style={styles.stepMiniLabel}>To'lov</Text>
-               <Text style={styles.stepMiniLabel}>Tasdiq</Text>
-               <Text style={styles.stepMiniLabel}>Tayyorlov</Text>
-               <Text style={styles.stepMiniLabel}>Yo'lda</Text>
-               <Text style={styles.stepMiniLabel}>Yetkazildi</Text>
+                    <Text style={styles.timelineLabel} numberOfLines={2}>
+                      {step.label}
+                    </Text>
+                  </View>
+                  {idx < STEPS.length - 1 && (
+                    <View
+                      style={[
+                        styles.timelineLine,
+                        idx < currentIdx && { backgroundColor: tokens.colors.primary },
+                      ]}
+                    />
+                  )}
+                </Fragment>
+              ))}
             </View>
           </View>
         )}
 
-        {/* ITEMS */}
+        {isUZB && order.estimatedDeliveryStart && (
+          <View style={styles.deliveryEstimateCard}>
+            <Feather name="calendar" size={16} color={tokens.colors.primary} />
+            <View style={{ flex: 1, marginLeft: 10 }}>
+              <Text style={styles.deliveryEstimateLabel}>
+                Taxminiy yetkazib berish
+              </Text>
+              <Text style={styles.deliveryEstimateDate}>
+                {order.estimatedDeliveryStart.split('T')[0]} — {order.estimatedDeliveryEnd?.split('T')[0]}
+              </Text>
+            </View>
+          </View>
+        )}
+
+        {/* ORDER ITEMS */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Mahsulotlar</Text>
-          {order.items.map((item, idx) => (
-            <View key={idx} style={styles.orderItem}>
-              <Image 
-                source={item.imageUrl} 
-                style={styles.itemImage} 
-                contentFit="cover"
-              />
-              <View style={styles.itemMain}>
-                <Text style={styles.itemName} numberOfLines={2}>{item.productName}</Text>
+          {order.items?.map((item: any) => (
+            <View key={item.id} style={styles.orderItem}>
+              <Image source={item.imageUrl} style={styles.itemImage} contentFit="cover" />
+              <View style={styles.itemInfo}>
+                <Text style={styles.itemName} numberOfLines={2}>
+                  {item.productName}
+                </Text>
                 <Text style={styles.itemQty}>{item.quantity} ta</Text>
               </View>
-              <Text style={styles.itemPrice}>{formatKRW(Number(item.unitPrice))}</Text>
+              <Text style={styles.itemPrice}>{formatKRW(item.unitPrice)}</Text>
             </View>
           ))}
         </View>
 
         {/* PRICE BREAKDOWN */}
         <View style={[styles.section, { marginTop: 2 }]}>
-          {priceRow("Mahsulotlar:", formatKRW(Number(order.totalAmount + (order.discountAmount ?? 0) - (order.cargoFee ?? 0))))}
-          {(order.cargoFee ?? 0) > 0 && priceRow("Kargo:", formatKRW(Number(order.cargoFee)))}
-          {(order.discountAmount ?? 0) > 0 && priceRow("Chegirma:", "- " + formatKRW(Number(order.discountAmount)), false, tokens.colors.success)}
-          <View style={styles.divider} />
-          {priceRow("Jami:", formatKRW(Number(order.totalAmount)), true)}
+          {summaryRow('Mahsulotlar:', formatKRW(Number(order.subtotal ?? 0)))}
+          {Number(order.cargoFee) > 0 &&
+            summaryRow('Yetkazib berish:', formatKRW(Number(order.cargoFee)))}
+          {Number(order.discountAmount) > 0 &&
+            summaryRow(
+              'Chegirma:',
+              '- ' + formatKRW(Number(order.discountAmount)),
+              false,
+              '#16A34A'
+            )}
+          <View style={styles.priceDivider} />
+          {summaryRow('Jami:', formatKRW(Number(order.totalAmount)), true)}
           {showUzs && (
             <Text style={styles.totalUzs}>
               ≈ {formatUZS(krwToUzs(Number(order.totalAmount), exchangeRate))}
@@ -272,62 +352,106 @@ export default function OrderDetailScreen() {
         {/* DELIVERY ADDRESS */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Yetkazib berish manzili</Text>
-          {infoRow("Ism:", order.address.recipientName)}
-          {infoRow("Tel:", order.address.phone)}
-          {order.address.addressLine1 && infoRow("Manzil:", order.address.addressLine1)}
-          {order.address.addressLine2 && infoRow("", order.address.addressLine2)}
-          {order.address.postalCode && infoRow("Indeks:", order.address.postalCode)}
+          {infoRow('Ism:', order.deliveryFullName)}
+          {infoRow('Tel:', order.deliveryPhone)}
+          {infoRow('Manzil:', order.deliveryAddressLine1)}
+          {infoRow('', order.deliveryAddressLine2)}
+          {infoRow('Indeks:', order.deliveryPostalCode)}
         </View>
 
+        {/* TRACKING */}
+        {order.trackingNumber && (order.status === 'SHIPPED' || order.status === 'DELIVERED') && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Kuzatuv</Text>
+            <View style={styles.trackingRow}>
+              <Feather
+                name="truck"
+                size={16}
+                color={tokens.colors.primary}
+                style={{ marginRight: 8 }}
+              />
+              <Text style={styles.trackingText}>{order.trackingNumber}</Text>
+            </View>
+          </View>
+        )}
+
         {/* RECEIPT SECTION */}
-        {(order.status === 'PENDING_PAYMENT' || order.status === 'PAYMENT_REJECTED') && (
+        {['PENDING_PAYMENT', 'PAYMENT_REJECTED', 'PAYMENT_SUBMITTED', 'PAYMENT_CONFIRMED'].includes(
+          order.status
+        ) && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>To'lov cheki</Text>
-            
             {order.paymentReceiptUrl && (
-              <View>
-                <Text style={styles.receiptSuccess}>Chek yuklangan ✓</Text>
-                <TouchableOpacity 
-                  onPress={() => Linking.openURL(order.paymentReceiptUrl!)}
-                  activeOpacity={0.8}
-                >
-                  <Image 
-                    source={order.paymentReceiptUrl} 
-                    style={styles.receiptPreview} 
+              <View style={{ marginBottom: 12 }}>
+                <TouchableOpacity onPress={() => Linking.openURL(order.paymentReceiptUrl!)}>
+                  <Image
+                    source={order.paymentReceiptUrl}
+                    style={styles.receiptImage}
                     contentFit="cover"
                   />
-                  <Text style={styles.receiptZoom}>Kattalashtirish</Text>
+                  <Text style={styles.zoomText}>Kattalashtirish ↗</Text>
                 </TouchableOpacity>
               </View>
             )}
 
             {order.status === 'PAYMENT_REJECTED' && (
-              <Text style={styles.receiptError}>Yangi chek yuklang</Text>
+              <Text style={styles.receiptHint}>Chek rad etildi. Yangi chek yuklang</Text>
             )}
 
-            <TouchableOpacity 
-              onPress={handleUploadReceipt}
-              style={styles.uploadBtn}
-              disabled={isUploading}
+            {['PENDING_PAYMENT', 'PAYMENT_REJECTED'].includes(order.status) && (
+              <TouchableOpacity
+                onPress={handleUploadReceipt}
+                style={styles.uploadBtn}
+                disabled={isUploading}
+              >
+                {isUploading ? (
+                  <ActivityIndicator color={tokens.colors.primary} />
+                ) : (
+                  <>
+                    <Feather name="upload" size={16} color={tokens.colors.primary} />
+                    <Text style={styles.uploadText}>
+                      {order.paymentReceiptUrl ? 'Qayta yuklash' : 'Chekni yuklash'}
+                    </Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
+
+        {/* REFUND REQUEST */}
+        {order.status === 'DELIVERED' && !order.refundRequestedAt && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Qaytarish</Text>
+            <Text style={styles.refundDesc}>
+              Mahsulot bilan muammo bo'lsa qaytarish so'rovini yuboring
+            </Text>
+            <TouchableOpacity
+              onPress={handleRefundRequest}
+              style={styles.refundBtn}
+              disabled={isRefunding}
             >
-              {isUploading ? (
-                <ActivityIndicator color={tokens.colors.primary} />
+              {isRefunding ? (
+                <ActivityIndicator color="#DC2626" />
               ) : (
-                <>
-                  <Feather name="upload" size={16} color={tokens.colors.primary} />
-                  <Text style={styles.uploadBtnText}>
-                    {order.paymentReceiptUrl ? "Qayta yuklash" : "Chekni yuklash"}
-                  </Text>
-                </>
+                <Text style={styles.refundBtnText}>Qaytarish so'rovi</Text>
               )}
             </TouchableOpacity>
           </View>
         )}
 
+        {order.refundRequestedAt && (
+          <View style={{ marginHorizontal: 24, marginTop: 12 }}>
+            <View style={styles.refundSuccessBox}>
+              <Text style={styles.refundSuccessText}>✓ Qaytarish so'rovi yuborildi</Text>
+            </View>
+          </View>
+        )}
+
         {/* CANCEL BUTTON */}
-        {(order.status === 'PENDING_PAYMENT' || order.status === 'PAYMENT_REJECTED') && (
-          <View style={styles.cancelContainer}>
-            <TouchableOpacity 
+        {['PENDING_PAYMENT', 'PAYMENT_REJECTED'].includes(order.status) && (
+          <View style={styles.cancelWrapper}>
+            <TouchableOpacity
               onPress={handleCancel}
               style={styles.cancelBtn}
               disabled={isCanceling}
@@ -352,82 +476,68 @@ const styles = StyleSheet.create({
   },
   center: {
     flex: 1,
-    alignItems: 'center',
     justifyContent: 'center',
+    alignItems: 'center',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 24,
-    paddingVertical: 16,
-    backgroundColor: tokens.colors.white,
-    borderBottomWidth: 0.5,
-    borderBottomColor: tokens.colors.border,
+    paddingTop: 16,
+    paddingBottom: 12,
+    backgroundColor: tokens.colors.background,
   },
   backBtn: {
     width: 32,
     height: 32,
     justifyContent: 'center',
   },
-  headerTitle: {
+  headerTitleContainer: {
     flex: 1,
+    marginLeft: 12,
+  },
+  headerTitle: {
     fontSize: 16,
     fontWeight: '500',
     color: tokens.colors.text,
-    textAlign: 'center',
   },
   statusBadge: {
+    borderRadius: 12,
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 12,
+    alignSelf: 'flex-start',
   },
   statusText: {
     fontSize: 11,
-    fontFamily: 'Inter_400Regular',
     fontWeight: '500',
-  },
-  section: {
-    backgroundColor: tokens.colors.white,
-    borderRadius: 12,
-    marginHorizontal: 24,
-    marginTop: 12,
-    padding: 16,
-  },
-  sectionTitle: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: tokens.colors.text,
-    marginBottom: 12,
-    fontFamily: 'Inter_400Regular',
   },
   countdownBox: {
     marginHorizontal: 24,
-    marginTop: 16,
+    marginTop: 12,
+  },
+  countdownInner: {
     backgroundColor: '#FFF7ED',
     borderRadius: 12,
     padding: 16,
   },
-  countdownRow: {
+  countdownHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 4,
   },
   countdownLabel: {
     fontSize: 13,
     color: '#92400E',
-    fontFamily: 'Inter_400Regular',
   },
   countdownValue: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '500',
     color: '#C2410C',
-    fontFamily: 'Inter_400Regular',
   },
   countdownSub: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#92400E',
-    fontFamily: 'Inter_400Regular',
+    marginTop: 4,
   },
   rejectBox: {
     marginHorizontal: 24,
@@ -439,74 +549,94 @@ const styles = StyleSheet.create({
   rejectText: {
     fontSize: 13,
     color: '#DC2626',
-    fontFamily: 'Inter_400Regular',
   },
-  timelineRow: {
+  section: {
+    marginHorizontal: 24,
+    marginTop: 12,
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 16,
+  },
+  sectionTitle: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: tokens.colors.text,
+    marginBottom: 16,
+  },
+  timelineContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 4,
+    alignItems: 'center',
   },
   timelineItem: {
     alignItems: 'center',
-    zIndex: 2,
+    width: 50,
   },
   timelineCircle: {
     width: 28,
     height: 28,
     borderRadius: 14,
-    alignItems: 'center',
     justifyContent: 'center',
+    alignItems: 'center',
   },
-  circleCompleted: {
+  circleDone: {
     backgroundColor: tokens.colors.primary,
   },
-  circleCurrent: {
+  circleActive: {
     borderWidth: 2,
     borderColor: tokens.colors.primary,
     backgroundColor: tokens.colors.primaryLight,
   },
-  circleFuture: {
+  circleNext: {
     backgroundColor: '#E5E7EB',
   },
-  circleDotActive: {
+  dotActive: {
     width: 10,
     height: 10,
     borderRadius: 5,
     backgroundColor: tokens.colors.primary,
   },
-  circleDotInactive: {
+  dotNext: {
     width: 8,
     height: 8,
     borderRadius: 4,
     backgroundColor: '#9CA3AF',
   },
+  timelineLabel: {
+    fontSize: 8,
+    color: tokens.colors.textMuted,
+    textAlign: 'center',
+    marginTop: 4,
+  },
   timelineLine: {
     flex: 1,
     height: 2,
     backgroundColor: '#E5E7EB',
-    marginHorizontal: -4,
+    marginHorizontal: 4,
   },
-  lineCompleted: {
-    backgroundColor: tokens.colors.primary,
-  },
-  timelineLabels: {
+  deliveryEstimateCard: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 8,
-    paddingHorizontal: 0,
+    alignItems: 'center',
+    backgroundColor: tokens.colors.primaryLight,
+    borderRadius: 12,
+    padding: 14,
+    marginHorizontal: 24,
+    marginTop: 12,
   },
-  stepMiniLabel: {
-    fontSize: 8,
+  deliveryEstimateLabel: {
+    fontSize: 12,
     color: tokens.colors.textMuted,
-    textAlign: 'center',
-    width: 40,
-    fontFamily: 'Inter_400Regular',
+  },
+  deliveryEstimateDate: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: tokens.colors.text,
+    marginTop: 2,
   },
   orderItem: {
     flexDirection: 'row',
-    marginBottom: 12,
-    paddingBottom: 12,
+    marginBottom: 10,
+    paddingBottom: 10,
     borderBottomWidth: 0.5,
     borderBottomColor: tokens.colors.border,
   },
@@ -516,132 +646,144 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: tokens.colors.background,
   },
-  itemMain: {
+  itemInfo: {
     flex: 1,
     marginLeft: 10,
   },
   itemName: {
     fontSize: 13,
     color: tokens.colors.text,
-    fontFamily: 'Inter_400Regular',
   },
   itemQty: {
     fontSize: 12,
     color: tokens.colors.textMuted,
     marginTop: 2,
-    fontFamily: 'Inter_400Regular',
   },
   itemPrice: {
     fontSize: 13,
     fontWeight: '500',
     color: tokens.colors.text,
-    fontFamily: 'Inter_400Regular',
   },
-  priceRow: {
+  infoRow: {
+    flexDirection: 'row',
+    marginBottom: 6,
+    alignItems: 'flex-start',
+  },
+  infoLabel: {
+    width: 70,
+    fontSize: 12,
+    color: tokens.colors.textMuted,
+  },
+  infoValue: {
+    flex: 1,
+    fontSize: 13,
+    color: tokens.colors.text,
+  },
+  summaryRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: 8,
   },
-  priceLabel: {
+  summaryLabel: {
     fontSize: 13,
     color: tokens.colors.textMuted,
-    fontFamily: 'Inter_400Regular',
   },
-  priceValue: {
+  summaryValue: {
     fontSize: 13,
     color: tokens.colors.text,
-    fontFamily: 'Inter_400Regular',
   },
-  boldText: {
-    fontWeight: '500',
-    color: tokens.colors.text,
-  },
-  divider: {
+  priceDivider: {
     height: 0.5,
     backgroundColor: tokens.colors.border,
-    marginVertical: 10,
+    marginVertical: 8,
   },
   totalUzs: {
     fontSize: 12,
     color: tokens.colors.textMuted,
     textAlign: 'right',
     marginTop: 4,
-    fontFamily: 'Inter_400Regular',
   },
-  infoRow: {
+  trackingRow: {
     flexDirection: 'row',
-    marginBottom: 6,
+    alignItems: 'center',
   },
-  infoLabel: {
-    fontSize: 12,
-    color: tokens.colors.textMuted,
-    width: 80,
-    fontFamily: 'Inter_400Regular',
-  },
-  infoValue: {
-    fontSize: 13,
+  trackingText: {
+    fontSize: 14,
     color: tokens.colors.text,
-    flex: 1,
-    fontFamily: 'Inter_400Regular',
   },
-  receiptSuccess: {
-    fontSize: 13,
-    color: tokens.colors.success,
-    marginBottom: 8,
-    fontFamily: 'Inter_400Regular',
-  },
-  receiptError: {
-    fontSize: 13,
-    color: tokens.colors.error,
-    marginBottom: 8,
-    fontFamily: 'Inter_400Regular',
-  },
-  receiptPreview: {
-    width: 160,
-    height: 120,
+  receiptImage: {
+    height: 160,
     borderRadius: 8,
-    alignSelf: 'center',
   },
-  receiptZoom: {
+  zoomText: {
     fontSize: 11,
     color: tokens.colors.primary,
-    textAlign: 'center',
     marginTop: 4,
-    fontFamily: 'Inter_400Regular',
+  },
+  receiptHint: {
+    fontSize: 12,
+    color: tokens.colors.error,
+    marginTop: 8,
+    marginBottom: 4,
   },
   uploadBtn: {
+    marginTop: 12,
+    flexDirection: 'row',
     borderWidth: 1.5,
     borderColor: tokens.colors.primary,
     borderStyle: 'dashed',
     borderRadius: 12,
     padding: 12,
-    marginTop: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'center',
+    alignItems: 'center',
     gap: 8,
   },
-  uploadBtnText: {
+  uploadText: {
     fontSize: 13,
     color: tokens.colors.primary,
-    fontFamily: 'Inter_400Regular',
   },
-  cancelContainer: {
+  refundDesc: {
+    fontSize: 12,
+    color: tokens.colors.textMuted,
+    marginBottom: 12,
+  },
+  refundBtn: {
+    borderWidth: 1,
+    borderColor: '#FCA5A5',
+    borderRadius: 12,
+    padding: 12,
+    alignItems: 'center',
+  },
+  refundBtnText: {
+    fontSize: 13,
+    color: '#DC2626',
+  },
+  refundSuccessBox: {
+    backgroundColor: '#FEF2F2',
+    borderRadius: 12,
+    padding: 12,
+    marginHorizontal: 24,
+    marginTop: 12,
+  },
+  refundSuccessText: {
+    fontSize: 13,
+    color: '#DC2626',
+  },
+  cancelWrapper: {
     marginHorizontal: 24,
     marginTop: 12,
     marginBottom: 40,
   },
   cancelBtn: {
-    borderWidth: 1,
-    borderColor: '#FCA5A5',
+    backgroundColor: '#FEF2F2',
     borderRadius: 12,
     padding: 14,
     alignItems: 'center',
-    backgroundColor: '#FEF2F2',
+    borderWidth: 1,
+    borderColor: '#FCA5A5',
   },
   cancelText: {
     fontSize: 14,
     color: '#DC2626',
-    fontFamily: 'Inter_400Regular',
   },
 })

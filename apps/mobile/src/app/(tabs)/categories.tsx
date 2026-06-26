@@ -20,6 +20,7 @@ import { productService } from '../../services/product.service'
 import { ProductCard } from '../../components/ui/ProductCard'
 import { SectionHeader } from '../../components/ui/SectionHeader'
 import SkeletonLoader from '../../components/ui/SkeletonLoader'
+import EmptyState from '../../components/ui/EmptyState'
 import { tokens } from '../../lib/tokens'
 
 interface Category {
@@ -336,10 +337,12 @@ export default function CategoriesScreen() {
           !newLoading &&
           popularProducts.length === 0 &&
           newProducts.length === 0 && (
-            <View style={styles.emptyContainer}>
-              <Feather name="package" size={48} color={tokens.colors.textLight} />
-              <Text style={styles.emptyTitle}>Mahsulot topilmadi</Text>
-              <Text style={styles.emptySub}>Boshqa kategoriyani tanlang</Text>
+            <View style={{ flex: 1, justifyContent: 'center' }}>
+              <EmptyState
+                icon="package"
+                heading="Mahsulot topilmadi"
+                subtitle="Boshqa kategoriyani tanlang"
+              />
             </View>
           )}
 

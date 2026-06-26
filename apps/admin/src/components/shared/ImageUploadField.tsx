@@ -55,14 +55,12 @@ export function ImageUploadField({
   }
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files =
-      mode === 'multi'
-        ? Array.from(e.target.files ?? [])
-        : e.target.files?.[0]
-        ? [e.target.files[0]]
-        : []
+    const fileList = e.target.files
+    if (!fileList || fileList.length === 0) return
 
-    if (!files.length) return
+    // Convert FileList to Array — FileList is not a real array
+    const files = Array.from(fileList)
+
     setUploading(true)
     try {
       const urls = await Promise.all(files.map(uploadFn))
@@ -77,7 +75,7 @@ export function ImageUploadField({
       toast.error("Rasm yuklab bo'lmadi")
     } finally {
       setUploading(false)
-      e.target.value = ''
+      if (e.target) e.target.value = ''
     }
   }
 

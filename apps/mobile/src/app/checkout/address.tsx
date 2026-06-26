@@ -7,7 +7,7 @@ import {
   ScrollView,
   ActivityIndicator,
 } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { router, useLocalSearchParams } from 'expo-router'
 import { Feather } from '@expo/vector-icons'
 import { useQuery } from '@tanstack/react-query'
@@ -57,14 +57,30 @@ export default function CheckoutAddressScreen() {
     return (
       <TouchableOpacity
         key={item.id}
-        style={[styles.addressCard, isSelected && styles.addressCardSelected]}
+        style={[
+          styles.addressCard,
+          {
+            borderWidth: isSelected ? 1.5 : 0.5,
+            borderColor: isSelected ? tokens.colors.primary : tokens.colors.border,
+            backgroundColor: isSelected ? tokens.colors.primaryLight : tokens.colors.surface,
+          }
+        ]}
         onPress={() => setSelectedAddressId(item.id)}
         activeOpacity={0.7}
       >
-        <View style={styles.cardContent}>
-          <View style={[styles.radio, isSelected && styles.radioSelected]}>
+        <View style={styles.cardRow}>
+          <View 
+            style={[
+              styles.radio, 
+              {
+                borderColor: isSelected ? tokens.colors.primary : tokens.colors.textLight,
+                backgroundColor: isSelected ? tokens.colors.primary : 'transparent',
+              }
+            ]}
+          >
             {isSelected && <View style={styles.radioDot} />}
           </View>
+
           <View style={styles.cardMain}>
             <View style={styles.cardHeader}>
               <Text style={styles.fullName}>{item.fullName}</Text>
@@ -78,12 +94,10 @@ export default function CheckoutAddressScreen() {
               {item.addressLine1}
             </Text>
             <View style={styles.regionRow}>
-              <Text style={styles.regionText}>
-                {item.regionCode === 'KOR' ? '🇰🇷 KOR' : '🇺🇿 UZB'}
+              <Text style={styles.flagText}>
+                {item.regionCode === 'KOR' ? '🇰🇷' : '🇺🇿'}
               </Text>
-              {item.city && (
-                <Text style={styles.regionText}> · {item.city}</Text>
-              )}
+              <Text style={styles.regionText}>{item.regionCode}</Text>
             </View>
           </View>
         </View>
@@ -91,36 +105,80 @@ export default function CheckoutAddressScreen() {
     )
   }
 
-  return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <Feather name="arrow-left" size={20} color={tokens.colors.text} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Yetkazib berish manzili</Text>
-        <Text style={styles.stepIndicator}>1 / 3</Text>
-      </View>
+  const insets = useSafeAreaInsets()
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+  return (
+    <View style={styles.container}>
+      <SafeAreaView edges={['top']}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+            <Feather name="arrow-left" size={22} color={tokens.colors.text} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Yetkazib berish manzili</Text>
+          <Text style={styles.stepIndicator}>1 / 3</Text>
+        </View>
+
+        <View style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          paddingHorizontal: 24,
+          paddingTop: 8,
+          paddingBottom: 16,
+        }}>
+          <Text style={{
+            fontSize: 13,
+            fontFamily: 'Inter_400Regular',
+            color: tokens.colors.textMuted,
+            flex: 1,
+          }}>
+            Buyurtma yetkaziladigan manzilni tanlang
+          </Text>
+          <TouchableOpacity
+            onPress={() => refetch()}
+            style={{ marginLeft: 8, padding: 4 }}
+          >
+            <Feather
+              name="refresh-cw"
+              size={16}
+              color={tokens.colors.primary}
+            />
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+
+      <ScrollView 
+        showsVerticalScrollIndicator={false} 
+        contentContainerStyle={styles.scrollContent}
+      >
         {isLoading ? (
           <ActivityIndicator color={tokens.colors.primary} style={{ marginTop: 40 }} />
         ) : addresses.length > 0 ? (
           <View style={styles.listContainer}>
-            <View style={styles.listHeader}>
-              <Text style={styles.sectionSubtitle}>
-                Buyurtma yetkaziladigan manzilni tanlang
-              </Text>
-              <TouchableOpacity onPress={() => refetch()} style={styles.refreshBtn}>
-                <Feather name="refresh-cw" size={14} color={tokens.colors.primary} />
-              </TouchableOpacity>
-            </View>
             {addresses.map((addr) => renderAddressCard(addr))}
             
-            <TouchableOpacity 
+            <TouchableOpacity
               onPress={() => router.push('/profile/addresses')}
-              style={styles.manageBtn}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                paddingHorizontal: 24,
+                paddingVertical: 12,
+                gap: 6,
+              }}
             >
-              <Text style={styles.manageBtnText}>→ Manzillarni boshqarish</Text>
+              <Feather
+                name="plus-circle"
+                size={15}
+                color={tokens.colors.primary}
+              />
+              <Text style={{
+                fontSize: 13,
+                fontFamily: 'Inter_400Regular',
+                color: tokens.colors.primary,
+              }}>
+                Yangi manzil qo'shish yoki boshqarish
+              </Text>
             </TouchableOpacity>
           </View>
         ) : (
@@ -141,7 +199,7 @@ export default function CheckoutAddressScreen() {
       </ScrollView>
 
       {addresses.length > 0 && (
-        <View style={styles.bottomBar}>
+        <View style={[styles.bottomBar, { paddingBottom: insets.bottom + 16 }]}>
           <PrimaryButton
             label="Davom etish"
             disabled={!selectedAddressId}
@@ -149,7 +207,7 @@ export default function CheckoutAddressScreen() {
           />
         </View>
       )}
-    </SafeAreaView>
+    </View>
   )
 }
 
@@ -162,59 +220,58 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 24,
-    paddingVertical: 16,
-    borderBottomWidth: 0.5,
-    borderBottomColor: tokens.colors.border,
+    paddingTop: 16,
+    paddingBottom: 4,
   },
   backBtn: {
-    width: 40,
-    height: 40,
+    width: 32,
+    height: 32,
     alignItems: 'flex-start',
     justifyContent: 'center',
   },
   headerTitle: {
     flex: 1,
     fontSize: 18,
-    fontFamily: 'Inter_400Regular',
     fontWeight: '500',
     color: tokens.colors.text,
     textAlign: 'center',
   },
   stepIndicator: {
     fontSize: 13,
-    fontFamily: 'Inter_400Regular',
     color: tokens.colors.textMuted,
-    width: 40,
+    width: 32,
     textAlign: 'right',
   },
-  scrollContent: {
-    flexGrow: 1,
-    paddingBottom: 100,
-  },
-  listContainer: {
-    paddingVertical: 20,
+  subtitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 24,
+    paddingTop: 12,
+    paddingBottom: 16,
   },
   sectionSubtitle: {
     fontSize: 13,
     color: tokens.colors.textMuted,
+    flex: 1,
+  },
+  refreshBtn: {
+    marginLeft: 8,
+  },
+  scrollContent: {
+    flexGrow: 1,
     paddingHorizontal: 24,
-    marginBottom: 16,
+    paddingBottom: 180,
+  },
+  listContainer: {
+    paddingVertical: 4,
   },
   addressCard: {
     padding: 16,
-    borderWidth: 0.5,
-    borderColor: tokens.colors.border,
     borderRadius: 14,
-    marginHorizontal: 24,
     marginBottom: 10,
-    backgroundColor: tokens.colors.surface,
   },
-  addressCardSelected: {
-    borderColor: tokens.colors.primary,
-    backgroundColor: tokens.colors.primaryLight,
-    borderWidth: 1.5,
-  },
-  cardContent: {
+  cardRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
@@ -224,13 +281,8 @@ const styles = StyleSheet.create({
     height: 22,
     borderRadius: 11,
     borderWidth: 1.5,
-    borderColor: tokens.colors.textLight,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  radioSelected: {
-    borderColor: tokens.colors.primary,
-    backgroundColor: tokens.colors.primary,
   },
   radioDot: {
     width: 8,
@@ -260,7 +312,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginTop: 2,
-    gap: 6,
+    gap: 4,
+  },
+  flagText: {
+    fontSize: 12,
   },
   regionText: {
     fontSize: 11,
@@ -275,6 +330,16 @@ const styles = StyleSheet.create({
   defaultBadgeText: {
     fontSize: 10,
     color: tokens.colors.white,
+  },
+  manageBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingTop: 16,
+  },
+  manageBtnText: {
+    fontSize: 13,
+    color: tokens.colors.primary,
   },
   emptyState: {
     flex: 1,
@@ -295,7 +360,12 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   bottomBar: {
-    padding: 24,
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: 24,
+    paddingTop: 16,
     borderTopWidth: 0.5,
     borderTopColor: tokens.colors.border,
     backgroundColor: tokens.colors.white,

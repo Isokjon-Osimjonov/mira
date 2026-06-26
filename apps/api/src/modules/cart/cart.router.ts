@@ -7,6 +7,7 @@ const router = Router()
 router.use(requireCustomer)
 
 router.get('/', ctrl.getCart)
+router.get('/weight', ctrl.getCartWeight)
 router.post('/items', ctrl.addItem)
 router.patch('/items/:itemId', ctrl.updateItem)
 router.delete('/items/:itemId', ctrl.deleteItem)

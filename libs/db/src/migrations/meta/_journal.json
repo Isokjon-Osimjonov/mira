@@ -22,6 +22,13 @@
       "when": 1780370363088,
       "tag": "0002_goofy_harry_osborn",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1782342331744,
+      "tag": "0003_sync_schema",
+      "breakpoints": true
     }
   ]
 }

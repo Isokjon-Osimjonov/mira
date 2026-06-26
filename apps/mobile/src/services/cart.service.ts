@@ -11,6 +11,7 @@ export interface CartItem {
   isWholesale: boolean
   subtotal: number
   currency: string
+  weightGrams: number
   stockAvailable: number
   inStock: boolean
   isActive: boolean
