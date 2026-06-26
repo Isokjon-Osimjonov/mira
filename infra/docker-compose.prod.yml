@@ -39,7 +39,7 @@ services:
     container_name: mira_api_blue
     restart: unless-stopped
     env_file:
-      - .env.production
+      - ../.env.production
     ports:
       - "127.0.0.1:4000:4000"
     depends_on:
@@ -55,7 +55,7 @@ services:
     container_name: mira_api_green
     restart: unless-stopped
     env_file:
-      - .env.production
+      - ../.env.production
     ports:
       - "127.0.0.1:4001:4000"
     depends_on:
