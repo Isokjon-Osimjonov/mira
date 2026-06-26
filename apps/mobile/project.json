@@ -30,7 +30,8 @@
       "options": {
         "lintFilePatterns": [
           "apps/mobile/**/*.{ts,tsx}"
-        ]
+        ],
+        "useFlatConfig": false
       }
     }
   },
