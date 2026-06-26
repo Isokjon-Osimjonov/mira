@@ -23,7 +23,8 @@
       "options": {
         "lintFilePatterns": [
           "apps/api/**/*.ts"
-        ]
+        ],
+        "useFlatConfig": false
       }
     }
   },

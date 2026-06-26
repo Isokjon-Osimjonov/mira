@@ -401,7 +401,7 @@ export async function createOrder(params: {
         orderDiscountPct: params.orderDiscountPct ?? null,
         orderDiscountFlat: orderLevelDiscount > 0n ? orderLevelDiscount : null,
         cargoFee: cargoFeeKrw,
-        boxCostKrw,
+        boxCostKrw: Number(boxCostKrw),
         totalAmount,
         currency: 'KRW',
         totalWeightGrams: itemsData.reduce(

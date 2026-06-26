@@ -161,7 +161,7 @@ export function BuyurtmaBerish() {
           limit: 5,
         })
         setProductResults(res.data ?? [])
-      } catch {}
+      } catch { /* ignored */ }
     }, 300)
     return () => clearTimeout(t)
   }, [productSearch])

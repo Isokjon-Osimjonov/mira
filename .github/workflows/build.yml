@@ -24,6 +24,9 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Set lower case repo owner
+        run: echo "REPO_OWNER=${GITHUB_REPOSITORY_OWNER,,}" >> $GITHUB_ENV
+
       - name: Build and push API image
         uses: docker/build-push-action@v5
         with:
@@ -31,8 +34,8 @@ jobs:
           file: infra/docker/api.Dockerfile
           push: true
           tags: |
-            ${{ env.REGISTRY }}/${{ github.repository_owner }}/mira-api:latest
-            ${{ env.REGISTRY }}/${{ github.repository_owner }}/mira-api:${{ github.sha }}
+            ${{ env.REGISTRY }}/${{ env.REPO_OWNER }}/mira-api:latest
+            ${{ env.REGISTRY }}/${{ env.REPO_OWNER }}/mira-api:${{ github.sha }}
           build-args: |
             GIT_SHA=${{ github.sha }}
 
@@ -51,6 +54,9 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Set lower case repo owner
+        run: echo "REPO_OWNER=${GITHUB_REPOSITORY_OWNER,,}" >> $GITHUB_ENV
+
       - name: Build and push Admin image
         uses: docker/build-push-action@v5
         with:
@@ -58,7 +64,7 @@ jobs:
           file: infra/docker/admin.Dockerfile
           push: true
           tags: |
-            ${{ env.REGISTRY }}/${{ github.repository_owner }}/mira-admin:latest
-            ${{ env.REGISTRY }}/${{ github.repository_owner }}/mira-admin:${{ github.sha }}
+            ${{ env.REGISTRY }}/${{ env.REPO_OWNER }}/mira-admin:latest
+            ${{ env.REGISTRY }}/${{ env.REPO_OWNER }}/mira-admin:${{ github.sha }}
           build-args: |
             VITE_API_URL=https://api.miramarket.uz/api/v1

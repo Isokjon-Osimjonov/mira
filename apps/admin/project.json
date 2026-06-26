@@ -23,7 +23,8 @@
       "options": {
         "lintFilePatterns": [
           "apps/admin/src/**/*.{ts,tsx}"
-        ]
+        ],
+        "useFlatConfig": false
       }
     }
   },
