@@ -29,6 +29,13 @@
       "when": 1782342331744,
       "tag": "0003_sync_schema",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1782586421000,
+      "tag": "0004_quick_namor",
+      "breakpoints": true
     }
   ]
 }
