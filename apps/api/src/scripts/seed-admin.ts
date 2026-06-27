@@ -1,3 +1,6 @@
+import { assertNotProduction } from "./_guard";
+assertNotProduction();
+
 // Run: npx tsx src/scripts/seed-admin.ts
 import dotenv from 'dotenv'
 import path from 'path'

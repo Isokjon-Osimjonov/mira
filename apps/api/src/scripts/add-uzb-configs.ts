@@ -1,3 +1,6 @@
+import { assertNotProduction } from "./_guard";
+assertNotProduction();
+
 import { db } from '../config/db'
 import { products, productRegionalConfigs } from '@mira/db'
 import { eq, and } from 'drizzle-orm'
