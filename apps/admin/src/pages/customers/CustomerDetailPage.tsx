@@ -126,26 +126,28 @@ export function CustomerDetailPage({ id }: { id: string }) {
         </div>
 
         {/* Block/Unblock button */}
-        {!customer.isActive ? (
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => setUnblockDialog(true)}
-            className="rounded-lg gap-1.5 h-8 border-green-200 text-green-600 hover:bg-green-50"
-          >
-            <Shield className="h-3.5 w-3.5" strokeWidth={1.5} />
-            Blokni olib tashlash
-          </Button>
-        ) : (
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => setBlockDialog(true)}
-            className="rounded-lg gap-1.5 h-8 border-red-200 text-red-600 hover:bg-red-50"
-          >
-            <ShieldOff className="h-3.5 w-3.5" strokeWidth={1.5} />
-            Bloklash
-          </Button>
+        {!customer.deletedAt && (
+          !customer.isActive ? (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setUnblockDialog(true)}
+              className="rounded-lg gap-1.5 h-8 border-green-200 text-green-600 hover:bg-green-50"
+            >
+              <Shield className="h-3.5 w-3.5" strokeWidth={1.5} />
+              Blokni olib tashlash
+            </Button>
+          ) : (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setBlockDialog(true)}
+              className="rounded-lg gap-1.5 h-8 border-red-200 text-red-600 hover:bg-red-50"
+            >
+              <ShieldOff className="h-3.5 w-3.5" strokeWidth={1.5} />
+              Bloklash
+            </Button>
+          )
         )}
       </div>
 
@@ -190,9 +192,14 @@ export function CustomerDetailPage({ id }: { id: string }) {
                 <span>{customer.phoneRegion === 'KOR' ? '🇰🇷' : '🇺🇿'}</span>
                 <span>{customer.phoneRegion}</span>
               </span>
-              {!customer.isActive && (
+              {!customer.isActive && !customer.deletedAt && (
                 <span className="text-[11px] font-medium px-2 py-0.5 rounded border-[0.5px] bg-red-50 text-red-600 border-red-200">
                   🚫 Bloklangan
+                </span>
+              )}
+              {customer.deletedAt && (
+                <span className="text-[11px] font-medium px-2 py-0.5 rounded border-[0.5px] bg-gray-100 text-gray-600 border-gray-300">
+                  O'chirilgan
                 </span>
               )}
             </div>

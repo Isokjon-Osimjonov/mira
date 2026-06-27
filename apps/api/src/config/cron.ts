@@ -101,18 +101,18 @@ export function initCronJobs(): void {
     { timezone: 'Asia/Seoul' }
   )
 
-  // 7. DB Backup — daily 03:00 KST
-  cron.schedule(
-    '0 3 * * *',
-    async () => {
-      try {
-        await backupDatabase()
-      } catch (err: any) {
-        logger.error({ err: err.message }, 'Backup cron error')
-      }
-    },
-    { timezone: 'Asia/Seoul' }
-  )
+  // 7. DB Backup — daily 03:00 KST (Disabled - moved to host-level bash script)
+  // cron.schedule(
+  //   '0 3 * * *',
+  //   async () => {
+  //     try {
+  //       await backupDatabase()
+  //     } catch (err: any) {
+  //       logger.error({ err: err.message }, 'Backup cron error')
+  //     }
+  //   },
+  //   { timezone: 'Asia/Seoul' }
+  // )
 
   logger.info('Cron jobs initialized')
 }

@@ -429,9 +429,9 @@ export function TelegramPage() {
                         }}
                         className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-primary/5 transition-colors text-left border-b border-border/20 last:border-0">
                         {p.imageUrls?.[0] ? (
-                          <img src={p.imageUrls[0]} className="w-10 h-10 rounded-lg object-cover shrink-0 border-[0.5px] border-border" onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />
+                          <img src={p.imageUrls[0]} className="w-10 h-10 min-w-[2.5rem] shrink-0 rounded-lg object-cover border-[0.5px] border-border" onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />
                         ) : (
-                          <div className="w-10 h-10 rounded-lg bg-gray-100 shrink-0 flex items-center justify-center">
+                          <div className="w-10 h-10 min-w-[2.5rem] shrink-0 rounded-lg bg-gray-100 flex items-center justify-center">
                             <Package className="h-4 w-4 text-gray-400" strokeWidth={1.5} />
                           </div>
                         )}

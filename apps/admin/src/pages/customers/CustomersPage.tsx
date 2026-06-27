@@ -76,7 +76,7 @@ export function CustomersPage() {
         <Button
           size="sm"
           className="rounded-lg gap-2 h-9"
-          onClick={() => navigate({ to: '/customers/new' } as any)}
+          onClick={() => navigate({ to: '/customers/walk-in' } as any)}
         >
           <Plus className="h-4 w-4" strokeWidth={1.5} />
           <span className="hidden sm:inline">Yangi mijoz</span>
@@ -237,7 +237,11 @@ export function CustomersPage() {
 
                     {/* Status */}
                     <td className="px-4 py-3 text-center">
-                      {!c.isActive ? (
+                      {c.deletedAt ? (
+                        <span className="text-[11px] font-medium px-2 py-0.5 rounded-md bg-gray-100 text-gray-600 border-[0.5px] border-gray-300">
+                          O'chirilgan
+                        </span>
+                      ) : !c.isActive ? (
                         <span className="text-[11px] font-medium px-2 py-0.5 rounded-md bg-red-50 text-red-600 border-[0.5px] border-red-200">
                           Bloklangan
                         </span>
@@ -303,18 +307,25 @@ export function CustomersPage() {
                   <p className="text-sm font-medium text-gray-900 truncate">
                     {c.firstName} {c.lastName ?? ''}
                   </p>
-                  <span
-                    className={cn(
-                      'inline-flex items-center gap-1 text-[10px]',
-                      'font-semibold px-1.5 py-0.5 rounded-md border-[0.5px] shrink-0',
-                      c.phoneRegion === 'KOR'
-                        ? 'bg-blue-50 text-blue-700 border-blue-200'
-                        : 'bg-green-50 text-green-700 border-green-200'
+                  <div className="flex items-center gap-1">
+                    {c.deletedAt && (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-md border-[0.5px] shrink-0 bg-gray-100 text-gray-600 border-gray-300">
+                        O'chirilgan
+                      </span>
                     )}
-                  >
-                    <span>{c.phoneRegion === 'KOR' ? '🇰🇷' : '🇺🇿'}</span>
-                    <span>{c.phoneRegion}</span>
-                  </span>
+                    <span
+                      className={cn(
+                        'inline-flex items-center gap-1 text-[10px]',
+                        'font-semibold px-1.5 py-0.5 rounded-md border-[0.5px] shrink-0',
+                        c.phoneRegion === 'KOR'
+                          ? 'bg-blue-50 text-blue-700 border-blue-200'
+                          : 'bg-green-50 text-green-700 border-green-200'
+                      )}
+                    >
+                      <span>{c.phoneRegion === 'KOR' ? '🇰🇷' : '🇺🇿'}</span>
+                      <span>{c.phoneRegion}</span>
+                    </span>
+                  </div>
                 </div>
                 <p className="text-xs text-muted-foreground">{c.phone}</p>
                 <div className="flex items-center justify-between mt-1">

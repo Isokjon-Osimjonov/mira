@@ -1,6 +1,6 @@
 import { db } from '../../config/db'
-import { authTokens, customers, refreshTokens, userNotificationSettings } from '@mira/db'
-import { eq, and, gt, lt, ne, sql } from 'drizzle-orm'
+import { authTokens, customers, refreshTokens, userNotificationSettings, orders, userAddresses, wishlists, waitlists, cartItems, carts } from '@mira/db'
+import { eq, and, gt, lt, ne, sql, inArray } from 'drizzle-orm'
 import { generateToken, generateOtp, hashToken } from '../../lib/otp'
 import { checkPhoneRateLimit } from '../../middleware/rateLimiter'
 import { signAccess, signRefresh, verifyRefresh } from '../../lib/jwt'
@@ -431,4 +431,65 @@ export async function updateNotificationSettings(customerId: string, data: any) 
     pushEnabled: updated.pushEnabled,
     telegramEnabled: updated.telegramEnabled,
   }
+}
+
+// ─── Delete Account ───────────────────────────────────────────
+export async function deleteCustomerAccount(customerId: string) {
+  return await db.transaction(async (tx) => {
+    // 1. Block if active/pending orders exist
+    const blockingOrders = await tx.select()
+      .from(orders)
+      .where(
+        and(
+          eq(orders.customerId, customerId),
+          inArray(orders.status, [
+            'PENDING_PAYMENT', 'PAYMENT_SUBMITTED', 'PAYMENT_CONFIRMED', 'PACKING', 'SHIPPED'
+          ])
+        )
+      )
+
+    if (blockingOrders.length > 0) {
+      throw {
+        status: 409,
+        code: 'PENDING_ORDERS_EXIST',
+        message: "Faol buyurtmalar mavjud. Avval ularni yakunlang yoki bekor qiling."
+      }
+    }
+
+    // 2. Hard delete personal preference data
+    await tx.delete(userAddresses)
+      .where(eq(userAddresses.customerId, customerId))
+    await tx.delete(wishlists)
+      .where(eq(wishlists.customerId, customerId))
+    await tx.delete(waitlists)
+      .where(eq(waitlists.customerId, customerId))
+    
+    // For carts, cartItems references cartId
+    const customerCarts = await tx.select({ id: carts.id }).from(carts).where(eq(carts.customerId, customerId))
+    if (customerCarts.length > 0) {
+      const cartIds = customerCarts.map(c => c.id)
+      await tx.delete(cartItems).where(inArray(cartItems.cartId, cartIds))
+      await tx.delete(carts).where(inArray(carts.id, cartIds))
+    }
+
+    // 3. Anonymize the customer row
+    const anonymizedPhone = 'DEL_' + customerId.split('-')[0] + '_' + Math.floor(Math.random() * 99999)
+
+    await tx.update(customers)
+      .set({
+        firstName: "O'chirilgan",
+        lastName: 'Foydalanuvchi',
+        phone: anonymizedPhone,
+        telegramId: null,
+        tgUsername: null,
+        profileImageUrl: null,
+        expoPushToken: null,
+        isActive: false,
+        deletedAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(eq(customers.id, customerId))
+
+    return { success: true }
+  })
 }

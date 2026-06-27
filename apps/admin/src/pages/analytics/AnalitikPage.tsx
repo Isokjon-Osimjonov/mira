@@ -448,10 +448,10 @@ export function AnalitikPage() {
                   {p.imageUrl ? (
                     <img
                       src={p.imageUrl}
-                      className="w-8 h-8 rounded-lg object-cover shrink-0 border-[0.5px] border-border"
+                      className="w-8 h-8 min-w-[2rem] shrink-0 rounded-lg object-cover border-[0.5px] border-border"
                     />
                   ) : (
-                    <div className="w-8 h-8 rounded-lg bg-gray-100 shrink-0" />
+                    <div className="w-8 h-8 min-w-[2rem] shrink-0 rounded-lg bg-gray-100" />
                   )}
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-medium text-gray-900 truncate">{p.productName}</p>

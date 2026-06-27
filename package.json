@@ -34,6 +34,7 @@
     "babel-preset-expo": "~54.0.7",
     "drizzle-kit": "^0.31.10",
     "eslint": "^8.57.1",
+    "html-validate": "^11.5.3",
     "jiti": "2.4.2",
     "jsdom": "~22.1.0",
     "metro-config": "~0.83.0",

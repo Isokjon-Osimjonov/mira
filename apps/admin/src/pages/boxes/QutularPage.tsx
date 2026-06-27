@@ -204,10 +204,10 @@ export function QutularPage() {
                           <img
                             src={box.imageUrls[0]}
                             alt={box.name}
-                            className="w-10 h-10 rounded-lg object-cover border-[0.5px] border-border shrink-0"
+                            className="w-10 h-10 min-w-[2.5rem] shrink-0 rounded-lg object-cover border-[0.5px] border-border"
                           />
                         ) : (
-                          <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center shrink-0">
+                          <div className="w-10 h-10 min-w-[2.5rem] shrink-0 rounded-lg bg-gray-100 flex items-center justify-center">
                             <Package className="h-4 w-4 text-gray-400" strokeWidth={1.5} />
                           </div>
                         )}

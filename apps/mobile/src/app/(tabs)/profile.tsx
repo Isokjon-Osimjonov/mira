@@ -134,6 +134,14 @@ export default function ProfileScreen() {
           label: 'Chiqish',
           onPress: handleLogout,
         },
+        {
+          icon: 'trash-2',
+          iconBg: '#FEF2F2',
+          iconColor: '#DC2626',
+          label: "Hisobni o'chirish",
+          labelColor: '#DC2626',
+          onPress: () => router.push('/profile/delete-account')
+        },
       ],
     },
   ]
@@ -212,7 +220,9 @@ export default function ProfileScreen() {
                   >
                     <Feather name={item.icon as any} size={18} color={item.iconColor} />
                   </View>
-                  <Text style={styles.menuLabel}>{item.label}</Text>
+                  <Text style={[styles.menuLabel, (item as any).labelColor && { color: (item as any).labelColor }]}>
+                    {item.label}
+                  </Text>
                   <Feather
                     name="chevron-right"
                     size={16}

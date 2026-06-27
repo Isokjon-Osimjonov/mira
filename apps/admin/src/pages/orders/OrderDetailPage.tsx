@@ -476,9 +476,9 @@ export function OrderDetailPage({ id }: Props) {
                       <tr key={item.id}>
                         <td className="px-4 py-3">
                           {item.imageUrl ? (
-                            <img src={item.imageUrl} alt={item.productName} className="w-10 h-10 rounded-lg object-cover border-[0.5px] border-border" />
+                            <img src={item.imageUrl} alt={item.productName} className="w-10 h-10 min-w-[2.5rem] shrink-0 rounded-lg object-cover border-[0.5px] border-border" />
                           ) : (
-                            <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
+                            <div className="w-10 h-10 min-w-[2.5rem] shrink-0 rounded-lg bg-gray-100 flex items-center justify-center">
                               <Package className="h-4 w-4 text-gray-400" strokeWidth={1.5} />
                             </div>
                           )}

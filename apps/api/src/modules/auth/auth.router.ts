@@ -16,6 +16,7 @@ router.get('/me', requireCustomer, ctrl.me)
 router.patch('/profile', requireCustomer, ctrl.updateProfile)
 router.post('/push-token', requireCustomer, ctrl.savePushToken)
 router.delete('/push-token', requireCustomer, ctrl.removePushToken)
+router.delete('/account', requireCustomer, ctrl.deleteAccount)
 
 router.get('/notification-settings', requireCustomer, ctrl.getNotificationSettings)
 router.patch('/notification-settings', requireCustomer, ctrl.updateNotificationSettings)

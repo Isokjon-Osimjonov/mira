@@ -25,6 +25,11 @@ export const ordersApi = {
     return res.data
   },
 
+  adminCreate: async (payload: any) => {
+    const res = await api.post('/admin/orders', payload)
+    return res.data
+  },
+
   updateStatus: async (
     id: string,
     payload: {

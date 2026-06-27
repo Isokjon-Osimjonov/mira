@@ -369,7 +369,11 @@ export function OrdersPage() {
           </p>
         </div>
         {canWrite('orders') && (
-          <Button size="sm" className="rounded-lg gap-2 h-9">
+          <Button 
+            size="sm" 
+            className="rounded-lg gap-2 h-9"
+            onClick={() => navigate({ to: '/orders/new' } as any)}
+          >
             <Plus className="h-4 w-4" strokeWidth={1.5} />
             <span className="hidden sm:inline">Yangi buyurtma</span>
           </Button>

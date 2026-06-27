@@ -8,7 +8,7 @@ import {
 import * as AuthService from './auth.service'
 import { setRefreshCookie, clearRefreshCookie, getRefreshCookie } from '../../lib/cookie'
 import { db } from '../../config/db'
-import { customers } from '@mira/db'
+import { customers, refreshTokens } from '@mira/db'
 import { eq } from 'drizzle-orm'
 import type { CustomerJwtPayload } from '../../middleware/auth'
 
@@ -196,6 +196,22 @@ export async function updateNotificationSettings(req: Request, res: Response) {
   try {
     const result = await AuthService.updateNotificationSettings(customer.sub, req.body)
     return ok(res, result)
+  } catch (e: any) {
+    return err(res, e.status ?? 500, e.message ?? 'Xatolik', e.code)
+  }
+}
+
+// DELETE /auth/account
+export async function deleteAccount(req: Request, res: Response) {
+  try {
+    const customer = req.user as CustomerJwtPayload
+    await AuthService.deleteCustomerAccount(customer.sub)
+
+    // Revoke all refresh tokens for this customer
+    await db.delete(refreshTokens)
+      .where(eq(refreshTokens.customerId, customer.sub))
+
+    return ok(res, { success: true })
   } catch (e: any) {
     return err(res, e.status ?? 500, e.message ?? 'Xatolik', e.code)
   }

@@ -545,8 +545,7 @@ export function DashboardPage() {
                   <img
                     src={p.imageUrl}
                     alt={p.productName}
-                    className="w-8 h-8 rounded-md object-cover
-                               border border-border/50 shrink-0"
+                    className="w-8 h-8 min-w-[2rem] shrink-0 rounded-md object-cover border border-border/50"
                   />
                 )}
                 <div className="flex-1 min-w-0">
@@ -682,8 +681,7 @@ export function DashboardPage() {
                     <img
                       src={item.imageUrl}
                       alt={item.productName}
-                      className="w-7 h-7 rounded-md object-cover
-                                 border border-border/50 shrink-0"
+                      className="w-7 h-7 min-w-[1.75rem] shrink-0 rounded-md object-cover border border-border/50"
                     />
                   )}
                   <div>

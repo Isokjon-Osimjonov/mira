@@ -10,6 +10,7 @@ import { InventoryPage } from './pages/inventory/InventoryPage'
 import { CustomersPage } from './pages/customers/CustomersPage'
 import { CustomerDetailPage } from './pages/customers/CustomerDetailPage'
 import { WalkInPage } from './pages/customers/WalkInPage'
+import { ManualOrderPage } from './pages/orders/ManualOrderPage'
 import { OrdersPage } from './pages/orders/OrdersPage'
 import { OrderDetailPage } from './pages/orders/OrderDetailPage'
 import { SettingsPage } from './pages/settings/SettingsPage'
@@ -279,6 +280,16 @@ const ordersRoute = createRoute({
   ),
 })
 
+const ordersNewRoute = createRoute({
+  getParentRoute: () => protectedRoute,
+  path: '/orders/new',
+  component: () => (
+    <ErrorBoundary>
+      <ManualOrderPage />
+    </ErrorBoundary>
+  ),
+})
+
 const orderDetailRoute = createRoute({
   getParentRoute: () => protectedRoute,
   path: '/orders/$orderId',
@@ -356,6 +367,7 @@ const routeTree = rootRoute.addChildren([
     customerDetailRoute,
     walkInCustomerRoute,
     ordersRoute,
+    ordersNewRoute,
     orderDetailRoute,
     profileRoute,
     auditRoute,

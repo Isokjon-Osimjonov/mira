@@ -76,4 +76,8 @@ export const authService = {
       // Logout best-effort — clear local state regardless
     }
   },
+
+  deleteAccount: async (): Promise<void> => {
+    await api.delete('/auth/account')
+  },
 }
