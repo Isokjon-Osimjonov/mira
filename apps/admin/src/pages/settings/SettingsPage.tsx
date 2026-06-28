@@ -136,10 +136,10 @@ function PaymentMethodsTab() {
     <div className="space-y-4">
       {Object.entries(PAYMENT_CONFIG).map(([key, cfg]) => {
         const method = methods.find((m: any) => m.method === key)
-        if (!method) return null
+        const isConfigured = !!method
 
         return (
-          <div key={key} className="bg-white rounded-2xl border-[0.5px] border-border p-5 space-y-4 shadow-sm">
+          <div key={key} className={cn("bg-white rounded-2xl border-[0.5px] border-border p-5 space-y-4 shadow-sm transition-all", !isConfigured && "opacity-80 bg-gray-50/50")}>
             {/* Header row */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -150,6 +150,11 @@ function PaymentMethodsTab() {
                     <span className="text-[10px] px-1.5 py-0.5 rounded-lg bg-gray-100 text-gray-600 font-bold border-[0.5px]">
                       {cfg.flag} {cfg.region}
                     </span>
+                    {!isConfigured && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-lg bg-amber-50 text-amber-600 font-bold border-[0.5px] border-amber-200">
+                        Sozlanmagan
+                      </span>
+                    )}
                   </div>
                   {cfg.cardTypes && (
                     <p className="text-[11px] text-muted-foreground font-medium">
@@ -161,12 +166,12 @@ function PaymentMethodsTab() {
 
               {/* Toggle */}
               <ToggleSwitch
-                checked={method.isEnabled}
+                checked={method?.isEnabled ?? false}
                 disabled={updateMutation.isPending}
                 onChange={(v) =>
                   updateMutation.mutate({
                     method: key,
-                    payload: { isEnabled: v },
+                    payload: { isEnabled: v, region: cfg.region },
                   })
                 }
               />
@@ -180,8 +185,8 @@ function PaymentMethodsTab() {
                     Bank nomi
                   </Label>
                   <Input
-                    key={`${key}-bank-${method.bankName}`}
-                    defaultValue={method.bankName ?? ''}
+                    key={`${key}-bank-${method?.bankName}`}
+                    defaultValue={method?.bankName ?? ''}
                     placeholder={
                       cfg.region === 'KOR'
                         ? 'Kookmin Bank, Shinhan...'
@@ -189,10 +194,10 @@ function PaymentMethodsTab() {
                     }
                     className="h-9 text-sm rounded-xl border-[0.5px]"
                     onBlur={(e) => {
-                      if (e.target.value !== method.bankName) {
+                      if (e.target.value !== (method?.bankName ?? '')) {
                         updateMutation.mutate({
                           method: key,
-                          payload: { bankName: e.target.value },
+                          payload: { bankName: e.target.value, region: cfg.region },
                         })
                       }
                     }}
@@ -203,8 +208,8 @@ function PaymentMethodsTab() {
                     {key === 'E9PAY' ? 'E9Pay ID / Telefon' : 'Karta / Hisob raqami'}
                   </Label>
                   <Input
-                    key={`${key}-account-${method.accountNumber}`}
-                    defaultValue={method.accountNumber ?? ''}
+                    key={`${key}-account-${method?.accountNumber}`}
+                    defaultValue={method?.accountNumber ?? ''}
                     placeholder={
                       key === 'E9PAY'
                         ? '+82 10-xxxx-xxxx'
@@ -214,10 +219,10 @@ function PaymentMethodsTab() {
                     }
                     className="h-9 text-sm rounded-xl border-[0.5px]"
                     onBlur={(e) => {
-                      if (e.target.value !== method.accountNumber) {
+                      if (e.target.value !== (method?.accountNumber ?? '')) {
                         updateMutation.mutate({
                           method: key,
-                          payload: { accountNumber: e.target.value },
+                          payload: { accountNumber: e.target.value, region: cfg.region },
                         })
                       }
                     }}
@@ -231,15 +236,15 @@ function PaymentMethodsTab() {
                     Karta egasi (to'liq ism)
                   </Label>
                   <Input
-                    key={`${key}-holder-${method.holderName}`}
-                    defaultValue={method.holderName ?? ''}
+                    key={`${key}-holder-${method?.holderName}`}
+                    defaultValue={method?.holderName ?? ''}
                     placeholder="HONG GIL DONG"
                     className="h-9 text-sm rounded-xl border-[0.5px]"
                     onBlur={(e) => {
-                      if (e.target.value !== method.holderName) {
+                      if (e.target.value !== (method?.holderName ?? '')) {
                         updateMutation.mutate({
                           method: key,
-                          payload: { holderName: e.target.value },
+                          payload: { holderName: e.target.value, region: cfg.region },
                         })
                       }
                     }}
@@ -252,16 +257,16 @@ function PaymentMethodsTab() {
                   To'lov ko'rsatmalari (mijozga ko'rsatiladi)
                 </Label>
                 <textarea
-                  key={`${key}-inst-${method.instructions}`}
+                  key={`${key}-inst-${method?.instructions}`}
                   rows={2}
-                  defaultValue={method.instructions ?? ''}
+                  defaultValue={method?.instructions ?? ''}
                   placeholder="To'lovni amalga oshirgandan so'ng chekni yuboring..."
                   className="w-full rounded-xl border-[0.5px] border-border p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
                   onBlur={(e) => {
-                    if (e.target.value !== method.instructions) {
+                    if (e.target.value !== (method?.instructions ?? '')) {
                       updateMutation.mutate({
                         method: key,
-                        payload: { instructions: e.target.value },
+                        payload: { instructions: e.target.value, region: cfg.region },
                       })
                     }
                   }}

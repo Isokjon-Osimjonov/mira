@@ -26,21 +26,29 @@ export async function getAdminPaymentMethods() {
 
 export async function updatePaymentMethod(method: string, data: any) {
   const [updated] = await db
-    .update(paymentMethods)
-    .set({
-      ...(data.isEnabled !== undefined && { isEnabled: data.isEnabled }),
-      ...(data.bankName !== undefined && { bankName: data.bankName }),
-      ...(data.accountNumber !== undefined && { accountNumber: data.accountNumber }),
-      ...(data.holderName !== undefined && { holderName: data.holderName }),
-      ...(data.instructions !== undefined && { instructions: data.instructions }),
-      updatedAt: new Date(),
+    .insert(paymentMethods)
+    .values({
+      method: method,
+      region: data.region || (method === 'BANK_CARD_KOR' ? 'KOR' : 'UZB'),
+      isEnabled: data.isEnabled ?? false,
+      bankName: data.bankName ?? '',
+      accountNumber: data.accountNumber ?? '',
+      holderName: data.holderName ?? '',
+      instructions: data.instructions ?? '',
     })
-    .where(eq(paymentMethods.method, method))
+    .onConflictDoUpdate({
+      target: paymentMethods.method,
+      set: {
+        ...(data.isEnabled !== undefined && { isEnabled: data.isEnabled }),
+        ...(data.bankName !== undefined && { bankName: data.bankName }),
+        ...(data.accountNumber !== undefined && { accountNumber: data.accountNumber }),
+        ...(data.holderName !== undefined && { holderName: data.holderName }),
+        ...(data.instructions !== undefined && { instructions: data.instructions }),
+        ...(data.region !== undefined && { region: data.region }),
+        updatedAt: new Date(),
+      }
+    })
     .returning()
-
-  if (!updated) {
-    throw { status: 404, message: 'To\'lov usuli topilmadi' }
-  }
 
   await cacheDelete(CACHE_KEY)
   return updated

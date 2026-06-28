@@ -36,6 +36,7 @@ export const updatePaymentMethodSchema = z.object({
   accountNumber: z.string().optional().nullable(),
   holderName: z.string().optional().nullable(),
   instructions: z.string().optional().nullable(),
+  region: z.string().optional(),
 })
 
 export const createShippingTierSchema = z.object({
