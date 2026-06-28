@@ -84,13 +84,13 @@ function PaymentMethodsTab() {
   const { data: methods = [], isLoading } = useQuery({
     queryKey: QK.PAYMENT_METHODS,
     queryFn: settingsApi.getPaymentMethods,
-
+    placeholderData: (prev) => prev,
   })
 
   const updateMutation = useMutation({
     mutationFn: ({ method, payload }: any) => settingsApi.updatePaymentMethod(method, payload),
     onSuccess: () => {
-      qc.removeQueries()
+      qc.invalidateQueries({ queryKey: QK.PAYMENT_METHODS })
       toast.success('Saqlandi')
     },
     onError: (err: any) => toast.error(getErrorMessage(err?.errorCode ?? '')),
@@ -289,7 +289,7 @@ function ShippingTiersTab() {
   const { data: tiers = [], isLoading } = useQuery({
     queryKey: QK.SHIPPING_TIERS,
     queryFn: settingsApi.getShippingTiers,
-
+    placeholderData: (prev) => prev,
   })
 
   const filtered = tiers.filter((t: any) => t.region === region)
@@ -303,7 +303,7 @@ function ShippingTiersTab() {
         currency: region === 'KOR' ? 'KRW' : 'UZS',
       }),
     onSuccess: () => {
-      qc.removeQueries()
+      qc.invalidateQueries({ queryKey: QK.SHIPPING_TIERS })
       toast.success("Tier qo'shildi")
       setNewTier({ minOrderAmount: '', shippingCost: '' })
       setAdding(false)
@@ -314,7 +314,7 @@ function ShippingTiersTab() {
   const deleteMutation = useMutation({
     mutationFn: (id: string) => settingsApi.deleteShippingTier(id),
     onSuccess: () => {
-      qc.removeQueries()
+      qc.invalidateQueries({ queryKey: QK.SHIPPING_TIERS })
       toast.success("Tier o'chirildi")
     },
   })
@@ -492,7 +492,7 @@ function ExchangeRateTab() {
   const { data: rates = [], isLoading } = useQuery({
     queryKey: QK.EXCHANGE_RATES,
     queryFn: () => settingsApi.getExchangeRates(7),
-
+    placeholderData: (prev) => prev,
   })
 
   const currentRate = rates[0]
@@ -500,7 +500,7 @@ function ExchangeRateTab() {
   const updateMutation = useMutation({
     mutationFn: () => settingsApi.updateExchangeRate(parseFloat(newRate)),
     onSuccess: () => {
-      qc.removeQueries()
+      qc.invalidateQueries({ queryKey: QK.EXCHANGE_RATES })
       toast.success('Valyuta kursi yangilandi')
       setNewRate('')
       setLiveRate(null)
@@ -661,7 +661,7 @@ function OrderSettingsTab() {
   const { data, isLoading } = useQuery({
     queryKey: QK.ORDER_SETTINGS,
     queryFn: settingsApi.getOrderSettings,
-
+    placeholderData: (prev) => prev,
   })
 
   const {
@@ -680,7 +680,7 @@ function OrderSettingsTab() {
   const saveMutation = useMutation({
     mutationFn: settingsApi.updateOrderSettings,
     onSuccess: () => {
-      qc.removeQueries()
+      qc.invalidateQueries({ queryKey: QK.ORDER_SETTINGS })
       toast.success('Sozlamalar saqlandi')
     },
     onError: (err: any) => toast.error(getErrorMessage(err?.errorCode ?? '')),
