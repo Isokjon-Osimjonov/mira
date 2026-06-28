@@ -66,4 +66,34 @@ sleep 10
 
 docker compose -f docker-compose.prod.yml stop api_$LIVE_COLOR
 
+echo "Updating admin panel..."
+
+docker compose -f docker-compose.prod.yml pull admin
+
+docker compose -f docker-compose.prod.yml up -d admin
+
+echo "Waiting for admin to become healthy..."
+sleep 5
+
+ADMIN_HEALTH_OK=false
+for i in $(seq 1 10); do
+  if curl -sf http://127.0.0.1:8081 > /dev/null; then
+    ADMIN_HEALTH_OK=true
+    break
+  fi
+  echo "Admin attempt $i: not healthy yet, waiting..."
+  sleep 3
+done
+
+if [ "$ADMIN_HEALTH_OK" = false ]; then
+  echo "WARNING: admin failed health check after update."
+  echo "Admin panel may be down — check manually:"
+  echo "  docker logs mira_admin_prod"
+  # Note: we don't exit 1 here or roll back API deploy —
+  # admin failing shouldn't block/rollback a successful
+  # API deploy, they're independent concerns. Just warn.
+else
+  echo "Admin panel updated and healthy."
+fi
+
 echo "=== Deploy complete. Live: $IDLE_COLOR ==="
