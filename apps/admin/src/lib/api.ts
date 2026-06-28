@@ -1,10 +1,10 @@
 import axios, { AxiosError } from 'axios'
 import createAuthRefreshInterceptor from 'axios-auth-refresh'
 
-const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:4000'
+const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:4000/api/v1'
 
 export const api = axios.create({
-  baseURL: `${API_BASE}/api/v1`,
+  baseURL: API_BASE,
   withCredentials: true,
   timeout: 30000,
   headers: {
@@ -19,7 +19,7 @@ createAuthRefreshInterceptor(
   async (failedRequest) => {
     try {
       const res = await axios.post(
-        `${API_BASE}/api/v1/admin/auth/refresh`,
+        `${API_BASE}/admin/auth/refresh`,
         {},
         { withCredentials: true }
       )
