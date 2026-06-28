@@ -16,7 +16,7 @@ import { authService } from '../../services/auth.service'
 import { useAuthStore } from '../../lib/auth-store'
 import { useCartStore } from '../../lib/cart-store'
 import { useWishlistStore } from '../../lib/wishlist-store'
-import Toast from 'react-native-toast-message'
+import { Toast, useToast } from '../../components/ui/Toast'
 import { tokens } from '../../lib/tokens'
 
 export default function DeleteAccountScreen() {
@@ -25,6 +25,7 @@ export default function DeleteAccountScreen() {
 
   const logout = useAuthStore((s) => s.logout)
   const clearCart = useCartStore((s) => s.clearCart)
+  const { toast, showToast, hideToast } = useToast()
 
   const isMatched = confirmText === "O'CHIRISH"
 
@@ -49,17 +50,11 @@ export default function DeleteAccountScreen() {
 
       useWishlistStore.setState({ items: [], productIds: new Set() })
 
-      Toast.show({
-        type: 'success',
-        text1: "Hisobingiz o'chirildi",
-      })
+      showToast("Hisobingiz o'chirildi", 'success')
 
       router.replace('/auth/login')
     } catch (e: any) {
-      Toast.show({
-        type: 'error',
-        text1: e.response?.data?.error?.message || "Xatolik yuz berdi",
-      })
+      showToast(e.response?.data?.error?.message || "Xatolik yuz berdi", 'error')
     } finally {
       setLoading(false)
     }
@@ -133,6 +128,7 @@ export default function DeleteAccountScreen() {
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
+      <Toast message={toast.message} type={toast.type} visible={toast.visible} onHide={hideToast} />
     </SafeAreaView>
   )
 }
