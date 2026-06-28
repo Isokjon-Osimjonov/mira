@@ -1,3 +1,11 @@
+# IMPORTANT: Before manually running this workflow,
+# confirm the "Build and Push Images" workflow has
+# ALREADY completed successfully for the commit you
+# intend to deploy. Running this before the build
+# finishes will deploy a STALE image. There is
+# currently no automated dependency between these
+# two workflows.
+
 name: Deploy to Production
 
 on:
