@@ -13,20 +13,18 @@ export interface ApiResponse<T = any> {
 import type { Customer } from '../lib/auth-store'
 
 export interface UpdateProfilePayload {
-  firstName:       string
-  lastName?:       string | null
+  firstName: string
+  lastName?: string | null
   profileImageUrl?: string | null
 }
 
 export const customerService = {
-
   getMe: async (): Promise<Customer> => {
     const res = await api.get<ApiResponse<Customer>>('/auth/me')
     return res.data.data!
   },
 
-  updateProfile: async (payload: UpdateProfilePayload):
-    Promise<Customer> => {
+  updateProfile: async (payload: UpdateProfilePayload): Promise<Customer> => {
     const body: Record<string, any> = {
       firstName: payload.firstName,
     }
@@ -35,24 +33,17 @@ export const customerService = {
     }
     // Only include profileImageUrl if explicitly provided
     // Never send null — would erase existing photo
-    if (
-      payload.profileImageUrl !== undefined &&
-      payload.profileImageUrl !== null
-    ) {
+    if (payload.profileImageUrl !== undefined && payload.profileImageUrl !== null) {
       body.profileImageUrl = payload.profileImageUrl
     }
-    const res = await api.patch<ApiResponse<Customer>>(
-      '/auth/profile',
-      body
-    )
+    const res = await api.patch<ApiResponse<Customer>>('/auth/profile', body)
     return res.data.data!
   },
 
-  savePushToken: async (expoPushToken: string):
-    Promise<void> => {
+  savePushToken: async (expoPushToken: string): Promise<void> => {
     await api.post('/auth/push-token', {
-      token:    expoPushToken,
-      platform: Platform.OS,  // 'ios' | 'android'
+      token: expoPushToken,
+      platform: Platform.OS, // 'ios' | 'android'
     })
   },
 }

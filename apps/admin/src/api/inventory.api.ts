@@ -1,13 +1,15 @@
 import { api } from '../lib/api'
 
 export const inventoryApi = {
-  getOverview: async (params: {
-    filter?: 'low' | 'out' | 'expiring'
-    search?: string
-    categoryId?: string
-    page?: number
-    limit?: number
-  } = {}) => {
+  getOverview: async (
+    params: {
+      filter?: 'low' | 'out' | 'expiring'
+      search?: string
+      categoryId?: string
+      page?: number
+      limit?: number
+    } = {}
+  ) => {
     const res = await api.get('/admin/inventory/stock', { params })
     return res.data
   },
@@ -22,13 +24,16 @@ export const inventoryApi = {
     return res.data.data
   },
 
-  addBatch: async (productId: string, payload: {
-    quantity: number
-    costPrice?: number
-    supplierId?: string
-    expiryDate?: string | null
-    note?: string
-  }) => {
+  addBatch: async (
+    productId: string,
+    payload: {
+      quantity: number
+      costPrice?: number
+      supplierId?: string
+      expiryDate?: string | null
+      note?: string
+    }
+  ) => {
     const res = await api.post('/admin/inventory/batches', {
       productId,
       initialQty: payload.quantity,

@@ -11,9 +11,9 @@ import { formatKRW } from '../../lib/price'
 import PrimaryButton from '../../components/ui/PrimaryButton'
 
 export default function OrderConfirmedScreen() {
-  const { orderId, paymentInfoJson } = useLocalSearchParams<{ 
+  const { orderId, paymentInfoJson } = useLocalSearchParams<{
     orderId: string
-    paymentInfoJson?: string 
+    paymentInfoJson?: string
   }>()
 
   const { data: paymentSettings } = useQuery({
@@ -61,10 +61,7 @@ export default function OrderConfirmedScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      >
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         <View style={styles.main}>
           <View style={styles.successCircle}>
             <Feather name="check-circle" size={40} color={tokens.colors.primary} />
@@ -95,8 +92,18 @@ export default function OrderConfirmedScreen() {
             </>
           ) : order.status === 'PAYMENT_SUBMITTED' ? (
             <View style={[styles.paymentCard, { backgroundColor: tokens.colors.primary + '10' }]}>
-              <Feather name="check-circle" size={24} color={tokens.colors.primary} style={{ marginBottom: 8 }} />
-              <Text style={[styles.paymentSub, { color: tokens.colors.primary, fontSize: 14, fontWeight: '500' }]}>
+              <Feather
+                name="check-circle"
+                size={24}
+                color={tokens.colors.primary}
+                style={{ marginBottom: 8 }}
+              />
+              <Text
+                style={[
+                  styles.paymentSub,
+                  { color: tokens.colors.primary, fontSize: 14, fontWeight: '500' },
+                ]}
+              >
                 Chek yuklandi, tasdiqlash kutilmoqda
               </Text>
             </View>
@@ -106,50 +113,58 @@ export default function OrderConfirmedScreen() {
             <Text style={styles.instructionsTitle}>To'lov ma'lumotlari</Text>
             {paymentInfo?.method === 'KOREAN_BANK' && (
               <>
-                {infoRow("Hisob raqam:", paymentInfo.accountNumber ?? paymentSettings?.kor.bankNumber)}
-                {infoRow("Bank:", paymentInfo.bankName ?? paymentSettings?.kor.bankName)}
-                {infoRow("Egasi:", paymentInfo.holderName ?? paymentSettings?.kor.bankHolder)}
+                {infoRow(
+                  'Hisob raqam:',
+                  paymentInfo.accountNumber ?? paymentSettings?.kor.bankNumber
+                )}
+                {infoRow('Bank:', paymentInfo.bankName ?? paymentSettings?.kor.bankName)}
+                {infoRow('Egasi:', paymentInfo.holderName ?? paymentSettings?.kor.bankHolder)}
               </>
             )}
             {paymentInfo?.method === 'UZB_BANK' && (
               <>
-                {infoRow("Hisob:", paymentInfo.accountNumber ?? paymentSettings?.uzb.bankNumber)}
-                {infoRow("Bank:", paymentInfo.bankName ?? paymentSettings?.uzb.bankName)}
-                {infoRow("Egasi:", paymentInfo.holderName ?? paymentSettings?.uzb.bankHolder)}
+                {infoRow('Hisob:', paymentInfo.accountNumber ?? paymentSettings?.uzb.bankNumber)}
+                {infoRow('Bank:', paymentInfo.bankName ?? paymentSettings?.uzb.bankName)}
+                {infoRow('Egasi:', paymentInfo.holderName ?? paymentSettings?.uzb.bankHolder)}
               </>
             )}
             {paymentInfo?.method === 'E9PAY' && (
               <>
-                {infoRow("E9Pay:", paymentInfo.accountNumber ?? paymentSettings?.e9pay.account)}
-                {infoRow("Egasi:", paymentInfo.holderName ?? paymentSettings?.e9pay.name)}
+                {infoRow('E9Pay:', paymentInfo.accountNumber ?? paymentSettings?.e9pay.account)}
+                {infoRow('Egasi:', paymentInfo.holderName ?? paymentSettings?.e9pay.name)}
               </>
             )}
             {!paymentInfo && (
               <>
-                {infoRow("Hisob raqam:", (paymentSettings?.uzb.bankNumber ?? paymentSettings?.kor.bankNumber) ?? null)}
-                {infoRow("Bank:", (paymentSettings?.uzb.bankName ?? paymentSettings?.kor.bankName) ?? null)}
+                {infoRow(
+                  'Hisob raqam:',
+                  paymentSettings?.uzb.bankNumber ?? paymentSettings?.kor.bankNumber ?? null
+                )}
+                {infoRow(
+                  'Bank:',
+                  paymentSettings?.uzb.bankName ?? paymentSettings?.kor.bankName ?? null
+                )}
               </>
             )}
-            <View style={{ marginTop: 10, paddingTop: 10, borderTopWidth: 0.5, borderTopColor: tokens.colors.border }}>
+            <View
+              style={{
+                marginTop: 10,
+                paddingTop: 10,
+                borderTopWidth: 0.5,
+                borderTopColor: tokens.colors.border,
+              }}
+            >
               <Text style={styles.amountText}>To'lov miqdori: {formatKRW(order.totalAmount)}</Text>
             </View>
           </View>
 
-          <Text style={styles.botNotice}>
-            Telegram botimiz orqali to'lov haqida xabar olasiz
-          </Text>
+          <Text style={styles.botNotice}>Telegram botimiz orqali to'lov haqida xabar olasiz</Text>
         </View>
       </ScrollView>
 
       <View style={styles.bottom}>
-        <PrimaryButton
-          label="Buyurtmalarimni ko'rish"
-          onPress={() => router.replace('/orders')}
-        />
-        <TouchableOpacity
-          style={styles.homeBtn}
-          onPress={() => router.replace('/(tabs)/home')}
-        >
+        <PrimaryButton label="Buyurtmalarimni ko'rish" onPress={() => router.replace('/orders')} />
+        <TouchableOpacity style={styles.homeBtn} onPress={() => router.replace('/(tabs)/home')}>
           <Text style={styles.homeBtnText}>Bosh sahifaga qaytish</Text>
         </TouchableOpacity>
       </View>

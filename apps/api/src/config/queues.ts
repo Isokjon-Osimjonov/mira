@@ -101,7 +101,6 @@ export const telegramPostWorker = new Worker(
 )
 
 // ── Error handlers ─────────────────────
-
 ;[notificationWorker, paymentDeadlineWorker, telegramPostWorker].forEach((worker) => {
   worker.on('failed', (job, err) => {
     queueLogger.error(

@@ -27,12 +27,10 @@ export async function createCategory(req: Request, res: Response) {
     return res.json({ data, error: null })
   } catch (e: any) {
     if (e.name === 'ZodError')
-      return res
-        .status(400)
-        .json({
-          data: null,
-          error: { message: "Ma'lumotlar noto'g'ri", code: 'VALIDATION_ERROR', details: e.errors },
-        })
+      return res.status(400).json({
+        data: null,
+        error: { message: "Ma'lumotlar noto'g'ri", code: 'VALIDATION_ERROR', details: e.errors },
+      })
     return res
       .status(e.status ?? 500)
       .json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
@@ -46,12 +44,10 @@ export async function updateCategory(req: Request, res: Response) {
     return res.json({ data, error: null })
   } catch (e: any) {
     if (e.name === 'ZodError')
-      return res
-        .status(400)
-        .json({
-          data: null,
-          error: { message: "Ma'lumotlar noto'g'ri", code: 'VALIDATION_ERROR', details: e.errors },
-        })
+      return res.status(400).json({
+        data: null,
+        error: { message: "Ma'lumotlar noto'g'ri", code: 'VALIDATION_ERROR', details: e.errors },
+      })
     return res
       .status(e.status ?? 500)
       .json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
@@ -122,12 +118,10 @@ export async function createExpense(req: Request, res: Response) {
     return res.json({ data: safeData, error: null })
   } catch (e: any) {
     if (e.name === 'ZodError')
-      return res
-        .status(400)
-        .json({
-          data: null,
-          error: { message: "Ma'lumotlar noto'g'ri", code: 'VALIDATION_ERROR', details: e.errors },
-        })
+      return res.status(400).json({
+        data: null,
+        error: { message: "Ma'lumotlar noto'g'ri", code: 'VALIDATION_ERROR', details: e.errors },
+      })
     return res
       .status(e.status ?? 500)
       .json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
@@ -142,12 +136,10 @@ export async function updateExpense(req: Request, res: Response) {
     return res.json({ data: safeData, error: null })
   } catch (e: any) {
     if (e.name === 'ZodError')
-      return res
-        .status(400)
-        .json({
-          data: null,
-          error: { message: "Ma'lumotlar noto'g'ri", code: 'VALIDATION_ERROR', details: e.errors },
-        })
+      return res.status(400).json({
+        data: null,
+        error: { message: "Ma'lumotlar noto'g'ri", code: 'VALIDATION_ERROR', details: e.errors },
+      })
     return res
       .status(e.status ?? 500)
       .json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })

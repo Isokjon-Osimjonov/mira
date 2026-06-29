@@ -1,14 +1,14 @@
 // Pagination
 export interface PaginationMeta {
-  page:     number
-  limit:    number
-  total:    number
-  hasNext:  boolean
-  hasPrev:  boolean
+  page: number
+  limit: number
+  total: number
+  hasNext: boolean
+  hasPrev: boolean
 }
 
 export interface ApiResponse<T> {
-  data:  T | null
+  data: T | null
   error: { message: string; code: string } | null
   meta?: PaginationMeta
 }
@@ -29,60 +29,60 @@ export type Region = 'KOR' | 'UZB'
 
 // Entities
 export interface OrderListItem {
-  id:            string
-  orderNumber:   string
-  status:        OrderStatus
-  region:        Region
-  totalAmount:   number
-  customerName:  string
+  id: string
+  orderNumber: string
+  status: OrderStatus
+  region: Region
+  totalAmount: number
+  customerName: string
   customerPhone: string
-  itemCount:     number
-  createdAt:     string
+  itemCount: number
+  createdAt: string
   paymentDeadline?: string
 }
 
 export interface Product {
-  id:          string
-  nameKo:      string
-  nameUz?:     string
-  brandName:   string
-  barcode:     string
-  sku?:        string
-  imageUrls:   string[]
-  isActive:    boolean
+  id: string
+  nameKo: string
+  nameUz?: string
+  brandName: string
+  barcode: string
+  sku?: string
+  imageUrls: string[]
+  isActive: boolean
   categoryId?: string
 }
 
 export interface Customer {
-  id:           string
-  firstName:    string
-  lastName?:    string
-  phone:        string
-  region:       Region
-  isBlocked:    boolean
-  orderCount:   number
+  id: string
+  firstName: string
+  lastName?: string
+  phone: string
+  region: Region
+  isBlocked: boolean
+  orderCount: number
   totalSpentKrw: number
-  createdAt:    string
+  createdAt: string
 }
 
 export interface StockItem {
-  productId:    string
-  productName:  string
-  brandName:    string
-  barcode:      string
-  totalStock:   number
+  productId: string
+  productName: string
+  brandName: string
+  barcode: string
+  totalStock: number
   reservedStock: number
   availableStock: number
-  status:       'ok' | 'low' | 'out' | 'dead'
-  imageUrl?:    string
+  status: 'ok' | 'low' | 'out' | 'dead'
+  imageUrl?: string
 }
 
 export interface Box {
-  id:             string
-  name:           string
-  priceKrw:       number
-  widthCm?:       number
-  heightCm?:      number
-  depthCm?:       number
-  isActive:       boolean
+  id: string
+  name: string
+  priceKrw: number
+  widthCm?: number
+  heightCm?: number
+  depthCm?: number
+  isActive: boolean
 }

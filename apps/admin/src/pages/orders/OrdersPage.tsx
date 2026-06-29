@@ -38,7 +38,7 @@ const STATUS_TABS = [
   { value: 'PAYMENT_SUBMITTED', label: 'Tekshirilmoqda' },
   { value: 'PAYMENT_CONFIRMED', label: 'Tasdiqlandi' },
   { value: 'PACKING', label: 'Tayyorlanmoqda' },
-  { value: 'SHIPPED', "label": "Jo'natildi" },
+  { value: 'SHIPPED', label: "Jo'natildi" },
   { value: 'DELIVERED', label: 'Yetkazildi' },
   { value: 'CANCELED', label: 'Bekor' },
   { value: 'REFUNDED', label: 'Qaytarildi' },
@@ -61,10 +61,7 @@ function Countdown({ deadline }: { deadline: string }) {
   }
   return (
     <span
-      className={cn(
-        'text-[11px] font-medium',
-        info.urgent ? 'text-red-500' : 'text-amber-600'
-      )}
+      className={cn('text-[11px] font-medium', info.urgent ? 'text-red-500' : 'text-amber-600')}
     >
       ⏱ {info.text}
     </span>
@@ -231,13 +228,15 @@ export function OrdersPage() {
     onSuccess: (data, vars) => {
       queryClient.removeQueries()
       if (data.failed && data.failed.length > 0) {
-        toast.warning(`${data.succeeded.length} ta yangilandi, ${data.failed.length} ta o'tkazib yuborildi`)
+        toast.warning(
+          `${data.succeeded.length} ta yangilandi, ${data.failed.length} ta o'tkazib yuborildi`
+        )
       } else {
         toast.success(`${vars.ids.length} ta buyurtma yangilandi`)
       }
       setSelected(new Set())
     },
-    onError: (err: any) => toast.error(getErrorMessage(err?.errorCode ?? ''))
+    onError: (err: any) => toast.error(getErrorMessage(err?.errorCode ?? '')),
   })
 
   // ── Table columns (desktop) ───────────────────────────────
@@ -317,9 +316,7 @@ export function OrdersPage() {
       key: 'items',
       header: 'Mahsulot',
       width: '80px',
-      cell: (row: any) => (
-        <span className="text-xs text-muted-foreground">{row.itemCount} ta</span>
-      ),
+      cell: (row: any) => <span className="text-xs text-muted-foreground">{row.itemCount} ta</span>,
     },
     {
       key: 'total',
@@ -377,8 +374,8 @@ export function OrdersPage() {
           </p>
         </div>
         {canWrite('orders') && (
-          <Button 
-            size="sm" 
+          <Button
+            size="sm"
             className="rounded-lg gap-2 h-9"
             onClick={() => navigate({ to: '/orders/new' } as any)}
           >
@@ -509,7 +506,7 @@ export function OrdersPage() {
                 description={
                   search || status || region
                     ? "Filtrlarni o'zgartirib ko'ring"
-                    : 'Hali buyurtma yo\'q'
+                    : "Hali buyurtma yo'q"
                 }
               />
             ) : (
@@ -590,7 +587,7 @@ export function OrdersPage() {
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-900 text-white rounded-xl px-4 py-3 shadow-xl flex items-center gap-3 z-50">
           <span className="text-sm font-medium">{selected.size} ta tanlandi</span>
           <div className="w-px h-4 bg-white/30" />
-          
+
           <Select
             value=""
             onValueChange={(val) => {

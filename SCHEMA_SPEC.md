@@ -1,5 +1,7 @@
 # SCHEMA_SPEC.md — Mira Cosmetics
+
 # Master Reference for Drizzle ORM Schema Generation
+
 # Version: 2.0 | Tables: 39 | Files: 20
 
 ---
@@ -19,9 +21,22 @@
 ```typescript
 // ─── Imports pattern ───────────────────────────────────────────
 import {
-  pgTable, uuid, varchar, text, integer, bigint,
-  boolean, timestamp, date, index, uniqueIndex,
-  check, primaryKey, jsonb, decimal, smallint,
+  pgTable,
+  uuid,
+  varchar,
+  text,
+  integer,
+  bigint,
+  boolean,
+  timestamp,
+  date,
+  index,
+  uniqueIndex,
+  check,
+  primaryKey,
+  jsonb,
+  decimal,
+  smallint,
 } from 'drizzle-orm/pg-core'
 import { relations, sql } from 'drizzle-orm'
 
@@ -96,7 +111,9 @@ libs/db/src/schema/
 ---
 
 ## ════════════════════════════════════════════════
+
 ## FILE: enums.ts
+
 ## ════════════════════════════════════════════════
 
 ```typescript
@@ -118,27 +135,13 @@ export const orderStatusEnum = pgEnum('order_status', [
   'REFUNDED',
 ])
 
-export const paymentMethodEnum = pgEnum('payment_method', [
-  'KOREAN_BANK',
-  'UZB_BANK',
-  'E9PAY',
-])
+export const paymentMethodEnum = pgEnum('payment_method', ['KOREAN_BANK', 'UZB_BANK', 'E9PAY'])
 
-export const orderSourceEnum = pgEnum('order_source', [
-  'STOREFRONT',
-  'MANUAL',
-])
+export const orderSourceEnum = pgEnum('order_source', ['STOREFRONT', 'MANUAL'])
 
-export const deliveryCoveredByEnum = pgEnum('delivery_covered_by', [
-  'CUSTOMER',
-  'BUSINESS',
-])
+export const deliveryCoveredByEnum = pgEnum('delivery_covered_by', ['CUSTOMER', 'BUSINESS'])
 
-export const couponTypeEnum = pgEnum('coupon_type', [
-  'PERCENTAGE',
-  'FIXED',
-  'FREE_SHIPPING',
-])
+export const couponTypeEnum = pgEnum('coupon_type', ['PERCENTAGE', 'FIXED', 'FREE_SHIPPING'])
 
 export const couponScopeEnum = pgEnum('coupon_scope', [
   'ENTIRE_ORDER',
@@ -191,22 +194,11 @@ export const notificationTypeEnum = pgEnum('notification_type', [
   'SYSTEM',
 ])
 
-export const notificationChannelEnum = pgEnum('notification_channel', [
-  'PUSH',
-  'TELEGRAM',
-  'BOTH',
-])
+export const notificationChannelEnum = pgEnum('notification_channel', ['PUSH', 'TELEGRAM', 'BOTH'])
 
-export const notificationStatusEnum = pgEnum('notification_status', [
-  'SENT',
-  'FAILED',
-  'PENDING',
-])
+export const notificationStatusEnum = pgEnum('notification_status', ['SENT', 'FAILED', 'PENDING'])
 
-export const exchangeRateSourceEnum = pgEnum('exchange_rate_source', [
-  'API',
-  'MANUAL',
-])
+export const exchangeRateSourceEnum = pgEnum('exchange_rate_source', ['API', 'MANUAL'])
 
 export const orderExpenseTypeEnum = pgEnum('order_expense_type', [
   'CARGO_COST',
@@ -239,11 +231,15 @@ export const pickPackResultEnum = pgEnum('pick_pack_result', ['OK', 'ERROR'])
 ---
 
 ## ════════════════════════════════════════════════
+
 ## FILE: admin-users.ts
+
 ## Tables: roles, role_permissions, admin_users
+
 ## ════════════════════════════════════════════════
 
 ### TABLE: roles
+
 ```
 Purpose: Dynamic RBAC roles (ADMIN, MANAGER, EDITOR, VIEWER, etc.)
 Pattern: Admin creates/edits roles, assigns permissions per role
@@ -261,6 +257,7 @@ Indexes:
 ```
 
 ### TABLE: role_permissions
+
 ```
 Purpose: Junction — which permissions each role has
 Pattern: resource:action pairs (products:read, orders:write)
@@ -284,6 +281,7 @@ Indexes:
 ```
 
 ### TABLE: admin_users
+
 ```
 Purpose: Admin panel users (separate from mobile app customers)
 Auth: Email + password (bcrypt hashed)
@@ -324,11 +322,15 @@ Relations:
 ---
 
 ## ════════════════════════════════════════════════
+
 ## FILE: auth.ts
+
 ## Tables: auth_tokens, refresh_tokens
+
 ## ════════════════════════════════════════════════
 
 ### TABLE: auth_tokens
+
 ```
 Purpose: Phone OTP deep-link tokens for mobile authentication
 Flow: Phone entered → token generated → t.me/bot?start=TOKEN →
@@ -354,6 +356,7 @@ Indexes:
 ```
 
 ### TABLE: refresh_tokens
+
 ```
 Purpose: JWT refresh tokens for both customers and admin users
 Pattern: DB-backed refresh (not pure stateless) enables instant revoke
@@ -393,11 +396,15 @@ Indexes:
 ---
 
 ## ════════════════════════════════════════════════
+
 ## FILE: customers.ts
+
 ## Tables: customers, user_addresses, user_notification_settings
+
 ## ════════════════════════════════════════════════
 
 ### TABLE: customers
+
 ```
 Purpose: Mobile app users (separate from admin_users)
 Auth: Phone OTP via Telegram bot
@@ -440,6 +447,7 @@ Relations:
 ```
 
 ### TABLE: user_addresses
+
 ```
 Purpose: Saved delivery addresses per customer
 Regions: UZB and KOR have different address formats in same table
@@ -479,6 +487,7 @@ Indexes:
 ```
 
 ### TABLE: user_notification_settings
+
 ```
 Purpose: Per-customer notification preferences
 Pattern: 1:1 with customers, created on registration
@@ -504,11 +513,15 @@ Indexes:
 ---
 
 ## ════════════════════════════════════════════════
+
 ## FILE: categories.ts
+
 ## Tables: categories
+
 ## ════════════════════════════════════════════════
 
 ### TABLE: categories
+
 ```
 Purpose: Product categories with optional parent (2-level hierarchy)
 Hierarchy: Parent category → child category (max 2 levels)
@@ -541,11 +554,15 @@ Relations:
 ---
 
 ## ════════════════════════════════════════════════
+
 ## FILE: products.ts
+
 ## Tables: products, product_regional_configs
+
 ## ════════════════════════════════════════════════
 
 ### TABLE: products
+
 ```
 Purpose: Korean cosmetics product catalog
 Pricing: NOT here — in product_regional_configs (per region)
@@ -602,6 +619,7 @@ Relations:
 ```
 
 ### TABLE: product_regional_configs
+
 ```
 Purpose: Per-product per-region pricing and availability
 Pattern: One row per product per region (max 2 rows per product: UZB + KOR)
@@ -644,12 +662,17 @@ Business Rule:
 ---
 
 ## ════════════════════════════════════════════════
+
 ## FILE: inventory.ts
+
 ## Tables: inventory_batches, stock_movements,
-##         stock_reservations, batch_adjustments
+
+## stock_reservations, batch_adjustments
+
 ## ════════════════════════════════════════════════
 
 ### TABLE: inventory_batches
+
 ```
 Purpose: Batch-level inventory tracking per product
 Creation: Admin manually creates when receiving goods from supplier
@@ -682,6 +705,7 @@ Indexes:
 ```
 
 ### TABLE: stock_movements
+
 ```
 Purpose: APPEND-ONLY audit log of all stock changes
 Pattern: Every inventory change creates a movement record
@@ -714,6 +738,7 @@ Indexes:
 ```
 
 ### TABLE: stock_reservations
+
 ```
 Purpose: Reserve stock when order is created (checkout submit)
 Timer: Released when payment_deadline passes (auto-cancel)
@@ -746,6 +771,7 @@ Indexes:
 ```
 
 ### TABLE: batch_adjustments
+
 ```
 Purpose: APPEND-ONLY audit log of batch field changes by admin
 Pattern: When admin corrects qty, expiry, cost → record old/new values
@@ -768,11 +794,15 @@ Indexes:
 ---
 
 ## ════════════════════════════════════════════════
+
 ## FILE: carts.ts
+
 ## Tables: carts, cart_items
+
 ## ════════════════════════════════════════════════
 
 ### TABLE: carts
+
 ```
 Purpose: Persistent shopping cart (1 per customer)
 Region: Inherited from customer, used for price calculation
@@ -794,6 +824,7 @@ Relations:
 ```
 
 ### TABLE: cart_items
+
 ```
 Purpose: Items in a customer's cart
 Price: Server recalculates on each request — price_snapshot is advisory only
@@ -823,11 +854,15 @@ Indexes:
 ---
 
 ## ════════════════════════════════════════════════
+
 ## FILE: boxes.ts
+
 ## Tables: boxes, kor_shipping_tiers
+
 ## ════════════════════════════════════════════════
 
 ### TABLE: boxes
+
 ```
 Purpose: Admin-configurable cargo boxes for UZB international shipping
 Cargo formula: (products_weight_kg + box.weight_kg) × settings.uzb_cargo_usd_per_kg
@@ -851,6 +886,7 @@ Constraints:
 ```
 
 ### TABLE: kor_shipping_tiers
+
 ```
 Purpose: Korea domestic shipping fee tiers (based on order amount)
 Pattern: max_order_krw = null means "unlimited" (catches all above last tier)
@@ -873,11 +909,15 @@ Constraints:
 ---
 
 ## ════════════════════════════════════════════════
+
 ## FILE: orders.ts
+
 ## Tables: orders, order_items, order_status_history, order_expenses
+
 ## ════════════════════════════════════════════════
 
 ### TABLE: orders
+
 ```
 Purpose: Core order record — created when customer submits checkout
 Number: MIRA-{YY}{MM}{DD}-{4_digit_seq} e.g. MIRA-260529-0001 (per-day sequence)
@@ -889,15 +929,15 @@ Fields:
   id                    uuid PK defaultRandom
   order_number          varchar(20) UNIQUE NOT NULL  -- MIRA-260529-0001
   customer_id           uuid NOT NULL FK→customers.id RESTRICT
-  
+
   -- Region
   profile_region        varchar(5) NOT NULL  -- customer's permanent region
   delivery_region       varchar(5) NOT NULL  -- this order's delivery region (can differ)
-  
+
   -- Status
   status                orderStatusEnum default 'PENDING_PAYMENT' NOT NULL
   order_source          orderSourceEnum default 'STOREFRONT' NOT NULL
-  
+
   -- Financials (all in KRW unless noted)
   subtotal              bigint NOT NULL default 0   -- sum of item prices
   discount_amount       bigint NOT NULL default 0   -- coupon discount
@@ -905,19 +945,19 @@ Fields:
   total_amount          bigint NOT NULL default 0   -- subtotal - discount + cargo
   currency              varchar(3) NOT NULL default 'KRW'
   total_weight_grams    integer NOT NULL default 0  -- products + box weight
-  
+
   -- Box (UZB only)
   box_id                uuid nullable FK→boxes.id SET NULL
   box_weight_snapshot   decimal(8,3) nullable       -- box weight at checkout time
   box_price_snapshot    bigint nullable              -- box price KRW at checkout time
-  
+
   -- Coupon
   coupon_id             uuid nullable               -- NO FK, avoid circular
   coupon_code           varchar(50) nullable
-  
+
   -- Rate snapshot (locked at checkout time)
   rate_snapshot_id      uuid nullable FK→exchange_rate_snapshots.id SET NULL
-  
+
   -- Payment
   payment_method        paymentMethodEnum nullable
   payment_amount        bigint nullable             -- actual amount paid
@@ -931,14 +971,14 @@ Fields:
   payment_rejected_reason text nullable             -- admin feedback shown to user
   payment_confirmed_by  uuid nullable FK→admin_users.id SET NULL
   payment_confirmed_at  timestamp nullable
-  
+
   -- Fulfillment
   packed_by             uuid nullable FK→admin_users.id SET NULL
   packed_at             timestamp nullable
   tracking_number       varchar(100) nullable
   shipped_at            timestamp nullable
   delivered_at          timestamp nullable
-  
+
   -- Delivery address snapshot (captured at checkout — immutable)
   delivery_full_name    text nullable
   delivery_phone        text nullable
@@ -946,12 +986,12 @@ Fields:
   delivery_address_line2 text nullable              -- uzb detail / kor detail
   delivery_city         text nullable               -- uzb city / kor city
   delivery_postal_code  text nullable               -- kor postal code
-  
+
   -- Delivery fee
   delivery_fee_charged  bigint NOT NULL default 0   -- fee charged to customer
   delivery_fee_actual   bigint nullable             -- actual cost (may differ)
   delivery_covered_by   deliveryCoveredByEnum nullable  -- CUSTOMER or BUSINESS
-  
+
   -- Customer note
   customer_note         text nullable               -- delivery instructions from customer
 
@@ -969,7 +1009,7 @@ Fields:
   -- Manual order fields
   admin_note            text nullable
   created_by            uuid nullable FK→admin_users.id SET NULL  -- MANUAL orders only
-  
+
   created_at            timestamp NOT NULL defaultNow
   updated_at            timestamp NOT NULL defaultNow
 
@@ -1005,6 +1045,7 @@ Relations:
 ```
 
 ### TABLE: order_items
+
 ```
 Purpose: Line items within an order
 Cost: cost_at_sale_krw from inventory batch — used for COGS in accounting
@@ -1017,17 +1058,17 @@ Fields:
   batch_id              uuid nullable FK→inventory_batches.id SET NULL
                         -- assigned by FIFO on PACKING status
   quantity              integer NOT NULL
-  
+
   -- Price snapshots (captured at order creation — immutable)
   unit_price_snapshot   bigint NOT NULL    -- retail or wholesale price at checkout
   negotiated_price_krw  bigint nullable    -- if admin overrides for MANUAL orders
   subtotal_snapshot     bigint NOT NULL    -- unit_price × quantity
   cargo_fee_snapshot    bigint NOT NULL default 0  -- cargo portion for this item
   currency_snapshot     varchar(3) NOT NULL default 'KRW'
-  
+
   -- Cost (for accounting / COGS)
   cost_at_sale_krw      bigint nullable    -- batch.cost_price at time of sale
-  
+
   -- Pricing rule: effective_unit_price = negotiated_price_krw ?? unit_price_snapshot
   --               Server always checks negotiated_price_krw first (MANUAL orders)
 
@@ -1051,6 +1092,7 @@ Indexes:
 ```
 
 ### TABLE: order_status_history
+
 ```
 Purpose: APPEND-ONLY immutable audit trail of every status change
 Query: ORDER BY created_at ASC to get timeline
@@ -1071,6 +1113,7 @@ Indexes:
 ```
 
 ### TABLE: order_expenses
+
 ```
 Purpose: Internal business cost tracking per order (not visible to customer)
 Accounting: Used to calculate actual profit per order
@@ -1106,11 +1149,15 @@ Indexes:
 ---
 
 ## ════════════════════════════════════════════════
+
 ## FILE: coupons.ts
+
 ## Tables: coupons, coupon_redemptions, user_coupons
+
 ## ════════════════════════════════════════════════
 
 ### TABLE: coupons
+
 ```
 Purpose: Discount coupons with comprehensive targeting options
 Stacking: Manual coupons: max 1 per order
@@ -1165,6 +1212,7 @@ Indexes:
 ```
 
 ### TABLE: coupon_redemptions
+
 ```
 Purpose: APPEND-ONLY record of every coupon use
 NOTE: order_id has NO FK (circular dep) — enforced at app layer
@@ -1184,6 +1232,7 @@ Indexes:
 ```
 
 ### TABLE: user_coupons
+
 ```
 Purpose: Coupons assigned to specific customers (targeted coupons)
 
@@ -1208,11 +1257,15 @@ Indexes:
 ---
 
 ## ════════════════════════════════════════════════
+
 ## FILE: settings.ts
+
 ## Tables: settings (singleton), exchange_rate_snapshots
+
 ## ════════════════════════════════════════════════
 
 ### TABLE: settings
+
 ```
 Purpose: Global app settings — SINGLETON (always exactly 1 row)
 Pattern: Never INSERT new rows after init — only UPDATE the single row
@@ -1262,6 +1315,7 @@ Fields:
 ```
 
 ### TABLE: exchange_rate_snapshots
+
 ```
 Purpose: Daily exchange rate records — locked onto orders at checkout
 Source: Both rates fetched from exchangerate-api.com (auto cron daily)
@@ -1289,11 +1343,15 @@ Indexes:
 ---
 
 ## ════════════════════════════════════════════════
+
 ## FILE: expenses.ts
+
 ## Tables: expense_categories, expenses
+
 ## ════════════════════════════════════════════════
 
 ### TABLE: expense_categories
+
 ```
 Purpose: Categories for general business expenses
 Seeded: Pre-made system categories (is_system=true, cannot delete)
@@ -1314,6 +1372,7 @@ Fields:
 ```
 
 ### TABLE: expenses
+
 ```
 Purpose: General business expenses (NOT per-order — see order_expenses for that)
 Examples: Monthly ads spend, office supplies, tools, subscriptions
@@ -1340,11 +1399,15 @@ Indexes:
 ---
 
 ## ════════════════════════════════════════════════
+
 ## FILE: telegram.ts
+
 ## Tables: telegram_channels, telegram_posts, telegram_post_channels
+
 ## ════════════════════════════════════════════════
 
 ### TABLE: telegram_channels
+
 ```
 Purpose: Telegram channels the bot can post to (marketing broadcasts)
 Multi-channel: Admin selects which channels when creating a post
@@ -1366,6 +1429,7 @@ Indexes:
 ```
 
 ### TABLE: telegram_posts
+
 ```
 Purpose: Marketing posts sent or scheduled to Telegram channels
 Scheduling: scheduled_at = null → send immediately, else send at scheduled time
@@ -1391,6 +1455,7 @@ Indexes:
 ```
 
 ### TABLE: telegram_post_channels
+
 ```
 Purpose: Which channels each post was (or will be) sent to
 Status: Tracks send result per channel
@@ -1418,11 +1483,15 @@ Indexes:
 ---
 
 ## ════════════════════════════════════════════════
+
 ## FILE: social.ts
+
 ## Tables: wishlists, waitlists
+
 ## ════════════════════════════════════════════════
 
 ### TABLE: wishlists
+
 ```
 Purpose: Customer saved/liked products
 Notify: When product price drops → notify customer (via notifications_log)
@@ -1442,6 +1511,7 @@ Indexes:
 ```
 
 ### TABLE: waitlists
+
 ```
 Purpose: Out-of-stock notifications — customer wants to be notified when back
 Trigger: When inventory batch added + current_qty > 0 → notify all waitlisted
@@ -1466,11 +1536,15 @@ Indexes:
 ---
 
 ## ════════════════════════════════════════════════
+
 ## FILE: audit.ts
+
 ## Tables: pick_pack_audit
+
 ## ════════════════════════════════════════════════
 
 ### TABLE: pick_pack_audit
+
 ```
 Purpose: APPEND-ONLY record of USB barcode scanning during order packing
 Method: Admin scans barcode → system verifies against order items
@@ -1499,11 +1573,15 @@ Indexes:
 ---
 
 ## ════════════════════════════════════════════════
+
 ## FILE: analytics.ts
+
 ## Tables: daily_sales_summary
+
 ## ════════════════════════════════════════════════
 
 ### TABLE: daily_sales_summary
+
 ```
 Purpose: Pre-aggregated daily sales data for fast dashboard analytics
 Update: Real-time when order.status → DELIVERED
@@ -1544,11 +1622,15 @@ Business Rule:
 ---
 
 ## ════════════════════════════════════════════════
+
 ## FILE: notifications.ts
+
 ## Tables: notifications_log
+
 ## ════════════════════════════════════════════════
 
 ### TABLE: notifications_log
+
 ```
 Purpose: Record of all sent notifications (push + Telegram)
 Debugging: Find failed notifications, resend if needed
@@ -1583,7 +1665,9 @@ Indexes:
 ---
 
 ## ════════════════════════════════════════════════
+
 ## FILE: index.ts
+
 ## ════════════════════════════════════════════════
 
 ```typescript
@@ -1611,11 +1695,15 @@ export * from './notifications'
 ---
 
 ## ════════════════════════════════════════════════
+
 ## FILE: sequences.ts (ADD TO index.ts exports)
+
 ## Tables: daily_order_sequences
+
 ## ════════════════════════════════════════════════
 
 ### TABLE: daily_order_sequences
+
 ```
 Purpose: Atomic daily sequence counter for order numbers
 Pattern: MIRA-{YY}{MM}{DD}-{4_digit_seq_zero_padded}
@@ -1642,6 +1730,7 @@ Indexes:
 You are a senior TypeScript engineer. Generate all 19 Drizzle ORM schema files.
 
 ### Rules:
+
 1. Use `drizzle-orm/pg-core` imports
 2. Use `pgEnum` for all enums (defined in enums.ts, imported where needed)
 3. All monetary values: `bigint({ mode: 'bigint' })`
@@ -1659,5 +1748,6 @@ You are a senior TypeScript engineer. Generate all 19 Drizzle ORM schema files.
 14. All files must compile with: `npx tsc --noEmit --strict`
 
 ### Output:
+
 One file at a time, starting with enums.ts
 Each file: complete, compilable, no placeholders

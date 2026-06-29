@@ -126,9 +126,7 @@ export function CategoriesPage() {
               className="w-12 h-12 min-w-[3rem] shrink-0 rounded-lg object-cover border-[0.5px] border-border"
             />
           ) : (
-            <div
-              className="w-12 h-12 min-w-[3rem] shrink-0 rounded-lg bg-gray-100 flex items-center justify-center"
-            >
+            <div className="w-12 h-12 min-w-[3rem] shrink-0 rounded-lg bg-gray-100 flex items-center justify-center">
               <FolderOpen className="h-4 w-4 text-gray-400" strokeWidth={1.5} />
             </div>
           )}
@@ -310,7 +308,10 @@ export function CategoriesPage() {
               </button>
             </div>
 
-            <form onSubmit={handleSubmit((data: CategoryForm) => saveMutation.mutate(data))} className="space-y-3">
+            <form
+              onSubmit={handleSubmit((data: CategoryForm) => saveMutation.mutate(data))}
+              className="space-y-3"
+            >
               <div>
                 <Label className="text-xs mb-1.5 block">Nomi *</Label>
                 <Input
@@ -394,12 +395,13 @@ export function CategoriesPage() {
                 >
                   Bekor
                 </Button>
-                <Button type="submit" size="sm" disabled={saveMutation.isPending} className="flex-1 rounded-lg">
-                  {saveMutation.isPending
-                    ? 'Saqlanmoqda...'
-                    : editTarget
-                    ? 'Saqlash'
-                    : 'Yaratish'}
+                <Button
+                  type="submit"
+                  size="sm"
+                  disabled={saveMutation.isPending}
+                  className="flex-1 rounded-lg"
+                >
+                  {saveMutation.isPending ? 'Saqlanmoqda...' : editTarget ? 'Saqlash' : 'Yaratish'}
                 </Button>
               </div>
             </form>
@@ -416,7 +418,9 @@ export function CategoriesPage() {
           >
             <div>
               <FolderOpen className="h-8 w-8 text-gray-300 mx-auto mb-2" strokeWidth={1.5} />
-              <p className="text-sm text-muted-foreground">Kategoriya tanlang yoki yangi yarating</p>
+              <p className="text-sm text-muted-foreground">
+                Kategoriya tanlang yoki yangi yarating
+              </p>
             </div>
           </div>
         )}

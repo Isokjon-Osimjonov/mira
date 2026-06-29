@@ -16,7 +16,7 @@ export function errorHandler(err: any, req: Request, res: Response, _next: NextF
   const message =
     err.name === 'ZodError'
       ? `Invalid input: ${err.errors?.[0]?.message}`
-      : err.message ?? 'Ichki xatolik'
+      : (err.message ?? 'Ichki xatolik')
 
   // Structured logging
   if (status >= 500) {

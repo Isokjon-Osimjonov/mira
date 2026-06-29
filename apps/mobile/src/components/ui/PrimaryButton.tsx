@@ -1,10 +1,5 @@
 import React from 'react'
-import {
-  TouchableOpacity,
-  Text,
-  ActivityIndicator,
-  StyleSheet,
-} from 'react-native'
+import { TouchableOpacity, Text, ActivityIndicator, StyleSheet } from 'react-native'
 import { tokens } from '../../lib/tokens'
 
 type Props = {
@@ -22,19 +17,12 @@ export default function PrimaryButton({
 }: Props) {
   return (
     <TouchableOpacity
-      style={[
-        styles.button,
-        (disabled || loading) && styles.disabled,
-      ]}
+      style={[styles.button, (disabled || loading) && styles.disabled]}
       onPress={onPress}
       disabled={disabled || loading}
       activeOpacity={0.85}
     >
-      {loading ? (
-        <ActivityIndicator color="#FFFFFF" />
-      ) : (
-        <Text style={styles.label}>{label}</Text>
-      )}
+      {loading ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.label}>{label}</Text>}
     </TouchableOpacity>
   )
 }

@@ -11,7 +11,7 @@ import './index.css'
 // ── Auth Gate Component ──
 
 function AuthGate({ children }: { children: React.ReactNode }) {
-  const hasHydrated = useAuthStore(s => s._hasHydrated)
+  const hasHydrated = useAuthStore((s) => s._hasHydrated)
 
   if (!hasHydrated) {
     return (
@@ -41,15 +41,15 @@ createRoot(root).render(
         toastOptions={{
           style: {
             fontFamily: 'Inter, sans-serif',
-            fontSize:   '14px',
+            fontSize: '14px',
             borderRadius: '10px',
           },
           classNames: {
             success: 'bg-green-50 border-green-200 text-green-800',
-            error:   'bg-red-50 border-red-200 text-red-800',
+            error: 'bg-red-50 border-red-200 text-red-800',
             warning: 'bg-amber-50 border-amber-200 text-amber-800',
-            info:    'bg-blue-50 border-blue-200 text-blue-800',
-          }
+            info: 'bg-blue-50 border-blue-200 text-blue-800',
+          },
         }}
       />
     </QueryClientProvider>

@@ -1,8 +1,6 @@
 {
   "name": "mobile",
-  "tags": [
-    "scope:mobile"
-  ],
+  "tags": ["scope:mobile"],
   "targets": {
     "serve": {
       "executor": "nx:run-commands",
@@ -28,9 +26,7 @@
     "lint": {
       "executor": "@nx/eslint:lint",
       "options": {
-        "lintFilePatterns": [
-          "apps/mobile/**/*.{ts,tsx}"
-        ],
+        "lintFilePatterns": ["apps/mobile/**/*.{ts,tsx}"],
         "useFlatConfig": false
       }
     }

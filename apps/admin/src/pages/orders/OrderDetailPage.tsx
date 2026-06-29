@@ -115,7 +115,7 @@ export function OrderDetailPage({ id }: Props) {
       } else {
         toast.success(`${res.data.productName || 'Mahsulot'} ✓ skanerlandi`)
         if (res.data.allScanned) {
-          toast.success("🎉 Barcha mahsulotlar skanerlandi! Qadoqlashni boshlashingiz mumkin.", {
+          toast.success('🎉 Barcha mahsulotlar skanerlandi! Qadoqlashni boshlashingiz mumkin.', {
             duration: 5000,
           })
         }
@@ -150,19 +150,15 @@ export function OrderDetailPage({ id }: Props) {
       // Need to wait for the videoRef to be available in the DOM
       setTimeout(async () => {
         if (!videoRef.current) return
-        await reader.decodeFromVideoDevice(
-          undefined,
-          videoRef.current,
-          (result) => {
-            if (result) {
-              const code = result.getText()
-              stopCamera()
-              setBarcodeInput(code)
-              // Auto-scan after small delay to let UI update
-              setTimeout(() => handleScan(code), 300)
-            }
+        await reader.decodeFromVideoDevice(undefined, videoRef.current, (result) => {
+          if (result) {
+            const code = result.getText()
+            stopCamera()
+            setBarcodeInput(code)
+            // Auto-scan after small delay to let UI update
+            setTimeout(() => handleScan(code), 300)
           }
-        )
+        })
       }, 100)
     } catch (err) {
       console.error('Camera error:', err)
@@ -280,13 +276,11 @@ export function OrderDetailPage({ id }: Props) {
   const allScanned = totalCount > 0 && orderItems.every((item: any) => item.isScanned)
 
   const nextStatuses = VALID_TRANSITIONS[order.status] ?? []
-  const isUZB = order.deliveryRegion === 'UZB' 
+  const isUZB = order.deliveryRegion === 'UZB'
 
   return (
     <>
-      {lightboxUrl && (
-        <ReceiptLightbox url={lightboxUrl} onClose={() => setLightboxUrl(null)} />
-      )}
+      {lightboxUrl && <ReceiptLightbox url={lightboxUrl} onClose={() => setLightboxUrl(null)} />}
 
       <div className="flex flex-col gap-4 max-w-5xl mx-auto">
         {/* Header */}
@@ -319,9 +313,7 @@ export function OrderDetailPage({ id }: Props) {
             <span className="hidden sm:inline">
               {invoiceLoading ? 'Yuklanmoqda...' : 'Faktura yuklab olish'}
             </span>
-            <span className="sm:hidden">
-              {invoiceLoading ? '...' : 'Invoice'}
-            </span>
+            <span className="sm:hidden">{invoiceLoading ? '...' : 'Invoice'}</span>
           </Button>
         </div>
 
@@ -338,10 +330,12 @@ export function OrderDetailPage({ id }: Props) {
                     <p className="text-xs font-semibold text-gray-900 uppercase tracking-wide">
                       Mahsulotlarni skanerlash
                     </p>
-                    <span className={cn(
-                      "text-[11px] font-bold ml-2",
-                      allScanned ? "text-[#16A34A]" : "text-[#D97706]"
-                    )}>
+                    <span
+                      className={cn(
+                        'text-[11px] font-bold ml-2',
+                        allScanned ? 'text-[#16A34A]' : 'text-[#D97706]'
+                      )}
+                    >
                       {scannedCount} / {totalCount} ta skanerlandi
                     </span>
                   </div>
@@ -358,8 +352,10 @@ export function OrderDetailPage({ id }: Props) {
                     <div
                       key={item.id}
                       className={cn(
-                        "flex items-center gap-3 p-2 rounded-lg border-[0.5px] transition-colors",
-                        item.isScanned ? "bg-[#F0FDF4] border-green-200" : "bg-gray-50/30 border-border/50"
+                        'flex items-center gap-3 p-2 rounded-lg border-[0.5px] transition-colors',
+                        item.isScanned
+                          ? 'bg-[#F0FDF4] border-green-200'
+                          : 'bg-gray-50/30 border-border/50'
                       )}
                     >
                       <img
@@ -377,8 +373,7 @@ export function OrderDetailPage({ id }: Props) {
                       </div>
                       {item.isScanned ? (
                         <div className="flex items-center gap-1 text-[11px] font-medium text-green-600 bg-white px-2 py-1 rounded-md border border-green-100 shadow-sm">
-                          <CheckCircle className="h-3 w-3" />
-                          ✓ Skanerlandi
+                          <CheckCircle className="h-3 w-3" />✓ Skanerlandi
                         </div>
                       ) : (
                         <div className="text-[11px] font-medium text-muted-foreground bg-white px-2 py-1 rounded-md border border-border shadow-sm">
@@ -414,8 +409,9 @@ export function OrderDetailPage({ id }: Props) {
                     variant="outline"
                     size="sm"
                     className={cn(
-                      "rounded-lg h-9 px-3 border-border/50",
-                      showCamera && "bg-primary text-white border-primary hover:bg-primary/90 hover:text-white"
+                      'rounded-lg h-9 px-3 border-border/50',
+                      showCamera &&
+                        'bg-primary text-white border-primary hover:bg-primary/90 hover:text-white'
                     )}
                     onClick={showCamera ? stopCamera : handleCameraOpen}
                   >
@@ -425,10 +421,7 @@ export function OrderDetailPage({ id }: Props) {
 
                 {showCamera && (
                   <div className="mt-4 relative rounded-xl overflow-hidden bg-black aspect-video">
-                    <video
-                      ref={videoRef}
-                      className="w-full h-full object-cover"
-                    />
+                    <video ref={videoRef} className="w-full h-full object-cover" />
                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                       <div className="w-48 h-48 border-2 border-white/50 rounded-lg shadow-[0_0_0_9999px_rgba(0,0,0,0.4)]" />
                       <div className="absolute top-1/2 left-0 right-0 h-[0.5px] bg-red-500/50 animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.5)]" />
@@ -465,10 +458,18 @@ export function OrderDetailPage({ id }: Props) {
                   <thead>
                     <tr className="border-b border-border/50 bg-gray-50/50">
                       <th className="w-12 px-4 py-2.5" />
-                      <th className="px-4 py-2.5 text-left text-xs font-medium text-muted-foreground">Mahsulot</th>
-                      <th className="px-4 py-2.5 text-center text-xs font-medium text-muted-foreground w-16">Miqdor</th>
-                      <th className="px-4 py-2.5 text-right text-xs font-medium text-muted-foreground w-24">Narx</th>
-                      <th className="px-4 py-2.5 text-right text-xs font-medium text-muted-foreground w-24">Jami</th>
+                      <th className="px-4 py-2.5 text-left text-xs font-medium text-muted-foreground">
+                        Mahsulot
+                      </th>
+                      <th className="px-4 py-2.5 text-center text-xs font-medium text-muted-foreground w-16">
+                        Miqdor
+                      </th>
+                      <th className="px-4 py-2.5 text-right text-xs font-medium text-muted-foreground w-24">
+                        Narx
+                      </th>
+                      <th className="px-4 py-2.5 text-right text-xs font-medium text-muted-foreground w-24">
+                        Jami
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border/30">
@@ -476,7 +477,11 @@ export function OrderDetailPage({ id }: Props) {
                       <tr key={item.id}>
                         <td className="px-4 py-3">
                           {item.imageUrl ? (
-                            <img src={item.imageUrl} alt={item.productName} className="w-10 h-10 min-w-[2.5rem] shrink-0 rounded-lg object-cover border-[0.5px] border-border" />
+                            <img
+                              src={item.imageUrl}
+                              alt={item.productName}
+                              className="w-10 h-10 min-w-[2.5rem] shrink-0 rounded-lg object-cover border-[0.5px] border-border"
+                            />
                           ) : (
                             <div className="w-10 h-10 min-w-[2.5rem] shrink-0 rounded-lg bg-gray-100 flex items-center justify-center">
                               <Package className="h-4 w-4 text-gray-400" strokeWidth={1.5} />
@@ -485,16 +490,22 @@ export function OrderDetailPage({ id }: Props) {
                         </td>
                         <td className="px-4 py-3">
                           <p className="text-sm font-medium text-gray-900">{item.productName}</p>
-                          <p className="text-[11px] text-muted-foreground">{item.brandName} · {item.barcode}</p>
+                          <p className="text-[11px] text-muted-foreground">
+                            {item.brandName} · {item.barcode}
+                          </p>
                         </td>
                         <td className="px-4 py-3 text-center">
                           <span className="text-sm font-medium text-gray-900">{item.quantity}</span>
                         </td>
                         <td className="px-4 py-3 text-right">
-                          <span className="text-xs text-muted-foreground">{formatKRW(item.unitPrice)}</span>
+                          <span className="text-xs text-muted-foreground">
+                            {formatKRW(item.unitPrice)}
+                          </span>
                         </td>
                         <td className="px-4 py-3 text-right">
-                          <span className="text-sm font-semibold text-gray-900">{formatKRW(item.subtotal)}</span>
+                          <span className="text-sm font-semibold text-gray-900">
+                            {formatKRW(item.subtotal)}
+                          </span>
                         </td>
                       </tr>
                     ))}
@@ -551,7 +562,9 @@ export function OrderDetailPage({ id }: Props) {
           <div className="flex flex-col gap-3">
             {/* Mijoz Card */}
             <div className="bg-white rounded-xl border-[0.5px] border-border p-4">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">Mijoz</p>
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+                Mijoz
+              </p>
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold text-primary shrink-0">
                   {order.customerName?.[0]?.toUpperCase()}
@@ -563,10 +576,14 @@ export function OrderDetailPage({ id }: Props) {
                     {order.customerPhone}
                   </p>
                 </div>
-                <span className={cn(
-                  'ml-auto text-[10px] font-medium px-1.5 py-0.5 rounded border-[0.5px] shrink-0',
-                  order.deliveryRegion === 'KOR' ? 'bg-blue-50 text-blue-600 border-blue-200' : 'bg-green-50 text-green-600 border-green-200'
-                )}>
+                <span
+                  className={cn(
+                    'ml-auto text-[10px] font-medium px-1.5 py-0.5 rounded border-[0.5px] shrink-0',
+                    order.deliveryRegion === 'KOR'
+                      ? 'bg-blue-50 text-blue-600 border-blue-200'
+                      : 'bg-green-50 text-green-600 border-green-200'
+                  )}
+                >
                   {order.deliveryRegion}
                 </span>
               </div>
@@ -574,7 +591,9 @@ export function OrderDetailPage({ id }: Props) {
 
             {/* Address Card */}
             <div className="bg-white rounded-xl border-[0.5px] border-border p-4">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">Yetkazib berish manzili</p>
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+                Yetkazib berish manzili
+              </p>
               <div className="space-y-1">
                 <p className="text-sm font-medium text-gray-900">{order.deliveryFullName}</p>
                 <p className="text-xs text-muted-foreground flex items-center gap-1">
@@ -597,16 +616,24 @@ export function OrderDetailPage({ id }: Props) {
             {isUZB && (
               <div className="bg-white rounded-xl border-[0.5px] border-border p-4">
                 <div className="flex items-center justify-between mb-3">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Yetkazib berish muddati</p>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                    Yetkazib berish muddati
+                  </p>
                   {canWrite('orders') && (
-                    <Button variant="ghost" size="sm" className="h-6 text-xs px-2 text-primary" onClick={() => setEstimateDialog(true)}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 text-xs px-2 text-primary"
+                      onClick={() => setEstimateDialog(true)}
+                    >
                       Tahrirlash
                     </Button>
                   )}
                 </div>
                 {order.estimatedDeliveryStart && order.estimatedDeliveryEnd ? (
                   <p className="text-sm font-medium text-gray-900">
-                    {formatDateTime(order.estimatedDeliveryStart).split(' ')[0]} — {formatDateTime(order.estimatedDeliveryEnd).split(' ')[0]}
+                    {formatDateTime(order.estimatedDeliveryStart).split(' ')[0]} —{' '}
+                    {formatDateTime(order.estimatedDeliveryEnd).split(' ')[0]}
                   </p>
                 ) : (
                   <p className="text-xs text-muted-foreground">Belgilanmagan</p>
@@ -617,27 +644,52 @@ export function OrderDetailPage({ id }: Props) {
             {/* Receipt Card */}
             {order.receiptUrl && (
               <div className="bg-white rounded-xl border-[0.5px] border-border p-4">
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">Kvitansiya</p>
-                <div onClick={() => setLightboxUrl(order.receiptUrl)} className="cursor-pointer group relative rounded-xl overflow-hidden border-[0.5px] border-border">
-                  <img src={order.receiptUrl} alt="Kvitansiya" className="w-full h-36 object-cover group-hover:scale-105 transition-transform duration-200" />
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+                  Kvitansiya
+                </p>
+                <div
+                  onClick={() => setLightboxUrl(order.receiptUrl)}
+                  className="cursor-pointer group relative rounded-xl overflow-hidden border-[0.5px] border-border"
+                >
+                  <img
+                    src={order.receiptUrl}
+                    alt="Kvitansiya"
+                    className="w-full h-36 object-cover group-hover:scale-105 transition-transform duration-200"
+                  />
                   <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-end justify-center pb-2">
-                    <span className="text-white text-xs opacity-0 group-hover:opacity-100 transition-opacity font-medium">Kattalashtirish uchun bosing</span>
+                    <span className="text-white text-xs opacity-0 group-hover:opacity-100 transition-opacity font-medium">
+                      Kattalashtirish uchun bosing
+                    </span>
                   </div>
                 </div>
-                <button onClick={() => setLightboxUrl(order.receiptUrl)} className="flex items-center gap-1.5 mt-2 text-xs text-primary hover:underline">
+                <button
+                  onClick={() => setLightboxUrl(order.receiptUrl)}
+                  className="flex items-center gap-1.5 mt-2 text-xs text-primary hover:underline"
+                >
                   <ExternalLink className="h-3 w-3" strokeWidth={1.5} />
                   Chekni ochish
                 </button>
 
                 {order.status === 'PAYMENT_SUBMITTED' && canWrite('orders') && (
                   <div className="flex gap-2 mt-3 pt-3 border-t border-border/50">
-                    <Button size="sm" className="flex-1 rounded-lg gap-1.5 h-8 text-xs bg-green-600 hover:bg-green-700"
-                      onClick={() => setConfirmAction({ type: 'CONFIRM_PAYMENT', label: "To'lovni tasdiqlash" })}>
+                    <Button
+                      size="sm"
+                      className="flex-1 rounded-lg gap-1.5 h-8 text-xs bg-green-600 hover:bg-green-700"
+                      onClick={() =>
+                        setConfirmAction({ type: 'CONFIRM_PAYMENT', label: "To'lovni tasdiqlash" })
+                      }
+                    >
                       <CheckCircle className="h-3.5 w-3.5" strokeWidth={1.5} />
                       Tasdiqlash
                     </Button>
-                    <Button size="sm" variant="outline" className="flex-1 rounded-lg gap-1.5 h-8 text-xs border-red-200 text-red-600 hover:bg-red-50"
-                      onClick={() => setConfirmAction({ type: 'REJECT_PAYMENT', label: "To'lovni rad etish" })}>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="flex-1 rounded-lg gap-1.5 h-8 text-xs border-red-200 text-red-600 hover:bg-red-50"
+                      onClick={() =>
+                        setConfirmAction({ type: 'REJECT_PAYMENT', label: "To'lovni rad etish" })
+                      }
+                    >
                       <XCircle className="h-3.5 w-3.5" strokeWidth={1.5} />
                       Rad etish
                     </Button>
@@ -649,28 +701,39 @@ export function OrderDetailPage({ id }: Props) {
             {/* Actions Card */}
             {nextStatuses.length > 0 && canWrite('orders') && (
               <div className="bg-white rounded-xl border-[0.5px] border-border p-4">
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">Harakatlar</p>
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+                  Harakatlar
+                </p>
                 <div className="flex flex-col gap-2">
                   {nextStatuses
                     .filter((s) => s !== 'PAYMENT_CONFIRMED' && s !== 'PAYMENT_REJECTED')
                     .map((nextStatus) => {
                       const isPacking = nextStatus === 'PACKING'
                       const packingDisabled = isPacking && !allScanned
-                      
+
                       return (
                         <div key={nextStatus} className="space-y-1">
                           <Button
                             size="sm"
                             variant={TRANSITION_VARIANTS[nextStatus]}
                             className={cn(
-                              "rounded-lg w-full h-8 text-xs",
-                              nextStatus === 'SHIPPED' && allScanned && "ring-2 ring-primary ring-offset-2 bg-primary hover:bg-primary/90 text-white font-bold",
-                              isPacking && allScanned && "bg-primary hover:bg-primary/90 text-white"
+                              'rounded-lg w-full h-8 text-xs',
+                              nextStatus === 'SHIPPED' &&
+                                allScanned &&
+                                'ring-2 ring-primary ring-offset-2 bg-primary hover:bg-primary/90 text-white font-bold',
+                              isPacking && allScanned && 'bg-primary hover:bg-primary/90 text-white'
                             )}
                             disabled={packingDisabled || statusMutation.isPending}
-                            onClick={() => setConfirmAction({ type: nextStatus, label: TRANSITION_LABELS[nextStatus] })}
+                            onClick={() =>
+                              setConfirmAction({
+                                type: nextStatus,
+                                label: TRANSITION_LABELS[nextStatus],
+                              })
+                            }
                           >
-                            {isPacking && allScanned ? "✓ Barcha skanerlandi — Qadoqlashni boshlash" : TRANSITION_LABELS[nextStatus]}
+                            {isPacking && allScanned
+                              ? '✓ Barcha skanerlandi — Qadoqlashni boshlash'
+                              : TRANSITION_LABELS[nextStatus]}
                           </Button>
                           {isPacking && !allScanned && order.status === 'PAYMENT_CONFIRMED' && (
                             <p className="text-[10px] text-[#D97706] text-center font-medium">
@@ -695,11 +758,15 @@ export function OrderDetailPage({ id }: Props) {
           confirmAction?.type === 'REJECT_PAYMENT'
             ? "To'lov rad etiladi. Mijozga xabar yuboriladi."
             : confirmAction?.type === 'CANCELED'
-            ? "Buyurtma bekor qilinadi. Bu amalni qaytarib bo'lmaydi."
-            : `Buyurtma holati "${ORDER_STATUS_LABELS[confirmAction?.type ?? '']}" ga o'zgaradi.`
+              ? "Buyurtma bekor qilinadi. Bu amalni qaytarib bo'lmaydi."
+              : `Buyurtma holati "${ORDER_STATUS_LABELS[confirmAction?.type ?? '']}" ga o'zgaradi.`
         }
         loading={statusMutation.isPending || paymentMutation.isPending}
-        variant={confirmAction?.type === 'CANCELED' || confirmAction?.type === 'REJECT_PAYMENT' ? 'destructive' : 'default'}
+        variant={
+          confirmAction?.type === 'CANCELED' || confirmAction?.type === 'REJECT_PAYMENT'
+            ? 'destructive'
+            : 'default'
+        }
         onConfirm={() => {
           if (!confirmAction) return
           if (confirmAction.type === 'CONFIRM_PAYMENT') {
@@ -723,11 +790,11 @@ export function OrderDetailPage({ id }: Props) {
           <div className="flex flex-col gap-3 py-4">
             <div className="space-y-1">
               <label className="text-xs font-medium">Boshlanish sanasi</label>
-              <Input type="date" value={estStart} onChange={e => setEstStart(e.target.value)} />
+              <Input type="date" value={estStart} onChange={(e) => setEstStart(e.target.value)} />
             </div>
             <div className="space-y-1">
               <label className="text-xs font-medium">Tugash sanasi</label>
-              <Input type="date" value={estEnd} onChange={e => setEstEnd(e.target.value)} />
+              <Input type="date" value={estEnd} onChange={(e) => setEstEnd(e.target.value)} />
             </div>
           </div>
         }

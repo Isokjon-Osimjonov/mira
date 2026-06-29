@@ -12,25 +12,37 @@ import {
   waitlists,
   customers,
 } from '@mira/db'
-import { eq, and, sql, desc, asc, min, inArray, gte, lte, isNotNull, gt, or, ilike, isNull } from 'drizzle-orm'
-import { emit } from '../../config/socket'
 import {
-  notifyLowStock,
-  sendAdminAlert,
-  notifyCustomerFull,
-} from '../../bot/helpers/notify'
+  eq,
+  and,
+  sql,
+  desc,
+  asc,
+  min,
+  inArray,
+  gte,
+  lte,
+  isNotNull,
+  gt,
+  or,
+  ilike,
+  isNull,
+} from 'drizzle-orm'
+import { emit } from '../../config/socket'
+import { notifyLowStock, sendAdminAlert, notifyCustomerFull } from '../../bot/helpers/notify'
 import { CreateBatchDto, UpdateBatchDto } from './inventory.schema'
 import { createNotification } from '../admin-notifications/admin-notifications.service'
 import { notifyWaitlist } from '../waitlists/waitlists.service'
 
-export async function getStockSummary(query: {
-
-  filter?: 'low' | 'out' | 'expiring'
-  search?: string
-  categoryId?: string
-  page?: number
-  limit?: number
-} = {}) {
+export async function getStockSummary(
+  query: {
+    filter?: 'low' | 'out' | 'expiring'
+    search?: string
+    categoryId?: string
+    page?: number
+    limit?: number
+  } = {}
+) {
   const page = query.page || 1
   const limit = query.limit || 20
   const offset = (page - 1) * limit
@@ -205,9 +217,7 @@ export async function createBatch(data: CreateBatchDto, adminId: string) {
     await checkLowStock(tx, data.productId)
 
     // 4. Notify waitlist
-    notifyWaitlist(data.productId).catch((err) =>
-      console.error('Failed to notify waitlist', err)
-    )
+    notifyWaitlist(data.productId).catch((err) => console.error('Failed to notify waitlist', err))
 
     return newBatch
   })
@@ -382,7 +392,7 @@ export async function writeOffStock(params: {
           const [newCat] = await tx
             .insert(expenseCategories)
             .values({
-              name: 'Inventar yo\'qotishlari',
+              name: "Inventar yo'qotishlari",
               slug: 'inventory-loss',
               isSystem: true,
             })
@@ -392,9 +402,9 @@ export async function writeOffStock(params: {
 
         const WRITEOFF_EXPENSE_NAMES: Record<string, string> = {
           DAMAGED: 'Zarar (shikastlangan mahsulot)',
-          EXPIRED: 'Zarar (muddati o\'tgan mahsulot)',
+          EXPIRED: "Zarar (muddati o'tgan mahsulot)",
           SAMPLE: 'Namuna xarajati',
-          LOST: 'Yo\'qotish',
+          LOST: "Yo'qotish",
           ADJUSTMENT: 'Inventar tuzatish',
         }
 
@@ -422,7 +432,7 @@ export async function writeOffStock(params: {
         title: 'Hisobdan chiqarildi',
         message: `${Math.abs(qtyDelta)} ta mahsulot hisobdan chiqarildi (${batch.productName})`,
         link: '/inventory',
-      }).catch(err => console.error('Failed to create notification', err))
+      }).catch((err) => console.error('Failed to create notification', err))
     }
 
     return { batch: { ...batch, currentQty: newQty }, movement, expense }
@@ -476,7 +486,10 @@ export async function getWriteOffHistory(params: {
     .limit(params.limit)
     .offset(offset)
 
-  const [countRes] = await db.select({ count: sql<number>`count(*)` }).from(stockMovements).where(where)
+  const [countRes] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(stockMovements)
+    .where(where)
   const total = Number(countRes.count)
 
   return {

@@ -1,10 +1,5 @@
 import React, { useState } from 'react'
-import {
-  View,
-  Text,
-  Image,
-  StyleSheet,
-} from 'react-native'
+import { View, Text, Image, StyleSheet } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
 import { tokens } from '../../lib/tokens'
@@ -38,7 +33,7 @@ export default function LoginScreen() {
       })
     } catch (err: any) {
       const msg = err?.response?.data?.error?.message
-      setError(msg ?? 'Xatolik yuz berdi. Qayta urinib ko\'ring.')
+      setError(msg ?? "Xatolik yuz berdi. Qayta urinib ko'ring.")
     } finally {
       setLoading(false)
     }
@@ -52,10 +47,7 @@ export default function LoginScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.top}>
-        <Image
-          source={require('../../../assets/icon.png')}
-          style={styles.logo}
-        />
+        <Image source={require('../../../assets/icon.png')} style={styles.logo} />
         <Text style={styles.title}>Kirish</Text>
         <Text style={styles.subtitle}>Telefon raqamingizni kiriting</Text>
       </View>
@@ -83,9 +75,7 @@ export default function LoginScreen() {
       </View>
 
       <View style={styles.bottom}>
-        <Text style={styles.bottomText}>
-          Telegram orqali OTP kodi yuboriladi
-        </Text>
+        <Text style={styles.bottomText}>Telegram orqali OTP kodi yuboriladi</Text>
       </View>
     </SafeAreaView>
   )

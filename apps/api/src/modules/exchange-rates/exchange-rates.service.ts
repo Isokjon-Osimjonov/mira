@@ -41,8 +41,8 @@ export async function getExchangeRateHistory() {
     .from(exchangeRateSnapshots)
     .orderBy(desc(exchangeRateSnapshots.createdAt))
     .limit(30)
-  
-  return rows.map(r => ({
+
+  return rows.map((r) => ({
     ...r,
     krwToUzs: Number(r.krwToUzs),
     usdToKrw: Number(r.usdToKrw),
@@ -52,7 +52,7 @@ export async function getExchangeRateHistory() {
 
 export async function createManualExchangeRate(dto: CreateExchangeRateDto, adminId: string) {
   const { uzbCargoUsdPerKg } = await getSettings()
-  
+
   let usdToKrw = dto.usdToKrw
   if (!usdToKrw) {
     const [latest] = await db
@@ -60,7 +60,7 @@ export async function createManualExchangeRate(dto: CreateExchangeRateDto, admin
       .from(exchangeRateSnapshots)
       .orderBy(desc(exchangeRateSnapshots.createdAt))
       .limit(1)
-    
+
     usdToKrw = latest ? Number(latest.usdToKrw) : 1350
   }
 
@@ -104,7 +104,7 @@ export async function fetchAndSaveExchangeRate() {
       throw {
         status: 429,
         code: 'RATE_LIMITED',
-        message: 'Valyuta kursi 1 soatda faqat 1 marta yangilanadi'
+        message: 'Valyuta kursi 1 soatda faqat 1 marta yangilanadi',
       }
     }
   }

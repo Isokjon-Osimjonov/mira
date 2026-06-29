@@ -5,7 +5,13 @@ export const createSupplierSchema = z.object({
   country: z.string().min(2).max(5).optional().default('KR'),
   contactName: z.string().max(100).optional().nullable(),
   phone: z.string().max(30).optional().nullable(),
-  email: z.string().email("Noto'g'ri email formati").max(200).optional().nullable().or(z.literal('')),
+  email: z
+    .string()
+    .email("Noto'g'ri email formati")
+    .max(200)
+    .optional()
+    .nullable()
+    .or(z.literal('')),
   address: z.string().optional().nullable(),
   paymentTerms: z.string().optional().nullable(),
   website: z.string().url("Noto'g'ri URL formati").max(300).optional().nullable().or(z.literal('')),

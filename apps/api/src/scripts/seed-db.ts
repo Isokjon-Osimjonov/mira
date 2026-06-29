@@ -1,5 +1,5 @@
-import { assertNotProduction } from "./_guard";
-assertNotProduction();
+import { assertNotProduction } from './_guard'
+assertNotProduction()
 
 import { db, pool } from '../config/db'
 import { settings, expenseCategories, korShippingTiers, roles, rolePermissions } from '@mira/db'

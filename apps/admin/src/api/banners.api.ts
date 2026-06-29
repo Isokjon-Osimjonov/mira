@@ -24,13 +24,13 @@ export const bannersApi = {
   uploadImage: async (file: File): Promise<string> => {
     const formData = new FormData()
     formData.append('banner', file)
-    
+
     const res = await api.post('/admin/upload/banner', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
     })
-    
+
     return res.data.data.url
-  }
+  },
 }

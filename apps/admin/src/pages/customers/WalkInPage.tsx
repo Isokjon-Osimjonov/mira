@@ -51,14 +51,14 @@ export function WalkInPage() {
     mutationFn: (data: WalkInForm) => customersApi.createWalkIn(data),
     onSuccess: (res) => {
       qc.removeQueries()
-      toast.success("Mijoz yaratildi")
+      toast.success('Mijoz yaratildi')
       navigate({
         to: '/customers/$id',
         params: { id: res.data.id },
       } as any)
     },
     onError: (err: any) => {
-      toast.error(err.response?.data?.error?.message || "Xatolik yuz berdi")
+      toast.error(err.response?.data?.error?.message || 'Xatolik yuz berdi')
     },
   })
 

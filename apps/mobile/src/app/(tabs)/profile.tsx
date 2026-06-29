@@ -1,12 +1,5 @@
 import React from 'react'
-import {
-  ScrollView,
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  Alert,
-} from 'react-native'
+import { ScrollView, View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Image } from 'expo-image'
 import { Feather } from '@expo/vector-icons'
@@ -140,7 +133,7 @@ export default function ProfileScreen() {
           iconColor: '#DC2626',
           label: "Hisobni o'chirish",
           labelColor: '#DC2626',
-          onPress: () => router.push('/profile/delete-account')
+          onPress: () => router.push('/profile/delete-account'),
         },
       ],
     },
@@ -156,16 +149,10 @@ export default function ProfileScreen() {
           <View style={styles.headerRow}>
             <View style={styles.avatarContainer}>
               {customer.profileImageUrl ? (
-                <Image
-                  source={customer.profileImageUrl}
-                  style={styles.avatar}
-                  contentFit="cover"
-                />
+                <Image source={customer.profileImageUrl} style={styles.avatar} contentFit="cover" />
               ) : (
                 <View style={styles.initialsContainer}>
-                  <Text style={styles.initialsText}>
-                    {getInitials(customer.firstName)}
-                  </Text>
+                  <Text style={styles.initialsText}>{getInitials(customer.firstName)}</Text>
                 </View>
               )}
             </View>
@@ -180,22 +167,18 @@ export default function ProfileScreen() {
                   style={[
                     styles.regionBadge,
                     {
-                      backgroundColor:
-                        customer.phoneRegion === 'KOR' ? '#EFF6FF' : '#F0FDF4',
+                      backgroundColor: customer.phoneRegion === 'KOR' ? '#EFF6FF' : '#F0FDF4',
                     },
                   ]}
                 >
                   <Text style={styles.regionBadgeText}>
-                    {customer.phoneRegion === 'KOR' ? '🇰🇷 Korea' : '🇺🇿 O\'zbekiston'}
+                    {customer.phoneRegion === 'KOR' ? '🇰🇷 Korea' : "🇺🇿 O'zbekiston"}
                   </Text>
                 </View>
               </View>
             </View>
 
-            <TouchableOpacity
-              onPress={() => router.push('/profile/edit')}
-              style={styles.editBtn}
-            >
+            <TouchableOpacity onPress={() => router.push('/profile/edit')} style={styles.editBtn}>
               <Feather name="edit-2" size={18} color={tokens.colors.textMuted} />
             </TouchableOpacity>
           </View>
@@ -215,19 +198,18 @@ export default function ProfileScreen() {
                   ]}
                   onPress={item.onPress}
                 >
-                  <View
-                    style={[styles.menuIconContainer, { backgroundColor: item.iconBg }]}
-                  >
+                  <View style={[styles.menuIconContainer, { backgroundColor: item.iconBg }]}>
                     <Feather name={item.icon as any} size={18} color={item.iconColor} />
                   </View>
-                  <Text style={[styles.menuLabel, (item as any).labelColor && { color: (item as any).labelColor }]}>
+                  <Text
+                    style={[
+                      styles.menuLabel,
+                      (item as any).labelColor && { color: (item as any).labelColor },
+                    ]}
+                  >
                     {item.label}
                   </Text>
-                  <Feather
-                    name="chevron-right"
-                    size={16}
-                    color={tokens.colors.textLight}
-                  />
+                  <Feather name="chevron-right" size={16} color={tokens.colors.textLight} />
                 </TouchableOpacity>
               ))}
             </View>

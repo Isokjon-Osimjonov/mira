@@ -3,8 +3,13 @@ import { sanitizeHtml } from '../lib/sanitize'
 
 // Fields that should be HTML sanitized
 const SANITIZE_FIELDS = [
-  'customerNote', 'adminNote', 'description',
-  'notes', 'reason', 'refundNote', 'note'
+  'customerNote',
+  'adminNote',
+  'description',
+  'notes',
+  'reason',
+  'refundNote',
+  'note',
 ]
 
 export function sanitizeInputs(req: Request, _res: Response, next: NextFunction) {

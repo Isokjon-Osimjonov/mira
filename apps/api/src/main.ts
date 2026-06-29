@@ -20,7 +20,12 @@ import { pool } from './config/db'
 import { startBot } from './bot/bot'
 import { initCronJobs } from './config/cron'
 import { connectRedis, getRedis } from './config/redis'
-import { initQueues, notificationWorker, paymentDeadlineWorker, telegramPostWorker } from './config/queues'
+import {
+  initQueues,
+  notificationWorker,
+  paymentDeadlineWorker,
+  telegramPostWorker,
+} from './config/queues'
 
 async function bootstrap() {
   const app = createApp()

@@ -23,24 +23,12 @@ router.get('/sign', requireAdmin, async (req, res, next) => {
 })
 
 // Customer avatar upload — authenticated customers only
-router.post(
-  '/avatar',
-  requireCustomer,
-  ctrl.uploadAvatar
-)
+router.post('/avatar', requireCustomer, ctrl.uploadAvatar)
 
 // Order receipt upload
-router.post(
-  '/receipt',
-  requireCustomer,
-  ctrl.uploadReceipt
-)
+router.post('/receipt', requireCustomer, ctrl.uploadReceipt)
 
 // Admin banner upload
-router.post(
-  '/banner',
-  requireAdmin,
-  ctrl.uploadBanner
-)
+router.post('/banner', requireAdmin, ctrl.uploadBanner)
 
 export default router

@@ -27,10 +27,7 @@ export const settingsApi = {
     return res.data.data
   },
 
-  createShippingTier: async (payload: {
-    maxOrderKrw: number | null
-    cargoFeeKrw: number
-  }) => {
+  createShippingTier: async (payload: { maxOrderKrw: number | null; cargoFeeKrw: number }) => {
     const res = await api.post('/admin/kor-shipping-tiers', payload)
     return res.data
   },

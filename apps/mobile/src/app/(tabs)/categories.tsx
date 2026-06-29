@@ -63,7 +63,7 @@ export default function CategoriesScreen() {
   const exchangeRate = useExchangeStore((s) => s.rate)
   const showUzs = customer?.phoneRegion === 'UZB'
 
-  const addItem = useCartStore(s => s.addItem)
+  const addItem = useCartStore((s) => s.addItem)
   const [addingId, setAddingId] = useState<string | null>(null)
 
   const [isRefreshing, setIsRefreshing] = useState(false)
@@ -75,7 +75,11 @@ export default function CategoriesScreen() {
   })
 
   // We use `category: activeCategoryId` instead of categoryId because our updated backend parameter is `category`
-  const { data: popularData, isLoading: popularLoading, refetch: refetchPopular } = useQuery({
+  const {
+    data: popularData,
+    isLoading: popularLoading,
+    refetch: refetchPopular,
+  } = useQuery({
     queryKey: ['products', 'bestselling', activeCategoryId, searchQuery],
     queryFn: () =>
       productService.getProducts({
@@ -87,7 +91,11 @@ export default function CategoriesScreen() {
     staleTime: 2 * 60 * 1000,
   })
 
-  const { data: newArrivalData, isLoading: newLoading, refetch: refetchNewArrivals } = useQuery({
+  const {
+    data: newArrivalData,
+    isLoading: newLoading,
+    refetch: refetchNewArrivals,
+  } = useQuery({
     queryKey: ['products', 'newest', activeCategoryId, searchQuery],
     queryFn: () =>
       productService.getProducts({
@@ -101,11 +109,7 @@ export default function CategoriesScreen() {
 
   const handleRefresh = async () => {
     setIsRefreshing(true)
-    await Promise.all([
-      refetchCategories(),
-      refetchPopular(),
-      refetchNewArrivals(),
-    ])
+    await Promise.all([refetchCategories(), refetchPopular(), refetchNewArrivals()])
     setIsRefreshing(false)
   }
 
@@ -123,14 +127,11 @@ export default function CategoriesScreen() {
       if (code === 'REGION_MISMATCH') {
         Alert.alert(
           'Hudud mos kelmaydi',
-          'Savatingizda boshqa hududdan mahsulot bor. Savatni tozalab qayta urinib ko\'ring.',
+          "Savatingizda boshqa hududdan mahsulot bor. Savatni tozalab qayta urinib ko'ring.",
           [{ text: 'OK' }]
         )
       } else {
-        Alert.alert(
-          'Xatolik',
-          err?.response?.data?.error?.message ?? 'Savatga qo\'shib bo\'lmadi'
-        )
+        Alert.alert('Xatolik', err?.response?.data?.error?.message ?? "Savatga qo'shib bo'lmadi")
       }
     } finally {
       setAddingId(null)
@@ -222,50 +223,38 @@ export default function CategoriesScreen() {
           >
             {/* Hammasi pill */}
             <TouchableOpacity
-              style={[
-                styles.pill,
-                activeCategoryId === null && styles.pillActive,
-              ]}
+              style={[styles.pill, activeCategoryId === null && styles.pillActive]}
               onPress={() => {
                 setSelectedL1(null)
                 setSelectedL2(null)
                 setSelectedL3(null)
               }}
             >
-              <Text style={[
-                styles.pillText,
-                activeCategoryId === null && styles.pillTextActive,
-              ]}>
+              <Text style={[styles.pillText, activeCategoryId === null && styles.pillTextActive]}>
                 Hammasi
               </Text>
             </TouchableOpacity>
 
             {/* Root category pills */}
-            {(categories as Category[]).map(cat => (
+            {(categories as Category[]).map((cat) => (
               <TouchableOpacity
                 key={cat.id}
-                style={[
-                  styles.pill,
-                  selectedL1?.id === cat.id && styles.pillActive,
-                ]}
+                style={[styles.pill, selectedL1?.id === cat.id && styles.pillActive]}
                 onPress={() => handleSelectL1(cat)}
               >
-                <Text style={[
-                  styles.pillText,
-                  selectedL1?.id === cat.id && styles.pillTextActive,
-                ]}
+                <Text
+                  style={[styles.pillText, selectedL1?.id === cat.id && styles.pillTextActive]}
                   numberOfLines={1}
                 >
                   {cat.name}
                 </Text>
                 {cat.children && cat.children.length > 0 && (
                   <Feather
-                    name={selectedL1?.id === cat.id
-                      ? 'chevron-up' : 'chevron-down'}
+                    name={selectedL1?.id === cat.id ? 'chevron-up' : 'chevron-down'}
                     size={12}
-                    color={selectedL1?.id === cat.id
-                      ? tokens.colors.white
-                      : tokens.colors.textMuted}
+                    color={
+                      selectedL1?.id === cat.id ? tokens.colors.white : tokens.colors.textMuted
+                    }
                     style={{ marginLeft: 4 }}
                   />
                 )}
@@ -278,12 +267,9 @@ export default function CategoriesScreen() {
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
-              contentContainerStyle={[
-                styles.pillsRow,
-                styles.pillsRowIndented,
-              ]}
+              contentContainerStyle={[styles.pillsRow, styles.pillsRowIndented]}
             >
-              {selectedL1.children.map(cat => (
+              {selectedL1.children.map((cat) => (
                 <TouchableOpacity
                   key={cat.id}
                   style={[
@@ -293,23 +279,23 @@ export default function CategoriesScreen() {
                   ]}
                   onPress={() => handleSelectL2(cat)}
                 >
-                  <Text style={[
-                    styles.pillText,
-                    styles.pillTextSm,
-                    selectedL2?.id === cat.id && styles.pillTextActive,
-                  ]}
+                  <Text
+                    style={[
+                      styles.pillText,
+                      styles.pillTextSm,
+                      selectedL2?.id === cat.id && styles.pillTextActive,
+                    ]}
                     numberOfLines={1}
                   >
                     {cat.name}
                   </Text>
                   {cat.children && cat.children.length > 0 && (
                     <Feather
-                      name={selectedL2?.id === cat.id
-                        ? 'chevron-up' : 'chevron-down'}
+                      name={selectedL2?.id === cat.id ? 'chevron-up' : 'chevron-down'}
                       size={10}
-                      color={selectedL2?.id === cat.id
-                        ? tokens.colors.white
-                        : tokens.colors.textMuted}
+                      color={
+                        selectedL2?.id === cat.id ? tokens.colors.white : tokens.colors.textMuted
+                      }
                       style={{ marginLeft: 3 }}
                     />
                   )}
@@ -323,12 +309,9 @@ export default function CategoriesScreen() {
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
-              contentContainerStyle={[
-                styles.pillsRow,
-                styles.pillsRowIndented,
-              ]}
+              contentContainerStyle={[styles.pillsRow, styles.pillsRowIndented]}
             >
-              {selectedL2.children.map(cat => (
+              {selectedL2.children.map((cat) => (
                 <TouchableOpacity
                   key={cat.id}
                   style={[
@@ -338,11 +321,12 @@ export default function CategoriesScreen() {
                   ]}
                   onPress={() => handleSelectL3(cat)}
                 >
-                  <Text style={[
-                    styles.pillText,
-                    styles.pillTextSm,
-                    selectedL3?.id === cat.id && styles.pillTextActive,
-                  ]}
+                  <Text
+                    style={[
+                      styles.pillText,
+                      styles.pillTextSm,
+                      selectedL3?.id === cat.id && styles.pillTextActive,
+                    ]}
                     numberOfLines={1}
                   >
                     {cat.name}

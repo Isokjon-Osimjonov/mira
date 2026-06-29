@@ -1,15 +1,17 @@
 import { cn } from '@/lib/utils'
 
 interface ToggleSwitchProps {
-  checked:   boolean
-  onChange:  (checked: boolean) => void
+  checked: boolean
+  onChange: (checked: boolean) => void
   disabled?: boolean
-  size?:     'sm' | 'md'
+  size?: 'sm' | 'md'
 }
 
 export function ToggleSwitch({
-  checked, onChange,
-  disabled = false, size = 'md'
+  checked,
+  onChange,
+  disabled = false,
+  size = 'md',
 }: ToggleSwitchProps) {
   const isSmall = size === 'sm'
 
@@ -28,7 +30,8 @@ export function ToggleSwitch({
         checked ? 'bg-primary' : 'bg-gray-200',
         disabled && 'opacity-50 cursor-not-allowed',
         !disabled && 'cursor-pointer'
-      )}>
+      )}
+    >
       <span
         aria-hidden="true"
         className={cn(
@@ -36,14 +39,8 @@ export function ToggleSwitch({
           'rounded-full bg-white shadow-sm',
           'ring-0 transition-transform duration-200',
           'absolute top-0.5',
-          isSmall
-            ? 'w-4 h-4'
-            : 'w-5 h-5',
-          checked
-            ? isSmall
-              ? 'translate-x-[18px]'
-              : 'translate-x-[22px]'
-            : 'translate-x-0.5'
+          isSmall ? 'w-4 h-4' : 'w-5 h-5',
+          checked ? (isSmall ? 'translate-x-[18px]' : 'translate-x-[22px]') : 'translate-x-0.5'
         )}
       />
     </button>

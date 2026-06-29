@@ -58,7 +58,7 @@ const itemSchema = z.object({
   productId: z.string().uuid('Mahsulot tanlang'),
   productName: z.string().min(1, 'Nom talab qilinadi'),
   orderedQty: z.coerce.number().int().min(1, 'Kamida 1 ta'),
-  unitCostKrw: z.coerce.number().int().min(0, 'Narx manfiy bo\'lmaydi'),
+  unitCostKrw: z.coerce.number().int().min(0, "Narx manfiy bo'lmaydi"),
 })
 
 const poSchema = z.object({
@@ -108,7 +108,6 @@ export function BuyurtmaBerish() {
   const { data, isLoading } = useQuery({
     queryKey: QK.PURCHASE_ORDERS(queryParams),
     queryFn: () => purchaseOrdersApi.list(queryParams),
-
   })
 
   const { data: suppliersData = [] } = useQuery({
@@ -161,7 +160,9 @@ export function BuyurtmaBerish() {
           limit: 5,
         })
         setProductResults(res.data ?? [])
-      } catch { /* ignored */ }
+      } catch {
+        /* ignored */
+      }
     }, 300)
     return () => clearTimeout(t)
   }, [productSearch])
@@ -406,7 +407,10 @@ export function BuyurtmaBerish() {
           setCreateSheet(v)
         }}
       >
-        <SheetContent side="right" className="w-[90vw] sm:w-[580px] sm:max-w-[580px] overflow-y-auto">
+        <SheetContent
+          side="right"
+          className="w-[90vw] sm:w-[580px] sm:max-w-[580px] overflow-y-auto"
+        >
           <SheetHeader className="pb-4 border-b border-border/50">
             <SheetTitle>Yangi buyurtma</SheetTitle>
           </SheetHeader>
@@ -581,7 +585,12 @@ export function BuyurtmaBerish() {
               >
                 Bekor
               </Button>
-              <Button type="submit" size="sm" disabled={createMutation.isPending} className="flex-1 rounded-lg">
+              <Button
+                type="submit"
+                size="sm"
+                disabled={createMutation.isPending}
+                className="flex-1 rounded-lg"
+              >
                 {createMutation.isPending ? 'Yaratilyapti...' : 'Buyurtma yaratish'}
               </Button>
             </div>
@@ -600,7 +609,10 @@ export function BuyurtmaBerish() {
           setDetailSheet(v)
         }}
       >
-        <SheetContent side="right" className="w-[90vw] sm:w-[560px] sm:max-w-[560px] overflow-y-auto">
+        <SheetContent
+          side="right"
+          className="w-[90vw] sm:w-[560px] sm:max-w-[560px] overflow-y-auto"
+        >
           {poDetail ? (
             <>
               <SheetHeader className="pb-4 border-b border-border/50">
@@ -841,7 +853,7 @@ export function BuyurtmaBerish() {
                         onClick={() => {
                           if (confirm('Ishonchingiz komilmi?')) {
                             purchaseOrdersApi.delete(poDetail.id).then(() => {
-                              toast.success('O\'chirildi')
+                              toast.success("O'chirildi")
                               qc.invalidateQueries({ queryKey: ['purchase-orders'] })
                               setDetailSheet(false)
                             })

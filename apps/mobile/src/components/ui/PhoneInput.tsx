@@ -1,11 +1,5 @@
 import React from 'react'
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-} from 'react-native'
+import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native'
 import { tokens } from '../../lib/tokens'
 
 interface PhoneInputProps {
@@ -25,10 +19,7 @@ export const validatePhone = (phone: string, region: 'UZB' | 'KOR') => {
   return false
 }
 
-export const getFullPhone = (
-  phone: string,
-  region: 'UZB' | 'KOR'
-): string => {
+export const getFullPhone = (phone: string, region: 'UZB' | 'KOR'): string => {
   const prefix = region === 'UZB' ? '+998' : '+82'
   return `${prefix}${phone}`
 }
@@ -47,23 +38,13 @@ const PhoneInput: React.FC<PhoneInputProps> = ({
     onRegionChange(region === 'UZB' ? 'KOR' : 'UZB')
   }
 
-  const containerStyle = [
-    styles.container,
-    focused && styles.focused,
-    !!error && styles.error,
-  ]
+  const containerStyle = [styles.container, focused && styles.focused, !!error && styles.error]
 
   return (
     <View>
       <View style={containerStyle}>
-        <TouchableOpacity
-          activeOpacity={0.7}
-          onPress={toggleRegion}
-          style={styles.regionSelector}
-        >
-          <Text style={styles.regionText}>
-            {region === 'UZB' ? '🇺🇿  +998' : '🇰🇷  +82'}
-          </Text>
+        <TouchableOpacity activeOpacity={0.7} onPress={toggleRegion} style={styles.regionSelector}>
+          <Text style={styles.regionText}>{region === 'UZB' ? '🇺🇿  +998' : '🇰🇷  +82'}</Text>
         </TouchableOpacity>
 
         <View style={styles.inputContainer}>

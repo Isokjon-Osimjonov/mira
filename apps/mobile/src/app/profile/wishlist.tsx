@@ -1,5 +1,13 @@
 import React, { useCallback } from 'react'
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert, RefreshControl } from 'react-native'
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  TouchableOpacity,
+  Alert,
+  RefreshControl,
+} from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Feather } from '@expo/vector-icons'
 import { router, useFocusEffect } from 'expo-router'
@@ -110,12 +118,7 @@ export default function WishlistScreen() {
           )}
         />
       )}
-      <Toast
-        message={toast.message}
-        type={toast.type}
-        visible={toast.visible}
-        onHide={hideToast}
-      />
+      <Toast message={toast.message} type={toast.type} visible={toast.visible} onHide={hideToast} />
     </SafeAreaView>
   )
 }

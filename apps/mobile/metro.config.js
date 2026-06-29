@@ -7,10 +7,7 @@ const monorepoRoot = path.resolve(projectRoot, '../..')
 const config = getDefaultConfig(projectRoot)
 
 // Monorepo uchun: default watchFolders ga qo'shamiz (o'rniga emas)
-config.watchFolders = [
-  ...config.watchFolders || [],
-  monorepoRoot,
-]
+config.watchFolders = [...(config.watchFolders || []), monorepoRoot]
 
 config.resolver.nodeModulesPaths = [
   path.resolve(projectRoot, 'node_modules'),

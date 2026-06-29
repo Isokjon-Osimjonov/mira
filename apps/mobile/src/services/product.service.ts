@@ -78,16 +78,12 @@ export const productService = {
   },
 
   getProductById: async (id: string): Promise<Product> => {
-    const res = await api.get<ApiResponse<Product>>(
-      `/products/${id}`
-    )
+    const res = await api.get<ApiResponse<Product>>(`/products/${id}`)
     return res.data.data!
   },
 
   getExchangeRate: async (): Promise<ExchangeRate> => {
-    const res = await api.get<ApiResponse<ExchangeRate>>(
-      '/exchange-rates/current'
-    )
+    const res = await api.get<ApiResponse<ExchangeRate>>('/exchange-rates/current')
     return res.data.data!
   },
 
@@ -111,10 +107,7 @@ export const productService = {
   },
 }
 
-export const calculateKorCargo = (
-  subtotalKrw: number,
-  tiers: ShippingTier[]
-): number => {
+export const calculateKorCargo = (subtotalKrw: number, tiers: ShippingTier[]): number => {
   const sorted = [...tiers].sort(
     (a, b) => (a.maxOrderKrw ?? Infinity) - (b.maxOrderKrw ?? Infinity)
   )

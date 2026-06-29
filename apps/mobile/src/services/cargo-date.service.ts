@@ -10,5 +10,5 @@ export const cargoDateService = {
   getUpcoming: async (): Promise<CargoDate[]> => {
     const res = await api.get('/cargo-dates')
     return res.data.data ?? []
-  }
+  },
 }

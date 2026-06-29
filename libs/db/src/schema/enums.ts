@@ -1,6 +1,6 @@
-import { pgEnum } from 'drizzle-orm/pg-core';
+import { pgEnum } from 'drizzle-orm/pg-core'
 
-export const regionEnum = pgEnum('region', ['UZB', 'KOR']);
+export const regionEnum = pgEnum('region', ['UZB', 'KOR'])
 
 export const orderStatusEnum = pgEnum('order_status', [
   'DRAFT',
@@ -13,36 +13,17 @@ export const orderStatusEnum = pgEnum('order_status', [
   'DELIVERED',
   'CANCELED',
   'REFUNDED',
-]);
+])
 
-export const paymentMethodEnum = pgEnum('payment_method', [
-  'KOREAN_BANK',
-  'UZB_BANK',
-  'E9PAY',
-]);
+export const paymentMethodEnum = pgEnum('payment_method', ['KOREAN_BANK', 'UZB_BANK', 'E9PAY'])
 
-export const orderSourceEnum = pgEnum('order_source', [
-  'STOREFRONT',
-  'MANUAL',
-]);
+export const orderSourceEnum = pgEnum('order_source', ['STOREFRONT', 'MANUAL'])
 
-export const deliveryCoveredByEnum = pgEnum('delivery_covered_by', [
-  'CUSTOMER',
-  'BUSINESS',
-]);
+export const deliveryCoveredByEnum = pgEnum('delivery_covered_by', ['CUSTOMER', 'BUSINESS'])
 
-export const couponTypeEnum = pgEnum('coupon_type', [
-  'PERCENTAGE',
-  'FIXED',
-  'FREE_SHIPPING',
-]);
+export const couponTypeEnum = pgEnum('coupon_type', ['PERCENTAGE', 'FIXED', 'FREE_SHIPPING'])
 
-export const couponScopeEnum = pgEnum('coupon_scope', [
-  'ALL',
-  'PRODUCT',
-  'CATEGORY',
-  'CUSTOMER',
-]);
+export const couponScopeEnum = pgEnum('coupon_scope', ['ALL', 'PRODUCT', 'CATEGORY', 'CUSTOMER'])
 
 export const couponStatusEnum = pgEnum('coupon_status', [
   'DRAFT',
@@ -50,7 +31,7 @@ export const couponStatusEnum = pgEnum('coupon_status', [
   'PAUSED',
   'EXPIRED',
   'ARCHIVED',
-]);
+])
 
 export const stockMovementTypeEnum = pgEnum('stock_movement_type', [
   'STOCK_IN',
@@ -67,13 +48,13 @@ export const stockMovementTypeEnum = pgEnum('stock_movement_type', [
   'EXPIRED',
   'DAMAGED',
   'ADJUSTMENT',
-]);
+])
 
 export const stockReservationStatusEnum = pgEnum('stock_reservation_status', [
   'ACTIVE',
   'RELEASED',
   'CONVERTED',
-]);
+])
 
 export const telegramPostStatusEnum = pgEnum('telegram_post_status', [
   'DRAFT',
@@ -81,7 +62,7 @@ export const telegramPostStatusEnum = pgEnum('telegram_post_status', [
   'SENT',
   'FAILED',
   'ARCHIVED',
-]);
+])
 
 export const notificationTypeEnum = pgEnum('notification_type', [
   'ORDER_STATUS',
@@ -93,24 +74,13 @@ export const notificationTypeEnum = pgEnum('notification_type', [
   'PRICE_DROP',
   'PROMO',
   'SYSTEM',
-]);
+])
 
-export const notificationChannelEnum = pgEnum('notification_channel', [
-  'PUSH',
-  'TELEGRAM',
-  'BOTH',
-]);
+export const notificationChannelEnum = pgEnum('notification_channel', ['PUSH', 'TELEGRAM', 'BOTH'])
 
-export const notificationStatusEnum = pgEnum('notification_status', [
-  'SENT',
-  'FAILED',
-  'PENDING',
-]);
+export const notificationStatusEnum = pgEnum('notification_status', ['SENT', 'FAILED', 'PENDING'])
 
-export const exchangeRateSourceEnum = pgEnum('exchange_rate_source', [
-  'API',
-  'MANUAL',
-]);
+export const exchangeRateSourceEnum = pgEnum('exchange_rate_source', ['API', 'MANUAL'])
 
 export const orderExpenseTypeEnum = pgEnum('order_expense_type', [
   'CARGO_COST',
@@ -119,7 +89,7 @@ export const orderExpenseTypeEnum = pgEnum('order_expense_type', [
   'CUSTOMS',
   'PACKAGING',
   'OTHER',
-]);
+])
 
 export const revokeReasonEnum = pgEnum('revoke_reason', [
   'LOGOUT',
@@ -127,7 +97,7 @@ export const revokeReasonEnum = pgEnum('revoke_reason', [
   'SECURITY',
   'EXPIRED',
   'ADMIN',
-]);
+])
 
 export const pickPackActionEnum = pgEnum('pick_pack_action', [
   'SCAN_SUCCESS',
@@ -135,6 +105,6 @@ export const pickPackActionEnum = pgEnum('pick_pack_action', [
   'MANUAL_FALLBACK',
   'ITEM_CONFIRMED',
   'ORDER_PACKED',
-]);
+])
 
-export const pickPackResultEnum = pgEnum('pick_pack_result', ['OK', 'ERROR']);
+export const pickPackResultEnum = pgEnum('pick_pack_result', ['OK', 'ERROR'])

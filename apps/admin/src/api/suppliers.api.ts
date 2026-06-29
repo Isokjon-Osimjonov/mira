@@ -7,14 +7,14 @@ export const suppliersApi = {
   },
 
   create: async (payload: {
-    name:          string
-    contactName?:  string | null
-    phone?:        string | null
-    email?:        string | null
-    country?:      string
-    address?:      string | null
+    name: string
+    contactName?: string | null
+    phone?: string | null
+    email?: string | null
+    country?: string
+    address?: string | null
     paymentTerms?: string | null
-    notes?:        string | null
+    notes?: string | null
   }) => {
     const res = await api.post('/admin/suppliers', payload)
     return res.data

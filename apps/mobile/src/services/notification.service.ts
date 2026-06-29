@@ -11,12 +11,14 @@ export interface Notification {
 }
 
 export const notificationService = {
-  getNotifications: async (page = 1): Promise<{
+  getNotifications: async (
+    page = 1
+  ): Promise<{
     items: Notification[]
     meta: { total: number; hasNext: boolean }
   }> => {
     const res = await api.get('/notifications', {
-      params: { page, limit: 20 }
+      params: { page, limit: 20 },
     })
     const items = (res.data.data || []).map((n: any) => ({
       ...n,

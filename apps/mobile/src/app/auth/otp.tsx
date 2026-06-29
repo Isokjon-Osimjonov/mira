@@ -1,11 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  Linking,
-} from 'react-native'
+import { View, Text, TouchableOpacity, StyleSheet, Linking } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLocalSearchParams, router } from 'expo-router'
 import { tokens } from '../../lib/tokens'
@@ -16,8 +10,8 @@ import { useAuthStore } from '../../lib/auth-store'
 
 export default function OtpScreen() {
   const { phone, region, deepLink } = useLocalSearchParams<{
-    phone:    string
-    region:   string
+    phone: string
+    region: string
     deepLink: string
   }>()
 
@@ -27,9 +21,7 @@ export default function OtpScreen() {
   const [seconds, setSeconds] = useState(300)
   const [attempts, setAttempts] = useState(0)
 
-  const [currentDeepLink, setCurrentDeepLink] = useState(
-    deepLink ?? ''
-  )
+  const [currentDeepLink, setCurrentDeepLink] = useState(deepLink ?? '')
 
   // Guard: if params missing redirect back
   useEffect(() => {
@@ -73,16 +65,12 @@ export default function OtpScreen() {
       if (canOpenTg) {
         const urlObj = new URL(url)
         const botUsername = urlObj.pathname.replace('/', '')
-        const startToken =
-          urlObj.searchParams.get('start') ?? ''
-        const nativeUrl =
-          `tg://resolve?domain=${botUsername}&start=${startToken}`
+        const startToken = urlObj.searchParams.get('start') ?? ''
+        const nativeUrl = `tg://resolve?domain=${botUsername}&start=${startToken}`
         await Linking.openURL(nativeUrl)
       } else {
         await Linking.openURL(url)
-        setError(
-          'Telegram topilmadi. SMS orqali kod yuboriladi.'
-        )
+        setError('Telegram topilmadi. SMS orqali kod yuboriladi.')
       }
     } catch {
       setError("Telegram ochilmadi. Qayta urinib ko'ring.")
@@ -146,11 +134,10 @@ export default function OtpScreen() {
   const handleResend = async () => {
     try {
       // Request fresh OTP — old token is expired
-      const { deepLink: newDeepLink } =
-        await authService.requestOtp({
-          phone: phone ?? '',
-          region: safeRegion,
-        })
+      const { deepLink: newDeepLink } = await authService.requestOtp({
+        phone: phone ?? '',
+        region: safeRegion,
+      })
       // Update deepLink in state for next verify call
       setCurrentDeepLink(newDeepLink)
       setSeconds(300)
@@ -173,37 +160,25 @@ export default function OtpScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => router.back()}
-          style={styles.backButton}
-        >
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <Text style={{ fontSize: 24, color: tokens.colors.text }}>‹</Text>
         </TouchableOpacity>
       </View>
 
       <View style={styles.top}>
         <Text style={styles.title}>Tasdiqlash kodi</Text>
-        <Text style={styles.subtitle}>
-          Telegram'ga yuborilgan 6 raqamli kodni kiriting
-        </Text>
+        <Text style={styles.subtitle}>Telegram'ga yuborilgan 6 raqamli kodni kiriting</Text>
         <Text style={styles.maskedPhone}>{formatMaskedPhone()}</Text>
       </View>
 
       <View style={styles.otpArea}>
-        <OtpInput
-          value={otp}
-          onChange={handleOtpChange}
-          error={!!error}
-          disabled={attempts >= 3}
-        />
+        <OtpInput value={otp} onChange={handleOtpChange} error={!!error} disabled={attempts >= 3} />
         {!!error && <Text style={styles.errorText}>{error}</Text>}
       </View>
 
       <View style={styles.timer}>
         {seconds > 0 ? (
-          <Text style={styles.timerText}>
-            Qayta yuborish: {formatTime(seconds)}
-          </Text>
+          <Text style={styles.timerText}>Qayta yuborish: {formatTime(seconds)}</Text>
         ) : (
           <TouchableOpacity onPress={handleResend}>
             <Text style={styles.resendText}>Qayta yuborish</Text>
@@ -219,9 +194,7 @@ export default function OtpScreen() {
           disabled={otp.length < 6 || attempts >= 3}
         />
         {attempts >= 3 && (
-          <Text style={styles.lockoutText}>
-            Juda ko'p urinish. Yangi kod so'rang.
-          </Text>
+          <Text style={styles.lockoutText}>Juda ko'p urinish. Yangi kod so'rang.</Text>
         )}
       </View>
     </SafeAreaView>

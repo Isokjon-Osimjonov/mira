@@ -6,10 +6,10 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      '@':                  path.resolve(__dirname, './src'),
+      '@': path.resolve(__dirname, './src'),
       '@mira/shared-types': path.resolve(__dirname, '../../libs/shared-types/src'),
       '@mira/shared-utils': path.resolve(__dirname, '../../libs/shared-utils/src'),
-      '@mira/ui-config':    path.resolve(__dirname, '../../libs/ui-config/src'),
+      '@mira/ui-config': path.resolve(__dirname, '../../libs/ui-config/src'),
     },
   },
   server: { port: 3000, host: true },

@@ -14,7 +14,7 @@ export const updateExpenseCategorySchema = createExpenseCategorySchema.partial()
 export const createExpenseSchema = z.object({
   categoryId: z.string().uuid(),
   amountKrw: z.coerce.number().positive("Summa noldan katta bo'lishi kerak"),
-  description: z.string().min(1, "Tavsif kiriting"),
+  description: z.string().min(1, 'Tavsif kiriting'),
   date: z.string().date(),
   note: z.string().optional().nullable(),
   receiptUrl: z.string().url().optional().nullable(),

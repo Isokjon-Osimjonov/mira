@@ -3,39 +3,39 @@ import * as SecureStore from 'expo-secure-store'
 
 // ─── Types ────────────────────────────────────────────────────
 export interface Customer {
-  id:              string
-  phone:           string
-  phoneRegion:     'UZB' | 'KOR'
-  firstName:       string
-  lastName:        string | null
-  telegramId:      string | null
+  id: string
+  phone: string
+  phoneRegion: 'UZB' | 'KOR'
+  firstName: string
+  lastName: string | null
+  telegramId: string | null
   profileImageUrl: string | null
-  referralCode:    string | null
-  isVerified?:     boolean
+  referralCode: string | null
+  isVerified?: boolean
 }
 
 interface AuthState {
-  accessToken:     string | null
-  refreshToken:    string | null
-  customer:        Customer | null
+  accessToken: string | null
+  refreshToken: string | null
+  customer: Customer | null
   isAuthenticated: boolean
-  isLoading:       boolean
+  isLoading: boolean
 
   // Actions
-  setAuth:         (accessToken: string, refreshToken: string, customer: Customer) => void
-  setTokens:       (accessToken: string, refreshToken: string) => void
-  setCustomer:     (customer: Customer) => void
-  logout:          () => Promise<void>
-  initialize:      () => Promise<void>
+  setAuth: (accessToken: string, refreshToken: string, customer: Customer) => void
+  setTokens: (accessToken: string, refreshToken: string) => void
+  setCustomer: (customer: Customer) => void
+  logout: () => Promise<void>
+  initialize: () => Promise<void>
   getRefreshToken: () => Promise<string | null>
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
-  accessToken:     null,
-  refreshToken:    null,
-  customer:        null,
+  accessToken: null,
+  refreshToken: null,
+  customer: null,
   isAuthenticated: false,
-  isLoading:       true,
+  isLoading: true,
 
   setAuth: (accessToken, refreshToken, customer) => {
     set({ accessToken, refreshToken, customer, isAuthenticated: true, isLoading: false })
@@ -61,7 +61,13 @@ export const useAuthStore = create<AuthState>((set) => ({
       SecureStore.deleteItemAsync('refreshToken'),
       SecureStore.deleteItemAsync('customer'),
     ])
-    set({ accessToken: null, refreshToken: null, customer: null, isAuthenticated: false, isLoading: false })
+    set({
+      accessToken: null,
+      refreshToken: null,
+      customer: null,
+      isAuthenticated: false,
+      isLoading: false,
+    })
   },
 
   getRefreshToken: () => SecureStore.getItemAsync('refreshToken'),
@@ -96,7 +102,8 @@ export const useAuthStore = create<AuthState>((set) => ({
 }))
 
 // Non-hook accessors
-export const getAccessToken     = () => useAuthStore.getState().accessToken
-export const getRefreshToken    = () => useAuthStore.getState().getRefreshToken()
-export const saveRefreshToken   = (t: string) => useAuthStore.getState().setTokens(useAuthStore.getState().accessToken || '', t)
-export const logoutCustomer     = () => useAuthStore.getState().logout()
+export const getAccessToken = () => useAuthStore.getState().accessToken
+export const getRefreshToken = () => useAuthStore.getState().getRefreshToken()
+export const saveRefreshToken = (t: string) =>
+  useAuthStore.getState().setTokens(useAuthStore.getState().accessToken || '', t)
+export const logoutCustomer = () => useAuthStore.getState().logout()

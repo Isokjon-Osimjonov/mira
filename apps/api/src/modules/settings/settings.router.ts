@@ -13,11 +13,22 @@ publicRouter.get('/payment-info', ctrl.getPaymentInfo)
 adminRouter.get('/', requirePermission('settings', 'read'), ctrl.getAdminSettings)
 adminRouter.put('/', requirePermission('settings', 'write'), ctrl.updateAdminSettings)
 
-adminRouter.get('/payment-methods', requirePermission('settings', 'read'), ctrl.getAdminPaymentMethods)
-adminRouter.patch('/payment-methods/:method', requirePermission('settings', 'write'), ctrl.updatePaymentMethod)
+adminRouter.get(
+  '/payment-methods',
+  requirePermission('settings', 'read'),
+  ctrl.getAdminPaymentMethods
+)
+adminRouter.patch(
+  '/payment-methods/:method',
+  requirePermission('settings', 'write'),
+  ctrl.updatePaymentMethod
+)
 
-
-adminRouter.get('/exchange-rates/live', requirePermission('settings', 'read'), ctrl.getLiveExchangeRate)
+adminRouter.get(
+  '/exchange-rates/live',
+  requirePermission('settings', 'read'),
+  ctrl.getLiveExchangeRate
+)
 
 adminRouter.get('/order', requirePermission('settings', 'read'), ctrl.getOrderSettings)
 adminRouter.patch('/order', requirePermission('settings', 'write'), ctrl.updateOrderSettings)

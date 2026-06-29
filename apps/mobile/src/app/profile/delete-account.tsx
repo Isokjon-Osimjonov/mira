@@ -35,7 +35,7 @@ export default function DeleteAccountScreen() {
     setLoading(true)
     try {
       await authService.deleteAccount()
-      
+
       // Clear local stores
       await logout()
       await clearCart()
@@ -54,7 +54,7 @@ export default function DeleteAccountScreen() {
 
       router.replace('/auth/login')
     } catch (e: any) {
-      showToast(e.response?.data?.error?.message || "Xatolik yuz berdi", 'error')
+      showToast(e.response?.data?.error?.message || 'Xatolik yuz berdi', 'error')
     } finally {
       setLoading(false)
     }
@@ -78,7 +78,7 @@ export default function DeleteAccountScreen() {
           <View style={styles.warningBox}>
             <Feather name="alert-triangle" size={32} color="#DC2626" style={styles.warningIcon} />
             <Text style={styles.warningTitle}>Bu amalni qaytarib bo'lmaydi</Text>
-            
+
             <View style={styles.bulletList}>
               <View style={styles.bulletItem}>
                 <View style={styles.bulletPoint} />
@@ -94,15 +94,15 @@ export default function DeleteAccountScreen() {
               </View>
               <View style={styles.bulletItem}>
                 <View style={styles.bulletPoint} />
-                <Text style={styles.bulletText}>Faol buyurtmalar bo'lsa, avval ularni yakunlash kerak</Text>
+                <Text style={styles.bulletText}>
+                  Faol buyurtmalar bo'lsa, avval ularni yakunlash kerak
+                </Text>
               </View>
             </View>
           </View>
 
           <View style={styles.inputContainer}>
-            <Text style={styles.inputLabel}>
-              Tasdiqlash uchun "O'CHIRISH" so'zini kiriting
-            </Text>
+            <Text style={styles.inputLabel}>Tasdiqlash uchun "O'CHIRISH" so'zini kiriting</Text>
             <TextInput
               style={styles.input}
               value={confirmText}

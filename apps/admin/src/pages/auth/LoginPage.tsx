@@ -9,7 +9,7 @@ import { useAuthStore, authChannel } from '../../stores/auth.store'
 import { getErrorMessage } from '../../lib/errors'
 
 const loginSchema = z.object({
-  email:    z.string().email('Noto\'g\'ri email format'),
+  email: z.string().email("Noto'g'ri email format"),
   password: z.string().min(1, 'Parol kiritilmagan'),
 })
 
@@ -36,23 +36,23 @@ export function LoginPage() {
     const remaining = Math.max(0, Math.ceil((date.getTime() - Date.now()) / 1000))
     return remaining
   })
-  
-  const { register, handleSubmit,
-          formState: { errors } } = useForm<LoginForm>({
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
       email: import.meta.env.DEV ? 'admin@miracosmetics.uz' : '',
       password: import.meta.env.DEV ? 'MiraAdmin2026!' : '',
-    }
+    },
   })
 
   useEffect(() => {
     if (!lockedUntil) return
     const interval = setInterval(() => {
-      const remaining = Math.max(
-        0,
-        Math.ceil((lockedUntil.getTime() - Date.now()) / 1000)
-      )
+      const remaining = Math.max(0, Math.ceil((lockedUntil.getTime() - Date.now()) / 1000))
       setRemainingSeconds(remaining)
       if (remaining === 0) {
         setLockedUntil(null)
@@ -67,37 +67,36 @@ export function LoginPage() {
     sessionStorage.setItem('admin_lock_until', until.toISOString())
     setLockedUntil(until)
   }
-  
+
   const onSubmit = async (data: LoginForm) => {
     setLoading(true)
     try {
       const res = await api.post('/admin/auth/login', data)
       const { accessToken, user } = res.data.data
-      
+
       setToken(accessToken)
       setUser(user)
-      
+
       // Notify other tabs
       authChannel?.postMessage('LOGIN')
-      
+
       if (user.mustChangePassword) {
         navigate({ to: '/change-password' })
       } else {
         navigate({ to: '/dashboard' })
       }
-      
+
       toast.success(`Xush kelibsiz, ${user.fullName}!`)
-      
     } catch (err: any) {
       const code = err?.code ?? err?.response?.data?.error?.code
-      
+
       if (code === 'ACCOUNT_LOCKED') {
         const msg = err?.response?.data?.error?.message ?? ''
         const mins = parseInt(msg.match(/(\d+) daqiqa/)?.[1] ?? '30')
-        
+
         const newUntil = new Date(Date.now() + mins * 60 * 1000)
         const currentUntil = lockedUntil
-        
+
         if (!currentUntil || newUntil < currentUntil) {
           setLocked(newUntil)
         }
@@ -109,46 +108,44 @@ export function LoginPage() {
       setLoading(false)
     }
   }
-  
+
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center
-                    justify-center p-4">
+    <div
+      className="min-h-screen bg-gray-50 flex items-center
+                    justify-center p-4"
+    >
       <div className="w-full max-w-sm">
-        
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center
+          <div
+            className="inline-flex items-center justify-center
                           w-12 h-12 rounded-xl bg-primary
-                          text-white text-xl mb-3">
+                          text-white text-xl mb-3"
+          >
             🌸
           </div>
-          <h1 className="text-xl font-semibold text-gray-900">
-            Mira Admin
-          </h1>
-          <p className="text-sm text-gray-500 mt-1">
-            Boshqaruv paneliga kirish
-          </p>
+          <h1 className="text-xl font-semibold text-gray-900">Mira Admin</h1>
+          <p className="text-sm text-gray-500 mt-1">Boshqaruv paneliga kirish</p>
         </div>
-        
+
         {/* Form */}
-        <div className="bg-white rounded-xl border-[0.5px]
-                        border-border p-6 shadow-sm">
-          <form onSubmit={handleSubmit(onSubmit)}
-                className="space-y-4">
-            
+        <div
+          className="bg-white rounded-xl border-[0.5px]
+                        border-border p-6 shadow-sm"
+        >
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             {lockedUntil && (
-              <div className="rounded-lg bg-red-50 border-[0.5px]
-                              border-red-200 p-3">
+              <div
+                className="rounded-lg bg-red-50 border-[0.5px]
+                              border-red-200 p-3"
+              >
                 <div className="flex items-center gap-2">
                   <span className="w-4 h-4 text-red-500">🔒</span>
                   <div>
-                    <p className="text-sm font-medium text-red-700">
-                      Akkaunt vaqtincha bloklangan
-                    </p>
+                    <p className="text-sm font-medium text-red-700">Akkaunt vaqtincha bloklangan</p>
                     <p className="text-xs text-red-500 mt-0.5">
-                      {Math.floor(remainingSeconds / 60)}:{
-                        (remainingSeconds % 60).toString().padStart(2, '0')
-                      } dan keyin urinib ko'ring
+                      {Math.floor(remainingSeconds / 60)}:
+                      {(remainingSeconds % 60).toString().padStart(2, '0')} dan keyin urinib ko'ring
                     </p>
                   </div>
                 </div>
@@ -156,9 +153,7 @@ export function LoginPage() {
             )}
 
             <div>
-              <label className="text-sm font-medium text-gray-700">
-                Email
-              </label>
+              <label className="text-sm font-medium text-gray-700">Email</label>
               <input
                 {...register('email')}
                 type="email"
@@ -169,17 +164,11 @@ export function LoginPage() {
                            focus:outline-none focus:ring-2
                            focus:ring-primary/20 focus:border-primary disabled:opacity-50"
               />
-              {errors.email && (
-                <p className="mt-1 text-xs text-red-500">
-                  {errors.email.message}
-                </p>
-              )}
+              {errors.email && <p className="mt-1 text-xs text-red-500">{errors.email.message}</p>}
             </div>
-            
+
             <div>
-              <label className="text-sm font-medium text-gray-700">
-                Parol
-              </label>
+              <label className="text-sm font-medium text-gray-700">Parol</label>
               <input
                 {...register('password')}
                 type="password"
@@ -191,12 +180,10 @@ export function LoginPage() {
                            focus:ring-primary/20 focus:border-primary disabled:opacity-50"
               />
               {errors.password && (
-                <p className="mt-1 text-xs text-red-500">
-                  {errors.password.message}
-                </p>
+                <p className="mt-1 text-xs text-red-500">{errors.password.message}</p>
               )}
             </div>
-            
+
             <button
               type="submit"
               disabled={loading || !!lockedUntil}
@@ -207,17 +194,15 @@ export function LoginPage() {
             >
               {loading ? 'Kirilmoqda...' : 'Kirish'}
             </button>
-            
           </form>
         </div>
-        
+
         {/* Credentials hint (dev only) */}
         {import.meta.env.DEV && (
           <p className="text-center text-xs text-gray-400 mt-4">
             admin@miracosmetics.uz / MiraAdmin2026!
           </p>
         )}
-        
       </div>
     </div>
   )

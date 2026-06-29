@@ -1,5 +1,16 @@
 import { db } from '../../config/db'
-import { authTokens, customers, refreshTokens, userNotificationSettings, orders, userAddresses, wishlists, waitlists, cartItems, carts } from '@mira/db'
+import {
+  authTokens,
+  customers,
+  refreshTokens,
+  userNotificationSettings,
+  orders,
+  userAddresses,
+  wishlists,
+  waitlists,
+  cartItems,
+  carts,
+} from '@mira/db'
 import { eq, and, gt, lt, ne, sql, inArray } from 'drizzle-orm'
 import { generateToken, generateOtp, hashToken } from '../../lib/otp'
 import { checkPhoneRateLimit } from '../../middleware/rateLimiter'
@@ -31,7 +42,7 @@ export async function requestOtp(dto: RequestOtpDto, deviceInfo?: string, ipAddr
       type: 'SUSPICIOUS_ACTIVITY',
       ip: ipAddress || 'unknown',
       userAgent: deviceInfo,
-      details: { reason: 'otp_rate_limit_exceeded', phone }
+      details: { reason: 'otp_rate_limit_exceeded', phone },
     })
     throw {
       status: 429,
@@ -59,7 +70,7 @@ export async function requestOtp(dto: RequestOtpDto, deviceInfo?: string, ipAddr
     type: 'OTP_REQUEST',
     ip: ipAddress || 'unknown',
     userAgent: deviceInfo,
-    details: { phone }
+    details: { phone },
   })
 
   return {
@@ -95,7 +106,7 @@ export async function verifyOtp(dto: VerifyOtpDto, deviceInfo?: string, ipAddres
       type: 'SUSPICIOUS_ACTIVITY',
       ip: ipAddress || 'unknown',
       userAgent: deviceInfo,
-      details: { reason: 'otp_max_attempts_reached', phone: authToken.phone }
+      details: { reason: 'otp_max_attempts_reached', phone: authToken.phone },
     })
     throw { status: 429, code: 'MAX_ATTEMPTS', message: "Urinishlar soni tugadi. Qayta so'rang" }
   }
@@ -437,13 +448,18 @@ export async function updateNotificationSettings(customerId: string, data: any) 
 export async function deleteCustomerAccount(customerId: string) {
   return await db.transaction(async (tx) => {
     // 1. Block if active/pending orders exist
-    const blockingOrders = await tx.select()
+    const blockingOrders = await tx
+      .select()
       .from(orders)
       .where(
         and(
           eq(orders.customerId, customerId),
           inArray(orders.status, [
-            'PENDING_PAYMENT', 'PAYMENT_SUBMITTED', 'PAYMENT_CONFIRMED', 'PACKING', 'SHIPPED'
+            'PENDING_PAYMENT',
+            'PAYMENT_SUBMITTED',
+            'PAYMENT_CONFIRMED',
+            'PACKING',
+            'SHIPPED',
           ])
         )
       )
@@ -452,30 +468,32 @@ export async function deleteCustomerAccount(customerId: string) {
       throw {
         status: 409,
         code: 'PENDING_ORDERS_EXIST',
-        message: "Faol buyurtmalar mavjud. Avval ularni yakunlang yoki bekor qiling."
+        message: 'Faol buyurtmalar mavjud. Avval ularni yakunlang yoki bekor qiling.',
       }
     }
 
     // 2. Hard delete personal preference data
-    await tx.delete(userAddresses)
-      .where(eq(userAddresses.customerId, customerId))
-    await tx.delete(wishlists)
-      .where(eq(wishlists.customerId, customerId))
-    await tx.delete(waitlists)
-      .where(eq(waitlists.customerId, customerId))
-    
+    await tx.delete(userAddresses).where(eq(userAddresses.customerId, customerId))
+    await tx.delete(wishlists).where(eq(wishlists.customerId, customerId))
+    await tx.delete(waitlists).where(eq(waitlists.customerId, customerId))
+
     // For carts, cartItems references cartId
-    const customerCarts = await tx.select({ id: carts.id }).from(carts).where(eq(carts.customerId, customerId))
+    const customerCarts = await tx
+      .select({ id: carts.id })
+      .from(carts)
+      .where(eq(carts.customerId, customerId))
     if (customerCarts.length > 0) {
-      const cartIds = customerCarts.map(c => c.id)
+      const cartIds = customerCarts.map((c) => c.id)
       await tx.delete(cartItems).where(inArray(cartItems.cartId, cartIds))
       await tx.delete(carts).where(inArray(carts.id, cartIds))
     }
 
     // 3. Anonymize the customer row
-    const anonymizedPhone = 'DEL_' + customerId.split('-')[0] + '_' + Math.floor(Math.random() * 99999)
+    const anonymizedPhone =
+      'DEL_' + customerId.split('-')[0] + '_' + Math.floor(Math.random() * 99999)
 
-    await tx.update(customers)
+    await tx
+      .update(customers)
       .set({
         firstName: "O'chirilgan",
         lastName: 'Foydalanuvchi',

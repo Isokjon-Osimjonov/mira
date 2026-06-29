@@ -1,11 +1,13 @@
 import { api } from '../lib/api'
 
 export const telegramApi = {
-  getPosts: async (params: {
-    page?:   number
-    limit?:  number
-    status?: string
-  } = {}) => {
+  getPosts: async (
+    params: {
+      page?: number
+      limit?: number
+      status?: string
+    } = {}
+  ) => {
     const res = await api.get('/admin/telegram/posts', { params })
     return res.data
   },
@@ -26,11 +28,11 @@ export const telegramApi = {
   },
 
   generateCaption: async (payload: {
-    productId:    string
-    showRetail:   boolean
+    productId: string
+    showRetail: boolean
     showWholesale: boolean
-    phone?:       string
-    language?:    'uz' | 'ko'
+    phone?: string
+    language?: 'uz' | 'ko'
   }) => {
     const res = await api.post('/admin/telegram/caption', payload)
     return res.data.data as { caption: string; hashtags: string[] }
@@ -76,10 +78,10 @@ export const telegramApi = {
 }
 
 export interface TelegramPostPayload {
-  productId?:    string | null
-  channelIds:    string[]
-  title:         string
-  content:       string
-  imageUrl?:     string | null
-  scheduledAt?:  string | null
+  productId?: string | null
+  channelIds: string[]
+  title: string
+  content: string
+  imageUrl?: string | null
+  scheduledAt?: string | null
 }

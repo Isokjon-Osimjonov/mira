@@ -16,7 +16,9 @@ export const waitlistService = {
     return res.data.data ?? []
   },
 
-  addToWaitlist: async (productId: string): Promise<{
+  addToWaitlist: async (
+    productId: string
+  ): Promise<{
     inStock: boolean
     message: string
   }> => {

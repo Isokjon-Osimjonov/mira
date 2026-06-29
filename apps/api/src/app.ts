@@ -92,7 +92,10 @@ export function createApp() {
     cors({
       origin: isDev
         ? (origin, callback) => {
-            if (!origin || /^http:\/\/(localhost|192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+):\d+$/.test(origin)) {
+            if (
+              !origin ||
+              /^http:\/\/(localhost|192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+):\d+$/.test(origin)
+            ) {
               return callback(null, true)
             }
             callback(new Error('Not allowed by CORS'))
@@ -139,10 +142,17 @@ export function createApp() {
       })
     )
   }
-  
+
   app.use('/api', apiLimiter)
 
-  const QUEUE_NAMES = ['notifications', 'payment-deadline', 'telegram-posts', 'sales-rollup', 'db-backup', 'exchange-rate']
+  const QUEUE_NAMES = [
+    'notifications',
+    'payment-deadline',
+    'telegram-posts',
+    'sales-rollup',
+    'db-backup',
+    'exchange-rate',
+  ]
 
   const getDetailedQueueStats = async () => {
     return await Promise.all(
@@ -167,7 +177,15 @@ export function createApp() {
             status: failed > 0 ? 'warning' : 'ok',
           }
         } catch {
-          return { name, status: 'unavailable', waiting: 0, active: 0, completed: 0, failed: 0, delayed: 0 }
+          return {
+            name,
+            status: 'unavailable',
+            waiting: 0,
+            active: 0,
+            completed: 0,
+            failed: 0,
+            delayed: 0,
+          }
         }
       })
     )

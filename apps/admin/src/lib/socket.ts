@@ -12,12 +12,12 @@ export function connectSocket(): Socket {
 
   socket = io(env.socketUrl, {
     auth: {
-      token: useAuthStore.getState().accessToken
+      token: useAuthStore.getState().accessToken,
     },
-    transports:    ['websocket'],
-    reconnection:  true,
+    transports: ['websocket'],
+    reconnection: true,
     reconnectionAttempts: 10,
-    reconnectionDelay:    1000,
+    reconnectionDelay: 1000,
   })
 
   socket.on('connect', () => {
@@ -35,11 +35,11 @@ export function connectSocket(): Socket {
   socket.on('order:new', (data) => {
     toast.info(`🛍 Yangi buyurtma!`, {
       description: `#${data.orderNumber} — ${data.customerName}`,
-      duration:    8000,
+      duration: 8000,
       action: {
-        label:   'Ko\'rish',
-        onClick: () => window.location.href = `/orders/${data.orderId}`
-      }
+        label: "Ko'rish",
+        onClick: () => (window.location.href = `/orders/${data.orderId}`),
+      },
     })
     queryClient.invalidateQueries({ queryKey: ['orders'] })
   })
@@ -48,7 +48,7 @@ export function connectSocket(): Socket {
   socket.on('payment:receipt_uploaded', (data) => {
     toast.warning(`💳 To'lov kvitansiyasi`, {
       description: `#${data.orderNumber} — tekshirish kerak`,
-      duration:    10000,
+      duration: 10000,
     })
     queryClient.invalidateQueries({ queryKey: ['orders'] })
   })
@@ -65,7 +65,7 @@ export function connectSocket(): Socket {
   socket.on('inventory:stock_low', (data) => {
     toast.warning(`⚠️ Kam qolgan!`, {
       description: `${data.productName}: ${data.currentQty} ta`,
-      duration:    10000,
+      duration: 10000,
     })
     queryClient.invalidateQueries({ queryKey: QK.INVENTORY_STOCK })
   })

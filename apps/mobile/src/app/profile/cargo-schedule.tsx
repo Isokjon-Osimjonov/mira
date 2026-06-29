@@ -1,5 +1,12 @@
 import React from 'react'
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native'
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  ActivityIndicator,
+} from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Feather } from '@expo/vector-icons'
 import { useQuery } from '@tanstack/react-query'
@@ -10,16 +17,32 @@ import { cargoDateService } from '../../services/cargo-date.service'
 function formatDateUzbek(isoString: string) {
   const date = new Date(isoString)
   const monthNames = [
-    'Yanvar', 'Fevral', 'Mart', 'Aprel', 'May', 'Iyun',
-    'Iyul', 'Avgust', 'Sentyabr', 'Oktyabr', 'Noyabr', 'Dekabr'
+    'Yanvar',
+    'Fevral',
+    'Mart',
+    'Aprel',
+    'May',
+    'Iyun',
+    'Iyul',
+    'Avgust',
+    'Sentyabr',
+    'Oktyabr',
+    'Noyabr',
+    'Dekabr',
   ]
   const weekdayNames = [
-    'Yakshanba', 'Dushanba', 'Seshanba', 'Chorshanba', 'Payshanba', 'Juma', 'Shanba'
+    'Yakshanba',
+    'Dushanba',
+    'Seshanba',
+    'Chorshanba',
+    'Payshanba',
+    'Juma',
+    'Shanba',
   ]
   return {
     day: date.getDate().toString(),
     monthYear: `${monthNames[date.getMonth()]} ${date.getFullYear()}`,
-    weekday: weekdayNames[date.getDay()]
+    weekday: weekdayNames[date.getDay()],
   }
 }
 
@@ -41,9 +64,7 @@ export default function CargoScheduleScreen() {
 
       <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
         <View style={styles.subtitleContainer}>
-          <Text style={styles.subtitle}>
-            Koreadan O'zbekistonga yuk shu sanalarda jo'natiladi
-          </Text>
+          <Text style={styles.subtitle}>Koreadan O'zbekistonga yuk shu sanalarda jo'natiladi</Text>
         </View>
 
         {isLoading ? (

@@ -5,13 +5,15 @@ import { authHandlers } from './handlers/auth'
 
 export const bot = new Bot(env.BOT_TOKEN)
 
-bot.use(limit({
-  timeFrame: 3000,
-  limit: 2,
-  onLimitExceeded: async (ctx) => {
-    await ctx.reply('⏳ Iltimos biroz kuting...')
-  },
-}))
+bot.use(
+  limit({
+    timeFrame: 3000,
+    limit: 2,
+    onLimitExceeded: async (ctx) => {
+      await ctx.reply('⏳ Iltimos biroz kuting...')
+    },
+  })
+)
 
 // Register handlers
 bot.use(authHandlers)

@@ -1,12 +1,5 @@
 import React from 'react'
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  Dimensions,
-  Pressable,
-} from 'react-native'
+import { View, Text, TouchableOpacity, StyleSheet, Dimensions, Pressable } from 'react-native'
 import { Image } from 'expo-image'
 import { Feather } from '@expo/vector-icons'
 import { tokens } from '../../lib/tokens'
@@ -68,8 +61,8 @@ export const ProductCard = ({
   const badge = getBadge()
 
   return (
-    <Pressable 
-      onPress={onPress} 
+    <Pressable
+      onPress={onPress}
       onLongPress={onLongPress}
       delayLongPress={500}
       style={styles.container}
@@ -82,7 +75,7 @@ export const ProductCard = ({
           contentFit="cover"
           transition={200}
         />
-        
+
         {badge && (
           <View style={[styles.badge, { backgroundColor: badge.color }]}>
             <Text style={styles.badgeText}>{badge.label}</Text>
@@ -95,10 +88,9 @@ export const ProductCard = ({
           activeOpacity={0.7}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
-          <View style={[
-            styles.wishlistIconCircle,
-            isWishlisted && styles.wishlistIconCircleActive
-          ]}>
+          <View
+            style={[styles.wishlistIconCircle, isWishlisted && styles.wishlistIconCircleActive]}
+          >
             <Feather
               name="heart"
               size={14}
@@ -119,11 +111,7 @@ export const ProductCard = ({
 
         <View style={styles.priceContainer}>
           <Text style={styles.priceKrw}>{formatKRW(product.retailPrice)}</Text>
-          {showUzs && (
-            <Text style={styles.priceUzs}>
-              ≈ {formatUZS(uzsPrice)}
-            </Text>
-          )}
+          {showUzs && <Text style={styles.priceUzs}>≈ {formatUZS(uzsPrice)}</Text>}
         </View>
 
         <TouchableOpacity
@@ -135,10 +123,7 @@ export const ProductCard = ({
           disabled={!product.isAvailable}
         >
           <Text
-            style={[
-              styles.cartBtnText,
-              !product.isAvailable && { color: tokens.colors.textLight },
-            ]}
+            style={[styles.cartBtnText, !product.isAvailable && { color: tokens.colors.textLight }]}
           >
             Savatga +
           </Text>

@@ -8,7 +8,8 @@ export async function getPublicBanners(req: Request, res: Response) {
     return res.json({ data: items, error: null })
   } catch (e: any) {
     return res.status(500).json({
-      data: null, error: { message: e.message }
+      data: null,
+      error: { message: e.message },
     })
   }
 }
@@ -19,7 +20,8 @@ export async function adminGetBanners(_req: Request, res: Response) {
     return res.json({ data: items, error: null })
   } catch (e: any) {
     return res.status(500).json({
-      data: null, error: { message: e.message }
+      data: null,
+      error: { message: e.message },
     })
   }
 }
@@ -31,7 +33,8 @@ export async function adminCreateBanner(req: Request, res: Response) {
     return res.status(201).json({ data: item, error: null })
   } catch (e: any) {
     return res.status(e.status ?? 500).json({
-      data: null, error: { message: e.message }
+      data: null,
+      error: { message: e.message },
     })
   }
 }
@@ -42,7 +45,8 @@ export async function adminUpdateBanner(req: Request, res: Response) {
     return res.json({ data: item, error: null })
   } catch (e: any) {
     return res.status(e.status ?? 500).json({
-      data: null, error: { message: e.message }
+      data: null,
+      error: { message: e.message },
     })
   }
 }
@@ -53,7 +57,8 @@ export async function adminDeleteBanner(req: Request, res: Response) {
     return res.json({ data: { success: true }, error: null })
   } catch (e: any) {
     return res.status(e.status ?? 500).json({
-      data: null, error: { message: e.message }
+      data: null,
+      error: { message: e.message },
     })
   }
 }

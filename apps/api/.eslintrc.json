@@ -1,30 +1,14 @@
 {
-  "extends": [
-    "../../.eslintrc.json"
-  ],
-  "ignorePatterns": [
-    "!**/*",
-    "node_modules",
-    "dist"
-  ],
+  "extends": ["../../.eslintrc.json"],
+  "ignorePatterns": ["!**/*", "node_modules", "dist"],
   "overrides": [
     {
-      "files": [
-        "*.ts",
-        "*.tsx",
-        "*.js",
-        "*.jsx"
-      ],
+      "files": ["*.ts", "*.tsx", "*.js", "*.jsx"],
       "rules": {}
     },
     {
-      "files": [
-        "*.ts",
-        "*.tsx"
-      ],
-      "extends": [
-        "plugin:@nx/typescript"
-      ],
+      "files": ["*.ts", "*.tsx"],
+      "extends": ["plugin:@nx/typescript"],
       "rules": {
         "@nx/enforce-module-boundaries": "off",
         "@typescript-eslint/no-empty-function": "off",
@@ -38,13 +22,8 @@
       }
     },
     {
-      "files": [
-        "*.js",
-        "*.jsx"
-      ],
-      "extends": [
-        "plugin:@nx/javascript"
-      ],
+      "files": ["*.js", "*.jsx"],
+      "extends": ["plugin:@nx/javascript"],
       "rules": {}
     }
   ]

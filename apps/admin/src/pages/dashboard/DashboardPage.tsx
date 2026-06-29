@@ -89,9 +89,7 @@ function KpiCard({
     >
       <div className="flex items-start justify-between">
         <p className="text-xs font-medium text-muted-foreground">{title}</p>
-        <div
-          className={cn('w-8 h-8 rounded-lg flex items-center justify-center', iconColor)}
-        >
+        <div className={cn('w-8 h-8 rounded-lg flex items-center justify-center', iconColor)}>
           <Icon className="h-4 w-4" strokeWidth={1.5} />
         </div>
       </div>
@@ -254,11 +252,7 @@ export function DashboardPage() {
         <KpiCard
           title="Bugungi daromad"
           value={formatKRW(overview?.todayRevenue ?? 0)}
-          sub={
-            rate
-              ? formatUZS(Math.round((overview?.todayRevenue ?? 0) * rate))
-              : undefined
-          }
+          sub={rate ? formatUZS(Math.round((overview?.todayRevenue ?? 0) * rate)) : undefined}
           change={
             overview?.todayRevenueChange
               ? { value: overview.todayRevenueChange, label: 'kechadan' }
@@ -273,11 +267,7 @@ export function DashboardPage() {
         <KpiCard
           title="Oy daromadi"
           value={formatKRW(overview?.periodRevenue ?? 0)}
-          sub={
-            rate
-              ? formatUZS(Math.round((overview?.periodRevenue ?? 0) * rate))
-              : undefined
-          }
+          sub={rate ? formatUZS(Math.round((overview?.periodRevenue ?? 0) * rate)) : undefined}
           change={
             overview?.periodRevenueChange
               ? { value: overview.periodRevenueChange, label: "o'tgandan" }
@@ -370,9 +360,7 @@ export function DashboardPage() {
           className="lg:col-span-2 bg-white rounded-xl
                         border-[0.5px] border-border p-5"
         >
-          <h2 className="text-sm font-semibold text-gray-900 mb-4">
-            Daromad dinamikasi
-          </h2>
+          <h2 className="text-sm font-semibold text-gray-900 mb-4">Daromad dinamikasi</h2>
           {revenueLoading ? (
             <div className="h-48 bg-gray-50 rounded-lg animate-pulse" />
           ) : (
@@ -434,9 +422,7 @@ export function DashboardPage() {
           className="bg-white rounded-xl border-[0.5px]
                         border-border p-5"
         >
-          <h2 className="text-sm font-semibold text-gray-900 mb-4">
-            Buyurtma holatlari
-          </h2>
+          <h2 className="text-sm font-semibold text-gray-900 mb-4">Buyurtma holatlari</h2>
           {!ordersByStatus ? (
             <div className="h-48 bg-gray-50 rounded-lg animate-pulse" />
           ) : (
@@ -452,10 +438,7 @@ export function DashboardPage() {
                   nameKey="status"
                 >
                   {ordersByStatus.map((entry: any) => (
-                    <Cell
-                      key={entry.status}
-                      fill={STATUS_COLORS[entry.status] ?? '#e5e7eb'}
-                    />
+                    <Cell key={entry.status} fill={STATUS_COLORS[entry.status] ?? '#e5e7eb'} />
                   ))}
                 </Pie>
                 <Tooltip
@@ -489,9 +472,7 @@ export function DashboardPage() {
             className="flex items-center justify-between
                           px-5 py-4 border-b border-border/50"
           >
-            <h2 className="text-sm font-semibold text-gray-900">
-              Oxirgi buyurtmalar
-            </h2>
+            <h2 className="text-sm font-semibold text-gray-900">Oxirgi buyurtmalar</h2>
             <button
               onClick={() => navigate({ to: '/orders' })}
               className="text-xs text-primary hover:underline font-medium"
@@ -518,12 +499,8 @@ export function DashboardPage() {
                 >
                   <div className="flex items-center gap-3">
                     <div>
-                      <p className="text-xs font-medium text-gray-900">
-                        #{order.orderNumber}
-                      </p>
-                      <p className="text-[11px] text-muted-foreground">
-                        {order.customerName}
-                      </p>
+                      <p className="text-xs font-medium text-gray-900">#{order.orderNumber}</p>
+                      <p className="text-[11px] text-muted-foreground">{order.customerName}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
@@ -546,9 +523,7 @@ export function DashboardPage() {
           className="bg-white rounded-xl border-[0.5px]
                         border-border p-5"
         >
-          <h2 className="text-sm font-semibold text-gray-900 mb-4">
-            Top mahsulotlar
-          </h2>
+          <h2 className="text-sm font-semibold text-gray-900 mb-4">Top mahsulotlar</h2>
           <div className="space-y-3">
             {(topProducts ?? []).slice(0, 5).map((p: any, i: number) => (
               <div key={p.productId} className="flex items-center gap-3">
@@ -608,9 +583,7 @@ export function DashboardPage() {
           </div>
           <div className="divide-y divide-border/30">
             {(pendingPayments?.data ?? []).slice(0, 5).map((order: any) => {
-              const deadline = order.paymentDeadline
-                ? formatDeadline(order.paymentDeadline)
-                : null
+              const deadline = order.paymentDeadline ? formatDeadline(order.paymentDeadline) : null
               return (
                 <div
                   key={order.id}
@@ -625,12 +598,8 @@ export function DashboardPage() {
                              cursor-pointer transition-colors"
                 >
                   <div>
-                    <p className="text-xs font-medium text-gray-900">
-                      #{order.orderNumber}
-                    </p>
-                    <p className="text-[11px] text-muted-foreground">
-                      {order.customerName}
-                    </p>
+                    <p className="text-xs font-medium text-gray-900">#{order.orderNumber}</p>
+                    <p className="text-[11px] text-muted-foreground">{order.customerName}</p>
                   </div>
                   <div className="text-right">
                     <p className="text-xs font-semibold text-gray-900">
@@ -671,13 +640,8 @@ export function DashboardPage() {
                           px-5 py-4 border-b border-border/50"
           >
             <div className="flex items-center gap-2">
-              <AlertTriangle
-                className="h-3.5 w-3.5 text-amber-500"
-                strokeWidth={1.5}
-              />
-              <h2 className="text-sm font-semibold text-gray-900">
-                Kam qolgan mahsulotlar
-              </h2>
+              <AlertTriangle className="h-3.5 w-3.5 text-amber-500" strokeWidth={1.5} />
+              <h2 className="text-sm font-semibold text-gray-900">Kam qolgan mahsulotlar</h2>
             </div>
             <button
               onClick={() => navigate({ to: '/inventory' })}
@@ -702,12 +666,8 @@ export function DashboardPage() {
                     />
                   )}
                   <div>
-                    <p className="text-xs font-medium text-gray-900">
-                      {item.productName}
-                    </p>
-                    <p className="text-[11px] text-muted-foreground">
-                      {item.brandName}
-                    </p>
+                    <p className="text-xs font-medium text-gray-900">{item.productName}</p>
+                    <p className="text-[11px] text-muted-foreground">{item.brandName}</p>
                   </div>
                 </div>
                 <div className="text-right">

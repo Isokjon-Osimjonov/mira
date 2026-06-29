@@ -2,7 +2,8 @@ import type { Request, Response } from 'express'
 import * as service from './admin-notifications.service'
 
 const ok = <T>(res: Response, data: T) => res.json({ data, error: null })
-const err = (res: Response, status: number, message: string) => res.status(status).json({ data: null, error: { message } })
+const err = (res: Response, status: number, message: string) =>
+  res.status(status).json({ data: null, error: { message } })
 
 export async function getNotifications(req: Request, res: Response) {
   try {

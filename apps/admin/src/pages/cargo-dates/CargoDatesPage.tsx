@@ -56,7 +56,9 @@ export function CargoDatesPage() {
     <div className="flex-1 space-y-4 p-8 pt-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-gray-900">Yuk sanalari</h1>
-        <p className="text-sm text-muted-foreground mt-1">Koreyadan O'zbekistonga yuk jo'natish jadvali</p>
+        <p className="text-sm text-muted-foreground mt-1">
+          Koreyadan O'zbekistonga yuk jo'natish jadvali
+        </p>
       </div>
 
       <div className="flex items-center space-x-2 bg-white p-4 rounded-lg border">
@@ -100,7 +102,9 @@ export function CargoDatesPage() {
                   <div className="flex items-center space-x-2">
                     <Switch
                       checked={date.isActive}
-                      onCheckedChange={(checked) => updateMut.mutate({ id: date.id, isActive: checked })}
+                      onCheckedChange={(checked) =>
+                        updateMut.mutate({ id: date.id, isActive: checked })
+                      }
                     />
                     <span className="text-sm">Faol</span>
                   </div>

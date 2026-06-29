@@ -23,9 +23,9 @@ const getSocketUrl = () => {
 }
 
 export const env = {
-  apiUrl:    getApiUrl()    as string ?? 'http://localhost:4000/api/v1',
-  socketUrl: getSocketUrl() as string ?? 'http://localhost:4000',
-  appName:   import.meta.env.VITE_APP_NAME  as string ?? 'Mira Admin',
+  apiUrl: (getApiUrl() as string) ?? 'http://localhost:4000/api/v1',
+  socketUrl: (getSocketUrl() as string) ?? 'http://localhost:4000',
+  appName: (import.meta.env.VITE_APP_NAME as string) ?? 'Mira Admin',
 } as const
 
 // Sanity check (dev only)

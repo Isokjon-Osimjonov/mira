@@ -1,15 +1,15 @@
 import { api } from '../lib/api'
 
 export interface Category {
-  id:           string
-  name:         string
-  imageUrl?:    string
-  parentId?:    string
-  parentName?:  string
-  sortOrder:    number
+  id: string
+  name: string
+  imageUrl?: string
+  parentId?: string
+  parentName?: string
+  sortOrder: number
   productCount: number
-  isActive:     boolean
-  children?:    Category[]
+  isActive: boolean
+  children?: Category[]
 }
 
 export const categoriesApi = {
@@ -24,7 +24,7 @@ export const categoriesApi = {
   },
 
   create: async (payload: {
-    name:      string
+    name: string
     imageUrl?: string
     parentId?: string
     sortOrder?: number
@@ -33,12 +33,15 @@ export const categoriesApi = {
     return res.data
   },
 
-  update: async (id: string, payload: {
-    name?:     string
-    imageUrl?: string
-    parentId?: string
-    sortOrder?: number
-  }) => {
+  update: async (
+    id: string,
+    payload: {
+      name?: string
+      imageUrl?: string
+      parentId?: string
+      sortOrder?: number
+    }
+  ) => {
     const res = await api.patch(`/admin/categories/${id}`, payload)
     return res.data
   },

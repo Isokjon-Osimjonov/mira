@@ -8,12 +8,14 @@ import { Input } from '@/components/ui/input'
 import { api } from '../../lib/api'
 import { ordersApi } from '../../api/orders.api'
 import { queryClient } from '../../lib/query-client'
-import { addBusinessDays } from '../../../../../libs/shared-utils/src/date'
+import { addBusinessDays } from '@mira/shared-utils'
 import { getErrorMessage } from '../../lib/errors'
 
 export function KorBulkDeliveryPanel() {
   const [shipDate, setShipDate] = useState(format(new Date(), 'yyyy-MM-dd'))
-  const [deliveryDate, setDeliveryDate] = useState(format(addBusinessDays(new Date(), 1), 'yyyy-MM-dd'))
+  const [deliveryDate, setDeliveryDate] = useState(
+    format(addBusinessDays(new Date(), 1), 'yyyy-MM-dd')
+  )
   const [hasSearched, setHasSearched] = useState(false)
 
   // Fetch SHIPPED orders in KOR that were shipped on shipDate
@@ -52,7 +54,9 @@ export function KorBulkDeliveryPanel() {
     onSuccess: (res, vars) => {
       queryClient.removeQueries()
       if (res.failed && res.failed.length > 0) {
-        toast.warning(`${res.succeeded.length} ta yangilandi, ${res.failed.length} ta o'tkazib yuborildi`)
+        toast.warning(
+          `${res.succeeded.length} ta yangilandi, ${res.failed.length} ta o'tkazib yuborildi`
+        )
       } else {
         toast.success(`${vars.ids.length} ta buyurtma Yetkazildi deb belgilandi!`)
       }
@@ -85,7 +89,7 @@ export function KorBulkDeliveryPanel() {
   return (
     <div className="bg-white border rounded-xl p-5 shadow-sm mt-4">
       <h3 className="text-sm font-semibold mb-4">KOR Yetkazib berishni belgilash</h3>
-      
+
       <div className="flex items-end gap-4 mb-6">
         <div>
           <label className="block text-[11px] font-medium text-muted-foreground uppercase mb-1.5">
@@ -98,7 +102,7 @@ export function KorBulkDeliveryPanel() {
             onChange={(e) => handleShipDateChange(e.target.value)}
           />
         </div>
-        
+
         <div>
           <label className="block text-[11px] font-medium text-muted-foreground uppercase mb-1.5">
             Yetkazilgan sana
@@ -120,11 +124,16 @@ export function KorBulkDeliveryPanel() {
         <div className="border rounded-lg overflow-hidden bg-gray-50/50">
           <div className="max-h-60 overflow-y-auto p-2">
             {orders.length === 0 ? (
-              <p className="text-sm text-center text-muted-foreground py-4">Bu sanada jo'natilgan KOR buyurtmalari topilmadi</p>
+              <p className="text-sm text-center text-muted-foreground py-4">
+                Bu sanada jo'natilgan KOR buyurtmalari topilmadi
+              </p>
             ) : (
               <div className="space-y-1">
                 {orders.map((o) => (
-                  <label key={o.id} className="flex items-center justify-between p-2 hover:bg-white rounded border border-transparent hover:border-border cursor-pointer transition-colors">
+                  <label
+                    key={o.id}
+                    className="flex items-center justify-between p-2 hover:bg-white rounded border border-transparent hover:border-border cursor-pointer transition-colors"
+                  >
                     <div className="flex items-center gap-3">
                       <input
                         type="checkbox"
@@ -140,16 +149,20 @@ export function KorBulkDeliveryPanel() {
               </div>
             )}
           </div>
-          
+
           {orders.length > 0 && (
             <div className="p-3 border-t bg-white flex justify-between items-center">
-              <span className="text-sm font-medium">{selectedIds.size} / {orders.length} tanlandi</span>
+              <span className="text-sm font-medium">
+                {selectedIds.size} / {orders.length} tanlandi
+              </span>
               <Button
                 onClick={handleBulkDeliver}
                 disabled={selectedIds.size === 0 || bulkStatusMutation.isPending}
                 size="sm"
               >
-                {bulkStatusMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                {bulkStatusMutation.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : null}
                 {selectedIds.size} ta buyurtmani 'Yetkazildi' deb belgilash
               </Button>
             </div>

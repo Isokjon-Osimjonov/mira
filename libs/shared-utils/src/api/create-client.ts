@@ -3,17 +3,17 @@ import axios, { type AxiosInstance, type InternalAxiosRequestConfig } from 'axio
 import createAuthRefreshInterceptor from 'axios-auth-refresh'
 
 export interface CreateClientOptions {
-  baseURL:          string
-  timeout?:         number
-  getAccessToken:   () => string | null
-  onRefresh:        (failedRequest: any) => Promise<void>
+  baseURL: string
+  timeout?: number
+  getAccessToken: () => string | null
+  onRefresh: (failedRequest: any) => Promise<void>
   withCredentials?: boolean
 }
 
 export function createApiClient(opts: CreateClientOptions): AxiosInstance {
   const client = axios.create({
-    baseURL:         opts.baseURL,
-    timeout:         opts.timeout ?? 15_000,
+    baseURL: opts.baseURL,
+    timeout: opts.timeout ?? 15_000,
     withCredentials: opts.withCredentials ?? false,
     headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
   })

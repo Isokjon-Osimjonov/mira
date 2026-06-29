@@ -129,8 +129,12 @@ export type Period =
   | 'month'
   | 'custom'
 
-export const REVENUE_STATUSES: ("PAYMENT_CONFIRMED" | "PACKING" | "SHIPPED" | "DELIVERED")[] = 
-  ['PAYMENT_CONFIRMED', 'PACKING', 'SHIPPED', 'DELIVERED']
+export const REVENUE_STATUSES: ('PAYMENT_CONFIRMED' | 'PACKING' | 'SHIPPED' | 'DELIVERED')[] = [
+  'PAYMENT_CONFIRMED',
+  'PACKING',
+  'SHIPPED',
+  'DELIVERED',
+]
 
 // ─── Helpers ─────────────────────────────────────────────────────────────
 
@@ -271,7 +275,9 @@ export async function getOverview(period: Period) {
   const periodRevenue = Number(periodRev.revenue)
   const previousRevenue = Number(prevRev.revenue)
   const periodRevenueChange =
-    previousRevenue > 0 ? Math.round(((periodRevenue - previousRevenue) / previousRevenue) * 100) : 0
+    previousRevenue > 0
+      ? Math.round(((periodRevenue - previousRevenue) / previousRevenue) * 100)
+      : 0
 
   // 3. Pending & Total
   const [pendingPaymentCount] = await db

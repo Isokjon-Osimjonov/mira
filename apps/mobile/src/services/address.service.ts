@@ -53,17 +53,12 @@ export const addressService = {
     return res.data.data ?? []
   },
 
-  createAddress: async (
-    data: CreateAddressPayload
-  ): Promise<Address> => {
+  createAddress: async (data: CreateAddressPayload): Promise<Address> => {
     const res = await api.post('/addresses', data)
     return res.data.data
   },
 
-  updateAddress: async (
-    id: string,
-    data: Partial<CreateAddressPayload>
-  ): Promise<Address> => {
+  updateAddress: async (id: string, data: Partial<CreateAddressPayload>): Promise<Address> => {
     const res = await api.put(`/addresses/${id}`, data)
     return res.data.data
   },
@@ -78,7 +73,7 @@ export const addressService = {
 
   searchJuso: async (q: string): Promise<JusoResult[]> => {
     const res = await api.get('/addresses/search-juso', {
-      params: { q }
+      params: { q },
     })
     return res.data.data ?? []
   },

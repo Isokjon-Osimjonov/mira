@@ -12,15 +12,15 @@ module.exports = {
       colors: {
         brand: {
           DEFAULT: '#E11D74', // violet-600
-          dark:    '#9D1352', // violet-900
-          soft:    '#FCE7F3', // violet-100
-          bg:      '#FFF8FB', // violet-50
-          text:    '#1A0A10', // violet-950
+          dark: '#9D1352', // violet-900
+          soft: '#FCE7F3', // violet-100
+          bg: '#FFF8FB', // violet-50
+          text: '#1A0A10', // violet-950
         },
       },
       fontFamily: {
         display: ['Cormorant Garamond', 'serif'],
-        body:    ['Montserrat', 'sans-serif'],
+        body: ['Montserrat', 'sans-serif'],
       },
     },
   },

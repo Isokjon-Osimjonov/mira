@@ -1,5 +1,5 @@
-import { assertNotProduction } from "./_guard";
-assertNotProduction();
+import { assertNotProduction } from './_guard'
+assertNotProduction()
 
 import { db } from '../config/db'
 import { products, productRegionalConfigs } from '@mira/db'
@@ -70,7 +70,7 @@ async function run() {
   process.exit(0)
 }
 
-run().catch(err => {
+run().catch((err) => {
   console.error('Error:', err)
   process.exit(1)
 })

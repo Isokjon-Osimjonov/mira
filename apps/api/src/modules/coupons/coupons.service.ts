@@ -246,7 +246,10 @@ export async function getCoupons(query: {
   if (query.search) {
     where = and(
       where,
-      or(ilike(coupons.code, `%${escapeLikeQuery(query.search)}%`), ilike(coupons.name, `%${escapeLikeQuery(query.search)}%`))
+      or(
+        ilike(coupons.code, `%${escapeLikeQuery(query.search)}%`),
+        ilike(coupons.name, `%${escapeLikeQuery(query.search)}%`)
+      )
     ) as any
   }
 

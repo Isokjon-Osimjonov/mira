@@ -6,10 +6,12 @@ import { tokens } from '../lib/tokens'
 
 export default function NotFoundScreen() {
   return (
-    <SafeAreaView style={{
-      flex: 1,
-      backgroundColor: tokens.colors.background,
-    }}>
+    <SafeAreaView
+      style={{
+        flex: 1,
+        backgroundColor: tokens.colors.background,
+      }}
+    >
       <View style={{ flex: 1, justifyContent: 'center' }}>
         <EmptyState
           icon="alert-circle"

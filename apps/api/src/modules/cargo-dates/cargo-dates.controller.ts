@@ -24,14 +24,16 @@ export async function adminCreateCargoDate(req: Request, res: Response) {
     const { cargoDate, note } = req.body
     if (!cargoDate) {
       return res.status(400).json({
-        data: null, error: { message: "Sana majburiy" }
+        data: null,
+        error: { message: 'Sana majburiy' },
       })
     }
     const item = await service.createCargoDate({ cargoDate, note })
     return res.status(201).json({ data: item, error: null })
   } catch (e: any) {
     return res.status(e.status ?? 500).json({
-      data: null, error: { message: e.message }
+      data: null,
+      error: { message: e.message },
     })
   }
 }
@@ -42,7 +44,8 @@ export async function adminUpdateCargoDate(req: Request, res: Response) {
     return res.json({ data: item, error: null })
   } catch (e: any) {
     return res.status(e.status ?? 500).json({
-      data: null, error: { message: e.message }
+      data: null,
+      error: { message: e.message },
     })
   }
 }
@@ -53,7 +56,8 @@ export async function adminDeleteCargoDate(req: Request, res: Response) {
     return res.json({ data: { success: true }, error: null })
   } catch (e: any) {
     return res.status(e.status ?? 500).json({
-      data: null, error: { message: e.message }
+      data: null,
+      error: { message: e.message },
     })
   }
 }

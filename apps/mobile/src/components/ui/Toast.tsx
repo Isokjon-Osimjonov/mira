@@ -1,8 +1,5 @@
 import React, { useEffect, useRef } from 'react'
-import {
-  Animated, Text, View, StyleSheet,
-  Dimensions
-} from 'react-native'
+import { Animated, Text, View, StyleSheet, Dimensions } from 'react-native'
 import { Feather } from '@expo/vector-icons'
 import { tokens } from '../../lib/tokens'
 
@@ -14,10 +11,7 @@ interface ToastProps {
   duration?: number
 }
 
-export function Toast({
-  message, type = 'success',
-  visible, onHide, duration = 2500
-}: ToastProps) {
+export function Toast({ message, type = 'success', visible, onHide, duration = 2500 }: ToastProps) {
   const opacity = useRef(new Animated.Value(0)).current
   const translateY = useRef(new Animated.Value(20)).current
 
@@ -25,24 +19,28 @@ export function Toast({
     if (visible) {
       Animated.parallel([
         Animated.timing(opacity, {
-          toValue: 1, duration: 200,
-          useNativeDriver: true
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
         }),
         Animated.timing(translateY, {
-          toValue: 0, duration: 200,
-          useNativeDriver: true
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: true,
         }),
       ]).start()
 
       const timer = setTimeout(() => {
         Animated.parallel([
           Animated.timing(opacity, {
-            toValue: 0, duration: 200,
-            useNativeDriver: true
+            toValue: 0,
+            duration: 200,
+            useNativeDriver: true,
           }),
           Animated.timing(translateY, {
-            toValue: 20, duration: 200,
-            useNativeDriver: true
+            toValue: 20,
+            duration: 200,
+            useNativeDriver: true,
           }),
         ]).start(() => onHide())
       }, duration)
@@ -66,11 +64,9 @@ export function Toast({
   if (!visible) return null
 
   return (
-    <Animated.View style={[
-      styles.container,
-      { opacity, transform: [{ translateY }],
-        backgroundColor: bgColor }
-    ]}>
+    <Animated.View
+      style={[styles.container, { opacity, transform: [{ translateY }], backgroundColor: bgColor }]}
+    >
       <Feather name={icon} size={16} color="white" />
       <Text style={styles.text}>{message}</Text>
     </Animated.View>
@@ -87,15 +83,15 @@ export function useToast() {
     visible: boolean
   }>({ message: '', type: 'success', visible: false })
 
-  const showToast = useCallback((
-    message: string,
-    type: 'success' | 'error' | 'info' = 'success'
-  ) => {
-    setToast({ message, type, visible: true })
-  }, [])
+  const showToast = useCallback(
+    (message: string, type: 'success' | 'error' | 'info' = 'success') => {
+      setToast({ message, type, visible: true })
+    },
+    []
+  )
 
   const hideToast = useCallback(() => {
-    setToast(prev => ({ ...prev, visible: false }))
+    setToast((prev) => ({ ...prev, visible: false }))
   }, [])
 
   return { toast, showToast, hideToast }

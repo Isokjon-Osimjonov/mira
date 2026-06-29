@@ -8,22 +8,33 @@ import { inArray } from 'drizzle-orm'
 
 const adminRouter = Router()
 
-adminRouter.post('/bulk-status', requirePermission('orders', 'write'), async (req: any, res, next) => {
-  try {
-    const { ids, status } = req.body
-    if (!ids?.length || !status) throw {
-      status: 400,
-      code: 'INVALID_REQUEST',
-      message: 'ids va status talab qilinadi'
-    }
+adminRouter.post(
+  '/bulk-status',
+  requirePermission('orders', 'write'),
+  async (req: any, res, next) => {
+    try {
+      const { ids, status } = req.body
+      if (!ids?.length || !status)
+        throw {
+          status: 400,
+          code: 'INVALID_REQUEST',
+          message: 'ids va status talab qilinadi',
+        }
 
-    const admin = req.user as import('../../middleware/auth').AdminJwtPayload;
-    const results = await service.bulkUpdateStatus(ids, status, admin?.sub, admin?.fullName, req.body.payloadOverrides)
-    res.json({ success: true, ...results })
-  } catch (err) {
-    next(err)
+      const admin = req.user as import('../../middleware/auth').AdminJwtPayload
+      const results = await service.bulkUpdateStatus(
+        ids,
+        status,
+        admin?.sub,
+        admin?.fullName,
+        req.body.payloadOverrides
+      )
+      res.json({ success: true, ...results })
+    } catch (err) {
+      next(err)
+    }
   }
-})
+)
 
 adminRouter.get('/', requirePermission('orders', 'read'), ctrl.adminGetOrders)
 adminRouter.get('/status-counts', requirePermission('orders', 'read'), ctrl.getStatusCounts)
@@ -35,8 +46,11 @@ adminRouter.post('/', requirePermission('orders', 'write'), ctrl.adminCreateOrde
 
 adminRouter.patch('/:id/status', requirePermission('orders', 'write'), ctrl.adminUpdateStatus)
 adminRouter.post('/:id/confirm-payment', requirePermission('orders', 'write'), ctrl.confirmPayment)
-adminRouter.patch('/:id/delivery-estimate', requirePermission('orders', 'write'), ctrl.updateDeliveryEstimate)
-
+adminRouter.patch(
+  '/:id/delivery-estimate',
+  requirePermission('orders', 'write'),
+  ctrl.updateDeliveryEstimate
+)
 
 adminRouter.patch('/:id/reject-payment', requirePermission('orders', 'write'), ctrl.rejectPayment)
 adminRouter.patch('/:id/start-packing', requirePermission('orders', 'write'), ctrl.startPacking)

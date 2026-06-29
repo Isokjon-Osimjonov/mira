@@ -21,11 +21,7 @@ export async function getSuppliers(query: {
     const s = `%${query.search}%`
     where = and(
       where,
-      or(
-        ilike(suppliers.name, s),
-        ilike(suppliers.contactName, s),
-        ilike(suppliers.email, s)
-      )
+      or(ilike(suppliers.name, s), ilike(suppliers.contactName, s), ilike(suppliers.email, s))
     )
   }
 

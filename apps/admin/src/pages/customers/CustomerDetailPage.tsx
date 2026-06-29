@@ -126,8 +126,8 @@ export function CustomerDetailPage({ id }: { id: string }) {
         </div>
 
         {/* Block/Unblock button */}
-        {!customer.deletedAt && (
-          !customer.isActive ? (
+        {!customer.deletedAt &&
+          (!customer.isActive ? (
             <Button
               size="sm"
               variant="outline"
@@ -147,8 +147,7 @@ export function CustomerDetailPage({ id }: { id: string }) {
               <ShieldOff className="h-3.5 w-3.5" strokeWidth={1.5} />
               Bloklash
             </Button>
-          )
-        )}
+          ))}
       </div>
 
       {/* 2-column grid */}
@@ -306,7 +305,11 @@ export function CustomerDetailPage({ id }: { id: string }) {
                 onClick={() => addNoteMutation.mutate()}
                 className="h-8 rounded-lg text-xs px-3"
               >
-                {addNoteMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : "Qo'shish"}
+                {addNoteMutation.isPending ? (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                ) : (
+                  "Qo'shish"
+                )}
               </Button>
             </div>
           </div>

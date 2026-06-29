@@ -6,18 +6,18 @@ import { api } from '../lib/api'
 import { cn } from '@/lib/utils'
 
 const TYPE_LABELS: Record<string, any> = {
-  order:    { label: 'Buyurtma',  color: 'bg-blue-50 text-blue-700' },
-  product:  { label: 'Mahsulot', color: 'bg-green-50 text-green-700' },
-  customer: { label: 'Mijoz',    color: 'bg-purple-50 text-purple-700' },
-  coupon:   { label: 'Kupon',    color: 'bg-orange-50 text-orange-700' },
+  order: { label: 'Buyurtma', color: 'bg-blue-50 text-blue-700' },
+  product: { label: 'Mahsulot', color: 'bg-green-50 text-green-700' },
+  customer: { label: 'Mijoz', color: 'bg-purple-50 text-purple-700' },
+  coupon: { label: 'Kupon', color: 'bg-orange-50 text-orange-700' },
 }
 
 export function GlobalSearch() {
-  const navigate   = useNavigate()
-  const inputRef   = useRef<HTMLInputElement>(null)
-  const [query, setQuery]   = useState('')
-  const [open,  setOpen]    = useState(false)
-  const [debQ,  setDebQ]    = useState('')
+  const navigate = useNavigate()
+  const inputRef = useRef<HTMLInputElement>(null)
+  const [query, setQuery] = useState('')
+  const [open, setOpen] = useState(false)
+  const [debQ, setDebQ] = useState('')
 
   useEffect(() => {
     const t = setTimeout(() => setDebQ(query), 300)
@@ -83,7 +83,13 @@ export function GlobalSearch() {
       {/* Search modal */}
       {open && (
         <div className="fixed inset-0 z-50 flex items-start justify-center pt-20 px-4">
-          <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={() => { setOpen(false); setQuery('') }} />
+          <div
+            className="absolute inset-0 bg-black/30 backdrop-blur-sm"
+            onClick={() => {
+              setOpen(false)
+              setQuery('')
+            }}
+          />
           <div className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl border-[0.5px] border-border overflow-hidden">
             <div className="flex items-center gap-3 px-4 py-3 border-b border-border/50">
               <Search className="h-4 w-4 text-gray-400 shrink-0" strokeWidth={1.5} />
@@ -100,7 +106,9 @@ export function GlobalSearch() {
                   <X className="h-4 w-4 text-muted-foreground" />
                 </button>
               )}
-              <kbd className="px-1.5 py-0.5 rounded bg-gray-100 text-[10px] font-mono text-gray-500">ESC</kbd>
+              <kbd className="px-1.5 py-0.5 rounded bg-gray-100 text-[10px] font-mono text-gray-500">
+                ESC
+              </kbd>
             </div>
 
             <div className="max-h-80 overflow-y-auto">
@@ -115,7 +123,9 @@ export function GlobalSearch() {
                 </div>
               ) : results.length === 0 ? (
                 <div className="px-4 py-6 text-center">
-                  <p className="text-xs text-muted-foreground">"{debQ}" bo'yicha natija topilmadi</p>
+                  <p className="text-xs text-muted-foreground">
+                    "{debQ}" bo'yicha natija topilmadi
+                  </p>
                 </div>
               ) : (
                 <div className="py-2">
@@ -127,16 +137,25 @@ export function GlobalSearch() {
                         onClick={() => handleSelect(item)}
                         className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 transition-colors text-left group"
                       >
-                        <span className={cn('text-[10px] font-bold px-2 py-0.5 rounded shrink-0', typeInfo.color)}>
+                        <span
+                          className={cn(
+                            'text-[10px] font-bold px-2 py-0.5 rounded shrink-0',
+                            typeInfo.color
+                          )}
+                        >
                           {typeInfo.label}
                         </span>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-gray-900 truncate group-hover:text-primary transition-colors">
                             {item.title}
                           </p>
-                          {item.sub && <p className="text-[11px] text-muted-foreground truncate">{item.sub}</p>}
+                          {item.sub && (
+                            <p className="text-[11px] text-muted-foreground truncate">{item.sub}</p>
+                          )}
                         </div>
-                        <span className="text-xs text-muted-foreground opacity-0 group-hover:opacity-100 transition-all transform group-hover:translate-x-1">→</span>
+                        <span className="text-xs text-muted-foreground opacity-0 group-hover:opacity-100 transition-all transform group-hover:translate-x-1">
+                          →
+                        </span>
                       </button>
                     )
                   })}

@@ -14,8 +14,7 @@ Notifications.setNotificationHandler({
   }),
 })
 
-export async function registerForPushNotifications():
-  Promise<string | null> {
+export async function registerForPushNotifications(): Promise<string | null> {
   // Must be physical device
   if (!Device.isDevice) {
     console.log('Push notifications require a physical device')
@@ -23,14 +22,12 @@ export async function registerForPushNotifications():
   }
 
   // Check/request permissions
-  const { status: existingStatus } =
-    await Notifications.getPermissionsAsync()
+  const { status: existingStatus } = await Notifications.getPermissionsAsync()
 
   let finalStatus = existingStatus
 
   if (existingStatus !== 'granted') {
-    const { status } =
-      await Notifications.requestPermissionsAsync()
+    const { status } = await Notifications.requestPermissionsAsync()
     finalStatus = status
   }
 
@@ -41,21 +38,19 @@ export async function registerForPushNotifications():
 
   // Android channel setup
   if (Platform.OS === 'android') {
-    await Notifications.setNotificationChannelAsync(
-      'default', {
-        name: 'Mira Market',
-        importance: Notifications.AndroidImportance.MAX,
-        vibrationPattern: [0, 250, 250, 250],
-        lightColor: '#E11D74',
-        sound: 'default',
-      }
-    )
+    await Notifications.setNotificationChannelAsync('default', {
+      name: 'Mira Market',
+      importance: Notifications.AndroidImportance.MAX,
+      vibrationPattern: [0, 250, 250, 250],
+      lightColor: '#E11D74',
+      sound: 'default',
+    })
   }
 
   // Get Expo push token
   try {
-    const projectId = Constants.expoConfig?.extra?.eas?.projectId
-      ?? 'a97bda7b-3df6-485f-b128-305279ae4a20'
+    const projectId =
+      Constants.expoConfig?.extra?.eas?.projectId ?? 'a97bda7b-3df6-485f-b128-305279ae4a20'
 
     const token = await Notifications.getExpoPushTokenAsync({
       projectId,
@@ -74,21 +69,16 @@ export function setupNotificationListeners(
   onResponse?: (response: Notifications.NotificationResponse) => void
 ) {
   // Received while app is foregrounded
-  const notifSub = Notifications.addNotificationReceivedListener(
-    notification => {
-      console.log('Notification received:', notification)
-      onNotification?.(notification)
-    }
-  )
+  const notifSub = Notifications.addNotificationReceivedListener((notification) => {
+    console.log('Notification received:', notification)
+    onNotification?.(notification)
+  })
 
   // User tapped notification
-  const responseSub =
-    Notifications.addNotificationResponseReceivedListener(
-      response => {
-        console.log('Notification tapped:', response)
-        onResponse?.(response)
-      }
-    )
+  const responseSub = Notifications.addNotificationResponseReceivedListener((response) => {
+    console.log('Notification tapped:', response)
+    onResponse?.(response)
+  })
 
   return () => {
     notifSub.remove()

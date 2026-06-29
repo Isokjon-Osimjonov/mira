@@ -4,24 +4,29 @@ import { SkeletonTable } from './SkeletonTable'
 import { EmptyState } from './EmptyState'
 
 interface Column<T> {
-  key:       string
-  header:    React.ReactNode
-  width?:    string
-  cell:      (row: T) => React.ReactNode
+  key: string
+  header: React.ReactNode
+  width?: string
+  cell: (row: T) => React.ReactNode
   className?: string
 }
 
 interface DataTableProps<T> {
-  data:       T[]
-  columns:    Column<T>[]
-  loading?:   boolean
+  data: T[]
+  columns: Column<T>[]
+  loading?: boolean
   onRowClick?: (row: T) => void
-  rowKey:     (row: T) => string
+  rowKey: (row: T) => string
   stickyFirstCol?: boolean
 }
 
 export function DataTable<T>({
-  data, columns, loading, onRowClick, rowKey, stickyFirstCol
+  data,
+  columns,
+  loading,
+  onRowClick,
+  rowKey,
+  stickyFirstCol,
 }: DataTableProps<T>) {
   if (loading) return <SkeletonTable cols={columns.length} />
 
@@ -37,9 +42,7 @@ export function DataTable<T>({
                   'h-10 px-4 text-left text-xs font-medium',
                   'text-muted-foreground bg-gray-50/80',
                   'whitespace-nowrap',
-                  i === 0 && stickyFirstCol
-                    ? 'sticky left-0 z-10 bg-gray-50'
-                    : '',
+                  i === 0 && stickyFirstCol ? 'sticky left-0 z-10 bg-gray-50' : '',
                   col.className
                 )}
                 style={{ width: col.width }}
@@ -63,9 +66,7 @@ export function DataTable<T>({
                 onClick={() => onRowClick?.(row)}
                 className={cn(
                   'border-b border-border/30 transition-colors',
-                  onRowClick
-                    ? 'hover:bg-gray-50/80 cursor-pointer'
-                    : ''
+                  onRowClick ? 'hover:bg-gray-50/80 cursor-pointer' : ''
                 )}
               >
                 {columns.map((col, i) => (
@@ -73,9 +74,7 @@ export function DataTable<T>({
                     key={col.key}
                     className={cn(
                       'px-4 py-3 align-middle',
-                      i === 0 && stickyFirstCol
-                        ? 'sticky left-0 bg-white z-10'
-                        : '',
+                      i === 0 && stickyFirstCol ? 'sticky left-0 bg-white z-10' : '',
                       col.className
                     )}
                   >

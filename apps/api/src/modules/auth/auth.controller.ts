@@ -102,9 +102,7 @@ export async function logout(req: Request, res: Response) {
   const isMobile = req.headers['x-client-type'] === 'mobile'
 
   // Mobile sends token in body, web sends cookie
-  const rawToken = isMobile
-    ? req.body.refreshToken
-    : getRefreshCookie(req)
+  const rawToken = isMobile ? req.body.refreshToken : getRefreshCookie(req)
 
   if (rawToken) {
     await AuthService.logoutCustomer(rawToken).catch(() => {})
@@ -208,8 +206,7 @@ export async function deleteAccount(req: Request, res: Response) {
     await AuthService.deleteCustomerAccount(customer.sub)
 
     // Revoke all refresh tokens for this customer
-    await db.delete(refreshTokens)
-      .where(eq(refreshTokens.customerId, customer.sub))
+    await db.delete(refreshTokens).where(eq(refreshTokens.customerId, customer.sub))
 
     return ok(res, { success: true })
   } catch (e: any) {

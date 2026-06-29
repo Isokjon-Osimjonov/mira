@@ -3,11 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import {
-  User, Mail, Shield, Clock,
-  Key, Save, Eye, EyeOff, Check,
-  RefreshCw,
-} from 'lucide-react'
+import { User, Mail, Shield, Clock, Key, Save, Eye, EyeOff, Check, RefreshCw } from 'lucide-react'
 import { toast } from 'sonner'
 import { api } from '../../lib/api'
 import { useAuthStore } from '../../stores/auth.store'
@@ -22,43 +18,45 @@ const profileSchema = z.object({
   fullName: z.string().min(2, 'Ism kamida 2 ta belgi'),
 })
 
-const passwordSchema = z.object({
-  currentPassword: z.string().min(1, 'Joriy parol talab qilinadi'),
-  newPassword:     z.string().min(8, 'Kamida 8 ta belgi'),
-  confirmPassword: z.string(),
-}).refine(d => d.newPassword === d.confirmPassword, {
-  message: 'Parollar mos kelmaydi',
-  path:    ['confirmPassword'],
-})
+const passwordSchema = z
+  .object({
+    currentPassword: z.string().min(1, 'Joriy parol talab qilinadi'),
+    newPassword: z.string().min(8, 'Kamida 8 ta belgi'),
+    confirmPassword: z.string(),
+  })
+  .refine((d) => d.newPassword === d.confirmPassword, {
+    message: 'Parollar mos kelmaydi',
+    path: ['confirmPassword'],
+  })
 
 export function ProfilePage() {
   const qc = useQueryClient()
-  const user    = useAuthStore(s => s.user)
-  const setUser = useAuthStore(s => s.setUser)
+  const user = useAuthStore((s) => s.user)
+  const setUser = useAuthStore((s) => s.setUser)
 
   const [showCurrent, setShowCurrent] = useState(false)
-  const [showNew,     setShowNew]     = useState(false)
+  const [showNew, setShowNew] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
-  const [pwSuccess,   setPwSuccess]   = useState(false)
+  const [pwSuccess, setPwSuccess] = useState(false)
 
   const profileForm = useForm({
     resolver: zodResolver(profileSchema),
     defaultValues: {
       fullName: user?.fullName ?? '',
-    }
+    },
   })
 
   const passwordForm = useForm({
     resolver: zodResolver(passwordSchema),
     defaultValues: {
       currentPassword: '',
-      newPassword:     '',
+      newPassword: '',
       confirmPassword: '',
-    }
+    },
   })
 
   const profileMutation = useMutation({
-    mutationFn: (data: any) => api.patch('/admin/auth/profile', data).then(r => r.data),
+    mutationFn: (data: any) => api.patch('/admin/auth/profile', data).then((r) => r.data),
     onSuccess: (res) => {
       qc.removeQueries()
       toast.success('Profil yangilandi')
@@ -66,27 +64,36 @@ export function ProfilePage() {
         setUser({ ...user, ...res.data } as any)
       }
     },
-    onError: (err: any) => toast.error(getErrorMessage(err?.errorCode ?? ''))
+    onError: (err: any) => toast.error(getErrorMessage(err?.errorCode ?? '')),
   })
 
   const passwordMutation = useMutation({
-    mutationFn: (data: any) => api.patch('/admin/auth/change-password', {
-        currentPassword: data.currentPassword,
-        newPassword:     data.newPassword,
-      }).then(r => r.data),
+    mutationFn: (data: any) =>
+      api
+        .patch('/admin/auth/change-password', {
+          currentPassword: data.currentPassword,
+          newPassword: data.newPassword,
+        })
+        .then((r) => r.data),
     onSuccess: () => {
       qc.removeQueries()
-      toast.success('Parol muvaffaqiyatli o\'zgartirildi')
+      toast.success("Parol muvaffaqiyatli o'zgartirildi")
       passwordForm.reset()
       setPwSuccess(true)
       setTimeout(() => setPwSuccess(false), 3000)
     },
-    onError: (err: any) => toast.error(getErrorMessage(err?.errorCode ?? ''))
+    onError: (err: any) => toast.error(getErrorMessage(err?.errorCode ?? '')),
   })
 
   const getInitials = (name: string) => {
     if (!name) return 'A'
-    return name.trim().split(/\s+/).map(n => n[0]).join('').toUpperCase().slice(0, 2)
+    return name
+      .trim()
+      .split(/\s+/)
+      .map((n) => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2)
   }
 
   return (
@@ -102,11 +109,12 @@ export function ProfilePage() {
           <p className="text-sm text-muted-foreground">{user?.email}</p>
           <div className="flex items-center gap-4 mt-2">
             <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-purple-100 text-purple-700 border-[0.5px] border-purple-200">
-              {user?.role?.name ?? 'Admin'}
+              {user?.isSuperAdmin ? 'Super Admin' : 'Admin'}
             </span>
             {(user as any)?.lastLoginAt && (
               <span className="text-[11px] text-muted-foreground flex items-center gap-1">
-                <Clock className="h-3 w-3" /> Oxirgi kirish: {formatRelative((user as any).lastLoginAt)}
+                <Clock className="h-3 w-3" /> Oxirgi kirish:{' '}
+                {formatRelative((user as any).lastLoginAt)}
               </span>
             )}
           </div>
@@ -129,25 +137,46 @@ export function ProfilePage() {
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Rol</span>
-              <span className="font-medium text-gray-900">{user?.role?.name ?? 'Admin'}</span>
+              <span className="font-medium text-gray-900">
+                {user?.isSuperAdmin ? 'Super Admin' : 'Admin'}
+              </span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Admin ID</span>
-              <span className="font-mono text-xs text-muted-foreground">{user?.id?.slice(0, 8)}...</span>
+              <span className="font-mono text-xs text-muted-foreground">
+                {user?.id?.slice(0, 8)}...
+              </span>
             </div>
           </div>
 
           {/* Edit name */}
-          <form onSubmit={profileForm.handleSubmit(data => profileMutation.mutate(data))} className="space-y-4">
+          <form
+            onSubmit={profileForm.handleSubmit((data) => profileMutation.mutate(data))}
+            className="space-y-4"
+          >
             <div>
               <Label className="text-xs mb-1.5 block">To'liq ism</Label>
-              <Input {...profileForm.register('fullName')} className="h-9 text-sm rounded-lg border-[0.5px]" />
+              <Input
+                {...profileForm.register('fullName')}
+                className="h-9 text-sm rounded-lg border-[0.5px]"
+              />
               {profileForm.formState.errors.fullName && (
-                <p className="text-xs text-red-500 mt-1">{profileForm.formState.errors.fullName.message}</p>
+                <p className="text-xs text-red-500 mt-1">
+                  {profileForm.formState.errors.fullName.message}
+                </p>
               )}
             </div>
-            <Button type="submit" size="sm" disabled={profileMutation.isPending} className="w-full rounded-lg gap-1.5 h-10">
-              {profileMutation.isPending ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" strokeWidth={1.5} />}
+            <Button
+              type="submit"
+              size="sm"
+              disabled={profileMutation.isPending}
+              className="w-full rounded-lg gap-1.5 h-10"
+            >
+              {profileMutation.isPending ? (
+                <RefreshCw className="h-4 w-4 animate-spin" />
+              ) : (
+                <Save className="h-4 w-4" strokeWidth={1.5} />
+              )}
               {profileMutation.isPending ? 'Saqlanmoqda...' : 'Saqlash'}
             </Button>
           </form>
@@ -163,33 +192,76 @@ export function ProfilePage() {
           {pwSuccess && (
             <div className="flex items-center gap-2 p-3 rounded-lg bg-green-50 border-[0.5px] border-green-200 mb-4 animate-in fade-in zoom-in duration-300">
               <Check className="h-4 w-4 text-green-600" strokeWidth={2} />
-              <p className="text-xs text-green-700 font-medium">Parol muvaffaqiyatli o'zgartirildi!</p>
+              <p className="text-xs text-green-700 font-medium">
+                Parol muvaffaqiyatli o'zgartirildi!
+              </p>
             </div>
           )}
 
-          <form onSubmit={passwordForm.handleSubmit(data => passwordMutation.mutate(data))} className="space-y-4">
+          <form
+            onSubmit={passwordForm.handleSubmit((data) => passwordMutation.mutate(data))}
+            className="space-y-4"
+          >
             {[
-              { name: 'currentPassword' as const, label: 'Joriy parol', show: showCurrent, toggle: setShowCurrent },
-              { name: 'newPassword' as const, label: 'Yangi parol', show: showNew, toggle: setShowNew },
-              { name: 'confirmPassword' as const, label: 'Tasdiqlang', show: showConfirm, toggle: setShowConfirm },
-            ].map(f => (
+              {
+                name: 'currentPassword' as const,
+                label: 'Joriy parol',
+                show: showCurrent,
+                toggle: setShowCurrent,
+              },
+              {
+                name: 'newPassword' as const,
+                label: 'Yangi parol',
+                show: showNew,
+                toggle: setShowNew,
+              },
+              {
+                name: 'confirmPassword' as const,
+                label: 'Tasdiqlang',
+                show: showConfirm,
+                toggle: setShowConfirm,
+              },
+            ].map((f) => (
               <div key={f.name}>
                 <Label className="text-xs mb-1 block">{f.label}</Label>
                 <div className="relative">
-                  <Input {...passwordForm.register(f.name)} type={f.show ? 'text' : 'password'} className="h-9 text-sm rounded-lg border-[0.5px] pr-10" />
-                  <button type="button" onClick={() => f.toggle(!f.show)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-gray-700 transition-colors">
-                    {f.show ? <EyeOff className="h-4 w-4" strokeWidth={1.5} /> : <Eye className="h-4 w-4" strokeWidth={1.5} />}
+                  <Input
+                    {...passwordForm.register(f.name)}
+                    type={f.show ? 'text' : 'password'}
+                    className="h-9 text-sm rounded-lg border-[0.5px] pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => f.toggle(!f.show)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-gray-700 transition-colors"
+                  >
+                    {f.show ? (
+                      <EyeOff className="h-4 w-4" strokeWidth={1.5} />
+                    ) : (
+                      <Eye className="h-4 w-4" strokeWidth={1.5} />
+                    )}
                   </button>
                 </div>
                 {passwordForm.formState.errors[f.name] && (
-                  <p className="text-xs text-red-500 mt-1">{passwordForm.formState.errors[f.name]?.message}</p>
+                  <p className="text-xs text-red-500 mt-1">
+                    {passwordForm.formState.errors[f.name]?.message}
+                  </p>
                 )}
               </div>
             ))}
 
-            <Button type="submit" size="sm" disabled={passwordMutation.isPending} className="w-full rounded-lg gap-1.5 h-10">
-              {passwordMutation.isPending ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Key className="h-4 w-4" strokeWidth={1.5} />}
-              {passwordMutation.isPending ? 'O\'zgartirilmoqda...' : 'Parolni o\'zgartirish'}
+            <Button
+              type="submit"
+              size="sm"
+              disabled={passwordMutation.isPending}
+              className="w-full rounded-lg gap-1.5 h-10"
+            >
+              {passwordMutation.isPending ? (
+                <RefreshCw className="h-4 w-4 animate-spin" />
+              ) : (
+                <Key className="h-4 w-4" strokeWidth={1.5} />
+              )}
+              {passwordMutation.isPending ? "O'zgartirilmoqda..." : "Parolni o'zgartirish"}
             </Button>
           </form>
 

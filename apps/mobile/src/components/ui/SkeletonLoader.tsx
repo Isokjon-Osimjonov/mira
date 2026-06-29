@@ -3,15 +3,13 @@ import { StyleSheet, Animated } from 'react-native'
 import { tokens } from '../../lib/tokens'
 
 interface Props {
-  width:  number | string
+  width: number | string
   height: number
   borderRadius?: number
   style?: object
 }
 
-export default function SkeletonLoader({
-  width, height, borderRadius, style
-}: Props) {
+export default function SkeletonLoader({ width, height, borderRadius, style }: Props) {
   const opacity = useRef(new Animated.Value(0.4)).current
 
   useEffect(() => {

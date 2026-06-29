@@ -1,10 +1,5 @@
 import React from 'react'
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-} from 'react-native'
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
 import { tokens } from '../../lib/tokens'
@@ -42,12 +37,8 @@ export default function NotificationPermissionScreen() {
 
       <View style={styles.bottom}>
         <PrimaryButton label="Yoqish" onPress={handleAllow} />
-        
-        <TouchableOpacity 
-          onPress={handleSkip}
-          style={styles.skipButton}
-          activeOpacity={0.7}
-        >
+
+        <TouchableOpacity onPress={handleSkip} style={styles.skipButton} activeOpacity={0.7}>
           <Text style={styles.skipText}>Keyinroq</Text>
         </TouchableOpacity>
       </View>

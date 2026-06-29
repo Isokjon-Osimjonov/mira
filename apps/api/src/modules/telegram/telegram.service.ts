@@ -44,9 +44,14 @@ export async function generateCaption(params: {
   const configs = await db
     .select()
     .from(productRegionalConfigs)
-    .where(and(eq(productRegionalConfigs.productId, params.productId), eq(productRegionalConfigs.regionCode, 'KOR')))
+    .where(
+      and(
+        eq(productRegionalConfigs.productId, params.productId),
+        eq(productRegionalConfigs.regionCode, 'KOR')
+      )
+    )
     .limit(1)
-  
+
   const config = configs[0]
   const retailPrice = config?.retailPrice || 0n
   const wholesalePrice = config?.wholesalePrice || 0n

@@ -1,14 +1,16 @@
 import { api } from '../lib/api'
 
 export const expensesApi = {
-  list: async (params: {
-    page?:      number
-    limit?:     number
-    category?:  string
-    dateFrom?:  string
-    dateTo?:    string
-    search?:    string
-  } = {}) => {
+  list: async (
+    params: {
+      page?: number
+      limit?: number
+      category?: string
+      dateFrom?: string
+      dateTo?: string
+      search?: string
+    } = {}
+  ) => {
     const res = await api.get('/admin/expenses', { params })
     return res.data
   },
@@ -18,20 +20,17 @@ export const expensesApi = {
     return res.data.data
   },
 
-  createCategory: async (payload: {
-    name:        string
-    description?: string
-    color?:      string
-  }) => {
+  createCategory: async (payload: { name: string; description?: string; color?: string }) => {
     const res = await api.post('/admin/expenses/categories', payload)
     return res.data
   },
 
   updateCategory: async (
-    id: string, payload: {
-      name?:     string
+    id: string,
+    payload: {
+      name?: string
       isActive?: boolean
-      color?:    string
+      color?: string
       description?: string
     }
   ) => {
@@ -45,11 +44,11 @@ export const expensesApi = {
   },
 
   create: async (payload: {
-    amountKrw:   number
-    categoryId:  string
+    amountKrw: number
+    categoryId: string
     description: string
-    date:        string
-    note?:       string
+    date: string
+    note?: string
   }) => {
     const res = await api.post('/admin/expenses', payload)
     return res.data
@@ -60,9 +59,12 @@ export const expensesApi = {
     return res.data
   },
 
-  getSummary: async (params: {
-    dateFrom?: string; dateTo?: string
-  } = {}) => {
+  getSummary: async (
+    params: {
+      dateFrom?: string
+      dateTo?: string
+    } = {}
+  ) => {
     const res = await api.get('/admin/expenses/summary', { params })
     return res.data.data
   },

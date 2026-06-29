@@ -8,7 +8,9 @@ export async function getWishlist(customerId: string, regionCode: 'UZB' | 'KOR')
       productId: inventoryBatches.productId,
       totalStock: sql<number>`COALESCE(SUM(
         ${inventoryBatches.currentQty}
-      ), 0)`.mapWith(Number).as('total_stock'),
+      ), 0)`
+        .mapWith(Number)
+        .as('total_stock'),
     })
     .from(inventoryBatches)
     .groupBy(inventoryBatches.productId)
@@ -38,7 +40,7 @@ export async function getWishlist(customerId: string, regionCode: 'UZB' | 'KOR')
     .leftJoin(stockSq, eq(products.id, stockSq.productId))
     .where(and(eq(wishlists.customerId, customerId), isNull(products.deletedAt)))
 
-  return items.map(item => ({
+  return items.map((item) => ({
     ...item,
     inStock: Number(item.totalStock) > 0,
     isAvailable: Number(item.totalStock) > 0,

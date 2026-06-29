@@ -53,7 +53,11 @@ export default function HomeScreen() {
 
   const [isRefreshing, setIsRefreshing] = useState(false)
 
-  const { data: categoriesData, isLoading: categoriesLoading, refetch: refetchCategories } = useQuery({
+  const {
+    data: categoriesData,
+    isLoading: categoriesLoading,
+    refetch: refetchCategories,
+  } = useQuery({
     queryKey: ['categories'],
     queryFn: productService.getCategories,
     staleTime: 5 * 60 * 1000,
@@ -65,19 +69,25 @@ export default function HomeScreen() {
     staleTime: 5 * 60 * 1000,
   })
 
-  const { data: newProductsData, isLoading: newLoading, refetch: refetchNew } = useQuery({
+  const {
+    data: newProductsData,
+    isLoading: newLoading,
+    refetch: refetchNew,
+  } = useQuery({
     queryKey: ['products', 'newest'],
     queryFn: () => productService.getProducts({ sort: 'newest', limit: 10 }),
     staleTime: 2 * 60 * 1000,
   })
 
-  const { data: bestsellerData, isLoading: bestLoading, refetch: refetchBest } = useQuery({
+  const {
+    data: bestsellerData,
+    isLoading: bestLoading,
+    refetch: refetchBest,
+  } = useQuery({
     queryKey: ['products', 'bestselling'],
     queryFn: () => productService.getProducts({ sort: 'bestselling', limit: 10 }),
     staleTime: 2 * 60 * 1000,
   })
-
-
 
   const { data: rateData, refetch: refetchRate } = useQuery({
     queryKey: ['exchange-rate'],
@@ -202,13 +212,13 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <ScrollView 
-        showsVerticalScrollIndicator={false} 
+      <ScrollView
+        showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
         refreshControl={
-          <RefreshControl 
-            refreshing={isRefreshing} 
-            onRefresh={handleRefresh} 
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={handleRefresh}
             tintColor={tokens.colors.primary}
             colors={[tokens.colors.primary]}
           />
@@ -323,11 +333,7 @@ export default function HomeScreen() {
                   onPress={() => handleBannerPress(item)}
                   style={styles.bannerCard}
                 >
-                  <Image
-                    source={item.imageUrl}
-                    style={styles.bannerImage}
-                    contentFit="cover"
-                  />
+                  <Image source={item.imageUrl} style={styles.bannerImage} contentFit="cover" />
                 </TouchableOpacity>
               )}
             />

@@ -29,20 +29,26 @@ export const rolesApi = {
     return res.data
   },
 
-  update: async (id: string, payload: {
-    name?: string
-    description?: string | null
-    permissions?: Permission[]
-  }) => {
+  update: async (
+    id: string,
+    payload: {
+      name?: string
+      description?: string | null
+      permissions?: Permission[]
+    }
+  ) => {
     const res = await api.put(`/admin/roles/${id}`, payload)
     return res.data
   },
 
-  updateGranular: async (id: string, payload: {
-    operation: 'add' | 'remove'
-    resource: string
-    action: string
-  }) => {
+  updateGranular: async (
+    id: string,
+    payload: {
+      operation: 'add' | 'remove'
+      resource: string
+      action: string
+    }
+  ) => {
     const res = await api.patch(`/admin/roles/${id}/permissions`, payload)
     return res.data
   },

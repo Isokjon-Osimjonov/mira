@@ -1,4 +1,4 @@
-import { invalidateAnalyticsCache } from "../analytics/analytics.service"
+import { invalidateAnalyticsCache } from '../analytics/analytics.service'
 import { db } from '../../config/db'
 import {
   orders,
@@ -248,7 +248,10 @@ export async function createOrder(params: {
         .select()
         .from(userAddresses)
         .where(
-          and(eq(userAddresses.id, params.addressId), eq(userAddresses.customerId, params.customerId))
+          and(
+            eq(userAddresses.id, params.addressId),
+            eq(userAddresses.customerId, params.customerId)
+          )
         )
         .limit(1)
       if (!addr) throw { status: 400, code: 'NO_DELIVERY_ADDRESS', message: 'Manzil topilmadi' }
@@ -424,10 +427,10 @@ export async function createOrder(params: {
           ? address.fullName
           : `${customer.firstName} ${customer.lastName ?? ''}`.trim(),
         deliveryPhone: address ? address.phone : customer.phone,
-        deliveryAddressLine1: address ? address.addressLine1 ?? '' : null,
-        deliveryAddressLine2: address ? address.addressLine2 ?? null : null,
-        deliveryCity: address ? address.city ?? null : null,
-        deliveryPostalCode: address ? address.postalCode ?? null : null,
+        deliveryAddressLine1: address ? (address.addressLine1 ?? '') : null,
+        deliveryAddressLine2: address ? (address.addressLine2 ?? null) : null,
+        deliveryCity: address ? (address.city ?? null) : null,
+        deliveryPostalCode: address ? (address.postalCode ?? null) : null,
         customerNote: params.customerNote,
         adminNote: params.adminNote,
         createdBy: params.adminId,
@@ -586,9 +589,15 @@ export async function createOrder(params: {
       const discountShare = totalDiscount / BigInt(itemsData.length || 1)
 
       for (const item of itemsData) {
-        // We'll use 0 for COGS since it's updated at PACKING, 
+        // We'll use 0 for COGS since it's updated at PACKING,
         // but for IMMEDIATE we already updated batchId/costAtSaleKrw in step 10
-        const [oi] = await tx.select().from(orderItems).where(and(eq(orderItems.orderId, newOrder.id), eq(orderItems.productId, item.product.id))).limit(1)
+        const [oi] = await tx
+          .select()
+          .from(orderItems)
+          .where(
+            and(eq(orderItems.orderId, newOrder.id), eq(orderItems.productId, item.product.id))
+          )
+          .limit(1)
         const cogs = (oi?.costAtSaleKrw || 0n) * BigInt(item.quantity)
 
         await tx
@@ -663,12 +672,12 @@ export async function createOrder(params: {
       })
     } else {
       const isStorefront = params.source === 'STOREFRONT'
-      
+
       const title = 'Buyurtma qabul qilindi! 🛍'
       const body = isStorefront
         ? `#${orderNumber} — To'lov chekingiz tekshirilmoqda`
         : `#${orderNumber} — To'lovni ${appSettings.paymentTimeoutMinutes} daqiqa ichida yuklang`
-        
+
       const telegramMessage = isStorefront
         ? `✅ <b>Buyurtmangiz qabul qilindi!</b>\n\n` +
           `📦 <b>#${orderNumber}</b>\n` +
@@ -986,7 +995,7 @@ export async function cancelOrderByCustomer(
     await sendAdminAlert(
       `❌ <b>Mijoz buyurtmani bekor qildi</b>\n\n` +
         `📦 <b>#${order.orderNumber}</b>\n` +
-        `💬 Sabab: ${reason ?? 'Sabab ko\'rsatilmagan'}`
+        `💬 Sabab: ${reason ?? "Sabab ko'rsatilmagan"}`
     )
 
     const tokens = await getCustomerTokens(customerId)
@@ -1048,7 +1057,7 @@ export async function requestRefundByCustomer(
     `🔄 <b>Qaytarish so'rovi!</b>\n\n` +
       `📦 <b>#${order.orderNumber}</b>\n` +
       `💬 Sabab: ${reason}\n` +
-      `📞 Mijoz: ${customer?.phone || 'Noma\'lum'}`
+      `📞 Mijoz: ${customer?.phone || "Noma'lum"}`
   )
 }
 
@@ -1079,7 +1088,10 @@ export async function adminGetOrders(query: {
     )
   }
   if (query.shippedDate) {
-    where = and(where, sql`DATE(${orders.shippedAt} AT TIME ZONE 'Asia/Seoul') = ${query.shippedDate}::date`)
+    where = and(
+      where,
+      sql`DATE(${orders.shippedAt} AT TIME ZONE 'Asia/Seoul') = ${query.shippedDate}::date`
+    )
   }
 
   const itemsQuery = await db
@@ -1152,7 +1164,11 @@ export async function adminUpdateStatus(
     // Basic transition check
     const allowed = VALID_TRANSITIONS[order.status] || []
     if (!allowed.includes(payload.status)) {
-      throw { status: 400, code: 'INVALID_STATUS_TRANSITION', message: "Bu holatga o'tib bo'lmaydi" }
+      throw {
+        status: 400,
+        code: 'INVALID_STATUS_TRANSITION',
+        message: "Bu holatga o'tib bo'lmaydi",
+      }
     }
 
     const updates: any = {
@@ -1161,10 +1177,14 @@ export async function adminUpdateStatus(
     }
     if (payload.trackingNumber) updates.trackingNumber = payload.trackingNumber
     if (payload.status === 'DELIVERED') {
-      updates.deliveredAt = (payload as any).deliveredAt ? new Date((payload as any).deliveredAt) : new Date()
+      updates.deliveredAt = (payload as any).deliveredAt
+        ? new Date((payload as any).deliveredAt)
+        : new Date()
     }
     if (payload.status === 'SHIPPED') {
-      updates.shippedAt = (payload as any).shippedAt ? new Date((payload as any).shippedAt) : new Date()
+      updates.shippedAt = (payload as any).shippedAt
+        ? new Date((payload as any).shippedAt)
+        : new Date()
     }
 
     const [updated] = await tx.update(orders).set(updates).where(eq(orders.id, orderId)).returning()
@@ -1217,12 +1237,17 @@ export async function bulkUpdateStatus(
         const productOnlyRefund = Number(order.subtotal) - Number(order.discountAmount ?? 0)
         await refundOrder(orderId, adminId, {
           refundAmount: payloadOverrides?.refundAmount ?? productOnlyRefund,
-          refundNote: payloadOverrides?.note
+          refundNote: payloadOverrides?.note,
         })
       } else if (newStatus === 'CANCELED') {
         await cancelOrder(orderId, adminId, payloadOverrides?.note)
       } else {
-        await adminUpdateStatus(orderId, adminId, { status: newStatus, ...payloadOverrides }, adminName)
+        await adminUpdateStatus(
+          orderId,
+          adminId,
+          { status: newStatus, ...payloadOverrides },
+          adminName
+        )
       }
       results.succeeded.push(orderId)
     } catch (err: any) {
@@ -1279,7 +1304,8 @@ export async function confirmPayment(
         const deliveryEnd = new Date(cargoDateObj)
         deliveryEnd.setDate(deliveryEnd.getDate() + transitMax)
 
-        await tx.update(orders)
+        await tx
+          .update(orders)
           .set({
             cargoDateId: nextCargo.id,
             estimatedDeliveryStart: deliveryStart.toISOString().split('T')[0],
@@ -1300,10 +1326,10 @@ export async function confirmPayment(
     // Notify admins
     await createNotification({
       type: 'PAYMENT_CONFIRMED',
-      title: 'To\'lov tasdiqlandi',
+      title: "To'lov tasdiqlandi",
       message: `Buyurtma #${order.orderNumber}`,
       link: `/orders/${order.id}`,
-    }).catch(err => orderLogger.error({ err }, 'Failed to create PAYMENT_CONFIRMED notification'))
+    }).catch((err) => orderLogger.error({ err }, 'Failed to create PAYMENT_CONFIRMED notification'))
 
     await logAudit({
       adminId,
@@ -1356,7 +1382,7 @@ export async function confirmPayment(
           throw {
             status: 400,
             code: 'INSUFFICIENT_STOCK_ON_CONFIRM',
-            message: `Omborda yetarli mahsulot qolmadi (${batch.currentQty} ta qoldi, ${res.quantity} ta kerak). Buyurtmani qayta ko'rib chiqing.`
+            message: `Omborda yetarli mahsulot qolmadi (${batch.currentQty} ta qoldi, ${res.quantity} ta kerak). Buyurtmani qayta ko'rib chiqing.`,
           }
         }
 
@@ -1458,7 +1484,12 @@ export async function confirmPayment(
   })
 }
 
-export async function rejectPayment(orderId: string, adminId: string, dto: RejectPaymentDto, adminName?: string) {
+export async function rejectPayment(
+  orderId: string,
+  adminId: string,
+  dto: RejectPaymentDto,
+  adminName?: string
+) {
   const __tx_res = await db.transaction(async (tx) => {
     const [order] = await tx.select().from(orders).where(eq(orders.id, orderId)).limit(1)
     if (!order) throw { status: 404, code: 'ORDER_NOT_FOUND', message: 'Buyurtma topilmadi' }
@@ -1553,8 +1584,6 @@ export async function startPacking(orderId: string, adminId: string, adminName?:
         message: 'Faqat PAYMENT_CONFIRMED holatida qadoqlashni boshlash mumkin',
       }
 
-
-
     const [updated] = await tx
       .update(orders)
       .set({ status: 'PACKING', packedBy: adminId, packedAt: new Date(), updatedAt: new Date() })
@@ -1605,7 +1634,12 @@ export async function startPacking(orderId: string, adminId: string, adminName?:
   return __tx_res
 }
 
-export async function shipOrder(orderId: string, adminId: string, dto: ShipOrderDto, adminName?: string) {
+export async function shipOrder(
+  orderId: string,
+  adminId: string,
+  dto: ShipOrderDto,
+  adminName?: string
+) {
   const __tx_res = await db.transaction(async (tx) => {
     const [order] = await tx.select().from(orders).where(eq(orders.id, orderId)).limit(1)
     if (!order) throw { status: 404, code: 'ORDER_NOT_FOUND', message: 'Buyurtma topilmadi' }
@@ -1628,28 +1662,24 @@ export async function shipOrder(orderId: string, adminId: string, dto: ShipOrder
       .returning()
 
     if (order.cargoFee > 0n) {
-      await tx
-        .insert(orderExpenses)
-        .values({
-          orderId,
-          type: 'CARGO_COST',
-          amountKrw: order.cargoFee,
-          createdBy: adminId,
-          isAuto: true,
-        })
+      await tx.insert(orderExpenses).values({
+        orderId,
+        type: 'CARGO_COST',
+        amountKrw: order.cargoFee,
+        createdBy: adminId,
+        isAuto: true,
+      })
     }
     if (order.deliveryCoveredBy === 'BUSINESS') {
       const amt = order.deliveryFeeActual ?? order.deliveryFeeCharged
       if (amt > 0n)
-        await tx
-          .insert(orderExpenses)
-          .values({
-            orderId,
-            type: 'DELIVERY_ABSORBED',
-            amountKrw: amt,
-            createdBy: adminId,
-            isAuto: true,
-          })
+        await tx.insert(orderExpenses).values({
+          orderId,
+          type: 'DELIVERY_ABSORBED',
+          amountKrw: amt,
+          createdBy: adminId,
+          isAuto: true,
+        })
     }
 
     await tx
@@ -1768,15 +1798,13 @@ export async function cancelOrder(orderId: string, adminId: string | null, reaso
       .set({ status: 'CANCELED', updatedAt: new Date() })
       .where(eq(orders.id, orderId))
       .returning()
-    await tx
-      .insert(orderStatusHistory)
-      .values({
-        orderId,
-        fromStatus: order.status,
-        toStatus: 'CANCELED',
-        changedBy: adminId,
-        note: reason,
-      })
+    await tx.insert(orderStatusHistory).values({
+      orderId,
+      fromStatus: order.status,
+      toStatus: 'CANCELED',
+      changedBy: adminId,
+      note: reason,
+    })
 
     // Release stock
     const reservations = await tx
@@ -1857,15 +1885,13 @@ export async function refundOrder(orderId: string, adminId: string, dto: RefundO
       .where(eq(orders.id, orderId))
       .returning()
 
-    await tx
-      .insert(orderStatusHistory)
-      .values({
-        orderId,
-        fromStatus: 'DELIVERED',
-        toStatus: 'REFUNDED',
-        changedBy: adminId,
-        note: dto.refundNote,
-      })
+    await tx.insert(orderStatusHistory).values({
+      orderId,
+      fromStatus: 'DELIVERED',
+      toStatus: 'REFUNDED',
+      changedBy: adminId,
+      note: dto.refundNote,
+    })
 
     // Stock Return & Analytics Reverse
     const items = await tx.select().from(orderItems).where(eq(orderItems.orderId, orderId))
@@ -2059,19 +2085,19 @@ export async function adminGetOrderDetail(orderId: string) {
     .from(orderStatusHistory)
     .where(eq(orderStatusHistory.orderId, orderId))
     .orderBy(asc(orderStatusHistory.createdAt))
-const expensesList = await db
-  .select()
-  .from(orderExpenses)
-  .where(eq(orderExpenses.orderId, orderId))
-  .orderBy(asc(orderExpenses.createdAt))
+  const expensesList = await db
+    .select()
+    .from(orderExpenses)
+    .where(eq(orderExpenses.orderId, orderId))
+    .orderBy(asc(orderExpenses.createdAt))
 
-const [rateSnapshot] = order.rateSnapshotId
-  ? await db
-      .select()
-      .from(exchangeRateSnapshots)
-      .where(eq(exchangeRateSnapshots.id, order.rateSnapshotId))
-      .limit(1)
-  : [null]
+  const [rateSnapshot] = order.rateSnapshotId
+    ? await db
+        .select()
+        .from(exchangeRateSnapshots)
+        .where(eq(exchangeRateSnapshots.id, order.rateSnapshotId))
+        .limit(1)
+    : [null]
 
   return {
     id: order.id,
@@ -2338,7 +2364,8 @@ export async function scanOrderItem(orderId: string, barcode: string) {
 
     // Find product by barcode
     const [product] = await tx.select().from(products).where(eq(products.barcode, barcode)).limit(1)
-    if (!product) throw { status: 404, code: 'PRODUCT_NOT_FOUND', message: `Barkod topilmadi: ${barcode}` }
+    if (!product)
+      throw { status: 404, code: 'PRODUCT_NOT_FOUND', message: `Barkod topilmadi: ${barcode}` }
 
     // Find order item
     const [item] = await tx
@@ -2346,7 +2373,8 @@ export async function scanOrderItem(orderId: string, barcode: string) {
       .from(orderItems)
       .where(and(eq(orderItems.orderId, orderId), eq(orderItems.productId, product.id)))
       .limit(1)
-    if (!item) throw { status: 400, code: 'ITEM_NOT_IN_ORDER', message: "Bu mahsulot buyurtmada yo'q" }
+    if (!item)
+      throw { status: 400, code: 'ITEM_NOT_IN_ORDER', message: "Bu mahsulot buyurtmada yo'q" }
 
     if (item.isScanned) {
       return { alreadyScanned: true, item }

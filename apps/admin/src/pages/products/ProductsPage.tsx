@@ -77,7 +77,6 @@ export function ProductsPage() {
         showDeleted: activeTab === 'deleted',
         region: 'KOR',
       } as any),
-
   })
 
   const { data: categories } = useQuery({
@@ -223,7 +222,10 @@ export function ProductsPage() {
           )}
         </div>
 
-        <Select value={categoryId || '_all'} onValueChange={(v) => setCategoryId(v === '_all' ? '' : v)}>
+        <Select
+          value={categoryId || '_all'}
+          onValueChange={(v) => setCategoryId(v === '_all' ? '' : v)}
+        >
           <SelectTrigger
             className="w-[150px] h-9 text-sm
                                     rounded-lg border-[0.5px]"
@@ -276,11 +278,7 @@ export function ProductsPage() {
             }
             action={
               canWrite('products') ? (
-                <Button
-                  size="sm"
-                  onClick={() => setSheetOpen(true)}
-                  className="rounded-lg gap-2"
-                >
+                <Button size="sm" onClick={() => setSheetOpen(true)} className="rounded-lg gap-2">
                   <Plus className="h-4 w-4" />
                   Mahsulot qo'shish
                 </Button>
@@ -352,9 +350,9 @@ export function ProductsPage() {
                           const imgSrc = Array.isArray(p.imageUrls)
                             ? p.imageUrls[0]
                             : typeof p.imageUrls === 'string'
-                            ? p.imageUrls
-                            : p.imageUrl ?? null
-                          
+                              ? p.imageUrls
+                              : (p.imageUrl ?? null)
+
                           return imgSrc ? (
                             <img
                               src={imgSrc}
@@ -362,9 +360,7 @@ export function ProductsPage() {
                               className="w-10 h-10 min-w-[2.5rem] shrink-0 rounded-lg object-cover border-[0.5px] border-border"
                             />
                           ) : (
-                            <div
-                              className="w-10 h-10 min-w-[2.5rem] shrink-0 rounded-lg bg-gray-100 flex items-center justify-center"
-                            >
+                            <div className="w-10 h-10 min-w-[2.5rem] shrink-0 rounded-lg bg-gray-100 flex items-center justify-center">
                               <span className="text-gray-400 text-xs">📷</span>
                             </div>
                           )
@@ -403,9 +399,7 @@ export function ProductsPage() {
                       {/* KOR price */}
                       <td className="px-4 py-3 text-right">
                         <p className="text-sm font-medium text-gray-900">
-                          {p.retailPrice
-                            ? formatKRW(p.retailPrice)
-                            : '—'}
+                          {p.retailPrice ? formatKRW(p.retailPrice) : '—'}
                         </p>
                       </td>
 
@@ -433,8 +427,8 @@ export function ProductsPage() {
                             Number(p.totalStock || 0) === 0
                               ? 'bg-red-50 text-red-600'
                               : Number(p.totalStock || 0) <= 10
-                              ? 'bg-amber-50 text-amber-600'
-                              : 'bg-green-50 text-green-700'
+                                ? 'bg-amber-50 text-amber-600'
+                                : 'bg-green-50 text-green-700'
                           )}
                         >
                           {p.totalStock ?? 0}

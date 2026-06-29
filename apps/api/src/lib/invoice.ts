@@ -95,7 +95,9 @@ function drawImagePlaceholder(doc: PDFKit.PDFDocument, x: number, y: number, siz
 export async function generateInvoicePDF(data: InvoiceData, res: Response): Promise<void> {
   // Pre-load all product images BEFORE starting PDF
   const imageBuffers: (Buffer | null)[] = await Promise.all(
-    data.items.map((item) => (item.imageUrl ? loadImageBuffer(item.imageUrl) : Promise.resolve(null)))
+    data.items.map((item) =>
+      item.imageUrl ? loadImageBuffer(item.imageUrl) : Promise.resolve(null)
+    )
   )
 
   const doc = new PDFDocument({
@@ -124,7 +126,8 @@ export async function generateInvoicePDF(data: InvoiceData, res: Response): Prom
 
   // Helper: format money
   const fmtKRW = (n: bigint) => `₩${Number(n).toLocaleString()}`
-  const fmtUZS = (n: bigint, rate: number) => `${Math.round(Number(n) * rate).toLocaleString()} so'm`
+  const fmtUZS = (n: bigint, rate: number) =>
+    `${Math.round(Number(n) * rate).toLocaleString()} so'm`
   const isUZB = data.order.regionCode === 'UZB'
 
   // ── HEADER ────────────────────────────
@@ -142,7 +145,10 @@ export async function generateInvoicePDF(data: InvoiceData, res: Response): Prom
       year: 'numeric',
     }
   )
-  doc.font('Helvetica-Bold').fontSize(11).text('HISOB-FAKTURA', 350, 57, { align: 'right', width: 195 })
+  doc
+    .font('Helvetica-Bold')
+    .fontSize(11)
+    .text('HISOB-FAKTURA', 350, 57, { align: 'right', width: 195 })
   doc
     .font('Helvetica')
     .fontSize(9)
@@ -155,7 +161,12 @@ export async function generateInvoicePDF(data: InvoiceData, res: Response): Prom
   const COL2 = 310
 
   // Section labels
-  doc.fillColor(PINK).font('Helvetica-Bold').fontSize(8).text('MIJOZ:', COL1, y).text('YETKAZISH BERISH:', COL2, y)
+  doc
+    .fillColor(PINK)
+    .font('Helvetica-Bold')
+    .fontSize(8)
+    .text('MIJOZ:', COL1, y)
+    .text('YETKAZISH BERISH:', COL2, y)
 
   y += 14
   // Customer
@@ -164,7 +175,11 @@ export async function generateInvoicePDF(data: InvoiceData, res: Response): Prom
     .font('Helvetica-Bold')
     .fontSize(10)
     .text(`${data.customer.firstName} ${data.customer.lastName ?? ''}`, COL1, y)
-  doc.font('Helvetica').fontSize(9).fillColor(GRAY).text(data.customer.phone, COL1, y + 14)
+  doc
+    .font('Helvetica')
+    .fontSize(9)
+    .fillColor(GRAY)
+    .text(data.customer.phone, COL1, y + 14)
 
   // Delivery address
   doc.fillColor(DARK).font('Helvetica-Bold').fontSize(10).text(data.delivery.fullName, COL2, y)
@@ -223,7 +238,11 @@ export async function generateInvoicePDF(data: InvoiceData, res: Response): Prom
     }
 
     // Product name
-    doc.fillColor(DARK).font('Helvetica-Bold').fontSize(9).text(item.productName, NAME_COL, y + 6, { width: 255 })
+    doc
+      .fillColor(DARK)
+      .font('Helvetica-Bold')
+      .fontSize(9)
+      .text(item.productName, NAME_COL, y + 6, { width: 255 })
 
     // Barcode + tags
     let tagX = NAME_COL
@@ -234,14 +253,22 @@ export async function generateInvoicePDF(data: InvoiceData, res: Response): Prom
     if (item.isWholesale) {
       tagX += 70
       doc.roundedRect(tagX, tagY - 1, 35, 10, 2).fill('#FFF0F7')
-      doc.fillColor(PINK).font('Helvetica-Bold').fontSize(6).text('ULGUJI', tagX + 3, tagY + 1)
+      doc
+        .fillColor(PINK)
+        .font('Helvetica-Bold')
+        .fontSize(6)
+        .text('ULGUJI', tagX + 3, tagY + 1)
     }
 
     // Coupon badge
     if (item.hasCoupon) {
       tagX += item.isWholesale ? 42 : 70
       doc.roundedRect(tagX, tagY - 1, 38, 10, 2).fill('#F0FFF4')
-      doc.fillColor('#16a34a').font('Helvetica-Bold').fontSize(6).text('KUPON', tagX + 3, tagY + 1)
+      doc
+        .fillColor('#16a34a')
+        .font('Helvetica-Bold')
+        .fontSize(6)
+        .text('KUPON', tagX + 3, tagY + 1)
     }
 
     // Quantity
@@ -253,11 +280,19 @@ export async function generateInvoicePDF(data: InvoiceData, res: Response): Prom
 
     // Prices
     const unitDisplay =
-      isUZB && data.exchangeRate ? fmtUZS(item.unitPrice, data.exchangeRate.krwToUzs) : fmtKRW(item.unitPrice)
+      isUZB && data.exchangeRate
+        ? fmtUZS(item.unitPrice, data.exchangeRate.krwToUzs)
+        : fmtKRW(item.unitPrice)
     const totalDisplay =
-      isUZB && data.exchangeRate ? fmtUZS(item.subtotal, data.exchangeRate.krwToUzs) : fmtKRW(item.subtotal)
+      isUZB && data.exchangeRate
+        ? fmtUZS(item.subtotal, data.exchangeRate.krwToUzs)
+        : fmtKRW(item.subtotal)
 
-    doc.fillColor(DARK).font('Helvetica').fontSize(9).text(unitDisplay, PRICE_COL, y + 14, { width: 50, align: 'right' })
+    doc
+      .fillColor(DARK)
+      .font('Helvetica')
+      .fontSize(9)
+      .text(unitDisplay, PRICE_COL, y + 14, { width: 50, align: 'right' })
     doc.font('Helvetica-Bold').text(totalDisplay, TOTAL_COL, y + 14, { width: 90, align: 'right' })
 
     y += ROW_H
@@ -282,7 +317,9 @@ export async function generateInvoicePDF(data: InvoiceData, res: Response): Prom
 
   // Coupon discount
   if (data.order.couponDiscount > 0n) {
-    const couponLabel = data.order.couponCode ? `Kupon (${data.order.couponCode}):` : 'Kupon chegirma:'
+    const couponLabel = data.order.couponCode
+      ? `Kupon (${data.order.couponCode}):`
+      : 'Kupon chegirma:'
     totalRowKRW(couponLabel, -data.order.couponDiscount, '#16a34a')
   }
 
@@ -315,7 +352,11 @@ export async function generateInvoicePDF(data: InvoiceData, res: Response): Prom
     isUZB && data.exchangeRate
       ? fmtUZS(data.order.totalAmount, data.exchangeRate.krwToUzs)
       : fmtKRW(data.order.totalAmount)
-  doc.fillColor(PINK).font('Helvetica-Bold').fontSize(11).text(totalDisplay, 455, y, { width: 90, align: 'right' })
+  doc
+    .fillColor(PINK)
+    .font('Helvetica-Bold')
+    .fontSize(11)
+    .text(totalDisplay, 455, y, { width: 90, align: 'right' })
   y += 18
 
   // Dual currency (KOR customers → show UZS equivalent, UZB → show KRW)
@@ -324,10 +365,15 @@ export async function generateInvoicePDF(data: InvoiceData, res: Response): Prom
       .fillColor(GRAY)
       .font('Helvetica')
       .fontSize(8)
-      .text(`= ${fmtKRW(data.order.totalAmount)} (kurs: 1₩ = ${data.exchangeRate.krwToUzs} so'm)`, 320, y, {
-        width: 225,
-        align: 'right',
-      })
+      .text(
+        `= ${fmtKRW(data.order.totalAmount)} (kurs: 1₩ = ${data.exchangeRate.krwToUzs} so'm)`,
+        320,
+        y,
+        {
+          width: 225,
+          align: 'right',
+        }
+      )
     y += 14
   }
 
@@ -335,7 +381,11 @@ export async function generateInvoicePDF(data: InvoiceData, res: Response): Prom
   const FOOTER_Y = 760 // A4 bottom area
   doc.moveTo(50, FOOTER_Y).lineTo(545, FOOTER_Y).strokeColor(LINE).lineWidth(0.5).stroke()
 
-  doc.fillColor(GRAY).font('Helvetica-Bold').fontSize(8).text('Mira Cosmetics', 50, FOOTER_Y + 8)
+  doc
+    .fillColor(GRAY)
+    .font('Helvetica-Bold')
+    .fontSize(8)
+    .text('Mira Cosmetics', 50, FOOTER_Y + 8)
   doc
     .font('Helvetica')
     .fontSize(8)

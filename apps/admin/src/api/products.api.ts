@@ -1,14 +1,16 @@
 import { api } from '../lib/api'
 
 export const productsApi = {
-  list: async (params: {
-    page?: number
-    limit?: number
-    q?: string
-    category?: string
-    brand?: string
-    isActive?: boolean | string
-  } = {}) => {
+  list: async (
+    params: {
+      page?: number
+      limit?: number
+      q?: string
+      category?: string
+      brand?: string
+      isActive?: boolean | string
+    } = {}
+  ) => {
     const res = await api.get('/admin/products', { params })
     return res.data
   },
@@ -70,7 +72,7 @@ export const productsApi = {
     formData.append('timestamp', sig.timestamp.toString())
     formData.append('api_key', sig.apiKey)
     if (sig.folder) formData.append('folder', sig.folder)
-    
+
     // Aligned with backend: apps/api/src/config/cloudinary.ts
     formData.append('transformation', 'q_auto,f_auto,w_1200')
 
@@ -79,12 +81,12 @@ export const productsApi = {
       body: formData,
     })
     const data = await res.json()
-    
+
     if (data.error) {
       console.error('Cloudinary Error:', data.error)
       throw new Error(data.error.message)
     }
-    
+
     return data.secure_url as string
   },
 }

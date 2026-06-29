@@ -48,8 +48,15 @@ export const ordersApi = {
     return res.data
   },
 
-  updateDeliveryEstimate: async (id: string, estimatedDeliveryStart: string, estimatedDeliveryEnd: string) => {
-    const res = await api.patch(`/admin/orders/${id}/delivery-estimate`, { estimatedDeliveryStart, estimatedDeliveryEnd })
+  updateDeliveryEstimate: async (
+    id: string,
+    estimatedDeliveryStart: string,
+    estimatedDeliveryEnd: string
+  ) => {
+    const res = await api.patch(`/admin/orders/${id}/delivery-estimate`, {
+      estimatedDeliveryStart,
+      estimatedDeliveryEnd,
+    })
     return res.data
   },
 

@@ -12,7 +12,11 @@ export function NotFoundPage() {
           Siz qidirgan sahifa mavjud emas yoki o'chirilgan.
         </p>
         <div className="flex gap-3 justify-center">
-          <Button variant="outline" onClick={() => window.history.back()} className="rounded-lg gap-2">
+          <Button
+            variant="outline"
+            onClick={() => window.history.back()}
+            className="rounded-lg gap-2"
+          >
             ← Orqaga
           </Button>
           <Button onClick={() => navigate({ to: '/dashboard' })} className="rounded-lg gap-2">

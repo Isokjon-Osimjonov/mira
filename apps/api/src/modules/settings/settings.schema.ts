@@ -9,7 +9,6 @@ export const updateSettingsSchema = z.object({
   minOrderKorKrw: z.coerce.number().optional(),
   minOrderUzbUzs: z.coerce.number().optional(),
 
-
   telegramUrl: z.string().url().optional().nullable(),
   instagramUrl: z.string().url().optional().nullable(),
   websiteUrl: z.string().url().optional().nullable(),

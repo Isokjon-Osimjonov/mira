@@ -10,19 +10,7 @@ import {
   dailySalesSummary,
   inventoryBatches,
 } from '@mira/db'
-import {
-  eq,
-  and,
-  sql,
-  desc,
-  asc,
-  sum,
-  count,
-  gte,
-  lte,
-  inArray,
-  countDistinct,
-} from 'drizzle-orm'
+import { eq, and, sql, desc, asc, sum, count, gte, lte, inArray, countDistinct } from 'drizzle-orm'
 import { getRedis } from '../../config/redis'
 
 const REVENUE_STATUSES = ['PAYMENT_CONFIRMED', 'PACKING', 'SHIPPED', 'DELIVERED'] as any[]
@@ -300,7 +288,12 @@ export async function getPL(from: string, to: string) {
     })
     .from(expenses)
     .innerJoin(expenseCategories, eq(expenses.categoryId, expenseCategories.id))
-    .where(and(gte(expenses.expenseDate, sql`${from}::date`), lte(expenses.expenseDate, sql`${to}::date`)))
+    .where(
+      and(
+        gte(expenses.expenseDate, sql`${from}::date`),
+        lte(expenses.expenseDate, sql`${to}::date`)
+      )
+    )
     .groupBy(expenseCategories.name)
 
   const totalExpenses = expensesByCategory.reduce((acc, e) => acc + Number(e.amount), 0)
@@ -516,7 +509,11 @@ export async function getCouponStats(from: string, to: string) {
   return result
 }
 
-export async function exportCSV(type: 'pl' | 'orders' | 'products' | 'revenue' | 'inventory' | 'customers' | 'expenses', from: string, to: string) {
+export async function exportCSV(
+  type: 'pl' | 'orders' | 'products' | 'revenue' | 'inventory' | 'customers' | 'expenses',
+  from: string,
+  to: string
+) {
   const startDate = new Date(from)
   const endDate = new Date(to)
   endDate.setHours(23, 59, 59, 999)
@@ -587,7 +584,7 @@ export async function exportCSV(type: 'pl' | 'orders' | 'products' | 'revenue' |
       .from(products)
       .where(sql`deleted_at IS NULL`)
 
-    let csv = 'Mahsulot,Brend,Shtrixkod,Soni,O\'rtacha tannarx (KRW)\n'
+    let csv = "Mahsulot,Brend,Shtrixkod,Soni,O'rtacha tannarx (KRW)\n"
     items.forEach((i: any) => {
       csv += `"${i.name}",${i.brand || ''},${i.barcode || ''},${i.currentQty},${Number(i.avgCost).toFixed(0)}\n`
     })
@@ -625,7 +622,12 @@ export async function exportCSV(type: 'pl' | 'orders' | 'products' | 'revenue' |
       })
       .from(expenses)
       .leftJoin(expenseCategories, eq(expenses.categoryId, expenseCategories.id))
-      .where(and(gte(expenses.expenseDate, sql`${from}::date`), lte(expenses.expenseDate, sql`${to}::date`)))
+      .where(
+        and(
+          gte(expenses.expenseDate, sql`${from}::date`),
+          lte(expenses.expenseDate, sql`${to}::date`)
+        )
+      )
       .orderBy(desc(expenses.expenseDate))
 
     let csv = 'Sana,Kategoriya,Tavsif,Miqdor (KRW)\n'

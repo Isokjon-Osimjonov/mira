@@ -43,17 +43,17 @@ export async function getPurchaseOrders(query: {
 
   const itemsQuery = await db
     .select({
-      id:             purchaseOrders.id,
-      orderNumber:    purchaseOrders.orderNumber,
-      supplierId:     purchaseOrders.supplierId,
-      status:         purchaseOrders.status,
-      paymentStatus:  purchaseOrders.paymentStatus,
-      totalCostKrw:   purchaseOrders.totalCostKrw,
-      paidAmountKrw:  purchaseOrders.paidAmountKrw,
-      notes:          purchaseOrders.notes,
-      createdAt:      purchaseOrders.createdAt,
-      updatedAt:      purchaseOrders.updatedAt,
-      supplierName:   suppliers.name,
+      id: purchaseOrders.id,
+      orderNumber: purchaseOrders.orderNumber,
+      supplierId: purchaseOrders.supplierId,
+      status: purchaseOrders.status,
+      paymentStatus: purchaseOrders.paymentStatus,
+      totalCostKrw: purchaseOrders.totalCostKrw,
+      paidAmountKrw: purchaseOrders.paidAmountKrw,
+      notes: purchaseOrders.notes,
+      createdAt: purchaseOrders.createdAt,
+      updatedAt: purchaseOrders.updatedAt,
+      supplierName: suppliers.name,
     })
     .from(purchaseOrders)
     .leftJoin(suppliers, eq(purchaseOrders.supplierId, suppliers.id))
@@ -192,8 +192,7 @@ export async function updatePurchaseOrder(id: string, data: UpdatePurchaseOrderD
     const updates: any = { updatedAt: new Date() }
     if (data.supplierId) updates.supplierId = data.supplierId
     if (data.orderDate) updates.createdAt = data.orderDate
-    if (data.expectedDeliveryDate !== undefined)
-      updates.expectedAt = data.expectedDeliveryDate
+    if (data.expectedDeliveryDate !== undefined) updates.expectedAt = data.expectedDeliveryDate
     if (data.notes !== undefined) updates.notes = data.notes
     updates.totalCostKrw = totalCostKrw
 

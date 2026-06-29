@@ -46,7 +46,7 @@ export async function updatePaymentMethod(method: string, data: any) {
         ...(data.instructions !== undefined && { instructions: data.instructions }),
         ...(data.region !== undefined && { region: data.region }),
         updatedAt: new Date(),
-      }
+      },
     })
     .returning()
 
@@ -75,7 +75,8 @@ export async function updateOrderSettings(data: any) {
   const current = await getSettings()
   const update: any = { updatedAt: new Date() }
 
-  if (data.paymentTimeoutMinutes !== undefined) update.paymentTimeoutMinutes = data.paymentTimeoutMinutes
+  if (data.paymentTimeoutMinutes !== undefined)
+    update.paymentTimeoutMinutes = data.paymentTimeoutMinutes
   if (data.lowStockThreshold !== undefined) update.lowStockThreshold = data.lowStockThreshold
   if (data.cargoTransitDaysMin !== undefined) update.cargoTransitDaysMin = data.cargoTransitDaysMin
   if (data.cargoTransitDaysMax !== undefined) update.cargoTransitDaysMax = data.cargoTransitDaysMax
@@ -145,7 +146,6 @@ export async function updateSettings(data: UpdateSettingsDto) {
   delete cleanData.id
   delete cleanData.lockColumn
   delete cleanData.createdAt
-
 
   if (data.minOrderKorKrw !== undefined) cleanData.minOrderKorKrw = data.minOrderKorKrw
   if (data.minOrderUzbUzs !== undefined) cleanData.minOrderUzbUzs = data.minOrderUzbUzs

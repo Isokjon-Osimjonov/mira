@@ -71,11 +71,18 @@ const REASON_LABELS: Record<string, string> = {
 const batchSchema = z.object({
   quantity: z.coerce.number().int().min(1, "Miqdor 1 dan katta bo'lishi kerak"),
   costPrice: z.coerce.number().min(0).optional(),
-  expiryDate: z.string().optional().nullable().refine((val) => {
-    if (!val) return true;
-    const year = parseInt(val.substring(0, 4), 10);
-    return year >= 2024 && year <= 2100;
-  }, { message: "Yil 2024 va 2100 orasida bo'lishi kerak" }),
+  expiryDate: z
+    .string()
+    .optional()
+    .nullable()
+    .refine(
+      (val) => {
+        if (!val) return true
+        const year = parseInt(val.substring(0, 4), 10)
+        return year >= 2024 && year <= 2100
+      },
+      { message: "Yil 2024 va 2100 orasida bo'lishi kerak" }
+    ),
   note: z.string().optional(),
 })
 
@@ -192,7 +199,7 @@ export function InventoryPage() {
   })
 
   // Add batch form
-// ... around line 174 ...
+  // ... around line 174 ...
   // Mutations
   const deleteBatchMutation = useMutation({
     mutationFn: (batchId: string) => inventoryApi.deleteBatch(batchId),
@@ -345,7 +352,10 @@ export function InventoryPage() {
           className="pl-9 h-9 text-sm rounded-lg border-[0.5px]"
         />
         {search && (
-          <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2">
+          <button
+            onClick={() => setSearch('')}
+            className="absolute right-3 top-1/2 -translate-y-1/2"
+          >
             <X className="h-3.5 w-3.5 text-muted-foreground" />
           </button>
         )}
@@ -425,9 +435,7 @@ export function InventoryPage() {
                             className="w-10 h-10 min-w-[2.5rem] shrink-0 rounded-lg object-cover border-[0.5px] border-border"
                           />
                         ) : (
-                          <div
-                            className="w-10 h-10 min-w-[2.5rem] shrink-0 rounded-lg bg-gray-100 flex items-center justify-center"
-                          >
+                          <div className="w-10 h-10 min-w-[2.5rem] shrink-0 rounded-lg bg-gray-100 flex items-center justify-center">
                             <Package className="h-4 w-4 text-gray-400" strokeWidth={1.5} />
                           </div>
                         )}
@@ -629,7 +637,9 @@ export function InventoryPage() {
                                   border-[0.5px] border-border/50"
                     >
                       <div>
-                        <p className="text-xs font-medium">Mavjud: {b.currentQty} ta (Jami: {b.initialQty} ta)</p>
+                        <p className="text-xs font-medium">
+                          Mavjud: {b.currentQty} ta (Jami: {b.initialQty} ta)
+                        </p>
                         {b.expiryDate && (
                           <p
                             className="text-[11px]
@@ -772,130 +782,131 @@ export function InventoryPage() {
               onSubmit={writeOffForm.handleSubmit((data) => writeOffMutation.mutate(data))}
               className="space-y-4 py-4"
             >
-            <div>
-              <Label className="text-xs mb-1.5 block">Partiya tanlang *</Label>
-              <Controller
-                name="batchId"
-                control={writeOffForm.control}
-                render={({ field }) => (
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger className="h-9 text-sm rounded-lg border-[0.5px]">
-                      <SelectValue placeholder="Partiya tanlang" />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-xl">
-                      {productBatches.map((b: any) => (
-                        <SelectItem key={b.id} value={b.id}>
-                          {b.currentQty} ta — {b.expiryDate ? formatDate(b.expiryDate) : 'Muddatiz'}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+              <div>
+                <Label className="text-xs mb-1.5 block">Partiya tanlang *</Label>
+                <Controller
+                  name="batchId"
+                  control={writeOffForm.control}
+                  render={({ field }) => (
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <SelectTrigger className="h-9 text-sm rounded-lg border-[0.5px]">
+                        <SelectValue placeholder="Partiya tanlang" />
+                      </SelectTrigger>
+                      <SelectContent className="rounded-xl">
+                        {productBatches.map((b: any) => (
+                          <SelectItem key={b.id} value={b.id}>
+                            {b.currentQty} ta —{' '}
+                            {b.expiryDate ? formatDate(b.expiryDate) : 'Muddatiz'}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+                {writeOffForm.formState.errors.batchId && (
+                  <p className="text-xs text-red-500 mt-1">
+                    {writeOffForm.formState.errors.batchId.message as string}
+                  </p>
                 )}
-              />
-              {writeOffForm.formState.errors.batchId && (
-                <p className="text-xs text-red-500 mt-1">
-                  {writeOffForm.formState.errors.batchId.message as string}
-                </p>
-              )}
-            </div>
+              </div>
 
-            <div>
-              <Label className="text-xs mb-1.5 block">Hisobdan chiqarish turi *</Label>
-              <Controller
-                name="type"
-                control={writeOffForm.control}
-                render={({ field }) => (
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger
-                      className="h-9 text-sm
+              <div>
+                <Label className="text-xs mb-1.5 block">Hisobdan chiqarish turi *</Label>
+                <Controller
+                  name="type"
+                  control={writeOffForm.control}
+                  render={({ field }) => (
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <SelectTrigger
+                        className="h-9 text-sm
                                               rounded-lg
                                               border-[0.5px]"
-                    >
-                      <SelectValue placeholder="Turini tanlang" />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-xl">
-                      {writeOffReasons.map((r: string) => (
-                        <SelectItem key={r} value={r}>
-                          {REASON_LABELS[r] ?? r}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                      >
+                        <SelectValue placeholder="Turini tanlang" />
+                      </SelectTrigger>
+                      <SelectContent className="rounded-xl">
+                        {writeOffReasons.map((r: string) => (
+                          <SelectItem key={r} value={r}>
+                            {REASON_LABELS[r] ?? r}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+                {writeOffForm.formState.errors.type && (
+                  <p className="text-xs text-red-500 mt-1">
+                    {writeOffForm.formState.errors.type.message as string}
+                  </p>
                 )}
-              />
-              {writeOffForm.formState.errors.type && (
-                <p className="text-xs text-red-500 mt-1">
-                  {writeOffForm.formState.errors.type.message as string}
-                </p>
-              )}
-            </div>
+              </div>
 
-            {writeOffForm.watch('type') === 'GIFT' && (
+              {writeOffForm.watch('type') === 'GIFT' && (
+                <div>
+                  <Label className="text-xs mb-1.5 block">Sovg'a oluvchi ismi *</Label>
+                  <Input
+                    {...writeOffForm.register('recipientName')}
+                    placeholder="Ism familiya..."
+                    className="h-9 text-sm rounded-lg border-[0.5px]"
+                  />
+                  <p className="text-[11px] text-muted-foreground mt-1">
+                    Sovg'a kimga berilganligi
+                  </p>
+                </div>
+              )}
+
               <div>
-                <Label className="text-xs mb-1.5 block">Sovg'a oluvchi ismi *</Label>
+                <Label className="text-xs mb-1.5 block">Miqdor (dona) *</Label>
                 <Input
-                  {...writeOffForm.register('recipientName')}
-                  placeholder="Ism familiya..."
+                  {...writeOffForm.register('quantity')}
+                  type="number"
+                  min="1"
+                  placeholder="5"
                   className="h-9 text-sm rounded-lg border-[0.5px]"
                 />
-                <p className="text-[11px] text-muted-foreground mt-1">
-                  Sovg'a kimga berilganligi
-                </p>
+                {writeOffForm.formState.errors.quantity && (
+                  <p className="text-xs text-red-500 mt-1">
+                    {writeOffForm.formState.errors.quantity.message as string}
+                  </p>
+                )}
               </div>
-            )}
 
-            <div>
-              <Label className="text-xs mb-1.5 block">Miqdor (dona) *</Label>
-              <Input
-                {...writeOffForm.register('quantity')}
-                type="number"
-                min="1"
-                placeholder="5"
-                className="h-9 text-sm rounded-lg border-[0.5px]"
-              />
-              {writeOffForm.formState.errors.quantity && (
-                <p className="text-xs text-red-500 mt-1">
-                  {writeOffForm.formState.errors.quantity.message as string}
-                </p>
-              )}
-            </div>
+              <div>
+                <Label className="text-xs mb-1.5 block">Izoh / Sabab</Label>
+                <Input
+                  {...writeOffForm.register('reason')}
+                  placeholder="Qo'shimcha ma'lumot..."
+                  className="h-9 text-sm rounded-lg border-[0.5px]"
+                />
+              </div>
 
-            <div>
-              <Label className="text-xs mb-1.5 block">Izoh / Sabab</Label>
-              <Input
-                {...writeOffForm.register('reason')}
-                placeholder="Qo'shimcha ma'lumot..."
-                className="h-9 text-sm rounded-lg border-[0.5px]"
-              />
-            </div>
-
-            <div className="flex gap-2 pt-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setWriteOffSheet(false)}
-                className="flex-1 rounded-lg border-[0.5px]"
-              >
-                Bekor
-              </Button>
-              <Button
-                type="submit"
-                size="sm"
-                disabled={writeOffMutation.isPending}
-                className="flex-1 rounded-lg bg-red-600
+              <div className="flex gap-2 pt-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setWriteOffSheet(false)}
+                  className="flex-1 rounded-lg border-[0.5px]"
+                >
+                  Bekor
+                </Button>
+                <Button
+                  type="submit"
+                  size="sm"
+                  disabled={writeOffMutation.isPending}
+                  className="flex-1 rounded-lg bg-red-600
                            hover:bg-red-700"
-              >
-                {writeOffMutation.isPending ? (
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                ) : null}
-                {writeOffMutation.isPending ? 'Chiqarilmoqda...' : 'Hisobdan chiqarish'}
-              </Button>
-            </div>
-          </form>
-        </div>
-      </SheetContent>
-    </Sheet>
+                >
+                  {writeOffMutation.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  ) : null}
+                  {writeOffMutation.isPending ? 'Chiqarilmoqda...' : 'Hisobdan chiqarish'}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </SheetContent>
+      </Sheet>
 
       {/* ── HISTORY SHEET ────────────────────────────────── */}
       <Sheet open={historySheet} onOpenChange={setHistorySheet}>
@@ -943,12 +954,12 @@ export function InventoryPage() {
                         {m.type === 'STOCK_IN'
                           ? 'Kirim (Yangi partiya)'
                           : m.type === 'RESERVED'
-                          ? 'Band qilindi (Buyurtma)'
-                          : m.type === 'DEDUCTED'
-                          ? 'Sotildi'
-                          : REASON_LABELS[m.type]
-                          ? `Hisobdan chiqarish — ${REASON_LABELS[m.type]}`
-                          : m.type}
+                            ? 'Band qilindi (Buyurtma)'
+                            : m.type === 'DEDUCTED'
+                              ? 'Sotildi'
+                              : REASON_LABELS[m.type]
+                                ? `Hisobdan chiqarish — ${REASON_LABELS[m.type]}`
+                                : m.type}
                       </p>
                       {m.reason && (
                         <p className="text-[11px] text-muted-foreground truncate">{m.reason}</p>

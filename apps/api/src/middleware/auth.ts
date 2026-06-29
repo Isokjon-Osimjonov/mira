@@ -125,12 +125,12 @@ const resourceLabels: Record<string, string> = {
   telegram: 'Telegram',
   settings: 'Sozlamalar',
   users: 'Adminlar',
-  roles: 'Rollar'
+  roles: 'Rollar',
 }
 
 const actionLabels: Record<string, string> = {
   read: "ko'rish",
-  write: "o'zgartirish"
+  write: "o'zgartirish",
 }
 
 // ─── Middleware: require specific permission ──────────────────
@@ -168,12 +168,10 @@ export function requirePermission(resource: string, action: string) {
         if (!perm) return forbidden(res, msg)
         next()
       } catch {
-        res
-          .status(500)
-          .json({
-            data: null,
-            error: { message: 'Permission check failed', code: 'INTERNAL_ERROR' },
-          })
+        res.status(500).json({
+          data: null,
+          error: { message: 'Permission check failed', code: 'INTERNAL_ERROR' },
+        })
       }
     })
   }

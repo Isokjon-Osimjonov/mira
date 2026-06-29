@@ -29,7 +29,7 @@ export async function getAllExpenseCategories() {
 
 export async function createExpenseCategory(data: CreateExpenseCategoryDto) {
   const slug = data.slug || data.name.toLowerCase().replace(/ /g, '-')
-  
+
   const [created] = await db
     .insert(expenseCategories)
     .values({
@@ -73,7 +73,7 @@ export async function deleteExpenseCategory(id: string) {
     .limit(1)
   if (!category)
     throw { status: 404, code: 'EXPENSE_CATEGORY_NOT_FOUND', message: 'Kategoriya topilmadi' }
-  
+
   if (category.isSystem)
     throw {
       status: 400,
@@ -128,7 +128,7 @@ export async function getExpenses(query: {
         slug: expenseCategories.slug,
         icon: expenseCategories.icon,
         color: expenseCategories.color,
-      }
+      },
     })
     .from(expenses)
     .innerJoin(expenseCategories, eq(expenses.categoryId, expenseCategories.id))
@@ -138,7 +138,10 @@ export async function getExpenses(query: {
     .offset(offset)
 
   const [countRes] = await db
-    .select({ count: count(), totalAmount: sql<string>`COALESCE(SUM(${expenses.amountKrw})::text, '0')` })
+    .select({
+      count: count(),
+      totalAmount: sql<string>`COALESCE(SUM(${expenses.amountKrw})::text, '0')`,
+    })
     .from(expenses)
     .where(where)
   const total = Number(countRes?.count || 0)

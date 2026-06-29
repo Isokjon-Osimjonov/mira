@@ -25,11 +25,7 @@ export const VerifyOtpSchema = z.object({
 export const UpdateProfileSchema = z.object({
   firstName: z.string().min(1).max(100).optional(),
   lastName: z.string().max(100).nullable().optional(),
-  profileImageUrl: z.union([
-    z.string().url(),
-    z.null(),
-    z.undefined(),
-  ]).optional(),
+  profileImageUrl: z.union([z.string().url(), z.null(), z.undefined()]).optional(),
 })
 
 export const PushTokenSchema = z.object({

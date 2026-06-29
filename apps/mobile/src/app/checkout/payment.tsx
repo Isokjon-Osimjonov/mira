@@ -28,7 +28,11 @@ import { uploadService } from '../../services/upload.service'
 import { boxService } from '../../services/box.service'
 
 export default function CheckoutPaymentScreen() {
-  const { addressId, couponCode: initialCouponCode, boxId } = useLocalSearchParams<{
+  const {
+    addressId,
+    couponCode: initialCouponCode,
+    boxId,
+  } = useLocalSearchParams<{
     addressId?: string
     couponCode?: string
     boxId?: string
@@ -44,9 +48,9 @@ export default function CheckoutPaymentScreen() {
   const [receiptUri, setReceiptUri] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [paymentInfo, setPaymentInfo] = useState<CheckoutResult['paymentInfo'] | null>(null)
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'KOREAN_BANK' | 'UZB_BANK' | 'E9PAY'>(
-    isUZB ? 'UZB_BANK' : 'KOREAN_BANK'
-  )
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<
+    'KOREAN_BANK' | 'UZB_BANK' | 'E9PAY'
+  >(isUZB ? 'UZB_BANK' : 'KOREAN_BANK')
 
   const { data: tiers } = useQuery({
     queryKey: ['kor-shipping-tiers'],
@@ -112,7 +116,7 @@ export default function CheckoutPaymentScreen() {
         couponCode: couponResult?.coupon?.code ?? initialCouponCode,
         boxId: boxId,
       })
-      
+
       setPaymentInfo(result.paymentInfo)
 
       // Step 3: Link receipt
@@ -135,9 +139,9 @@ export default function CheckoutPaymentScreen() {
 
       router.replace({
         pathname: '/checkout/confirmed',
-        params: { 
+        params: {
           orderId: result.order.id,
-          paymentInfoJson: JSON.stringify(result.paymentInfo)
+          paymentInfoJson: JSON.stringify(result.paymentInfo),
         },
       })
     } catch (err: any) {
@@ -150,7 +154,7 @@ export default function CheckoutPaymentScreen() {
   const subtotal = cart?.summary.subtotal ?? 0
   const discount = couponResult?.discountAmount ?? 0
   const korCargoFee = tiers ? calculateKorCargo(subtotal, tiers) : 0
-  
+
   // Calculate cargo estimate for UZB
   const totalWeightKg = (cart?.items ?? []).reduce(
     (acc, item) => acc + ((item.weightGrams ?? 0) * item.quantity) / 1000,
@@ -158,19 +162,17 @@ export default function CheckoutPaymentScreen() {
   )
   const selectedBoxWeight = selectedBox?.boxWeightKg ?? 0
   const totalWeightWithBox = totalWeightKg + Number(selectedBoxWeight)
-  
+
   const cargoUsdPerKg = paymentSettings?.cargo?.uzbCargoUsdPerKg ?? 3
   const usdToKrw = paymentSettings?.rates?.usdToKrw ?? 1350
-  
+
   const estimatedCargoKrw = isUZB
-    ? Math.round(totalWeightWithBox * cargoUsdPerKg * usdToKrw / 100) * 100
+    ? Math.round((totalWeightWithBox * cargoUsdPerKg * usdToKrw) / 100) * 100
     : null
 
   const boxAndCargo = (selectedBox?.costKrw ?? 0) + (estimatedCargoKrw ?? 0)
 
-  const total = isUZB
-    ? subtotal - discount + boxAndCargo
-    : subtotal - discount + korCargoFee
+  const total = isUZB ? subtotal - discount + boxAndCargo : subtotal - discount + korCargoFee
 
   const infoRow = (label: string, value: string | null) => (
     <View style={styles.infoRow}>
@@ -185,7 +187,7 @@ export default function CheckoutPaymentScreen() {
     subLabel: string
   ) => {
     const selected = selectedPaymentMethod === id
-    
+
     let displaySub = subLabel
     if (paymentSettings) {
       if (id === 'KOREAN_BANK') {
@@ -197,7 +199,8 @@ export default function CheckoutPaymentScreen() {
         const uzbLast4 = paymentSettings.uzb?.bankNumber
           ? paymentSettings.uzb.bankNumber.slice(-4)
           : null
-        displaySub = (paymentSettings.uzb?.bankName || 'Humo') + (uzbLast4 ? ' · ...' + uzbLast4 : '')
+        displaySub =
+          (paymentSettings.uzb?.bankName || 'Humo') + (uzbLast4 ? ' · ...' + uzbLast4 : '')
       } else if (id === 'E9PAY') {
         const e9Last4 = paymentSettings.e9pay?.account
           ? paymentSettings.e9pay.account.slice(-4)
@@ -220,17 +223,12 @@ export default function CheckoutPaymentScreen() {
             <Text style={styles.methodLabel}>{label}</Text>
             <Text style={styles.methodSubLabel}>{displaySub}</Text>
           </View>
-          {selected && (
-            <Feather name="check" size={16} color={tokens.colors.primary} />
-          )}
+          {selected && <Feather name="check" size={16} color={tokens.colors.primary} />}
         </TouchableOpacity>
 
         {selected && id === 'KOREAN_BANK' && (paymentInfo || paymentSettings) && (
           <View style={styles.inlineInfo}>
-            {infoRow(
-              'Bank:',
-              paymentInfo?.bankName || paymentSettings?.kor?.bankName || '---'
-            )}
+            {infoRow('Bank:', paymentInfo?.bankName || paymentSettings?.kor?.bankName || '---')}
             {infoRow(
               'Hisob:',
               paymentInfo?.accountNumber || paymentSettings?.kor?.bankNumber || '---'
@@ -244,10 +242,7 @@ export default function CheckoutPaymentScreen() {
 
         {selected && id === 'UZB_BANK' && (paymentInfo || paymentSettings) && (
           <View style={styles.inlineInfo}>
-            {infoRow(
-              'Bank:',
-              paymentInfo?.bankName || paymentSettings?.uzb?.bankName || '---'
-            )}
+            {infoRow('Bank:', paymentInfo?.bankName || paymentSettings?.uzb?.bankName || '---')}
             {infoRow(
               'Hisob:',
               paymentInfo?.accountNumber || paymentSettings?.uzb?.bankNumber || '---'
@@ -265,10 +260,7 @@ export default function CheckoutPaymentScreen() {
               'E9Pay:',
               paymentInfo?.accountNumber || paymentSettings?.e9pay?.account || '---'
             )}
-            {infoRow(
-              'Egasi:',
-              paymentInfo?.holderName || paymentSettings?.e9pay?.name || '---'
-            )}
+            {infoRow('Egasi:', paymentInfo?.holderName || paymentSettings?.e9pay?.name || '---')}
           </View>
         )}
       </View>
@@ -323,10 +315,9 @@ export default function CheckoutPaymentScreen() {
           {!isUZB && tiers && (
             <View style={styles.summaryRow}>
               <Text style={styles.summaryLabel}>Yetkazib berish:</Text>
-              <Text style={[
-                styles.summaryValue,
-                korCargoFee === 0 && { color: tokens.colors.success }
-              ]}>
+              <Text
+                style={[styles.summaryValue, korCargoFee === 0 && { color: tokens.colors.success }]}
+              >
                 {korCargoFee === 0 ? 'Bepul ✓' : formatKRW(korCargoFee)}
               </Text>
             </View>
@@ -335,9 +326,7 @@ export default function CheckoutPaymentScreen() {
           {isUZB && boxAndCargo > 0 && (
             <View style={styles.summaryRow}>
               <Text style={styles.summaryLabel}>Yetkazib berish:</Text>
-              <Text style={styles.summaryValue}>
-                {'≈ ' + formatKRW(boxAndCargo)}
-              </Text>
+              <Text style={styles.summaryValue}>{'≈ ' + formatKRW(boxAndCargo)}</Text>
             </View>
           )}
 
@@ -360,23 +349,22 @@ export default function CheckoutPaymentScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>To'lov usuli</Text>
           {!isUZB ? (
-            paymentSettings?.kor?.isEnabled !== false && renderPaymentMethod(
+            paymentSettings?.kor?.isEnabled !== false &&
+            renderPaymentMethod(
               'KOREAN_BANK',
               "Korea bank o'tkazmasi",
               `Toss · ${paymentInfo?.accountNumber ?? '...'}`
             )
           ) : (
             <>
-              {paymentSettings?.uzb?.isEnabled !== false && renderPaymentMethod(
-                'UZB_BANK',
-                "O'zbekiston bank",
-                `Humo · ${paymentInfo?.accountNumber ?? '...'}`
-              )}
-              {paymentSettings?.e9pay?.isEnabled !== false && renderPaymentMethod(
-                'E9PAY',
-                "E9Pay",
-                paymentInfo?.accountNumber ?? '...'
-              )}
+              {paymentSettings?.uzb?.isEnabled !== false &&
+                renderPaymentMethod(
+                  'UZB_BANK',
+                  "O'zbekiston bank",
+                  `Humo · ${paymentInfo?.accountNumber ?? '...'}`
+                )}
+              {paymentSettings?.e9pay?.isEnabled !== false &&
+                renderPaymentMethod('E9PAY', 'E9Pay', paymentInfo?.accountNumber ?? '...')}
             </>
           )}
         </View>
@@ -385,7 +373,7 @@ export default function CheckoutPaymentScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>To'lov cheki</Text>
           {!receiptUri ? (
-            <TouchableOpacity 
+            <TouchableOpacity
               onPress={pickImage}
               style={styles.uploadPlaceholder}
               activeOpacity={0.7}
@@ -397,11 +385,7 @@ export default function CheckoutPaymentScreen() {
           ) : (
             <View style={styles.receiptContainer}>
               <Image source={{ uri: receiptUri }} style={styles.receiptImage} contentFit="cover" />
-              <TouchableOpacity 
-                style={styles.changeBtn} 
-                onPress={pickImage}
-                activeOpacity={0.8}
-              >
+              <TouchableOpacity style={styles.changeBtn} onPress={pickImage} activeOpacity={0.8}>
                 <View style={styles.changeBtnInner}>
                   <Text style={styles.changeText}>O'zgartirish</Text>
                 </View>

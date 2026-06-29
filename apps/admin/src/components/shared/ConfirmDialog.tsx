@@ -12,35 +12,36 @@ import {
 import { Button } from '@/components/ui/button'
 
 interface ConfirmDialogProps {
-  open:        boolean
-  onClose:     () => void
-  onConfirm:   () => void
-  title:       string
+  open: boolean
+  onClose: () => void
+  onConfirm: () => void
+  title: string
   description: string
-  loading?:    boolean
-  variant?:    'default' | 'destructive'
+  loading?: boolean
+  variant?: 'default' | 'destructive'
   customBody?: React.ReactNode
 }
 
 export function ConfirmDialog({
-  open, onClose, onConfirm, title,
-  description, loading, variant = 'default', customBody
+  open,
+  onClose,
+  onConfirm,
+  title,
+  description,
+  loading,
+  variant = 'default',
+  customBody,
 }: ConfirmDialogProps) {
   return (
     <AlertDialog open={open} onOpenChange={onClose}>
       <AlertDialogContent className="rounded-xl max-w-sm">
         <AlertDialogHeader>
-          <AlertDialogTitle className="text-base">
-            {title}
-          </AlertDialogTitle>
-          <AlertDialogDescription className="text-sm">
-            {description}
-          </AlertDialogDescription>
+          <AlertDialogTitle className="text-base">{title}</AlertDialogTitle>
+          <AlertDialogDescription className="text-sm">{description}</AlertDialogDescription>
           {customBody}
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={loading}
-            className="rounded-lg">
+          <AlertDialogCancel disabled={loading} className="rounded-lg">
             Bekor qilish
           </AlertDialogCancel>
           <AlertDialogAction

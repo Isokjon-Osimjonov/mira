@@ -1,11 +1,5 @@
 import { db } from '../../config/db'
-import {
-  products,
-  productRegionalConfigs,
-  inventoryBatches,
-  categories,
-  cartItems,
-} from '@mira/db'
+import { products, productRegionalConfigs, inventoryBatches, categories, cartItems } from '@mira/db'
 import { eq, and, isNull, sql, desc, asc, ilike, or, isNotNull } from 'drizzle-orm'
 import { escapeLikeQuery } from '../../lib/sanitize'
 import { validateSort } from '../../lib/sort-whitelist'
@@ -28,7 +22,7 @@ async function processImageUrls(urls: string[], existingUrls: string[] = []): Pr
         })
         processedUrls.push(result.secure_url)
       } catch (err) {
-        console.error("Cloudinary upload error:", err)
+        console.error('Cloudinary upload error:', err)
         throw { status: 400, code: 'UPLOAD_FAILED', message: `Rasmni yuklashda xatolik: ${url}` }
       }
     }
@@ -59,9 +53,7 @@ type RegionalPriceInput = {
   minWholesaleQty?: number
 }
 
-export function buildRegionalConfigs(
-  data: RegionalPriceInput
-): Array<{
+export function buildRegionalConfigs(data: RegionalPriceInput): Array<{
   regionCode: 'UZB' | 'KOR'
   retailPrice: bigint
   wholesalePrice: bigint
@@ -136,7 +128,11 @@ export async function getProducts(query: {
   let where: any = query.showDeleted ? isNotNull(products.deletedAt) : isNull(products.deletedAt)
 
   if (query.category) {
-    const [cat] = await db.select().from(categories).where(eq(categories.id, query.category)).limit(1)
+    const [cat] = await db
+      .select()
+      .from(categories)
+      .where(eq(categories.id, query.category))
+      .limit(1)
     if (cat) {
       where = and(where, eq(products.categoryId, cat.id))
     }
@@ -163,7 +159,7 @@ export async function getProducts(query: {
 
   const sortField = validateSort('products', query.sort || 'createdAt')
   let orderBy: any = desc(products.createdAt)
-  
+
   if (sortField === 'name') orderBy = asc(products.name)
   if (sortField === 'price') orderBy = asc(productRegionalConfigs.retailPrice)
   if (sortField === 'brandName') orderBy = asc(products.brandName)
@@ -208,7 +204,10 @@ export async function getProducts(query: {
     .limit(limit)
     .offset(offset)
 
-  const [countRes] = await db.select({ count: sql<number>`count(*)` }).from(products).where(where)
+  const [countRes] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(products)
+    .where(where)
   const total = Number(countRes?.count || 0)
 
   return {
@@ -246,12 +245,12 @@ export async function getProductById(id: string, region: 'UZB' | 'KOR' = 'UZB') 
 
   const [stockRes] = await db
     .select({
-      total: sql<number>`COALESCE(SUM(${inventoryBatches.currentQty}), 0)`.mapWith(Number)
+      total: sql<number>`COALESCE(SUM(${inventoryBatches.currentQty}), 0)`.mapWith(Number),
     })
     .from(inventoryBatches)
     .where(eq(inventoryBatches.productId, id))
 
-  const currentRegionConfig = configs.find(c => c.regionCode === region) || configs[0]
+  const currentRegionConfig = configs.find((c) => c.regionCode === region) || configs[0]
 
   return {
     ...product,
@@ -259,10 +258,10 @@ export async function getProductById(id: string, region: 'UZB' | 'KOR' = 'UZB') 
     currentStock: Number(stockRes?.total ?? 0),
     retailPrice: currentRegionConfig ? Number(currentRegionConfig.retailPrice) : null,
     wholesalePrice: currentRegionConfig ? Number(currentRegionConfig.wholesalePrice) : null,
-    regionalConfigs: configs.map(c => ({
+    regionalConfigs: configs.map((c) => ({
       ...c,
       retailPrice: Number(c.retailPrice),
-      wholesalePrice: Number(c.wholesalePrice)
+      wholesalePrice: Number(c.wholesalePrice),
     })),
   }
 }
@@ -367,7 +366,7 @@ export async function createProduct(data: CreateProductDto, adminId?: string, ad
       throw {
         status: 400,
         code: 'PRODUCT_NO_REGIONAL_CONFIG',
-        message: "Kamida bitta mintaqa (KOR yoki UZB) uchun retail narx kiritilishi kerak",
+        message: 'Kamida bitta mintaqa (KOR yoki UZB) uchun retail narx kiritilishi kerak',
       }
     }
 
@@ -393,12 +392,21 @@ export async function createProduct(data: CreateProductDto, adminId?: string, ad
   })
 }
 
-export async function updateProduct(id: string, data: UpdateProductDto, adminId?: string, adminName?: string) {
-  const [existing] = await db.select({ imageUrls: products.imageUrls }).from(products).where(eq(products.id, id)).limit(1)
+export async function updateProduct(
+  id: string,
+  data: UpdateProductDto,
+  adminId?: string,
+  adminName?: string
+) {
+  const [existing] = await db
+    .select({ imageUrls: products.imageUrls })
+    .from(products)
+    .where(eq(products.id, id))
+    .limit(1)
   if (!existing) throw { status: 404, message: 'Mahsulot topilmadi' }
 
   if (data.imageUrls) {
-    data.imageUrls = await processImageUrls(data.imageUrls, existing.imageUrls as string[] || [])
+    data.imageUrls = await processImageUrls(data.imageUrls, (existing.imageUrls as string[]) || [])
   }
 
   return await db.transaction(async (tx) => {
@@ -441,10 +449,14 @@ export async function updateProduct(id: string, data: UpdateProductDto, adminId?
 }
 
 export async function updateProductImages(id: string, imageUrls: string[]) {
-  const [existing] = await db.select({ imageUrls: products.imageUrls }).from(products).where(eq(products.id, id)).limit(1)
+  const [existing] = await db
+    .select({ imageUrls: products.imageUrls })
+    .from(products)
+    .where(eq(products.id, id))
+    .limit(1)
   if (!existing) throw { status: 404, message: 'Mahsulot topilmadi' }
 
-  const processedUrls = await processImageUrls(imageUrls, existing.imageUrls as string[] || [])
+  const processedUrls = await processImageUrls(imageUrls, (existing.imageUrls as string[]) || [])
 
   const [updated] = await db
     .update(products)

@@ -29,7 +29,9 @@ const receiptUpload = multer({
     if (allowedTypes.includes(file.mimetype)) {
       cb(null, true)
     } else {
-      cb(new Error('Faqat image/jpeg, image/png, image/webp yoki PDF turlari ruxsat etilgan') as any)
+      cb(
+        new Error('Faqat image/jpeg, image/png, image/webp yoki PDF turlari ruxsat etilgan') as any
+      )
     }
   },
 }).single('receipt')
@@ -182,4 +184,3 @@ export async function uploadBanner(req: Request, res: Response, next: NextFuncti
     }
   })
 }
-

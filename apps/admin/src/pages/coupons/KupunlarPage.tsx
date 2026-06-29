@@ -3,10 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import {
-  Plus, Search, X, Copy, Check,
-  Tag, RefreshCw, Trash2, Eye,
-} from 'lucide-react'
+import { Plus, Search, X, Copy, Check, Tag, RefreshCw, Trash2, Eye } from 'lucide-react'
 import { toast } from 'sonner'
 import { couponsApi, CouponCreatePayload } from '../../api/coupons.api'
 import { productsApi } from '../../api/products.api'
@@ -25,18 +22,24 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { ToggleSwitch } from '../../components/ui/ToggleSwitch'
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import {
-  Sheet, SheetContent, SheetHeader, SheetTitle
-} from '@/components/ui/sheet'
-import {
-  Select, SelectContent, SelectItem,
-  SelectTrigger, SelectValue
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@/components/ui/select'
 
 const LIMIT = 20
 
 const couponSchema = z.object({
-  code: z.string().min(3).max(50).toUpperCase().regex(/^[A-Z0-9_-]+$/, 'Faqat A-Z, 0-9, _ -'),
+  code: z
+    .string()
+    .min(3)
+    .max(50)
+    .toUpperCase()
+    .regex(/^[A-Z0-9_-]+$/, 'Faqat A-Z, 0-9, _ -'),
   name: z.string().min(1, 'Nom kiriting'),
   type: z.enum(['PERCENTAGE', 'FIXED', 'FREE_SHIPPING']),
   value: z.coerce.number().min(0).default(0),
@@ -67,8 +70,10 @@ function CopyButton({ text }: { text: string }) {
     toast.success('Nusxa olindi')
   }
   return (
-    <button onClick={copy}
-      className="w-6 h-6 rounded-md flex items-center justify-center hover:bg-gray-200 text-gray-500 transition-colors shrink-0">
+    <button
+      onClick={copy}
+      className="w-6 h-6 rounded-md flex items-center justify-center hover:bg-gray-200 text-gray-500 transition-colors shrink-0"
+    >
       {copied ? <Check className="h-3 w-3 text-green-600" /> : <Copy className="h-3 w-3" />}
     </button>
   )
@@ -79,7 +84,9 @@ function UsageBar({ used, max }: { used: number; max?: number | null }) {
   const pct = Math.min(100, Math.round((used / max) * 100))
   return (
     <div className="flex flex-col items-end gap-1 w-20">
-      <span className="text-xs text-gray-700 font-medium">{used}/{max}</span>
+      <span className="text-xs text-gray-700 font-medium">
+        {used}/{max}
+      </span>
       <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
         <div
           className={cn(
@@ -96,7 +103,7 @@ function UsageBar({ used, max }: { used: number; max?: number | null }) {
 export function KupunlarPage() {
   const qc = useQueryClient()
 
-  const [tab, setTab] = useState<'all'|'ACTIVE'|'PAUSED'|'ARCHIVED'>('all')
+  const [tab, setTab] = useState<'all' | 'ACTIVE' | 'PAUSED' | 'ARCHIVED'>('all')
   const [search, setSearch] = useState('')
   const [debSearch, setDebSearch] = useState('')
   const [page, setPage] = useState(1)
@@ -148,10 +155,13 @@ export function KupunlarPage() {
     return () => clearTimeout(t)
   }, [search])
 
-  useEffect(() => { setPage(1) }, [tab, debSearch])
+  useEffect(() => {
+    setPage(1)
+  }, [tab, debSearch])
 
   const queryParams = {
-    page, limit: LIMIT,
+    page,
+    limit: LIMIT,
     search: debSearch || undefined,
     status: tab === 'all' ? undefined : tab,
   }
@@ -169,7 +179,15 @@ export function KupunlarPage() {
   })
   const usages = usagesRes?.data ?? []
 
-  const { register, handleSubmit, control, reset, setValue, watch, formState: { errors } } = useForm<any>({
+  const {
+    register,
+    handleSubmit,
+    control,
+    reset,
+    setValue,
+    watch,
+    formState: { errors },
+  } = useForm<any>({
     resolver: zodResolver(couponSchema),
     defaultValues: {
       type: 'PERCENTAGE',
@@ -181,7 +199,7 @@ export function KupunlarPage() {
       productId: null,
       categoryId: null,
       customerId: null,
-    }
+    },
   })
 
   const watchType = watch('type')
@@ -197,16 +215,14 @@ export function KupunlarPage() {
         startsAt: data.startsAt ? new Date(data.startsAt).toISOString() : null,
         expiresAt: data.expiresAt ? new Date(data.expiresAt).toISOString() : null,
       } as any
-      return editTarget
-        ? couponsApi.update(editTarget.id, payload)
-        : couponsApi.create(payload)
+      return editTarget ? couponsApi.update(editTarget.id, payload) : couponsApi.create(payload)
     },
     onSuccess: () => {
       qc.removeQueries()
       toast.success(editTarget ? 'Kupon yangilandi' : 'Kupon yaratildi')
       resetForm()
     },
-    onError: (err: any) => toast.error(getErrorMessage(err?.errorCode ?? ''))
+    onError: (err: any) => toast.error(getErrorMessage(err?.errorCode ?? '')),
   })
 
   const statusMutation = useMutation({
@@ -214,17 +230,17 @@ export function KupunlarPage() {
     onSuccess: () => {
       qc.removeQueries()
     },
-    onError: (err: any) => toast.error(getErrorMessage(err?.errorCode ?? ''))
+    onError: (err: any) => toast.error(getErrorMessage(err?.errorCode ?? '')),
   })
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => couponsApi.delete(id),
     onSuccess: () => {
       qc.removeQueries()
-      toast.success('Kupon o\'chirildi')
+      toast.success("Kupon o'chirildi")
       setDeleteTarget(null)
     },
-    onError: (err: any) => toast.error(getErrorMessage(err?.errorCode ?? ''))
+    onError: (err: any) => toast.error(getErrorMessage(err?.errorCode ?? '')),
   })
 
   const handleGenerateCode = async () => {
@@ -241,10 +257,21 @@ export function KupunlarPage() {
 
   const resetForm = () => {
     reset({
-      type: 'PERCENTAGE', scope: 'ALL', regionCode: null,
-      isActive: true, maxUsesPerCustomer: 1, minOrderAmount: 0,
-      code: '', name: '', value: 0, startsAt: null, expiresAt: null, description: null,
-      productId: null, categoryId: null, customerId: null
+      type: 'PERCENTAGE',
+      scope: 'ALL',
+      regionCode: null,
+      isActive: true,
+      maxUsesPerCustomer: 1,
+      minOrderAmount: 0,
+      code: '',
+      name: '',
+      value: 0,
+      startsAt: null,
+      expiresAt: null,
+      description: null,
+      productId: null,
+      categoryId: null,
+      customerId: null,
     })
     setProductSearch('')
     setCustomerSearch('')
@@ -286,7 +313,7 @@ export function KupunlarPage() {
   const STATUS_TABS = [
     { value: 'all', label: 'Barchasi' },
     { value: 'ACTIVE', label: 'Faol' },
-    { value: 'PAUSED', label: 'To\'xtatilgan' },
+    { value: 'PAUSED', label: "To'xtatilgan" },
     { value: 'ARCHIVED', label: 'Arxivlangan' },
   ]
 
@@ -297,8 +324,8 @@ export function KupunlarPage() {
   }
 
   const SCOPE_LABELS: Record<string, any> = {
-    ALL:      { label: '🌐 Barchasi', color: 'bg-gray-100 text-gray-700' },
-    PRODUCT:  { label: '📦 Mahsulot', color: 'bg-indigo-50 text-indigo-700' },
+    ALL: { label: '🌐 Barchasi', color: 'bg-gray-100 text-gray-700' },
+    PRODUCT: { label: '📦 Mahsulot', color: 'bg-indigo-50 text-indigo-700' },
     CATEGORY: { label: '🏷 Kategoriya', color: 'bg-amber-50 text-amber-700' },
     CUSTOMER: { label: '👤 Mijoz', color: 'bg-green-50 text-green-700' },
   }
@@ -316,9 +343,18 @@ export function KupunlarPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-semibold text-gray-900">Kuponlar</h1>
-          <p className="text-sm text-muted-foreground">{meta?.total ? `${meta.total} ta kupon` : 'Chegirma kuponlari'}</p>
+          <p className="text-sm text-muted-foreground">
+            {meta?.total ? `${meta.total} ta kupon` : 'Chegirma kuponlari'}
+          </p>
         </div>
-        <Button size="sm" className="rounded-lg gap-2 h-9" onClick={() => { resetForm(); setSheet(true) }}>
+        <Button
+          size="sm"
+          className="rounded-lg gap-2 h-9"
+          onClick={() => {
+            resetForm()
+            setSheet(true)
+          }}
+        >
           <Plus className="h-4 w-4" strokeWidth={1.5} />
           <span className="hidden sm:inline">Yangi kupon</span>
         </Button>
@@ -326,12 +362,17 @@ export function KupunlarPage() {
 
       {/* Tabs */}
       <div className="flex gap-1 overflow-x-auto scrollbar-none">
-        {STATUS_TABS.map(t => (
-          <button key={t.value} onClick={() => setTab(t.value as any)}
+        {STATUS_TABS.map((t) => (
+          <button
+            key={t.value}
+            onClick={() => setTab(t.value as any)}
             className={cn(
               'px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all border-[0.5px]',
-              tab === t.value ? 'bg-primary text-white border-primary' : 'bg-white text-muted-foreground border-border'
-            )}>
+              tab === t.value
+                ? 'bg-primary text-white border-primary'
+                : 'bg-white text-muted-foreground border-border'
+            )}
+          >
             {t.label}
           </button>
         ))}
@@ -339,10 +380,21 @@ export function KupunlarPage() {
 
       {/* Search */}
       <div className="relative max-w-sm">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" strokeWidth={1.5} />
-        <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Kupon kodi yoki nomi..." className="pl-9 h-9 text-sm rounded-lg border-[0.5px]" />
+        <Search
+          className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground"
+          strokeWidth={1.5}
+        />
+        <Input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Kupon kodi yoki nomi..."
+          className="pl-9 h-9 text-sm rounded-lg border-[0.5px]"
+        />
         {search && (
-          <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2">
+          <button
+            onClick={() => setSearch('')}
+            className="absolute right-3 top-1/2 -translate-y-1/2"
+          >
             <X className="h-3.5 w-3.5 text-muted-foreground" />
           </button>
         )}
@@ -355,8 +407,19 @@ export function KupunlarPage() {
         ) : coupons.length === 0 ? (
           <EmptyState
             message="Kuponlar yo'q"
-            description={tab === 'all' ? 'Birinchi kupon yarating' : `${STATUS_TABS.find(t => t.value === tab)?.label} kuponlar yo'q`}
-            action={tab === 'all' ? <Button size="sm" onClick={() => setSheet(true)} className="rounded-lg gap-2"><Plus className="h-4 w-4" />Kupon yaratish</Button> : undefined}
+            description={
+              tab === 'all'
+                ? 'Birinchi kupon yarating'
+                : `${STATUS_TABS.find((t) => t.value === tab)?.label} kuponlar yo'q`
+            }
+            action={
+              tab === 'all' ? (
+                <Button size="sm" onClick={() => setSheet(true)} className="rounded-lg gap-2">
+                  <Plus className="h-4 w-4" />
+                  Kupon yaratish
+                </Button>
+              ) : undefined
+            }
           />
         ) : (
           <>
@@ -364,14 +427,30 @@ export function KupunlarPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-border/50 bg-gray-50/80">
-                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Kupon</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground w-28">Tur</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground w-28">Doira</th>
-                    <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground w-24">Chegirma</th>
-                    <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground hidden md:table-cell w-28">Foydalanish</th>
-                    <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground hidden lg:table-cell w-24">Hudud</th>
-                    <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground hidden lg:table-cell w-28">Muddat</th>
-                    <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground w-20">Holat</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">
+                      Kupon
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground w-28">
+                      Tur
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground w-28">
+                      Doira
+                    </th>
+                    <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground w-24">
+                      Chegirma
+                    </th>
+                    <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground hidden md:table-cell w-28">
+                      Foydalanish
+                    </th>
+                    <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground hidden lg:table-cell w-24">
+                      Hudud
+                    </th>
+                    <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground hidden lg:table-cell w-28">
+                      Muddat
+                    </th>
+                    <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground w-20">
+                      Holat
+                    </th>
                     <th className="px-4 py-3 w-28" />
                   </tr>
                 </thead>
@@ -380,21 +459,39 @@ export function KupunlarPage() {
                     const expired = isExpired(c)
                     const typeInfo = TYPE_LABELS[c.type]
                     return (
-                      <tr key={c.id} className={cn('transition-colors group', expired ? 'bg-gray-50/30 opacity-60' : 'hover:bg-gray-50/60')}>
+                      <tr
+                        key={c.id}
+                        className={cn(
+                          'transition-colors group',
+                          expired ? 'bg-gray-50/30 opacity-60' : 'hover:bg-gray-50/60'
+                        )}
+                      >
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
-                            <code className="text-sm font-mono font-bold text-gray-900 bg-gray-100 px-2 py-0.5 rounded">{c.code}</code>
+                            <code className="text-sm font-mono font-bold text-gray-900 bg-gray-100 px-2 py-0.5 rounded">
+                              {c.code}
+                            </code>
                             <CopyButton text={c.code} />
                           </div>
                           <p className="text-[11px] text-gray-900 font-medium mt-0.5">{c.name}</p>
                         </td>
                         <td className="px-4 py-3">
-                          <span className={cn('text-[11px] font-medium px-2 py-0.5 rounded-full', typeInfo?.color ?? 'bg-gray-100 text-gray-600')}>
+                          <span
+                            className={cn(
+                              'text-[11px] font-medium px-2 py-0.5 rounded-full',
+                              typeInfo?.color ?? 'bg-gray-100 text-gray-600'
+                            )}
+                          >
                             {typeInfo?.label ?? c.type}
                           </span>
                         </td>
                         <td className="px-4 py-3">
-                          <span className={cn('text-[11px] font-medium px-2 py-0.5 rounded-full whitespace-nowrap', SCOPE_LABELS[c.scope]?.color ?? 'bg-gray-100 text-gray-600')}>
+                          <span
+                            className={cn(
+                              'text-[11px] font-medium px-2 py-0.5 rounded-full whitespace-nowrap',
+                              SCOPE_LABELS[c.scope]?.color ?? 'bg-gray-100 text-gray-600'
+                            )}
+                          >
                             {SCOPE_LABELS[c.scope]?.label ?? c.scope}
                           </span>
                         </td>
@@ -402,37 +499,68 @@ export function KupunlarPage() {
                           <span className="text-sm font-bold text-gray-900">{formatValue(c)}</span>
                         </td>
                         <td className="px-4 py-3 hidden md:table-cell">
-                          <div className="flex justify-center"><UsageBar used={c.usageCount ?? 0} max={c.maxUsesTotal} /></div>
+                          <div className="flex justify-center">
+                            <UsageBar used={c.usageCount ?? 0} max={c.maxUsesTotal} />
+                          </div>
                         </td>
                         <td className="px-4 py-3 text-center hidden lg:table-cell">
                           <span className="text-[11px] text-muted-foreground">
-                            {c.regionCode === 'KOR' ? '🇰🇷 KOR' : c.regionCode === 'UZB' ? '🇺🇿 UZB' : '🌍 Barchasi'}
+                            {c.regionCode === 'KOR'
+                              ? '🇰🇷 KOR'
+                              : c.regionCode === 'UZB'
+                                ? '🇺🇿 UZB'
+                                : '🌍 Barchasi'}
                           </span>
                         </td>
                         <td className="px-4 py-3 text-center hidden lg:table-cell">
                           {c.expiresAt ? (
-                            <span className={cn('text-xs', expired ? 'text-red-500' : 'text-muted-foreground')}>
-                              {expired ? '⌛ ' : '📅 '}{formatDate(c.expiresAt)}
+                            <span
+                              className={cn(
+                                'text-xs',
+                                expired ? 'text-red-500' : 'text-muted-foreground'
+                              )}
+                            >
+                              {expired ? '⌛ ' : '📅 '}
+                              {formatDate(c.expiresAt)}
                             </span>
-                          ) : <span className="text-xs text-muted-foreground">Muddatsiz</span>}
+                          ) : (
+                            <span className="text-xs text-muted-foreground">Muddatsiz</span>
+                          )}
                         </td>
                         <td className="px-4 py-3 text-center">
                           <ToggleSwitch
                             checked={c.status === 'ACTIVE'}
-                            disabled={expired || c.status === 'ARCHIVED' || statusMutation.isPending}
-                            onChange={() => statusMutation.mutate({ id: c.id, status: c.status === 'ACTIVE' ? 'PAUSED' : 'ACTIVE' })}
+                            disabled={
+                              expired || c.status === 'ARCHIVED' || statusMutation.isPending
+                            }
+                            onChange={() =>
+                              statusMutation.mutate({
+                                id: c.id,
+                                status: c.status === 'ACTIVE' ? 'PAUSED' : 'ACTIVE',
+                              })
+                            }
                             size="sm"
                           />
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button onClick={() => setViewTarget(c)} title="Foydalanishlar" className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-blue-50 text-blue-600 transition-colors">
+                            <button
+                              onClick={() => setViewTarget(c)}
+                              title="Foydalanishlar"
+                              className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-blue-50 text-blue-600 transition-colors"
+                            >
                               <Eye className="h-3.5 w-3.5" strokeWidth={1.5} />
                             </button>
-                            <button onClick={() => handleEdit(c)} className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-gray-100 text-gray-500 transition-colors">
+                            <button
+                              onClick={() => handleEdit(c)}
+                              className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-gray-100 text-gray-500 transition-colors"
+                            >
                               <Tag className="h-3.5 w-3.5" strokeWidth={1.5} />
                             </button>
-                            <button onClick={() => setDeleteTarget(c)} className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-red-50 text-red-500 transition-colors">
+                            <button
+                              onClick={() => setDeleteTarget(c)}
+                              className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-red-50 text-red-500 transition-colors"
+                            >
                               <Trash2 className="h-3.5 w-3.5" strokeWidth={1.5} />
                             </button>
                           </div>
@@ -443,45 +571,100 @@ export function KupunlarPage() {
                 </tbody>
               </table>
             </div>
-            {meta && <Pagination page={page} total={meta.total} limit={LIMIT} hasNext={meta.hasNext} hasPrev={meta.hasPrev} onPage={setPage} />}
+            {meta && (
+              <Pagination
+                page={page}
+                total={meta.total}
+                limit={LIMIT}
+                hasNext={meta.hasNext}
+                hasPrev={meta.hasPrev}
+                onPage={setPage}
+              />
+            )}
           </>
         )}
       </div>
 
       {/* Create/Edit Sheet */}
-      <Sheet open={sheet} onOpenChange={v => !v && resetForm()}>
-        <SheetContent side="right" className="w-[90vw] sm:w-[520px] sm:max-w-[520px] overflow-y-auto">
+      <Sheet open={sheet} onOpenChange={(v) => !v && resetForm()}>
+        <SheetContent
+          side="right"
+          className="w-[90vw] sm:w-[520px] sm:max-w-[520px] overflow-y-auto"
+        >
           <SheetHeader className="pb-4 border-b border-border/50">
             <SheetTitle>{editTarget ? 'Kuponni tahrirlash' : 'Yangi kupon yaratish'}</SheetTitle>
           </SheetHeader>
-          <form onSubmit={handleSubmit(data => saveMutation.mutate(data))} className="space-y-5 py-4">
+          <form
+            onSubmit={handleSubmit((data) => saveMutation.mutate(data))}
+            className="space-y-5 py-4"
+          >
             <div>
               <Label className="text-xs mb-1.5 block">Kupon kodi *</Label>
               <div className="flex gap-2">
-                <Input {...register('code')} placeholder="MIRA2026" className="h-9 text-sm rounded-lg border-[0.5px] flex-1 font-mono uppercase" />
-                <Button type="button" variant="outline" size="sm" onClick={handleGenerateCode} disabled={generatingCode} className="h-9 rounded-lg gap-1.5 border-[0.5px] text-xs shrink-0">
-                  <RefreshCw className={cn('h-3.5 w-3.5', generatingCode && 'animate-spin')} strokeWidth={1.5} />Auto
+                <Input
+                  {...register('code')}
+                  placeholder="MIRA2026"
+                  className="h-9 text-sm rounded-lg border-[0.5px] flex-1 font-mono uppercase"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleGenerateCode}
+                  disabled={generatingCode}
+                  className="h-9 rounded-lg gap-1.5 border-[0.5px] text-xs shrink-0"
+                >
+                  <RefreshCw
+                    className={cn('h-3.5 w-3.5', generatingCode && 'animate-spin')}
+                    strokeWidth={1.5}
+                  />
+                  Auto
                 </Button>
               </div>
-              {errors.code && <p className="text-xs text-red-500 mt-1">{errors.code.message as string}</p>}
+              {errors.code && (
+                <p className="text-xs text-red-500 mt-1">{errors.code.message as string}</p>
+              )}
             </div>
             <div>
               <Label className="text-xs mb-1.5 block">Kupon nomi *</Label>
-              <Input {...register('name')} placeholder="Yangi yil chegirmasi" className="h-9 text-sm rounded-lg border-[0.5px]" />
-              {errors.name && <p className="text-xs text-red-500 mt-1">{errors.name.message as string}</p>}
+              <Input
+                {...register('name')}
+                placeholder="Yangi yil chegirmasi"
+                className="h-9 text-sm rounded-lg border-[0.5px]"
+              />
+              {errors.name && (
+                <p className="text-xs text-red-500 mt-1">{errors.name.message as string}</p>
+              )}
             </div>
             <div>
               <Label className="text-xs mb-1.5 block">Chegirma turi *</Label>
-              <Controller name="type" control={control} render={({ field }) => (
-                <div className="grid grid-cols-3 gap-2">
-                  {[ {v:'PERCENTAGE',l:'Foiz'}, {v:'FIXED',l:'Summa'}, {v:'FREE_SHIPPING',l:'Yetkazish'} ].map(t => (
-                    <button key={t.v} type="button" onClick={() => field.onChange(t.v)}
-                      className={cn('text-xs py-2 px-3 rounded-lg border-[0.5px] transition-all font-medium',
-                        field.value === t.v ? 'bg-primary/10 border-primary/40 text-primary' : 'bg-white border-border text-gray-700'
-                      )}>{t.l}</button>
-                  ))}
-                </div>
-              )} />
+              <Controller
+                name="type"
+                control={control}
+                render={({ field }) => (
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      { v: 'PERCENTAGE', l: 'Foiz' },
+                      { v: 'FIXED', l: 'Summa' },
+                      { v: 'FREE_SHIPPING', l: 'Yetkazish' },
+                    ].map((t) => (
+                      <button
+                        key={t.v}
+                        type="button"
+                        onClick={() => field.onChange(t.v)}
+                        className={cn(
+                          'text-xs py-2 px-3 rounded-lg border-[0.5px] transition-all font-medium',
+                          field.value === t.v
+                            ? 'bg-primary/10 border-primary/40 text-primary'
+                            : 'bg-white border-border text-gray-700'
+                        )}
+                      >
+                        {t.l}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              />
             </div>
 
             {/* Scope */}
@@ -489,12 +672,14 @@ export function KupunlarPage() {
               <Label className="text-xs mb-1.5 block">Qo'llanish doirasi *</Label>
               <div className="grid grid-cols-2 gap-2">
                 {[
-                  { value: 'ALL',      label: '🌐 Barchasi', desc: 'Barcha mahsulotlar' },
-                  { value: 'PRODUCT',  label: '📦 Mahsulot', desc: 'Bitta mahsulot' },
+                  { value: 'ALL', label: '🌐 Barchasi', desc: 'Barcha mahsulotlar' },
+                  { value: 'PRODUCT', label: '📦 Mahsulot', desc: 'Bitta mahsulot' },
                   { value: 'CATEGORY', label: '🏷 Kategoriya', desc: 'Kategoriya' },
                   { value: 'CUSTOMER', label: '👤 Mijoz', desc: 'Bitta mijoz' },
-                ].map(s => (
-                  <button key={s.value} type="button"
+                ].map((s) => (
+                  <button
+                    key={s.value}
+                    type="button"
                     onClick={() => {
                       setValue('scope', s.value)
                       setValue('productId', null)
@@ -505,8 +690,11 @@ export function KupunlarPage() {
                     }}
                     className={cn(
                       'p-2.5 rounded-xl border-[0.5px] text-left transition-all',
-                      watchScope === s.value ? 'border-primary bg-primary/5' : 'border-border bg-white'
-                    )}>
+                      watchScope === s.value
+                        ? 'border-primary bg-primary/5'
+                        : 'border-border bg-white'
+                    )}
+                  >
                     <p className="text-xs font-semibold">{s.label}</p>
                     <p className="text-[10px] text-muted-foreground">{s.desc}</p>
                   </button>
@@ -521,7 +709,7 @@ export function KupunlarPage() {
                 <div className="relative">
                   <Input
                     value={productSearch}
-                    onChange={e => {
+                    onChange={(e) => {
                       setProductSearch(e.target.value)
                       searchProducts(e.target.value)
                     }}
@@ -531,27 +719,36 @@ export function KupunlarPage() {
                   {productResults.length > 0 && (
                     <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-xl border-[0.5px] border-border shadow-xl z-50 max-h-48 overflow-y-auto">
                       {productResults.map((p: any) => (
-                        <button key={p.id} type="button"
+                        <button
+                          key={p.id}
+                          type="button"
                           onMouseDown={() => {
                             setValue('productId', p.id)
                             setProductSearch(p.name)
                             setProductResults([])
                           }}
-                          className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-gray-50 text-sm border-b border-gray-100 last:border-0">
+                          className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-gray-50 text-sm border-b border-gray-100 last:border-0"
+                        >
                           <span className="flex-1">{p.name}</span>
                         </button>
                       ))}
                     </div>
                   )}
                 </div>
-                {watchProductId && <p className="text-[10px] text-green-600 font-medium flex items-center gap-1"><Check className="h-3 w-3" /> Mahsulot tanlandi</p>}
+                {watchProductId && (
+                  <p className="text-[10px] text-green-600 font-medium flex items-center gap-1">
+                    <Check className="h-3 w-3" /> Mahsulot tanlandi
+                  </p>
+                )}
               </div>
             )}
 
             {watchScope === 'CATEGORY' && (
               <div className="space-y-2">
                 <Label className="text-xs block">Kategoriya tanlang *</Label>
-                <Controller name="categoryId" control={control}
+                <Controller
+                  name="categoryId"
+                  control={control}
                   render={({ field }) => (
                     <Select value={field.value ?? ''} onValueChange={field.onChange}>
                       <SelectTrigger className="h-9 text-sm rounded-lg border-[0.5px]">
@@ -559,11 +756,14 @@ export function KupunlarPage() {
                       </SelectTrigger>
                       <SelectContent className="rounded-xl">
                         {categories.map((c: any) => (
-                          <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                          <SelectItem key={c.id} value={c.id}>
+                            {c.name}
+                          </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
-                  )} />
+                  )}
+                />
               </div>
             )}
 
@@ -573,7 +773,7 @@ export function KupunlarPage() {
                 <div className="relative">
                   <Input
                     value={customerSearch}
-                    onChange={e => {
+                    onChange={(e) => {
                       setCustomerSearch(e.target.value)
                       searchCustomers(e.target.value)
                     }}
@@ -583,15 +783,20 @@ export function KupunlarPage() {
                   {customerResults.length > 0 && (
                     <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-xl border-[0.5px] border-border shadow-xl z-50 max-h-48 overflow-y-auto">
                       {customerResults.map((c: any) => (
-                        <button key={c.id} type="button"
+                        <button
+                          key={c.id}
+                          type="button"
                           onMouseDown={() => {
                             setValue('customerId', c.id)
                             setCustomerSearch(`${c.firstName} ${c.lastName || ''}`)
                             setCustomerResults([])
                           }}
-                          className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-gray-50 text-sm border-b border-gray-100 last:border-0">
+                          className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-gray-50 text-sm border-b border-gray-100 last:border-0"
+                        >
                           <div>
-                            <p className="font-medium">{c.firstName} {c.lastName || ''}</p>
+                            <p className="font-medium">
+                              {c.firstName} {c.lastName || ''}
+                            </p>
                             <p className="text-[10px] text-muted-foreground">{c.phone}</p>
                           </div>
                         </button>
@@ -599,63 +804,126 @@ export function KupunlarPage() {
                     </div>
                   )}
                 </div>
-                {watchCustomerId && <p className="text-[10px] text-green-600 font-medium flex items-center gap-1"><Check className="h-3 w-3" /> Mijoz tanlandi</p>}
+                {watchCustomerId && (
+                  <p className="text-[10px] text-green-600 font-medium flex items-center gap-1">
+                    <Check className="h-3 w-3" /> Mijoz tanlandi
+                  </p>
+                )}
               </div>
             )}
 
             {watchType !== 'FREE_SHIPPING' && (
               <div>
-                <Label className="text-xs mb-1.5 block">{watchType === 'PERCENTAGE' ? 'Chegirma foizi (%)' : 'Chegirma summasi (KRW)'}</Label>
-                <Input {...register('value')} type="number" min="0" className="h-9 text-sm rounded-lg border-[0.5px]" />
-                {errors.value && <p className="text-xs text-red-500 mt-1">{errors.value.message as string}</p>}
+                <Label className="text-xs mb-1.5 block">
+                  {watchType === 'PERCENTAGE' ? 'Chegirma foizi (%)' : 'Chegirma summasi (KRW)'}
+                </Label>
+                <Input
+                  {...register('value')}
+                  type="number"
+                  min="0"
+                  className="h-9 text-sm rounded-lg border-[0.5px]"
+                />
+                {errors.value && (
+                  <p className="text-xs text-red-500 mt-1">{errors.value.message as string}</p>
+                )}
               </div>
             )}
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label className="text-xs mb-1.5 block">Hudud</Label>
-                <Controller name="regionCode" control={control} render={({ field }) => (
-                  <Select value={field.value ?? 'ALL'} onValueChange={v => field.onChange(v === 'ALL' ? null : v)}>
-                    <SelectTrigger className="h-9 text-sm rounded-lg border-[0.5px]"><SelectValue /></SelectTrigger>
-                    <SelectContent className="rounded-xl">
-                      <SelectItem value="ALL">🌍 Barcha hududlar</SelectItem>
-                      <SelectItem value="KOR">🇰🇷 Koreya</SelectItem>
-                      <SelectItem value="UZB">🇺🇿 O'zbekiston</SelectItem>
-                    </SelectContent>
-                  </Select>
-                )} />
+                <Controller
+                  name="regionCode"
+                  control={control}
+                  render={({ field }) => (
+                    <Select
+                      value={field.value ?? 'ALL'}
+                      onValueChange={(v) => field.onChange(v === 'ALL' ? null : v)}
+                    >
+                      <SelectTrigger className="h-9 text-sm rounded-lg border-[0.5px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="rounded-xl">
+                        <SelectItem value="ALL">🌍 Barcha hududlar</SelectItem>
+                        <SelectItem value="KOR">🇰🇷 Koreya</SelectItem>
+                        <SelectItem value="UZB">🇺🇿 O'zbekiston</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
               </div>
               <div>
                 <Label className="text-xs mb-1.5 block">Min. buyurtma (KRW)</Label>
-                <Input {...register('minOrderAmount')} type="number" min="0" className="h-9 text-sm rounded-lg border-[0.5px]" />
+                <Input
+                  {...register('minOrderAmount')}
+                  type="number"
+                  min="0"
+                  className="h-9 text-sm rounded-lg border-[0.5px]"
+                />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label className="text-xs mb-1.5 block">Jami limit (ta)</Label>
-                <Input {...register('maxUsesTotal')} type="number" min="0" placeholder="Cheksiz" className="h-9 text-sm rounded-lg border-[0.5px]" />
+                <Input
+                  {...register('maxUsesTotal')}
+                  type="number"
+                  min="0"
+                  placeholder="Cheksiz"
+                  className="h-9 text-sm rounded-lg border-[0.5px]"
+                />
               </div>
               <div>
                 <Label className="text-xs mb-1.5 block">Mijoz limiti (ta)</Label>
-                <Input {...register('maxUsesPerCustomer')} type="number" min="1" className="h-9 text-sm rounded-lg border-[0.5px]" />
+                <Input
+                  {...register('maxUsesPerCustomer')}
+                  type="number"
+                  min="1"
+                  className="h-9 text-sm rounded-lg border-[0.5px]"
+                />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label className="text-xs mb-1.5 block">Boshlanish sanasi</Label>
-                <Input {...register('startsAt')} type="date" className="h-9 text-sm rounded-lg border-[0.5px]" />
+                <Input
+                  {...register('startsAt')}
+                  type="date"
+                  className="h-9 text-sm rounded-lg border-[0.5px]"
+                />
               </div>
               <div>
                 <Label className="text-xs mb-1.5 block">Tugash sanasi</Label>
-                <Input {...register('expiresAt')} type="date" className="h-9 text-sm rounded-lg border-[0.5px]" />
+                <Input
+                  {...register('expiresAt')}
+                  type="date"
+                  className="h-9 text-sm rounded-lg border-[0.5px]"
+                />
               </div>
             </div>
             <div>
               <Label className="text-xs mb-1.5 block">Tavsif</Label>
-              <Input {...register('description')} placeholder="Qo'shimcha ma'lumot..." className="h-9 text-sm rounded-lg border-[0.5px]" />
+              <Input
+                {...register('description')}
+                placeholder="Qo'shimcha ma'lumot..."
+                className="h-9 text-sm rounded-lg border-[0.5px]"
+              />
             </div>
             <div className="flex gap-2 pt-2">
-              <Button type="button" variant="outline" size="sm" onClick={resetForm} className="flex-1 rounded-lg">Bekor</Button>
-              <Button type="submit" size="sm" disabled={saveMutation.isPending} className="flex-1 rounded-lg">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={resetForm}
+                className="flex-1 rounded-lg"
+              >
+                Bekor
+              </Button>
+              <Button
+                type="submit"
+                size="sm"
+                disabled={saveMutation.isPending}
+                className="flex-1 rounded-lg"
+              >
                 {saveMutation.isPending ? 'Saqlanmoqda...' : editTarget ? 'Saqlash' : 'Yaratish'}
               </Button>
             </div>
@@ -664,27 +932,49 @@ export function KupunlarPage() {
       </Sheet>
 
       {/* Usages Sheet */}
-      <Sheet open={!!viewTarget} onOpenChange={v => !v && setViewTarget(null)}>
-        <SheetContent side="right" className="w-[90vw] sm:w-[480px] sm:max-w-[480px] overflow-y-auto">
+      <Sheet open={!!viewTarget} onOpenChange={(v) => !v && setViewTarget(null)}>
+        <SheetContent
+          side="right"
+          className="w-[90vw] sm:w-[480px] sm:max-w-[480px] overflow-y-auto"
+        >
           <SheetHeader className="pb-4 border-b border-border/50">
             <SheetTitle className="font-mono">{viewTarget?.code}</SheetTitle>
-            {viewTarget && <p className="text-xs text-muted-foreground">{formatValue(viewTarget)} chegirma · {viewTarget.usageCount ?? 0} ta foydalanish</p>}
+            {viewTarget && (
+              <p className="text-xs text-muted-foreground">
+                {formatValue(viewTarget)} chegirma · {viewTarget.usageCount ?? 0} ta foydalanish
+              </p>
+            )}
           </SheetHeader>
           <div className="py-4 space-y-2">
-            {usagesLoading ? <div className="space-y-2">{[1,2,3].map(i => <div key={i} className="h-12 bg-gray-100 rounded-lg animate-pulse" />)}</div>
-            : usages.length === 0 ? <EmptyState message="Foydalanishlar yo'q" description="Bu kupon hali ishlatilmagan" />
-            : usages.map((u: any) => (
-              <div key={u.id} className="flex items-center justify-between p-3 rounded-xl bg-gray-50 border-[0.5px] border-border/50">
-                <div>
-                  <p className="text-sm font-medium text-gray-900">{u.customerFirstName} {u.customerLastName || ''}</p>
-                  <p className="text-[11px] text-muted-foreground">Buyurtma #{u.orderNumber}</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-xs font-semibold text-red-600">-{formatKRW(u.discountAmount ?? 0)}</p>
-                  <p className="text-[11px] text-muted-foreground">{formatDate(u.createdAt)}</p>
-                </div>
+            {usagesLoading ? (
+              <div className="space-y-2">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="h-12 bg-gray-100 rounded-lg animate-pulse" />
+                ))}
               </div>
-            ))}
+            ) : usages.length === 0 ? (
+              <EmptyState message="Foydalanishlar yo'q" description="Bu kupon hali ishlatilmagan" />
+            ) : (
+              usages.map((u: any) => (
+                <div
+                  key={u.id}
+                  className="flex items-center justify-between p-3 rounded-xl bg-gray-50 border-[0.5px] border-border/50"
+                >
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">
+                      {u.customerFirstName} {u.customerLastName || ''}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground">Buyurtma #{u.orderNumber}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs font-semibold text-red-600">
+                      -{formatKRW(u.discountAmount ?? 0)}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground">{formatDate(u.createdAt)}</p>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </SheetContent>
       </Sheet>

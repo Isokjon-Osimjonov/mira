@@ -18,13 +18,13 @@ function AppContent() {
   const isConnected = useNetworkStatus()
   const queryClient = useQueryClient()
   const router = useRouter()
-  const customer = useAuthStore(s => s.customer)
-  const isAuthenticated = useAuthStore(s => s.isAuthenticated)
+  const customer = useAuthStore((s) => s.customer)
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
 
   // Push token registration
   useEffect(() => {
     if (!isAuthenticated || !customer) return
-    registerForPushNotifications().then(async token => {
+    registerForPushNotifications().then(async (token) => {
       if (!token) return
       try {
         const api = (await import('../lib/api')).default
@@ -35,14 +35,11 @@ function AppContent() {
 
   // Notification tap handler
   useEffect(() => {
-    const cleanup = setupNotificationListeners(
-      undefined,
-      (response) => {
-        const data = response.notification.request.content.data as any
-        if (data?.orderId) router.push('/orders/' + data.orderId)
-        else if (data?.productId) router.push('/product/' + data.productId)
-      }
-    )
+    const cleanup = setupNotificationListeners(undefined, (response) => {
+      const data = response.notification.request.content.data as any
+      if (data?.orderId) router.push('/orders/' + data.orderId)
+      else if (data?.productId) router.push('/product/' + data.productId)
+    })
     return cleanup
   }, [])
 

@@ -18,7 +18,11 @@ expCategoriesRouter.delete('/:id', requirePermission('expenses', 'delete'), ctrl
 expensesRouter.get('/categories', requirePermission('expenses', 'read'), ctrl.getCategories)
 expensesRouter.post('/categories', requirePermission('expenses', 'write'), ctrl.createCategory)
 expensesRouter.patch('/categories/:id', requirePermission('expenses', 'write'), ctrl.updateCategory)
-expensesRouter.delete('/categories/:id', requirePermission('expenses', 'delete'), ctrl.deleteCategory)
+expensesRouter.delete(
+  '/categories/:id',
+  requirePermission('expenses', 'delete'),
+  ctrl.deleteCategory
+)
 
 expensesRouter.get('/', requirePermission('expenses', 'read'), ctrl.getExpenses)
 expensesRouter.get('/summary', requirePermission('expenses', 'read'), ctrl.getSummary) // MUST be before /:id

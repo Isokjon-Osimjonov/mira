@@ -203,7 +203,7 @@ export default function ProductDetailScreen() {
             <View
               style={[
                 styles.wishlistIconCircle,
-                isWishlisted ? styles.wishlistIconCircleActive : undefined
+                isWishlisted ? styles.wishlistIconCircleActive : undefined,
               ]}
             >
               <Feather

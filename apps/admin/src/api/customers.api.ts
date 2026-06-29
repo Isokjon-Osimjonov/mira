@@ -1,14 +1,16 @@
 import { api } from '../lib/api'
 
 export const customersApi = {
-  list: async (params: {
-    page?: number
-    limit?: number
-    search?: string
-    region?: string
-    isActive?: boolean
-    isBlocked?: boolean
-  } = {}) => {
+  list: async (
+    params: {
+      page?: number
+      limit?: number
+      search?: string
+      region?: string
+      isActive?: boolean
+      isBlocked?: boolean
+    } = {}
+  ) => {
     const res = await api.get('/admin/customers', { params })
     return res.data
   },

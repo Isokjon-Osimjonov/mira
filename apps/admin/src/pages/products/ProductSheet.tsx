@@ -9,13 +9,7 @@ import { productsApi } from '../../api/products.api'
 import { categoriesApi } from '../../api/categories.api'
 import { getErrorMessage } from '../../lib/errors'
 import { ImageUploadField } from '../../components/shared/ImageUploadField'
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetFooter,
-} from '@/components/ui/sheet'
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -157,8 +151,7 @@ export function ProductSheet({ open, onClose, product, categories, onSuccess }: 
   // Create/Update mutation
   const saveMutation = useMutation({
     mutationFn: (data: ProductForm) => {
-      const cleanPrice = (v: number | undefined) =>
-        typeof v === 'number' && v > 0 ? v : undefined
+      const cleanPrice = (v: number | undefined) => (typeof v === 'number' && v > 0 ? v : undefined)
 
       const apiPayload = {
         ...data,
@@ -167,13 +160,22 @@ export function ProductSheet({ open, onClose, product, categories, onSuccess }: 
         uzbRetailPrice: cleanPrice(data.uzbRetailPrice),
         uzbWholesalePrice: cleanPrice(data.uzbWholesalePrice),
         ingredients: data.ingredients
-          ? data.ingredients.split(',').map((s) => s.trim()).filter(Boolean)
+          ? data.ingredients
+              .split(',')
+              .map((s) => s.trim())
+              .filter(Boolean)
           : [],
         skinTypes: data.skinTypes
-          ? data.skinTypes.split(',').map((s) => s.trim()).filter(Boolean)
+          ? data.skinTypes
+              .split(',')
+              .map((s) => s.trim())
+              .filter(Boolean)
           : [],
         benefits: data.benefits
-          ? data.benefits.split(',').map((s) => s.trim()).filter(Boolean)
+          ? data.benefits
+              .split(',')
+              .map((s) => s.trim())
+              .filter(Boolean)
           : [],
       }
       return isEdit ? productsApi.update(product.id, apiPayload) : productsApi.create(apiPayload)
@@ -249,10 +251,7 @@ export function ProductSheet({ open, onClose, product, categories, onSuccess }: 
 
   return (
     <Sheet open={open} onOpenChange={onClose}>
-      <SheetContent
-        side="right"
-        className="w-full sm:max-w-2xl overflow-y-auto flex flex-col"
-      >
+      <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto flex flex-col">
         <SheetHeader className="pb-4 border-b border-border/50 flex flex-row items-center justify-between space-y-0">
           <SheetTitle className="text-base font-semibold">
             {isEdit ? 'Mahsulotni tahrirlash' : 'Yangi mahsulot'}
@@ -551,7 +550,9 @@ export function ProductSheet({ open, onClose, product, categories, onSuccess }: 
               <div className="flex items-center justify-between p-3 rounded-lg border-[0.5px] border-border bg-gray-50/30">
                 <div>
                   <p className="text-sm font-medium text-gray-900">Aktiv mahsulot</p>
-                  <p className="text-xs text-muted-foreground">Mijozlar ushbu mahsulotni ko'ra oladilar</p>
+                  <p className="text-xs text-muted-foreground">
+                    Mijozlar ushbu mahsulotni ko'ra oladilar
+                  </p>
                 </div>
                 <Controller
                   name="isActive"
@@ -565,7 +566,9 @@ export function ProductSheet({ open, onClose, product, categories, onSuccess }: 
               <div className="flex items-center justify-between p-3 rounded-lg border-[0.5px] border-border bg-gray-50/30">
                 <div>
                   <p className="text-sm font-medium text-gray-900">Yangi mahsulot</p>
-                  <p className="text-xs text-muted-foreground">"Yangi" belgisi bilan ko'rsatiladi</p>
+                  <p className="text-xs text-muted-foreground">
+                    "Yangi" belgisi bilan ko'rsatiladi
+                  </p>
                 </div>
                 <Controller
                   name="isNew"

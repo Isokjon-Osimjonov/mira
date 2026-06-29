@@ -15,10 +15,17 @@ export function ErrorPage({ error }: { error?: Error }) {
           </code>
         )}
         <div className="flex gap-3 justify-center">
-          <Button variant="outline" onClick={() => window.location.reload()} className="rounded-lg gap-2">
+          <Button
+            variant="outline"
+            onClick={() => window.location.reload()}
+            className="rounded-lg gap-2"
+          >
             🔄 Yangilash
           </Button>
-          <Button onClick={() => window.location.href = '/dashboard'} className="rounded-lg gap-2">
+          <Button
+            onClick={() => (window.location.href = '/dashboard')}
+            className="rounded-lg gap-2"
+          >
             🏠 Bosh sahifa
           </Button>
         </div>

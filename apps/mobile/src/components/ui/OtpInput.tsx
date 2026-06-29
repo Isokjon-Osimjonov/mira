@@ -1,11 +1,5 @@
 import React, { useRef } from 'react'
-import {
-  View,
-  Text,
-  TextInput,
-  StyleSheet,
-  Pressable,
-} from 'react-native'
+import { View, Text, TextInput, StyleSheet, Pressable } from 'react-native'
 import { tokens } from '../../lib/tokens'
 
 interface OtpInputProps {
@@ -16,13 +10,7 @@ interface OtpInputProps {
   disabled?: boolean
 }
 
-const OtpInput: React.FC<OtpInputProps> = ({
-  value,
-  onChange,
-  length = 6,
-  error,
-  disabled,
-}) => {
+const OtpInput: React.FC<OtpInputProps> = ({ value, onChange, length = 6, error, disabled }) => {
   const inputRef = useRef<TextInput>(null)
 
   const renderBoxes = () => {
@@ -51,9 +39,7 @@ const OtpInput: React.FC<OtpInputProps> = ({
 
   return (
     <View style={styles.container}>
-      <View style={styles.boxesContainer}>
-        {renderBoxes()}
-      </View>
+      <View style={styles.boxesContainer}>{renderBoxes()}</View>
       <TextInput
         ref={inputRef}
         style={styles.hiddenInput}
@@ -69,10 +55,7 @@ const OtpInput: React.FC<OtpInputProps> = ({
         autoFocus
         editable={!disabled}
       />
-      <Pressable
-        style={StyleSheet.absoluteFill}
-        onPress={() => inputRef.current?.focus()}
-      />
+      <Pressable style={StyleSheet.absoluteFill} onPress={() => inputRef.current?.focus()} />
     </View>
   )
 }

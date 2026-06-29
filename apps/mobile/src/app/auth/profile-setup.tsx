@@ -1,13 +1,5 @@
 import React, { useState } from 'react'
-import {
-  View,
-  Text,
-  TextInput,
-  Image,
-  TouchableOpacity,
-  StyleSheet,
-  Pressable,
-} from 'react-native'
+import { View, Text, TextInput, Image, TouchableOpacity, StyleSheet, Pressable } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
 import * as ImagePicker from 'expo-image-picker'
@@ -44,9 +36,7 @@ export default function ProfileSetupScreen() {
     try {
       const nameParts = name.trim().split(' ')
       const firstName = nameParts[0]
-      const lastName = nameParts.length > 1
-        ? nameParts.slice(1).join(' ')
-        : null
+      const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : null
 
       // Upload photo to Cloudinary if selected
       let profileImageUrl: string | null = null
@@ -105,10 +95,7 @@ export default function ProfileSetupScreen() {
       <View style={styles.form}>
         <Text style={styles.label}>Ism va familiya</Text>
         <TextInput
-          style={[
-            styles.input,
-            focused && styles.inputFocused,
-          ]}
+          style={[styles.input, focused && styles.inputFocused]}
           placeholder="Ism Familiya"
           placeholderTextColor={tokens.colors.primaryLight}
           value={name}

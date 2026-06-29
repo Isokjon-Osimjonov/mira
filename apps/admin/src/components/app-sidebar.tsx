@@ -36,7 +36,10 @@ import {
 import { useAuthStore } from '../stores/auth.store'
 import { useExchangeRate } from '../hooks/useExchangeRate'
 
-const navMain = [
+const navMain: {
+  title: string
+  items: { title: string; url: string; icon: any; resource?: string }[]
+}[] = [
   {
     title: 'Umumiy',
     items: [{ title: 'Dashboard', url: '/dashboard', icon: BarChart2 }],
@@ -44,46 +47,51 @@ const navMain = [
   {
     title: 'Savdo',
     items: [
-      { title: 'Buyurtmalar', url: '/orders', icon: ShoppingBag, permission: 'orders:read' },
-      { title: 'Mijozlar', url: '/customers', icon: Users, permission: 'customers:read' },
-      { title: 'Kuponlar', url: '/coupons', icon: Tag, permission: 'coupons:read' },
+      { title: 'Buyurtmalar', url: '/orders', icon: ShoppingBag, resource: 'orders' },
+      { title: 'Mijozlar', url: '/customers', icon: Users, resource: 'customers' },
+      { title: 'Kuponlar', url: '/coupons', icon: Tag, resource: 'coupons' },
     ],
   },
   {
     title: 'Mahsulotlar',
     items: [
-      { title: 'Mahsulotlar', url: '/products', icon: Package },
-      { title: 'Kategoriyalar', url: '/categories', icon: Layers },
-      { title: 'Inventar', url: '/inventory', icon: Boxes },
-      { title: 'Qutular', url: '/boxes', icon: Box },
-      { title: 'Yetkazuvchilar', url: '/suppliers', icon: Building2 },
-      { title: 'Yuk sanalari', url: '/cargo-dates', icon: Package },
-      { title: 'Buyurtma berish', url: '/purchase-orders', icon: ClipboardList },
+      { title: 'Mahsulotlar', url: '/products', icon: Package, resource: 'products' },
+      { title: 'Kategoriyalar', url: '/categories', icon: Layers, resource: 'products' }, // assuming products resource covers categories
+      { title: 'Inventar', url: '/inventory', icon: Boxes, resource: 'inventory' },
+      { title: 'Qutular', url: '/boxes', icon: Box, resource: 'products' },
+      { title: 'Yetkazuvchilar', url: '/suppliers', icon: Building2, resource: 'products' },
+      { title: 'Yuk sanalari', url: '/cargo-dates', icon: Package, resource: 'products' },
+      {
+        title: 'Buyurtma berish',
+        url: '/purchase-orders',
+        icon: ClipboardList,
+        resource: 'inventory',
+      },
     ],
   },
   {
     title: 'Moliya',
     items: [
-      { title: 'Xarajatlar', url: '/expenses', icon: Receipt },
-      { title: 'Analitika', url: '/analytics', icon: TrendingUp },
-      { title: 'Hisobotlar', url: '/reports', icon: FileSpreadsheet },
+      { title: 'Xarajatlar', url: '/expenses', icon: Receipt, resource: 'expenses' },
+      { title: 'Analitika', url: '/analytics', icon: TrendingUp, resource: 'analytics' },
+      { title: 'Hisobotlar', url: '/reports', icon: FileSpreadsheet, resource: 'analytics' },
     ],
   },
   {
     title: 'Marketing',
     items: [
-      { title: 'Telegram', url: '/telegram', icon: Send },
-      { title: 'Bannerlar', url: '/banners', icon: ImageIcon },
+      { title: 'Telegram', url: '/telegram', icon: Send, resource: 'telegram' },
+      { title: 'Bannerlar', url: '/banners', icon: ImageIcon, resource: 'settings' },
     ],
   },
   {
     title: 'Tizim',
     items: [
-      { title: 'Sozlamalar', url: '/settings', icon: Settings2 },
-      { title: 'Tizim holati', url: '/system', icon: Activity, superAdminOnly: true },
-      { title: 'Adminlar', url: '/admin-users', icon: Shield, superAdminOnly: true },
-      { title: 'Rollar', url: '/roles', icon: Lock, superAdminOnly: true },
-      { title: 'Audit log', url: '/audit', icon: FileText, superAdminOnly: true },
+      { title: 'Sozlamalar', url: '/settings', icon: Settings2, resource: 'settings' },
+      { title: 'Tizim holati', url: '/system', icon: Activity, resource: 'settings' },
+      { title: 'Adminlar', url: '/admin-users', icon: Shield, resource: 'users' },
+      { title: 'Rollar', url: '/roles', icon: Lock, resource: 'roles' },
+      { title: 'Audit log', url: '/audit', icon: FileText, resource: 'settings' },
     ],
   },
 ]
@@ -116,9 +124,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
 
       <SidebarContent>
-        {navMain.map((group) => (
-          <NavMain key={group.title} label={group.title} items={group.items} />
-        ))}
+        {navMain.map((group) => {
+          const filteredItems = group.items.filter(
+            (item) => !item.resource || useAuthStore.getState().canView(item.resource as string)
+          )
+          if (filteredItems.length === 0) return null
+          return <NavMain key={group.title} label={group.title} items={filteredItems} />
+        })}
       </SidebarContent>
 
       <SidebarFooter>
@@ -134,7 +146,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             user={{
               name: user.fullName,
               email: user.email,
-              role: user.isSuperAdmin ? 'Super Admin' : (user.role?.name ?? 'Admin'),
+              role: user.isSuperAdmin ? 'Super Admin' : 'Admin',
             }}
           />
         )}

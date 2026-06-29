@@ -1,13 +1,16 @@
 import { useAuthStore } from '../stores/auth.store'
 
 export function usePermission() {
-  const { hasPermission, canRead, canWrite,
-          canDelete, user } = useAuthStore()
+  const { canView, canWrite, user } = useAuthStore()
   return {
-    hasPermission,
-    canRead,
+    hasPermission: (resource: string, action: string) => {
+      if (action === 'read') return canView(resource)
+      if (action === 'write') return canWrite(resource)
+      return false
+    },
+    canRead: canView,
     canWrite,
-    canDelete,
+    canDelete: canWrite, // Default delete to write permission
     isSuperAdmin: user?.isSuperAdmin ?? false,
     user,
   }
@@ -18,17 +21,20 @@ export function PermissionGate({
   resource,
   action = 'read',
   children,
-  fallback = null
+  fallback = null,
 }: {
-  resource:  string
-  action?:   'read' | 'write' | 'delete'
-  children:  React.ReactNode
+  resource: string
+  action?: 'read' | 'write' | 'delete'
+  children: React.ReactNode
   fallback?: React.ReactNode
 }) {
-  const { hasPermission, user } = useAuthStore()
-  if (!user) return fallback
-  if (user.isSuperAdmin || hasPermission(resource, action)) {
-    return <>{children}</>
-  }
-  return <>{fallback}</>
+  const { canView, canWrite, user } = useAuthStore()
+  if (!user) return <>{fallback}</>
+  if (user.isSuperAdmin) return <>{children}</>
+
+  let hasPerm = false
+  if (action === 'read') hasPerm = canView(resource)
+  if (action === 'write' || action === 'delete') hasPerm = canWrite(resource)
+
+  return hasPerm ? <>{children}</> : <>{fallback}</>
 }

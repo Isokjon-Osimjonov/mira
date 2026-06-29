@@ -28,11 +28,7 @@ export function ImageUploadField({
 
   // Normalize to array internally
   const images: string[] =
-    mode === 'multi'
-      ? (value as string[]) ?? []
-      : value
-      ? [value as string]
-      : []
+    mode === 'multi' ? ((value as string[]) ?? []) : value ? [value as string] : []
 
   const addImage = (url: string) => {
     if (!url.startsWith('http')) {
@@ -96,8 +92,7 @@ export function ImageUploadField({
                 src={url}
                 alt={`img-${i}`}
                 onError={(e) => {
-                  ;(e.target as HTMLImageElement).src =
-                    'https://placehold.co/100?text=Error'
+                  ;(e.target as HTMLImageElement).src = 'https://placehold.co/100?text=Error'
                 }}
                 className={cn(
                   'object-cover rounded-lg',

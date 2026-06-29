@@ -1,12 +1,14 @@
 import { api } from '../lib/api'
 
 export const purchaseOrdersApi = {
-  list: async (params: {
-    page?: number
-    limit?: number
-    status?: string
-    paymentStatus?: string
-  } = {}) => {
+  list: async (
+    params: {
+      page?: number
+      limit?: number
+      status?: string
+      paymentStatus?: string
+    } = {}
+  ) => {
     const res = await api.get('/admin/purchase-orders', { params })
     return res.data
   },
@@ -36,14 +38,17 @@ export const purchaseOrdersApi = {
     return res.data
   },
 
-  receiveItems: async (id: string, payload: {
-    actualDeliveryDate: string
-    items: Array<{
-      purchaseOrderItemId: string
-      quantityReceived: number
-      expiryDate?: string
-    }>
-  }) => {
+  receiveItems: async (
+    id: string,
+    payload: {
+      actualDeliveryDate: string
+      items: Array<{
+        purchaseOrderItemId: string
+        quantityReceived: number
+        expiryDate?: string
+      }>
+    }
+  ) => {
     const res = await api.post(`/admin/purchase-orders/${id}/receive`, payload)
     return res.data
   },

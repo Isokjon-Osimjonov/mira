@@ -10,7 +10,7 @@ export const api = axios.create({
   timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
-    'Accept': 'application/json',
+    Accept: 'application/json',
   },
 })
 
@@ -19,11 +19,7 @@ createAuthRefreshInterceptor(
   api,
   async (failedRequest) => {
     try {
-      const res = await axios.post(
-        `${API_BASE}/admin/auth/refresh`,
-        {},
-        { withCredentials: true }
-      )
+      const res = await axios.post(`${API_BASE}/admin/auth/refresh`, {}, { withCredentials: true })
       const { accessToken, mustChangePassword } = res.data.data
 
       const { useAuthStore } = await import('../stores/auth.store')

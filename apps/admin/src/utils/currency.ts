@@ -11,11 +11,7 @@ export function formatUZS(amount: number | bigint): string {
 }
 
 // Auto-format by region
-export function formatPrice(
-  amountKrw: number,
-  region: 'UZB' | 'KOR',
-  krwToUzs?: number
-): string {
+export function formatPrice(amountKrw: number, region: 'UZB' | 'KOR', krwToUzs?: number): string {
   if (region === 'UZB' && krwToUzs) {
     const uzs = Math.round(amountKrw * krwToUzs)
     return formatUZS(uzs)
@@ -30,13 +26,13 @@ export function formatDualPrice(
 ): { krw: string; uzs: string | null } {
   return {
     krw: formatKRW(amountKrw),
-    uzs: krwToUzs ? formatUZS(Math.round(amountKrw * krwToUzs)) : null
+    uzs: krwToUzs ? formatUZS(Math.round(amountKrw * krwToUzs)) : null,
   }
 }
 
 // Compact large numbers
 export function formatCompact(amount: number): string {
-  if (amount >= 1_000_000) return `${(amount/1_000_000).toFixed(1)}M`
-  if (amount >= 1_000)     return `${(amount/1_000).toFixed(1)}K`
+  if (amount >= 1_000_000) return `${(amount / 1_000_000).toFixed(1)}M`
+  if (amount >= 1_000) return `${(amount / 1_000).toFixed(1)}K`
   return amount.toLocaleString()
 }

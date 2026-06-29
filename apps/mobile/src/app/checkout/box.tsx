@@ -32,11 +32,12 @@ export default function CheckoutBoxScreen() {
   const cart = useCartStore((s) => s.cart)
   const [selectedBoxId, setSelectedBoxId] = useState<string | null>(null)
 
-  const totalWeightKg = cart?.items.reduce((acc, item) => {
-    // weightGrams not available yet — use 0
-    // return acc + (item.product.weightGrams * item.quantity) / 1000
-    return acc
-  }, 0) ?? 0
+  const totalWeightKg =
+    cart?.items.reduce((acc, item) => {
+      // weightGrams not available yet — use 0
+      // return acc + (item.product.weightGrams * item.quantity) / 1000
+      return acc
+    }, 0) ?? 0
 
   const isBoxValid = (box: any): boolean => {
     if (!box.maxWeightKg || Number(box.maxWeightKg) === 0) {
@@ -65,14 +66,9 @@ export default function CheckoutBoxScreen() {
         <Text style={styles.stepIndicator}>2 / 3</Text>
       </View>
 
-      <Text style={styles.subtitle}>
-        Mahsulotlaringiz uchun mos qutini tanlang
-      </Text>
+      <Text style={styles.subtitle}>Mahsulotlaringiz uchun mos qutini tanlang</Text>
 
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      >
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         {isLoading ? (
           <ActivityIndicator color={tokens.colors.primary} style={{ marginTop: 40 }} />
         ) : (
@@ -86,19 +82,13 @@ export default function CheckoutBoxScreen() {
                 disabled={!valid}
                 style={[
                   styles.boxCard,
-                  selectedBoxId === box.id
-                    ? styles.boxCardSelected
-                    : styles.boxCardUnselected,
-                  !valid && { opacity: 0.4 }
+                  selectedBoxId === box.id ? styles.boxCardSelected : styles.boxCardUnselected,
+                  !valid && { opacity: 0.4 },
                 ]}
               >
                 <View style={styles.boxImageContainer}>
                   {box.imageUrls[0] ? (
-                    <Image
-                      source={box.imageUrls[0]}
-                      style={styles.boxImage}
-                      contentFit="cover"
-                    />
+                    <Image source={box.imageUrls[0]} style={styles.boxImage} contentFit="cover" />
                   ) : (
                     <Feather name="package" size={28} color={tokens.colors.textLight} />
                   )}
@@ -114,25 +104,30 @@ export default function CheckoutBoxScreen() {
                     )}
                   </View>
 
-                  {box.sizeLabel && (
-                    <Text style={styles.sizeLabel}>{box.sizeLabel}</Text>
-                  )}
+                  {box.sizeLabel && <Text style={styles.sizeLabel}>{box.sizeLabel}</Text>}
 
-                <View style={styles.specsRow}>
-                  {Boolean(box.lengthCm && box.widthCm && box.heightCm) && (
-                    <Text style={styles.specText}>
-                      {String(box.lengthCm) + '×' + String(box.widthCm) + '×' + String(box.heightCm) + 'sm'}
-                    </Text>
-                  )}
-                  {Boolean(box.maxWeightKg && Number(box.maxWeightKg) > 0) && (
-                    <Text style={styles.specText}>
-                      {'Max: ' + String(box.maxWeightKg) + 'kg'}
-                    </Text>
-                  )}
-                </View>
+                  <View style={styles.specsRow}>
+                    {Boolean(box.lengthCm && box.widthCm && box.heightCm) && (
+                      <Text style={styles.specText}>
+                        {String(box.lengthCm) +
+                          '×' +
+                          String(box.widthCm) +
+                          '×' +
+                          String(box.heightCm) +
+                          'sm'}
+                      </Text>
+                    )}
+                    {Boolean(box.maxWeightKg && Number(box.maxWeightKg) > 0) && (
+                      <Text style={styles.specText}>
+                        {'Max: ' + String(box.maxWeightKg) + 'kg'}
+                      </Text>
+                    )}
+                  </View>
 
                   {!valid && (
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 }}>
+                    <View
+                      style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 }}
+                    >
                       <Feather name="alert-circle" size={12} color={tokens.colors.error} />
                       <Text style={{ fontSize: 11, color: tokens.colors.error }}>
                         Sig'imi yetarli emas (max {box.maxWeightKg}kg)
@@ -147,16 +142,8 @@ export default function CheckoutBoxScreen() {
       </ScrollView>
 
       <View style={styles.bottomBar}>
-        {selectedBox && (
-          <Text style={styles.selectionNote}>
-            Tanlangan: {selectedBox.name}
-          </Text>
-        )}
-        <PrimaryButton
-          label="Davom etish"
-          disabled={!selectedBoxId}
-          onPress={handleContinue}
-        />
+        {selectedBox && <Text style={styles.selectionNote}>Tanlangan: {selectedBox.name}</Text>}
+        <PrimaryButton label="Davom etish" disabled={!selectedBoxId} onPress={handleContinue} />
       </View>
     </SafeAreaView>
   )

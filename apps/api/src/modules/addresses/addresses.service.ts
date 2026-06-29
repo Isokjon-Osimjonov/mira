@@ -52,11 +52,7 @@ export async function createAddress(customerId: string, data: CreateAddressDto) 
 }
 
 export async function updateAddress(id: string, customerId: string, data: UpdateAddressDto) {
-  const [address] = await db
-    .select()
-    .from(userAddresses)
-    .where(eq(userAddresses.id, id))
-    .limit(1)
+  const [address] = await db.select().from(userAddresses).where(eq(userAddresses.id, id)).limit(1)
 
   if (!address) throw { status: 404, code: 'ADDRESS_NOT_FOUND', message: 'Manzil topilmadi' }
   if (address.customerId !== customerId)
@@ -81,11 +77,7 @@ export async function updateAddress(id: string, customerId: string, data: Update
 }
 
 export async function setDefault(id: string, customerId: string) {
-  const [address] = await db
-    .select()
-    .from(userAddresses)
-    .where(eq(userAddresses.id, id))
-    .limit(1)
+  const [address] = await db.select().from(userAddresses).where(eq(userAddresses.id, id)).limit(1)
 
   if (!address) throw { status: 404, code: 'ADDRESS_NOT_FOUND', message: 'Manzil topilmadi' }
   if (address.customerId !== customerId)
@@ -107,11 +99,7 @@ export async function setDefault(id: string, customerId: string) {
 }
 
 export async function deleteAddress(id: string, customerId: string) {
-  const [address] = await db
-    .select()
-    .from(userAddresses)
-    .where(eq(userAddresses.id, id))
-    .limit(1)
+  const [address] = await db.select().from(userAddresses).where(eq(userAddresses.id, id)).limit(1)
 
   if (!address) throw { status: 404, code: 'ADDRESS_NOT_FOUND', message: 'Manzil topilmadi' }
   if (address.customerId !== customerId)

@@ -18,5 +18,5 @@ export const bannerService = {
   getBanners: async (): Promise<Banner[]> => {
     const res = await api.get('/banners')
     return res.data.data ?? []
-  }
+  },
 }

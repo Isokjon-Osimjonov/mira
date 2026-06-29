@@ -28,11 +28,11 @@ export function BannersPage() {
     mutationFn: (id: string) => bannersApi.delete(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['banners'] })
-      toast.success('Banner o\'chirildi')
+      toast.success("Banner o'chirildi")
       setDeleteTarget(null)
     },
     onError: (err: any) => {
-      toast.error(err.message || 'O\'chirishda xatolik')
+      toast.error(err.message || "O'chirishda xatolik")
     },
   })
 
@@ -83,11 +83,21 @@ export function BannersPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border/50 bg-gray-50/80">
-                  <th className="w-16 px-4 py-3 text-left text-xs font-medium text-muted-foreground">Rasm</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Tur</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Hudud</th>
-                  <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground">Holat</th>
-                  <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground">Tartib</th>
+                  <th className="w-16 px-4 py-3 text-left text-xs font-medium text-muted-foreground">
+                    Rasm
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">
+                    Tur
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">
+                    Hudud
+                  </th>
+                  <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground">
+                    Holat
+                  </th>
+                  <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground">
+                    Tartib
+                  </th>
                   <th className="px-4 py-3 w-24" />
                 </tr>
               </thead>

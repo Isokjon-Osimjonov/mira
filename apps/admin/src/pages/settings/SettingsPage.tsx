@@ -139,7 +139,13 @@ function PaymentMethodsTab() {
         const isConfigured = !!method
 
         return (
-          <div key={key} className={cn("bg-white rounded-2xl border-[0.5px] border-border p-5 space-y-4 shadow-sm transition-all", !isConfigured && "opacity-80 bg-gray-50/50")}>
+          <div
+            key={key}
+            className={cn(
+              'bg-white rounded-2xl border-[0.5px] border-border p-5 space-y-4 shadow-sm transition-all',
+              !isConfigured && 'opacity-80 bg-gray-50/50'
+            )}
+          >
             {/* Header row */}
             <div className="flex flex-row items-start sm:items-center justify-between gap-4">
               <div className="flex items-start sm:items-center gap-3">
@@ -216,8 +222,8 @@ function PaymentMethodsTab() {
                       key === 'E9PAY'
                         ? '+82 10-xxxx-xxxx'
                         : cfg.region === 'KOR'
-                        ? '1234-5678-9012-3456'
-                        : '8600 xxxx xxxx xxxx'
+                          ? '1234-5678-9012-3456'
+                          : '8600 xxxx xxxx xxxx'
                     }
                     className="h-9 text-sm rounded-xl border-[0.5px]"
                     onBlur={(e) => {
@@ -340,7 +346,8 @@ function ShippingTiersTab() {
         <div className="px-6 py-3 bg-blue-50/50 border-b border-blue-100/50">
           <p className="text-[11px] text-blue-700 font-medium flex items-center gap-2">
             <span className="text-base">ℹ️</span>
-            Buyurtma maksimal summasi (shundan past) → yetkazib berish narxi. Bo'sh qoldirilsa = cheksiz. 0 KRW = bepul
+            Buyurtma maksimal summasi (shundan past) → yetkazib berish narxi. Bo'sh qoldirilsa =
+            cheksiz. 0 KRW = bepul
           </p>
         </div>
 
@@ -418,18 +425,27 @@ function ShippingTiersTab() {
                 ))
               ) : tiers.length === 0 && !adding ? (
                 <tr>
-                  <td colSpan={3} className="px-6 py-12 text-center text-sm text-muted-foreground font-medium">
+                  <td
+                    colSpan={3}
+                    className="px-6 py-12 text-center text-sm text-muted-foreground font-medium"
+                  >
                     Yetkazib berish qoidalari mavjud emas.
                   </td>
                 </tr>
               ) : (
                 [...tiers]
-                  .sort((a: any, b: any) => (a.maxOrderKrw === null ? Infinity : Number(a.maxOrderKrw)) - (b.maxOrderKrw === null ? Infinity : Number(b.maxOrderKrw)))
+                  .sort(
+                    (a: any, b: any) =>
+                      (a.maxOrderKrw === null ? Infinity : Number(a.maxOrderKrw)) -
+                      (b.maxOrderKrw === null ? Infinity : Number(b.maxOrderKrw))
+                  )
                   .map((tier: any) => (
                     <tr key={tier.id} className="hover:bg-gray-50/50 group transition-colors">
                       <td className="px-6 py-4">
                         <span className="text-sm font-bold text-gray-900">
-                          {tier.maxOrderKrw === null ? 'Cheksiz (undan yuqori)' : `${formatKRW(Number(tier.maxOrderKrw))} gacha`}
+                          {tier.maxOrderKrw === null
+                            ? 'Cheksiz (undan yuqori)'
+                            : `${formatKRW(Number(tier.maxOrderKrw))} gacha`}
                         </span>
                       </td>
                       <td className="px-6 py-4 text-right">
@@ -474,13 +490,22 @@ function ShippingTiersTab() {
             </div>
           ) : (
             [...tiers]
-              .sort((a: any, b: any) => (a.maxOrderKrw === null ? Infinity : Number(a.maxOrderKrw)) - (b.maxOrderKrw === null ? Infinity : Number(b.maxOrderKrw)))
+              .sort(
+                (a: any, b: any) =>
+                  (a.maxOrderKrw === null ? Infinity : Number(a.maxOrderKrw)) -
+                  (b.maxOrderKrw === null ? Infinity : Number(b.maxOrderKrw))
+              )
               .map((tier: any) => (
-                <div key={tier.id} className="p-4 bg-white hover:bg-gray-50/50 transition-colors flex items-center justify-between gap-4">
+                <div
+                  key={tier.id}
+                  className="p-4 bg-white hover:bg-gray-50/50 transition-colors flex items-center justify-between gap-4"
+                >
                   <div>
                     <p className="text-xs text-muted-foreground mb-1">Maksimal summa</p>
                     <p className="text-sm font-bold text-gray-900">
-                      {tier.maxOrderKrw === null ? 'Cheksiz' : `${formatKRW(Number(tier.maxOrderKrw))} gacha`}
+                      {tier.maxOrderKrw === null
+                        ? 'Cheksiz'
+                        : `${formatKRW(Number(tier.maxOrderKrw))} gacha`}
                     </p>
                     <p className="text-xs text-muted-foreground mt-3 mb-1">Yetkazib berish narxi</p>
                     {Number(tier.cargoFeeKrw) === 0 ? (
@@ -610,7 +635,11 @@ function ExchangeRateTab() {
                   disabled={fetching}
                   className="h-11 w-full sm:w-auto rounded-xl gap-2 shrink-0 border-[0.5px] text-xs font-bold text-blue-600 border-blue-200 hover:bg-blue-50 px-4"
                 >
-                  {fetching ? <RefreshCw className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                  {fetching ? (
+                    <RefreshCw className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <RefreshCw className="h-4 w-4" />
+                  )}
                   Kursni olish
                 </Button>
               </div>
@@ -633,7 +662,11 @@ function ExchangeRateTab() {
               disabled={!newRate || parseFloat(newRate) <= 0 || updateMutation.isPending}
               className="h-11 px-8 rounded-xl gap-2 font-bold w-full sm:w-auto"
             >
-              {updateMutation.isPending ? <Loader2 className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />}
+              {updateMutation.isPending ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : (
+                <Save className="h-5 w-5" />
+              )}
               Saqlash
             </Button>
           </div>
@@ -656,14 +689,19 @@ function ExchangeRateTab() {
           </p>
           <div className="divide-y divide-border/30">
             {rates.map((r: any, i: number) => (
-              <div key={r.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between px-6 py-4 hover:bg-gray-50/50 transition-colors gap-2">
+              <div
+                key={r.id}
+                className="flex flex-col sm:flex-row items-start sm:items-center justify-between px-6 py-4 hover:bg-gray-50/50 transition-colors gap-2"
+              >
                 <div className="flex items-center gap-3">
                   {i === 0 && <CheckCircle2 className="h-5 w-5 text-green-600 shrink-0" />}
                   <p className="text-sm font-bold text-gray-900">
                     1 ₩ = {Number(r.krwToUzs).toLocaleString()} so'm
                   </p>
                 </div>
-                <p className="text-xs text-muted-foreground font-medium sm:text-right">{formatDateTime(r.createdAt)}</p>
+                <p className="text-xs text-muted-foreground font-medium sm:text-right">
+                  {formatDateTime(r.createdAt)}
+                </p>
               </div>
             ))}
           </div>
@@ -736,7 +774,9 @@ function OrderSettingsTab() {
             To'lov qilinmasa, buyurtma avtomatik bekor qilinadi. Default: 30 daqiqa
           </p>
           {errors.paymentTimeoutMinutes && (
-            <p className="text-xs text-red-500 font-bold">5-1440 daqiqa oralig'ida bo'lishi kerak</p>
+            <p className="text-xs text-red-500 font-bold">
+              5-1440 daqiqa oralig'ida bo'lishi kerak
+            </p>
           )}
         </div>
 
@@ -831,7 +871,11 @@ function OrderSettingsTab() {
             disabled={!isDirty || saveMutation.isPending}
             className="rounded-xl px-10 h-11 gap-2 font-bold"
           >
-            {saveMutation.isPending ? <Loader2 className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />}
+            {saveMutation.isPending ? (
+              <Loader2 className="h-5 w-5 animate-spin" />
+            ) : (
+              <Save className="h-5 w-5" />
+            )}
             Saqlash
           </Button>
         </div>

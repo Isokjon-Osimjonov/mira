@@ -30,6 +30,7 @@ import { AuditLogPage } from './pages/audit/AuditLogPage'
 import { SystemHealthPage } from './pages/system/SystemHealthPage'
 import { NotFoundPage } from './pages/errors/NotFoundPage'
 import { ErrorBoundary } from './components/ErrorBoundary'
+import { RequirePermission } from './components/RequirePermission'
 
 // For TanStack Router we define the root route and children
 const rootRoute = createRootRoute()
@@ -82,7 +83,9 @@ const analyticsRoute = createRoute({
   path: '/analytics',
   component: () => (
     <ErrorBoundary>
-      <AnalitikPage />
+      <RequirePermission resource="analytics">
+        <AnalitikPage />
+      </RequirePermission>
     </ErrorBoundary>
   ),
 })
@@ -92,7 +95,9 @@ const productsRoute = createRoute({
   path: '/products',
   component: () => (
     <ErrorBoundary>
-      <ProductsPage />
+      <RequirePermission resource="products">
+        <ProductsPage />
+      </RequirePermission>
     </ErrorBoundary>
   ),
 })
@@ -102,7 +107,9 @@ const categoriesRoute = createRoute({
   path: '/categories',
   component: () => (
     <ErrorBoundary>
-      <CategoriesPage />
+      <RequirePermission resource="products">
+        <CategoriesPage />
+      </RequirePermission>
     </ErrorBoundary>
   ),
 })
@@ -112,9 +119,11 @@ const boxesRoute = createRoute({
   path: '/boxes',
   component: () => (
     <ErrorBoundary>
-      <QutularPage />
+      <RequirePermission resource="products">
+        <QutularPage />
+      </RequirePermission>
     </ErrorBoundary>
-  )
+  ),
 })
 
 const suppliersRoute = createRoute({
@@ -122,9 +131,11 @@ const suppliersRoute = createRoute({
   path: '/suppliers',
   component: () => (
     <ErrorBoundary>
-      <YetkazuvchilarPage />
+      <RequirePermission resource="products">
+        <YetkazuvchilarPage />
+      </RequirePermission>
     </ErrorBoundary>
-  )
+  ),
 })
 
 const couponsRoute = createRoute({
@@ -132,9 +143,11 @@ const couponsRoute = createRoute({
   path: '/coupons',
   component: () => (
     <ErrorBoundary>
-      <KupunlarPage />
+      <RequirePermission resource="coupons">
+        <KupunlarPage />
+      </RequirePermission>
     </ErrorBoundary>
-  )
+  ),
 })
 
 const bannersRoute = createRoute({
@@ -142,9 +155,11 @@ const bannersRoute = createRoute({
   path: '/banners',
   component: () => (
     <ErrorBoundary>
-      <BannersPage />
+      <RequirePermission resource="settings">
+        <BannersPage />
+      </RequirePermission>
     </ErrorBoundary>
-  )
+  ),
 })
 
 const telegramRoute = createRoute({
@@ -152,9 +167,11 @@ const telegramRoute = createRoute({
   path: '/telegram',
   component: () => (
     <ErrorBoundary>
-      <TelegramPage />
+      <RequirePermission resource="telegram">
+        <TelegramPage />
+      </RequirePermission>
     </ErrorBoundary>
-  )
+  ),
 })
 
 const purchaseOrdersRoute = createRoute({
@@ -162,9 +179,11 @@ const purchaseOrdersRoute = createRoute({
   path: '/purchase-orders',
   component: () => (
     <ErrorBoundary>
-      <BuyurtmaBerish />
+      <RequirePermission resource="inventory">
+        <BuyurtmaBerish />
+      </RequirePermission>
     </ErrorBoundary>
-  )
+  ),
 })
 
 const cargoDatesRoute = createRoute({
@@ -172,9 +191,11 @@ const cargoDatesRoute = createRoute({
   path: '/cargo-dates',
   component: () => (
     <ErrorBoundary>
-      <CargoDatesPage />
+      <RequirePermission resource="products">
+        <CargoDatesPage />
+      </RequirePermission>
     </ErrorBoundary>
-  )
+  ),
 })
 
 const reportsRoute = createRoute({
@@ -182,9 +203,11 @@ const reportsRoute = createRoute({
   path: '/reports',
   component: () => (
     <ErrorBoundary>
-      <HisobotlarPage />
+      <RequirePermission resource="analytics">
+        <HisobotlarPage />
+      </RequirePermission>
     </ErrorBoundary>
-  )
+  ),
 })
 
 const inventoryRoute = createRoute({
@@ -192,7 +215,9 @@ const inventoryRoute = createRoute({
   path: '/inventory',
   component: () => (
     <ErrorBoundary>
-      <InventoryPage />
+      <RequirePermission resource="inventory">
+        <InventoryPage />
+      </RequirePermission>
     </ErrorBoundary>
   ),
 })
@@ -202,7 +227,9 @@ const settingsRoute = createRoute({
   path: '/settings',
   component: () => (
     <ErrorBoundary>
-      <SettingsPage />
+      <RequirePermission resource="settings">
+        <SettingsPage />
+      </RequirePermission>
     </ErrorBoundary>
   ),
 })
@@ -212,7 +239,9 @@ const expensesRoute = createRoute({
   path: '/expenses',
   component: () => (
     <ErrorBoundary>
-      <ExpensesPage />
+      <RequirePermission resource="expenses">
+        <ExpensesPage />
+      </RequirePermission>
     </ErrorBoundary>
   ),
 })
@@ -222,7 +251,9 @@ const adminsRoute = createRoute({
   path: '/admin-users',
   component: () => (
     <ErrorBoundary>
-      <AdminsPage />
+      <RequirePermission resource="users">
+        <AdminsPage />
+      </RequirePermission>
     </ErrorBoundary>
   ),
 })
@@ -232,7 +263,9 @@ const rolesRoute = createRoute({
   path: '/roles',
   component: () => (
     <ErrorBoundary>
-      <RollarPage />
+      <RequirePermission resource="roles">
+        <RollarPage />
+      </RequirePermission>
     </ErrorBoundary>
   ),
 })
@@ -242,7 +275,9 @@ const customersRoute = createRoute({
   path: '/customers',
   component: () => (
     <ErrorBoundary>
-      <CustomersPage />
+      <RequirePermission resource="customers">
+        <CustomersPage />
+      </RequirePermission>
     </ErrorBoundary>
   ),
 })
@@ -254,7 +289,9 @@ const customerDetailRoute = createRoute({
     const { customerId } = customerDetailRoute.useParams()
     return (
       <ErrorBoundary>
-        <CustomerDetailPage id={customerId} />
+        <RequirePermission resource="customers">
+          <CustomerDetailPage id={customerId} />
+        </RequirePermission>
       </ErrorBoundary>
     )
   },
@@ -265,7 +302,9 @@ const walkInCustomerRoute = createRoute({
   path: '/customers/walk-in',
   component: () => (
     <ErrorBoundary>
-      <WalkInPage />
+      <RequirePermission resource="customers">
+        <WalkInPage />
+      </RequirePermission>
     </ErrorBoundary>
   ),
 })
@@ -275,7 +314,9 @@ const ordersRoute = createRoute({
   path: '/orders',
   component: () => (
     <ErrorBoundary>
-      <OrdersPage />
+      <RequirePermission resource="orders">
+        <OrdersPage />
+      </RequirePermission>
     </ErrorBoundary>
   ),
 })
@@ -285,7 +326,9 @@ const ordersNewRoute = createRoute({
   path: '/orders/new',
   component: () => (
     <ErrorBoundary>
-      <ManualOrderPage />
+      <RequirePermission resource="orders">
+        <ManualOrderPage />
+      </RequirePermission>
     </ErrorBoundary>
   ),
 })
@@ -297,7 +340,9 @@ const orderDetailRoute = createRoute({
     const { orderId } = orderDetailRoute.useParams()
     return (
       <ErrorBoundary>
-        <OrderDetailPage id={orderId} />
+        <RequirePermission resource="orders">
+          <OrderDetailPage id={orderId} />
+        </RequirePermission>
       </ErrorBoundary>
     )
   },
@@ -318,7 +363,9 @@ const auditRoute = createRoute({
   path: '/audit',
   component: () => (
     <ErrorBoundary>
-      <AuditLogPage />
+      <RequirePermission resource="settings">
+        <AuditLogPage />
+      </RequirePermission>
     </ErrorBoundary>
   ),
 })
@@ -328,7 +375,9 @@ const systemRoute = createRoute({
   path: '/system',
   component: () => (
     <ErrorBoundary>
-      <SystemHealthPage />
+      <RequirePermission resource="settings">
+        <SystemHealthPage />
+      </RequirePermission>
     </ErrorBoundary>
   ),
 })
@@ -374,7 +423,7 @@ const routeTree = rootRoute.addChildren([
     systemRoute,
     // Add other routes here as they are created
   ]),
-  notFoundRoute
+  notFoundRoute,
 ])
 
 export const router = createRouter({ routeTree })

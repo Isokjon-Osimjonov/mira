@@ -42,7 +42,6 @@ export function CustomersPage() {
   const { data, isLoading } = useQuery({
     queryKey: QK.CUSTOMERS(queryParams),
     queryFn: () => customersApi.list(queryParams),
-
   })
 
   const customers = data?.data ?? []
@@ -274,74 +273,74 @@ export function CustomersPage() {
 
       {/* Mobile cards */}
       <div className="md:hidden space-y-3">
-        {isLoading ? (
-          [1, 2, 3].map((i) => (
-            <div
-              key={i}
-              className="h-24 bg-white rounded-xl border-[0.5px] border-border animate-pulse"
-            />
-          ))
-        ) : customers.map((c: any) => (
-          <div
-            key={c.id}
-            onClick={() =>
-              navigate({
-                to: '/customers/$id',
-                params: { id: c.id },
-              } as any)
-            }
-            className="bg-white rounded-xl border-[0.5px] border-border p-4 cursor-pointer active:scale-[0.99] transition-transform"
-          >
-            <div className="flex items-center gap-3">
+        {isLoading
+          ? [1, 2, 3].map((i) => (
               <div
-                className={cn(
-                  'w-10 h-10 rounded-full flex items-center',
-                  'justify-center text-sm font-bold shrink-0',
-                  !c.isActive ? 'bg-red-100 text-red-600' : 'bg-primary/10 text-primary'
-                )}
+                key={i}
+                className="h-24 bg-white rounded-xl border-[0.5px] border-border animate-pulse"
+              />
+            ))
+          : customers.map((c: any) => (
+              <div
+                key={c.id}
+                onClick={() =>
+                  navigate({
+                    to: '/customers/$id',
+                    params: { id: c.id },
+                  } as any)
+                }
+                className="bg-white rounded-xl border-[0.5px] border-border p-4 cursor-pointer active:scale-[0.99] transition-transform"
               >
-                {getInitials(`${c.firstName} ${c.lastName ?? ''}`)}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between">
-                  <p className="text-sm font-medium text-gray-900 truncate">
-                    {c.firstName} {c.lastName ?? ''}
-                  </p>
-                  <div className="flex items-center gap-1">
-                    {c.deletedAt && (
-                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-md border-[0.5px] shrink-0 bg-gray-100 text-gray-600 border-gray-300">
-                        O'chirilgan
-                      </span>
+                <div className="flex items-center gap-3">
+                  <div
+                    className={cn(
+                      'w-10 h-10 rounded-full flex items-center',
+                      'justify-center text-sm font-bold shrink-0',
+                      !c.isActive ? 'bg-red-100 text-red-600' : 'bg-primary/10 text-primary'
                     )}
-                    <span
-                      className={cn(
-                        'inline-flex items-center gap-1 text-[10px]',
-                        'font-semibold px-1.5 py-0.5 rounded-md border-[0.5px] shrink-0',
-                        c.phoneRegion === 'KOR'
-                          ? 'bg-blue-50 text-blue-700 border-blue-200'
-                          : 'bg-green-50 text-green-700 border-green-200'
+                  >
+                    {getInitials(`${c.firstName} ${c.lastName ?? ''}`)}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-medium text-gray-900 truncate">
+                        {c.firstName} {c.lastName ?? ''}
+                      </p>
+                      <div className="flex items-center gap-1">
+                        {c.deletedAt && (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-md border-[0.5px] shrink-0 bg-gray-100 text-gray-600 border-gray-300">
+                            O'chirilgan
+                          </span>
+                        )}
+                        <span
+                          className={cn(
+                            'inline-flex items-center gap-1 text-[10px]',
+                            'font-semibold px-1.5 py-0.5 rounded-md border-[0.5px] shrink-0',
+                            c.phoneRegion === 'KOR'
+                              ? 'bg-blue-50 text-blue-700 border-blue-200'
+                              : 'bg-green-50 text-green-700 border-green-200'
+                          )}
+                        >
+                          <span>{c.phoneRegion === 'KOR' ? '🇰🇷' : '🇺🇿'}</span>
+                          <span>{c.phoneRegion}</span>
+                        </span>
+                      </div>
+                    </div>
+                    <p className="text-xs text-muted-foreground">{c.phone}</p>
+                    <div className="flex items-center justify-between mt-1">
+                      <span className="text-[11px] text-muted-foreground">
+                        {c.stats?.totalOrders ?? 0} ta buyurtma
+                      </span>
+                      {(c.stats?.totalSpent ?? 0) > 0 && (
+                        <span className="text-[11px] font-semibold text-gray-900">
+                          {formatKRW(c.stats.totalSpent)}
+                        </span>
                       )}
-                    >
-                      <span>{c.phoneRegion === 'KOR' ? '🇰🇷' : '🇺🇿'}</span>
-                      <span>{c.phoneRegion}</span>
-                    </span>
+                    </div>
                   </div>
                 </div>
-                <p className="text-xs text-muted-foreground">{c.phone}</p>
-                <div className="flex items-center justify-between mt-1">
-                  <span className="text-[11px] text-muted-foreground">
-                    {c.stats?.totalOrders ?? 0} ta buyurtma
-                  </span>
-                  {(c.stats?.totalSpent ?? 0) > 0 && (
-                    <span className="text-[11px] font-semibold text-gray-900">
-                      {formatKRW(c.stats.totalSpent)}
-                    </span>
-                  )}
-                </div>
               </div>
-            </div>
-          </div>
-        ))}
+            ))}
         {meta && (
           <Pagination
             page={page}

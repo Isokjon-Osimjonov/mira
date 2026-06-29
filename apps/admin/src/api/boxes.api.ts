@@ -7,14 +7,14 @@ export const boxesApi = {
   },
 
   create: async (payload: {
-    name:       string
+    name: string
     sizeLabel?: string | null
-    lengthCm?:  number | null
-    widthCm?:   number | null
-    heightCm?:  number | null
-    costKrw:    number
+    lengthCm?: number | null
+    widthCm?: number | null
+    heightCm?: number | null
+    costKrw: number
     stockCount: number
-    minStock:   number
+    minStock: number
     imageUrls?: string[]
   }) => {
     const res = await api.post('/admin/boxes', payload)

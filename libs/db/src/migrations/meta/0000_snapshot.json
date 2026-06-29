@@ -126,23 +126,17 @@
         "users_phone_unique": {
           "name": "users_phone_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "phone"
-          ]
+          "columns": ["phone"]
         },
         "users_telegram_id_unique": {
           "name": "users_telegram_id_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "telegram_id"
-          ]
+          "columns": ["telegram_id"]
         },
         "users_referral_code_unique": {
           "name": "users_referral_code_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "referral_code"
-          ]
+          "columns": ["referral_code"]
         }
       },
       "policies": {},
@@ -154,10 +148,7 @@
     "public.delivery_type": {
       "name": "delivery_type",
       "schema": "public",
-      "values": [
-        "international_cargo",
-        "domestic_courier"
-      ]
+      "values": ["international_cargo", "domestic_courier"]
     },
     "public.order_status": {
       "name": "order_status",
@@ -178,27 +169,17 @@
     "public.payment_method": {
       "name": "payment_method",
       "schema": "public",
-      "values": [
-        "korean_bank",
-        "uzb_bank",
-        "e9pay"
-      ]
+      "values": ["korean_bank", "uzb_bank", "e9pay"]
     },
     "public.region": {
       "name": "region",
       "schema": "public",
-      "values": [
-        "UZB",
-        "KOR"
-      ]
+      "values": ["UZB", "KOR"]
     },
     "public.user_role": {
       "name": "user_role",
       "schema": "public",
-      "values": [
-        "customer",
-        "admin"
-      ]
+      "values": ["customer", "admin"]
     }
   },
   "schemas": {},

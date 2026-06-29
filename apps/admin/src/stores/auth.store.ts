@@ -1,98 +1,94 @@
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
+import type { Permission } from '@mira/shared-types'
 
 export interface AdminUser {
-  id:                 string
-  email:              string
-  fullName:           string
-  isSuperAdmin:       boolean
+  id: string
+  email: string
+  fullName: string
+  isSuperAdmin: boolean
   mustChangePassword: boolean
-  role: {
-    id:          string
-    name:        string
-    permissions: string[]
-  } | null
+  permissions: Permission[]
 }
 
 interface AuthState {
-  accessToken:         string | null
-  user:                AdminUser | null
-  mustChangePassword:  boolean
-  _hasHydrated:        boolean
+  accessToken: string | null
+  user: AdminUser | null
+  mustChangePassword: boolean
+  _hasHydrated: boolean
 }
 
 interface AuthActions {
-  setToken:               (token: string) => void
-  setUser:                (user: AdminUser) => void
-  setMustChangePassword:  (val: boolean) => void
-  logout:                 () => void
-  setHasHydrated:         (val: boolean) => void
-  hasPermission:          (resource: string, action: string) => boolean
-  canRead:                (resource: string) => boolean
-  canWrite:               (resource: string) => boolean
-  canDelete:              (resource: string) => boolean
+  setToken: (token: string) => void
+  setUser: (user: AdminUser) => void
+  setMustChangePassword: (val: boolean) => void
+  logout: () => void
+  setHasHydrated: (val: boolean) => void
+  canView: (resource: string) => boolean
+  canWrite: (resource: string) => boolean
 }
 
 type AuthStore = AuthState & AuthActions
 
-export const authChannel = typeof window !== 'undefined'
-  ? new BroadcastChannel('mira_auth')
-  : null
+export const authChannel = typeof window !== 'undefined' ? new BroadcastChannel('mira_auth') : null
 
 export const useAuthStore = create<AuthStore>()(
   persist(
     (set, get) => ({
       // State
-      accessToken:        null,
-      user:               null,
+      accessToken: null,
+      user: null,
       mustChangePassword: false,
-      _hasHydrated:       false,
+      _hasHydrated: false,
 
       // Actions
       setToken: (token) => set({ accessToken: token }),
 
-      setUser: (user) => set({
-        user,
-        mustChangePassword: user.mustChangePassword,
-      }),
+      setUser: (user) =>
+        set({
+          user,
+          mustChangePassword: user.mustChangePassword,
+        }),
 
       setMustChangePassword: (val) => set({ mustChangePassword: val }),
 
       logout: () => {
         set({
-          accessToken:        null,
-          user:               null,
+          accessToken: null,
+          user: null,
           mustChangePassword: false,
         })
         // Notify other tabs
         authChannel?.postMessage('LOGOUT')
         // Best-effort API logout
-        import('./api-logout').then(m => m.apiLogout()).catch(() => {})
+        import('./api-logout').then((m) => m.apiLogout()).catch(() => {})
       },
 
       setHasHydrated: (val) => set({ _hasHydrated: val }),
 
       // Permission helpers
-      hasPermission: (resource, action) => {
-        const { user } = get()
+      canView: (resource: string) => {
+        const user = get().user
         if (!user) return false
         if (user.isSuperAdmin) return true
-        if (!user.role) return false
-        return user.role.permissions.includes(`${resource}:${action}`)
+        return user.permissions.some((p) => p.resource === resource)
       },
 
-      canRead:   (r) => get().hasPermission(r, 'read'),
-      canWrite:  (r) => get().hasPermission(r, 'write'),
-      canDelete: (r) => get().hasPermission(r, 'delete'),
+      canWrite: (resource: string) => {
+        const user = get().user
+        if (!user) return false
+        if (user.isSuperAdmin) return true
+        return user.permissions.some((p) => p.resource === resource && p.action === 'write')
+      },
     }),
     {
-      name:    'mira-admin-auth',
+      name: 'mira-admin-auth',
       storage: createJSONStorage(() => localStorage),
 
       // Only persist these fields (isAuthenticated is DERIVED)
       partialize: (state) => ({
-        accessToken:        state.accessToken,
-        user:               state.user,
+        accessToken: state.accessToken,
+        user: state.user,
         mustChangePassword: state.mustChangePassword,
       }),
 
@@ -118,8 +114,8 @@ if (authChannel) {
   authChannel.onmessage = (event) => {
     if (event.data === 'LOGOUT') {
       useAuthStore.setState({
-        accessToken:        null,
-        user:               null,
+        accessToken: null,
+        user: null,
         mustChangePassword: false,
       })
       window.location.href = '/login'
@@ -132,5 +128,4 @@ if (authChannel) {
 }
 
 // Selector hook (use this everywhere instead of isAuthenticated boolean)
-export const useIsAuthenticated = () =>
-  useAuthStore((state) => !!state.accessToken && !!state.user)
+export const useIsAuthenticated = () => useAuthStore((state) => !!state.accessToken && !!state.user)

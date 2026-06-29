@@ -268,14 +268,16 @@ export default function OrderDetailScreen() {
                     <View
                       style={[
                         styles.timelineCircle,
-                        idx < currentIdx || (idx === STEPS.length - 1 && order.status === 'DELIVERED')
+                        idx < currentIdx ||
+                        (idx === STEPS.length - 1 && order.status === 'DELIVERED')
                           ? styles.circleDone
                           : idx === currentIdx
                             ? styles.circleActive
                             : styles.circleNext,
                       ]}
                     >
-                      {idx < currentIdx || (idx === STEPS.length - 1 && order.status === 'DELIVERED') ? (
+                      {idx < currentIdx ||
+                      (idx === STEPS.length - 1 && order.status === 'DELIVERED') ? (
                         <Feather name="check" size={14} color="white" />
                       ) : (
                         <View style={idx === currentIdx ? styles.dotActive : styles.dotNext} />
@@ -303,11 +305,10 @@ export default function OrderDetailScreen() {
           <View style={styles.deliveryEstimateCard}>
             <Feather name="calendar" size={16} color={tokens.colors.primary} />
             <View style={{ flex: 1, marginLeft: 10 }}>
-              <Text style={styles.deliveryEstimateLabel}>
-                Taxminiy yetkazib berish
-              </Text>
+              <Text style={styles.deliveryEstimateLabel}>Taxminiy yetkazib berish</Text>
               <Text style={styles.deliveryEstimateDate}>
-                {order.estimatedDeliveryStart.split('T')[0]} — {order.estimatedDeliveryEnd?.split('T')[0]}
+                {order.estimatedDeliveryStart.split('T')[0]} —{' '}
+                {order.estimatedDeliveryEnd?.split('T')[0]}
               </Text>
             </View>
           </View>
@@ -397,7 +398,7 @@ export default function OrderDetailScreen() {
                   <TouchableOpacity
                     onPress={() => {
                       Alert.alert(
-                        "Chekni almashtirmoqchimisiz?",
+                        'Chekni almashtirmoqchimisiz?',
                         "Yangi chek yuklaganingizda oldingisi o'chiriladi.",
                         [
                           { text: 'Bekor qilish', style: 'cancel' },
@@ -501,10 +502,10 @@ export default function OrderDetailScreen() {
         onRequestClose={() => setReceiptModalVisible(false)}
       >
         <View style={styles.modalOverlay}>
-          <TouchableOpacity 
-            style={styles.modalCloseArea} 
-            activeOpacity={1} 
-            onPress={() => setReceiptModalVisible(false)} 
+          <TouchableOpacity
+            style={styles.modalCloseArea}
+            activeOpacity={1}
+            onPress={() => setReceiptModalVisible(false)}
           />
           <View style={styles.modalContent}>
             <TouchableOpacity

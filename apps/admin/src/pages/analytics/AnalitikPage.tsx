@@ -263,9 +263,7 @@ export function AnalitikPage() {
           {/* 2. COGS */}
           <div className="bg-orange-50 rounded-xl border-[0.5px] border-orange-100 p-4">
             <p className="text-[11px] text-muted-foreground mb-1">Tannarx (COGS)</p>
-            <p className="text-base font-bold text-orange-600">
-              {formatKRW(overview?.cogs ?? 0)}
-            </p>
+            <p className="text-base font-bold text-orange-600">{formatKRW(overview?.cogs ?? 0)}</p>
             <p className="text-[10px] text-muted-foreground mt-1">Sotilgan tovar tannarxi</p>
           </div>
 
@@ -273,7 +271,9 @@ export function AnalitikPage() {
           <div
             className={cn(
               'rounded-xl border-[0.5px] p-4',
-              (overview?.grossProfit ?? 0) >= 0 ? 'bg-green-50 border-green-100' : 'bg-red-50 border-red-100'
+              (overview?.grossProfit ?? 0) >= 0
+                ? 'bg-green-50 border-green-100'
+                : 'bg-red-50 border-red-100'
             )}
           >
             <p className="text-[11px] text-muted-foreground mb-1">Yalpi foyda</p>
@@ -293,9 +293,7 @@ export function AnalitikPage() {
           {/* 4. Expenses */}
           <div className="bg-red-50 rounded-xl border-[0.5px] border-red-100 p-4">
             <p className="text-[11px] text-muted-foreground mb-1">Xarajatlar</p>
-            <p className="text-base font-bold text-red-600">
-              {formatKRW(overview?.expenses ?? 0)}
-            </p>
+            <p className="text-base font-bold text-red-600">{formatKRW(overview?.expenses ?? 0)}</p>
             <p className="text-[10px] text-muted-foreground mt-1">Barcha xarajatlar</p>
           </div>
 
@@ -303,7 +301,9 @@ export function AnalitikPage() {
           <div
             className={cn(
               'rounded-xl border-[0.5px] p-4',
-              (overview?.netProfit ?? 0) >= 0 ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'
+              (overview?.netProfit ?? 0) >= 0
+                ? 'bg-green-50 border-green-200'
+                : 'bg-red-50 border-red-200'
             )}
           >
             <p className="text-[11px] text-muted-foreground mb-1">
@@ -383,8 +383,8 @@ export function AnalitikPage() {
                   v >= 1000000
                     ? `₩${(v / 1000000).toFixed(1)}M`
                     : v >= 1000
-                    ? `₩${(v / 1000).toFixed(0)}K`
-                    : `₩${v}`
+                      ? `₩${(v / 1000).toFixed(0)}K`
+                      : `₩${v}`
                 }
                 tick={{ fontSize: 10 }}
                 tickLine={false}
@@ -727,4 +727,3 @@ export function AnalitikPage() {
     </div>
   )
 }
-

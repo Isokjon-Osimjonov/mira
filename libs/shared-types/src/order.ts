@@ -1,9 +1,16 @@
 import { z } from 'zod'
 
 export const OrderStatusSchema = z.enum([
-  'pending_payment', 'payment_rejected', 'payment_confirmed',
-  'order_confirmed', 'packaging', 'shipped',
-  'customs', 'delivering', 'delivered', 'cancelled',
+  'pending_payment',
+  'payment_rejected',
+  'payment_confirmed',
+  'order_confirmed',
+  'packaging',
+  'shipped',
+  'customs',
+  'delivering',
+  'delivered',
+  'cancelled',
 ])
 export type OrderStatus = z.infer<typeof OrderStatusSchema>
 

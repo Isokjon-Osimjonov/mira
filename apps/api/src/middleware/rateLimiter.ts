@@ -10,10 +10,10 @@ const json = (message: string, code: string) => ({
 const isDev = env.NODE_ENV === 'development'
 
 export const speedLimiter = slowDown({
-  windowMs: 60 * 1000,    // 1 minute
-  delayAfter: 50,          // after 50 requests
-  delayMs: (hits) => (hits - 50) * 200,  // +200ms per request
-  maxDelayMs: 5000,        // max 5 second delay
+  windowMs: 60 * 1000, // 1 minute
+  delayAfter: 50, // after 50 requests
+  delayMs: (hits) => (hits - 50) * 200, // +200ms per request
+  maxDelayMs: 5000, // max 5 second delay
 })
 
 export const adminAuthLimiter = rateLimit({

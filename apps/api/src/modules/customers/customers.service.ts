@@ -375,7 +375,11 @@ export async function createWalkInCustomer(params: {
       .limit(1)
     if (existing) return existing
   } else if (params.region === 'KOR') {
-    throw { status: 400, code: 'WALK_IN_PHONE_REQUIRED', message: 'KOR hududi uchun telefon raqami majburiy' }
+    throw {
+      status: 400,
+      code: 'WALK_IN_PHONE_REQUIRED',
+      message: 'KOR hududi uchun telefon raqami majburiy',
+    }
   }
 
   const placeholder = `WI-${Date.now().toString().slice(-10)}-${Math.random().toString(36).slice(2, 5).toUpperCase()}`

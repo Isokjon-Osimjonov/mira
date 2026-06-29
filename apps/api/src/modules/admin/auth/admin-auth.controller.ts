@@ -103,4 +103,3 @@ export async function getAuditLogs(req: Request, res: Response) {
     return err(res, e.status ?? 500, e.message ?? 'Ichki xatolik', e.code ?? 'INTERNAL_ERROR')
   }
 }
-

@@ -9,12 +9,7 @@ import { bannersApi } from '../../api/banners.api'
 import { productsApi } from '../../api/products.api'
 import { categoriesApi } from '../../api/categories.api'
 import { ImageUploadField } from '../../components/shared/ImageUploadField'
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet'
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -94,11 +89,14 @@ export function BannerSheet({ open, onClose, banner, onSuccess }: Props) {
 
   useEffect(() => {
     if (banner?.linkType === 'product' && banner.linkValue) {
-      productsApi.getById(banner.linkValue).then((res) => {
-        setProductSearch(res.data?.name || res.data?.nameKo || banner.linkValue)
-      }).catch(() => {
-        setProductSearch(banner.linkValue)
-      })
+      productsApi
+        .getById(banner.linkValue)
+        .then((res) => {
+          setProductSearch(res.data?.name || res.data?.nameKo || banner.linkValue)
+        })
+        .catch(() => {
+          setProductSearch(banner.linkValue)
+        })
     } else {
       setProductSearch('')
     }
@@ -113,7 +111,9 @@ export function BannerSheet({ open, onClose, banner, onSuccess }: Props) {
       try {
         const res = await productsApi.list({ q: productSearch, limit: 5 })
         setProductResults(res.data ?? [])
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
     }, 300)
     return () => clearTimeout(t)
   }, [productSearch])
@@ -147,7 +147,7 @@ export function BannerSheet({ open, onClose, banner, onSuccess }: Props) {
     if (errorMessages.length > 0) {
       toast.error(`Xatolik: ${errorMessages.join(', ')}`)
     } else {
-      toast.error("Formada xatoliklar mavjud. Iltimos tekshiring.")
+      toast.error('Formada xatoliklar mavjud. Iltimos tekshiring.')
     }
     console.error('Form validation errors:', formErrors)
   }
@@ -161,7 +161,9 @@ export function BannerSheet({ open, onClose, banner, onSuccess }: Props) {
 
         <form onSubmit={handleSubmit(onSubmit, onInvalid)} className="space-y-4 py-4">
           <div className="space-y-2">
-            <Label>Rasm <span className="text-red-500">*</span></Label>
+            <Label>
+              Rasm <span className="text-red-500">*</span>
+            </Label>
             <Controller
               control={control}
               name="imageUrl"
@@ -175,10 +177,10 @@ export function BannerSheet({ open, onClose, banner, onSuccess }: Props) {
               )}
             />
             {errors.imageUrl && <p className="text-xs text-red-500">{errors.imageUrl.message}</p>}
-            <p className="text-xs text-muted-foreground">Tavsiya etilgan o'lcham: 1200×525px (16:7), max 5MB, JPG/PNG/WebP</p>
+            <p className="text-xs text-muted-foreground">
+              Tavsiya etilgan o'lcham: 1200×525px (16:7), max 5MB, JPG/PNG/WebP
+            </p>
           </div>
-
-
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -209,8 +211,8 @@ export function BannerSheet({ open, onClose, banner, onSuccess }: Props) {
                 control={control}
                 name="regionCode"
                 render={({ field }) => (
-                  <Select 
-                    onValueChange={(v) => field.onChange(v === 'all' ? null : v)} 
+                  <Select
+                    onValueChange={(v) => field.onChange(v === 'all' ? null : v)}
                     value={field.value || 'all'}
                   >
                     <SelectTrigger>
@@ -276,7 +278,9 @@ export function BannerSheet({ open, onClose, banner, onSuccess }: Props) {
                     </SelectTrigger>
                     <SelectContent>
                       {categories.map((c: any) => (
-                        <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                        <SelectItem key={c.id} value={c.id}>
+                          {c.name}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -288,10 +292,7 @@ export function BannerSheet({ open, onClose, banner, onSuccess }: Props) {
           {linkType === 'external' && (
             <div className="space-y-2">
               <Label>Tashqi havola</Label>
-              <Input 
-                {...register('linkValue')} 
-                placeholder="https://..."
-              />
+              <Input {...register('linkValue')} placeholder="https://..." />
             </div>
           )}
 
@@ -317,7 +318,7 @@ export function BannerSheet({ open, onClose, banner, onSuccess }: Props) {
               Bekor qilish
             </Button>
             <Button type="submit" className="flex-1" disabled={mutation.isPending || isSubmitting}>
-              {mutation.isPending ? 'Saqlanmoqda...' : (isEdit ? 'Saqlash' : 'Yaratish')}
+              {mutation.isPending ? 'Saqlanmoqda...' : isEdit ? 'Saqlash' : 'Yaratish'}
             </Button>
           </div>
         </form>

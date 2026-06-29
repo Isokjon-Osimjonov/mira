@@ -1,13 +1,15 @@
 import { api } from '../lib/api'
 
 export const couponsApi = {
-  list: async (params: {
-    page?:      number
-    limit?:     number
-    search?:    string
-    status?:    string
-    type?:      string
-  } = {}) => {
+  list: async (
+    params: {
+      page?: number
+      limit?: number
+      search?: string
+      status?: string
+      type?: string
+    } = {}
+  ) => {
     const res = await api.get('/admin/coupons', { params })
     return res.data
   },
@@ -49,33 +51,33 @@ export const couponsApi = {
 }
 
 export interface CouponCreatePayload {
-  code:              string
-  name:              string
-  type:              'PERCENTAGE' | 'FIXED' | 'FREE_SHIPPING'
-  value:             number
-  valueKrw?:         number | null
-  maxDiscountCap?:   number | null
-  maxDiscountKrw?:   number | null
-  scope:             'ALL' | 'PRODUCT' | 'CATEGORY' | 'CUSTOMER'
-  productId?:        string | null
-  categoryId?:       string | null
-  customerId?:       string | null
+  code: string
+  name: string
+  type: 'PERCENTAGE' | 'FIXED' | 'FREE_SHIPPING'
+  value: number
+  valueKrw?: number | null
+  maxDiscountCap?: number | null
+  maxDiscountKrw?: number | null
+  scope: 'ALL' | 'PRODUCT' | 'CATEGORY' | 'CUSTOMER'
+  productId?: string | null
+  categoryId?: string | null
+  customerId?: string | null
   applicableResourceIds?: string[] | null
   applicableBrands?: string[] | null
-  minOrderAmount?:   number
-  minOrderKrw?:      number | null
-  minOrderQty?:      number
-  regionCode?:       string | null
-  firstOrderOnly?:   boolean
-  onePerCustomer?:   boolean
+  minOrderAmount?: number
+  minOrderKrw?: number | null
+  minOrderQty?: number
+  regionCode?: string | null
+  firstOrderOnly?: boolean
+  onePerCustomer?: boolean
   excludeWholesale?: boolean
-  startsAt?:         string | null
-  expiresAt?:        string | null
-  maxUsesTotal?:     number | null
+  startsAt?: string | null
+  expiresAt?: string | null
+  maxUsesTotal?: number | null
   maxUsesPerCustomer?: number
-  autoApply?:        boolean
-  isStackable?:      boolean
-  isPromotional?:    boolean
+  autoApply?: boolean
+  isStackable?: boolean
+  isPromotional?: boolean
   promoDisplayText?: string | null
-  description?:      string | null
+  description?: string | null
 }

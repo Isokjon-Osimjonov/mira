@@ -6,6 +6,7 @@ import { signAccess, signRefresh, verifyRefresh } from '../../../lib/jwt'
 import { generateToken, hashToken } from '../../../lib/otp'
 import type { AdminLoginDto } from './admin-auth.schema'
 import { logSecurityEvent } from '../../../lib/audit-log'
+import { ALL_RESOURCES } from '@mira/shared-types'
 
 export async function adminLogin(dto: AdminLoginDto, deviceInfo?: string, ipAddress?: string) {
   const [admin] = await db
@@ -19,7 +20,7 @@ export async function adminLogin(dto: AdminLoginDto, deviceInfo?: string, ipAddr
       type: 'LOGIN_FAILED',
       ip: ipAddress || 'unknown',
       userAgent: deviceInfo,
-      details: { email: dto.email, reason: 'user_not_found' }
+      details: { email: dto.email, reason: 'user_not_found' },
     })
     throw { status: 401, code: 'INVALID_CREDENTIALS', message: "Email yoki parol noto'g'ri" }
   }
@@ -35,12 +36,12 @@ export async function adminLogin(dto: AdminLoginDto, deviceInfo?: string, ipAddr
       userId: admin.id,
       ip: ipAddress || 'unknown',
       userAgent: deviceInfo,
-      details: { email: dto.email, remainingMins }
+      details: { email: dto.email, remainingMins },
     })
     throw {
       status: 429,
       code: 'ACCOUNT_LOCKED',
-      message: `Akkaunt ${remainingMins} daqiqa bloklangan`
+      message: `Akkaunt ${remainingMins} daqiqa bloklangan`,
     }
   }
 
@@ -53,19 +54,22 @@ export async function adminLogin(dto: AdminLoginDto, deviceInfo?: string, ipAddr
     const LOCK_MINUTES = 30
     const lockedUntil = new Date(Date.now() + LOCK_MINUTES * 60 * 1000)
 
-    await db.update(adminUsers).set({
-      // @ts-ignore
-      loginAttempts: attempts,
-      // @ts-ignore
-      lockedUntil: shouldLock ? lockedUntil : null
-    }).where(eq(adminUsers.id, admin.id))
+    await db
+      .update(adminUsers)
+      .set({
+        // @ts-ignore
+        loginAttempts: attempts,
+        // @ts-ignore
+        lockedUntil: shouldLock ? lockedUntil : null,
+      })
+      .where(eq(adminUsers.id, admin.id))
 
     logSecurityEvent({
       type: shouldLock ? 'ACCOUNT_LOCKED' : 'LOGIN_FAILED',
       userId: admin.id,
       ip: ipAddress || 'unknown',
       userAgent: deviceInfo,
-      details: { email: dto.email, attempts }
+      details: { email: dto.email, attempts },
     })
 
     throw {
@@ -73,36 +77,42 @@ export async function adminLogin(dto: AdminLoginDto, deviceInfo?: string, ipAddr
       code: shouldLock ? 'ACCOUNT_LOCKED' : 'INVALID_CREDENTIALS',
       message: shouldLock
         ? `Akkaunt ${LOCK_MINUTES} daqiqa bloklandi`
-        : `Noto'g'ri parol. ${LOCK_THRESHOLD - attempts} urinish qoldi`
+        : `Noto'g'ri parol. ${LOCK_THRESHOLD - attempts} urinish qoldi`,
     }
   }
 
   // Get role permissions
-  let permissions: string[] = []
-  if (admin.roleId && !admin.isSuperAdmin) {
-    const perms = await db
+  let finalPermissions: { resource: string; action: string }[] = []
+  if (admin.isSuperAdmin) {
+    finalPermissions = ALL_RESOURCES.flatMap((r) => [
+      { resource: r, action: 'read' },
+      { resource: r, action: 'write' },
+    ])
+  } else if (admin.roleId) {
+    finalPermissions = await db
       .select({ resource: rolePermissions.resource, action: rolePermissions.action })
       .from(rolePermissions)
       .where(eq(rolePermissions.roleId, admin.roleId))
-
-    permissions = perms.map((p) => `${p.resource}:${p.action}`)
   }
 
   // Update last login & reset attempts
-  await db.update(adminUsers).set({ 
-    // @ts-ignore
-    loginAttempts: 0,
-    // @ts-ignore
-    lockedUntil: null,
-    lastLoginAt: new Date() 
-  }).where(eq(adminUsers.id, admin.id))
+  await db
+    .update(adminUsers)
+    .set({
+      // @ts-ignore
+      loginAttempts: 0,
+      // @ts-ignore
+      lockedUntil: null,
+      lastLoginAt: new Date(),
+    })
+    .where(eq(adminUsers.id, admin.id))
 
   logSecurityEvent({
     type: 'LOGIN_SUCCESS',
     userId: admin.id,
     ip: ipAddress || 'unknown',
     userAgent: deviceInfo,
-    details: { email: admin.email }
+    details: { email: admin.email },
   })
 
   const accessToken = signAccess({
@@ -135,7 +145,7 @@ export async function adminLogin(dto: AdminLoginDto, deviceInfo?: string, ipAddr
       email: admin.email,
       fullName: admin.fullName,
       isSuperAdmin: admin.isSuperAdmin ?? false,
-      role: admin.roleId ? { id: admin.roleId, permissions } : null,
+      permissions: finalPermissions,
     },
   }
 }
@@ -202,14 +212,18 @@ export async function refreshAdminToken(rawRefreshToken: string) {
     expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
   })
 
-  // Get permissions
-  let permissions: string[] = []
-  if (admin.roleId && !admin.isSuperAdmin) {
-    const perms = await db
+  // Get role permissions
+  let finalPermissions: { resource: string; action: string }[] = []
+  if (admin.isSuperAdmin) {
+    finalPermissions = ALL_RESOURCES.flatMap((r) => [
+      { resource: r, action: 'read' },
+      { resource: r, action: 'write' },
+    ])
+  } else if (admin.roleId) {
+    finalPermissions = await db
       .select({ resource: rolePermissions.resource, action: rolePermissions.action })
       .from(rolePermissions)
       .where(eq(rolePermissions.roleId, admin.roleId))
-    permissions = perms.map((p) => `${p.resource}:${p.action}`)
   }
 
   return {
@@ -221,7 +235,7 @@ export async function refreshAdminToken(rawRefreshToken: string) {
       email: admin.email,
       fullName: admin.fullName,
       isSuperAdmin: admin.isSuperAdmin ?? false,
-      role: admin.roleId ? { id: admin.roleId, permissions } : null,
+      permissions: finalPermissions,
     },
   }
 }
@@ -279,12 +293,17 @@ export async function updateProfile(adminId: string, data: { fullName?: string }
     })
     .where(eq(adminUsers.id, adminId))
     .returning()
-  
+
   if (!updated) throw { status: 404, message: 'Admin topilmadi' }
   return updated
 }
 
-export async function getAuditLogs(query: { page?: number; limit?: number; adminId?: string; action?: string }) {
+export async function getAuditLogs(query: {
+  page?: number
+  limit?: number
+  adminId?: string
+  action?: string
+}) {
   const page = query.page || 1
   const limit = query.limit || 50
   const offset = (page - 1) * limit
@@ -316,7 +335,7 @@ export async function getAuditLogs(query: { page?: number; limit?: number; admin
       total,
       hasNext: offset + limit < total,
       hasPrev: page > 1,
-    }
+    },
   }
 }
 
@@ -338,34 +357,20 @@ export async function getAdminMe(adminId: string) {
     throw { status: 404, code: 'NOT_FOUND', message: 'Admin topilmadi' }
   }
 
-  let role: {
-    id: string
-    name: string
-    permissions: string[]
-  } | null = null
-
-  if (admin.roleId) {
-    const [roleData] = await db
-      .select({ id: roles.id, name: roles.name })
-      .from(roles)
-      .where(eq(roles.id, admin.roleId))
-      .limit(1)
-
-    if (roleData) {
-      const perms = await db
-        .select({
-          resource: rolePermissions.resource,
-          action: rolePermissions.action,
-        })
-        .from(rolePermissions)
-        .where(eq(rolePermissions.roleId, admin.roleId))
-
-      role = {
-        id: roleData.id,
-        name: roleData.name,
-        permissions: perms.map((p) => `${p.resource}:${p.action}`),
-      }
-    }
+  let finalPermissions: { resource: string; action: string }[] = []
+  if (admin.isSuperAdmin) {
+    finalPermissions = ALL_RESOURCES.flatMap((r) => [
+      { resource: r, action: 'read' },
+      { resource: r, action: 'write' },
+    ])
+  } else if (admin.roleId) {
+    finalPermissions = await db
+      .select({
+        resource: rolePermissions.resource,
+        action: rolePermissions.action,
+      })
+      .from(rolePermissions)
+      .where(eq(rolePermissions.roleId, admin.roleId))
   }
 
   return {
@@ -374,7 +379,6 @@ export async function getAdminMe(adminId: string) {
     fullName: admin.fullName,
     isSuperAdmin: admin.isSuperAdmin,
     mustChangePassword: admin.mustChangePassword,
-    role,
+    permissions: finalPermissions,
   }
 }
-

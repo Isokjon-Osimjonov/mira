@@ -1,8 +1,8 @@
-import { TextClassContext } from '~/components/ui/text';
-import { cn } from '~/lib/utils';
-import { Slot } from '@rn-primitives/slot';
-import { cva, type VariantProps } from 'class-variance-authority';
-import { Platform, View } from 'react-native';
+import { TextClassContext } from '~/components/ui/text'
+import { cn } from '~/lib/utils'
+import { Slot } from '@rn-primitives/slot'
+import { cva, type VariantProps } from 'class-variance-authority'
+import { Platform, View } from 'react-native'
 
 const badgeVariants = cva(
   cn(
@@ -33,7 +33,7 @@ const badgeVariants = cva(
       variant: 'default',
     },
   }
-);
+)
 
 const badgeTextVariants = cva('text-xs font-medium', {
   variants: {
@@ -47,20 +47,21 @@ const badgeTextVariants = cva('text-xs font-medium', {
   defaultVariants: {
     variant: 'default',
   },
-});
+})
 
-type BadgeProps = React.ComponentProps<typeof View> & React.RefAttributes<View> & {
-  asChild?: boolean;
-} & VariantProps<typeof badgeVariants>;
+type BadgeProps = React.ComponentProps<typeof View> &
+  React.RefAttributes<View> & {
+    asChild?: boolean
+  } & VariantProps<typeof badgeVariants>
 
 function Badge({ className, variant, asChild, ...props }: BadgeProps) {
-  const Component = asChild ? Slot : View;
+  const Component = asChild ? Slot : View
   return (
     <TextClassContext.Provider value={badgeTextVariants({ variant })}>
       <Component className={cn(badgeVariants({ variant }), className)} {...props} />
     </TextClassContext.Provider>
-  );
+  )
 }
 
-export { Badge, badgeTextVariants, badgeVariants };
-export type { BadgeProps };
+export { Badge, badgeTextVariants, badgeVariants }
+export type { BadgeProps }

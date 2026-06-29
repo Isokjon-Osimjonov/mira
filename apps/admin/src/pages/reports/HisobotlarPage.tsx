@@ -95,7 +95,7 @@ export function HisobotlarPage() {
       id: 'expenses',
       icon: '💸',
       title: 'Xarajatlar hisoboti',
-      desc: 'Xarajatlar kategoriyalar bo\'yicha',
+      desc: "Xarajatlar kategoriyalar bo'yicha",
       color: 'border-red-100 bg-red-50/30',
     },
   ]
@@ -165,11 +165,7 @@ export function HisobotlarPage() {
                 onClick={() => handleExport(report.id, 'csv')}
                 className="flex-1 rounded-lg h-8 border-[0.5px] text-xs gap-1.5"
               >
-                {exporting === report.id ? (
-                  <RefreshCw className="h-3 w-3 animate-spin" />
-                ) : (
-                  '📄'
-                )}
+                {exporting === report.id ? <RefreshCw className="h-3 w-3 animate-spin" /> : '📄'}
                 CSV
               </Button>
               <Button
@@ -178,11 +174,7 @@ export function HisobotlarPage() {
                 onClick={() => handleExport(report.id, 'excel')}
                 className="flex-1 rounded-lg h-8 text-xs gap-1.5"
               >
-                {exporting === report.id ? (
-                  <RefreshCw className="h-3 w-3 animate-spin" />
-                ) : (
-                  '📊'
-                )}
+                {exporting === report.id ? <RefreshCw className="h-3 w-3 animate-spin" /> : '📊'}
                 Excel
               </Button>
             </div>

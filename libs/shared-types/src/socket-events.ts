@@ -7,110 +7,109 @@
 // ─────────────────────────────────────────────────────────────
 
 export interface SocketEvents {
-
   // ── ORDERS ──────────────────────────────────────────────────
 
   'order:new': {
-    orderId:     string
-    orderNumber: string  // MIRA-260529-0001
-    customerId:  string
+    orderId: string
+    orderNumber: string // MIRA-260529-0001
+    customerId: string
     customerName: string
-    region:      'UZB' | 'KOR'
-    totalAmount: number  // KRW
-    createdAt:   string
+    region: 'UZB' | 'KOR'
+    totalAmount: number // KRW
+    createdAt: string
   }
 
   'order:status_changed': {
-    orderId:     string
+    orderId: string
     orderNumber: string
-    fromStatus:  string
-    toStatus:    string
-    changedBy:   string | null  // admin name or 'system'
-    note:        string | null
-    changedAt:   string
+    fromStatus: string
+    toStatus: string
+    changedBy: string | null // admin name or 'system'
+    note: string | null
+    changedAt: string
   }
 
   'order:auto_canceled': {
-    orderId:     string
+    orderId: string
     orderNumber: string
-    reason:      'payment_deadline_expired'
-    canceledAt:  string
+    reason: 'payment_deadline_expired'
+    canceledAt: string
   }
 
   // ── PAYMENTS ────────────────────────────────────────────────
 
   'payment:receipt_uploaded': {
-    orderId:         string
-    orderNumber:     string
-    customerId:      string
-    customerName:    string
-    customerPhone:   string
-    receiptUrl:      string
-    paymentMethod:   string
-    paymentAmount:   number
-    paymentCurrency: string  // KRW or UZS
-    uploadedAt:      string
+    orderId: string
+    orderNumber: string
+    customerId: string
+    customerName: string
+    customerPhone: string
+    receiptUrl: string
+    paymentMethod: string
+    paymentAmount: number
+    paymentCurrency: string // KRW or UZS
+    uploadedAt: string
   }
 
   'payment:confirmed': {
-    orderId:      string
-    orderNumber:  string
-    confirmedBy:  string  // admin name
-    confirmedAt:  string
+    orderId: string
+    orderNumber: string
+    confirmedBy: string // admin name
+    confirmedAt: string
   }
 
   'payment:rejected': {
-    orderId:      string
-    orderNumber:  string
-    rejectedBy:   string
-    reason:       string  // shown to customer
-    rejectedAt:   string
+    orderId: string
+    orderNumber: string
+    rejectedBy: string
+    reason: string // shown to customer
+    rejectedAt: string
   }
 
   // ── INVENTORY ───────────────────────────────────────────────
 
   'stock:low': {
-    productId:   string
+    productId: string
     productName: string
-    barcode:     string
-    currentQty:  number
-    threshold:   number   // settings.low_stock_threshold
-    batchCount:  number
+    barcode: string
+    currentQty: number
+    threshold: number // settings.low_stock_threshold
+    batchCount: number
   }
 
   'stock:out': {
-    productId:   string
+    productId: string
     productName: string
-    barcode:     string
-    outAt:       string
+    barcode: string
+    outAt: string
   }
 
   'stock:back': {
-    productId:    string
-    productName:  string
-    barcode:      string
-    newQty:       number
-    batchId:      string
-    receivedAt:   string
+    productId: string
+    productName: string
+    barcode: string
+    newQty: number
+    batchId: string
+    receivedAt: string
   }
 
   // ── CUSTOMERS ───────────────────────────────────────────────
 
   'customer:new': {
-    customerId:   string
-    phone:        string
-    region:       string
+    customerId: string
+    phone: string
+    region: string
     registeredAt: string
   }
 
   // ── EXCHANGE RATES ───────────────────────────────────────────
 
   'exchange_rate:updated': {
-    krwToUzs:      number
-    usdToKrw:      number
-    cargoRateKrw:  number
-    source:        'API' | 'MANUAL'
-    updatedAt:     string
+    krwToUzs: number
+    usdToKrw: number
+    cargoRateKrw: number
+    source: 'API' | 'MANUAL'
+    updatedAt: string
   }
 
   'settings:updated': {}
@@ -118,15 +117,15 @@ export interface SocketEvents {
   // ── SYSTEM ──────────────────────────────────────────────────
 
   'admin:connected': {
-    adminId:   string
+    adminId: string
     adminName: string
     connectedAt: string
   }
 
   'notification:count': {
-    unreadOrders:   number   // new orders waiting action
-    pendingPayments: number  // receipts waiting verification
-    lowStockItems:  number
+    unreadOrders: number // new orders waiting action
+    pendingPayments: number // receipts waiting verification
+    lowStockItems: number
   }
 }
 
@@ -134,8 +133,8 @@ export interface SocketEvents {
 export interface ClientSocketEvents {
   'admin:join': { adminId: string; token: string }
   'admin:leave': {}
-  'order:viewed': { orderId: string }         // mark as seen
-  'notification:mark_read': { type: string }  // clear badge
+  'order:viewed': { orderId: string } // mark as seen
+  'notification:mark_read': { type: string } // clear badge
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -144,30 +143,29 @@ export interface ClientSocketEvents {
 // ─────────────────────────────────────────────────────────────
 
 export type TelegramNotificationTarget =
-  | { type: 'customer'; telegramId: number }     // customer Telegram DM
-  | { type: 'admin_group'; chatId: string }       // admin group/channel
-  | { type: 'admin_user'; telegramId: number }    // specific admin's DM
+  | { type: 'customer'; telegramId: number } // customer Telegram DM
+  | { type: 'admin_group'; chatId: string } // admin group/channel
+  | { type: 'admin_user'; telegramId: number } // specific admin's DM
 
 export interface TelegramNotifications {
-
   // ─────────────────────────────────────────
   // CUSTOMER NOTIFICATIONS (DM via bot)
   // ─────────────────────────────────────────
 
   'customer.otp': {
     target: TelegramNotificationTarget
-    otp:    string
-    ttl:    number  // minutes
+    otp: string
+    ttl: number // minutes
     // Message:
     // 🔐 Tasdiqlash kodi: 123456
     // ⏱ Amal qilish muddati: 5 daqiqa
   }
 
   'customer.order_confirmed': {
-    target:      TelegramNotificationTarget
+    target: TelegramNotificationTarget
     orderNumber: string
     totalAmount: number
-    currency:    string
+    currency: string
     paymentDeadlineMinutes: number
     // Message:
     // ✅ Buyurtmangiz qabul qilindi!
@@ -177,8 +175,8 @@ export interface TelegramNotifications {
   }
 
   'customer.payment_deadline_reminder': {
-    target:           TelegramNotificationTarget
-    orderNumber:      string
+    target: TelegramNotificationTarget
+    orderNumber: string
     minutesRemaining: number
     // Message:
     // ⚠️ Diqqat! Buyurtma #MIRA-260529-0001
@@ -187,7 +185,7 @@ export interface TelegramNotifications {
   }
 
   'customer.payment_confirmed': {
-    target:      TelegramNotificationTarget
+    target: TelegramNotificationTarget
     orderNumber: string
     // Message:
     // 💚 To'lovingiz tasdiqlandi!
@@ -195,9 +193,9 @@ export interface TelegramNotifications {
   }
 
   'customer.payment_rejected': {
-    target:      TelegramNotificationTarget
+    target: TelegramNotificationTarget
     orderNumber: string
-    reason:      string
+    reason: string
     // Message:
     // ❌ To'lov kvitansiyasi rad etildi
     // 📦 #MIRA-260529-0001
@@ -206,8 +204,8 @@ export interface TelegramNotifications {
   }
 
   'customer.order_shipped': {
-    target:         TelegramNotificationTarget
-    orderNumber:    string
+    target: TelegramNotificationTarget
+    orderNumber: string
     trackingNumber: string | null
     // Message:
     // 🚀 Buyurtmangiz yo'lda!
@@ -216,7 +214,7 @@ export interface TelegramNotifications {
   }
 
   'customer.order_delivered': {
-    target:      TelegramNotificationTarget
+    target: TelegramNotificationTarget
     orderNumber: string
     // Message:
     // 🎉 Buyurtmangiz yetib keldi!
@@ -225,18 +223,18 @@ export interface TelegramNotifications {
   }
 
   'customer.order_canceled': {
-    target:      TelegramNotificationTarget
+    target: TelegramNotificationTarget
     orderNumber: string
-    reason:      'auto_cancel' | 'admin_cancel' | 'customer_cancel'
+    reason: 'auto_cancel' | 'admin_cancel' | 'customer_cancel'
     // Message:
     // ❌ Buyurtma bekor qilindi
     // 📦 #MIRA-260529-0001
   }
 
   'customer.stock_back': {
-    target:      TelegramNotificationTarget
+    target: TelegramNotificationTarget
     productName: string
-    productUrl:  string  // deep link to product in app
+    productUrl: string // deep link to product in app
     // Message:
     // 🌟 Kutgan mahsulotingiz mavjud bo'ldi!
     // 💄 {productName}
@@ -248,13 +246,13 @@ export interface TelegramNotifications {
   // ─────────────────────────────────────────
 
   'admin.new_order': {
-    target:       TelegramNotificationTarget
-    orderNumber:  string
+    target: TelegramNotificationTarget
+    orderNumber: string
     customerName: string
     customerPhone: string
-    region:       string
-    totalAmount:  number
-    itemCount:    number
+    region: string
+    totalAmount: number
+    itemCount: number
     // Message:
     // 🛒 YANGI BUYURTMA!
     // ━━━━━━━━━━━━━━━━━━━━
@@ -266,11 +264,11 @@ export interface TelegramNotifications {
   }
 
   'admin.payment_submitted': {
-    target:        TelegramNotificationTarget
-    orderNumber:   string
-    customerName:  string
+    target: TelegramNotificationTarget
+    orderNumber: string
+    customerName: string
     paymentMethod: string
-    paymentAmount: string  // formatted with currency
+    paymentAmount: string // formatted with currency
     // Message:
     // 💳 TO'LOV YUKLANDI!
     // 📦 #MIRA-260529-0001 — Isokjon
@@ -279,11 +277,11 @@ export interface TelegramNotifications {
   }
 
   'admin.low_stock_alert': {
-    target:      TelegramNotificationTarget
+    target: TelegramNotificationTarget
     productName: string
-    barcode:     string
-    currentQty:  number
-    threshold:   number
+    barcode: string
+    currentQty: number
+    threshold: number
     // Message:
     // ⚠️ STOK KAMAYDI!
     // 💄 COSRX Snail Mucin Serum
@@ -292,7 +290,7 @@ export interface TelegramNotifications {
   }
 
   'admin.out_of_stock': {
-    target:      TelegramNotificationTarget
+    target: TelegramNotificationTarget
     productName: string
     // Message:
     // 🚨 STOK TUGADI!
@@ -301,9 +299,9 @@ export interface TelegramNotifications {
   }
 
   'admin.order_auto_canceled': {
-    target:      TelegramNotificationTarget
+    target: TelegramNotificationTarget
     orderNumber: string
-    reason:      string
+    reason: string
     // Message:
     // ⏰ Buyurtma avtomatik bekor qilindi
     // 📦 #MIRA-260529-0001
@@ -311,10 +309,10 @@ export interface TelegramNotifications {
   }
 
   'admin.daily_summary': {
-    target:       TelegramNotificationTarget
-    date:         string
-    orderCount:   number
-    revenue:      number
+    target: TelegramNotificationTarget
+    date: string
+    orderCount: number
+    revenue: number
     newCustomers: number
     // Message (har kuni soat 23:59):
     // 📊 KUNLIK HISOBOT — 29.05.2026

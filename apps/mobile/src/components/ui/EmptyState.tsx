@@ -21,43 +21,17 @@ export default function EmptyState({
   compact = false,
 }: EmptyStateProps) {
   return (
-    <View style={[
-      styles.container,
-      compact && styles.containerCompact
-    ]}>
-      <View style={[
-        styles.iconCircle,
-        compact && styles.iconCircleCompact
-      ]}>
-        <Feather
-          name={icon}
-          size={compact ? 22 : 28}
-          color={tokens.colors.textMuted}
-        />
+    <View style={[styles.container, compact && styles.containerCompact]}>
+      <View style={[styles.iconCircle, compact && styles.iconCircleCompact]}>
+        <Feather name={icon} size={compact ? 22 : 28} color={tokens.colors.textMuted} />
       </View>
-      <Text style={[
-        styles.heading,
-        compact && styles.headingCompact
-      ]}>
-        {heading}
-      </Text>
+      <Text style={[styles.heading, compact && styles.headingCompact]}>{heading}</Text>
       {Boolean(subtitle) && (
-        <Text style={[
-          styles.subtitle,
-          compact && styles.subtitleCompact
-        ]}>
-          {subtitle}
-        </Text>
+        <Text style={[styles.subtitle, compact && styles.subtitleCompact]}>{subtitle}</Text>
       )}
       {Boolean(actionLabel && onAction) && (
-        <TouchableOpacity
-          onPress={onAction}
-          style={styles.actionBtn}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.actionBtnText}>
-            {actionLabel}
-          </Text>
+        <TouchableOpacity onPress={onAction} style={styles.actionBtn} activeOpacity={0.8}>
+          <Text style={styles.actionBtnText}>{actionLabel}</Text>
         </TouchableOpacity>
       )}
     </View>
