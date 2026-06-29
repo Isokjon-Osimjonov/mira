@@ -21,7 +21,17 @@ function socketAuthMiddleware(socket: Socket, next: (err?: Error) => void) {
 
 export function initSocket(server: HttpServer): Server {
   _io = new Server(server, {
-    cors: { origin: env.SOCKET_CORS_ORIGINS.split(','), credentials: true },
+    cors: { 
+      origin: process.env.NODE_ENV !== 'production'
+        ? (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+            if (!origin || /^http:\/\/(localhost|192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+):\d+$/.test(origin)) {
+              return callback(null, true)
+            }
+            callback(new Error('Not allowed by CORS'))
+          }
+        : env.SOCKET_CORS_ORIGINS.split(','),
+      credentials: true 
+    },
     transports: ['websocket', 'polling'],
     pingTimeout: 60_000,
     pingInterval: 25_000,

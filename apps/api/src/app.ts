@@ -86,9 +86,18 @@ export function createApp() {
       crossOriginResourcePolicy: { policy: 'cross-origin' },
     })
   )
+  const isDev = process.env.NODE_ENV !== 'production'
+
   app.use(
     cors({
-      origin: env.CORS_ORIGINS.split(','),
+      origin: isDev
+        ? (origin, callback) => {
+            if (!origin || /^http:\/\/(localhost|192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+):\d+$/.test(origin)) {
+              return callback(null, true)
+            }
+            callback(new Error('Not allowed by CORS'))
+          }
+        : env.CORS_ORIGINS.split(','),
       credentials: true,
       methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
       allowedHeaders: ['Content-Type', 'Authorization', 'X-Client-Type'],
