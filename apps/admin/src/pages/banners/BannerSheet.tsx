@@ -25,10 +25,11 @@ import {
 } from '@/components/ui/select'
 
 const bannerSchema = z.object({
+  title: z.string().nullable().optional(),
   imageUrl: z.string().min(1, 'Rasm talab qilinadi'),
-  linkType: z.enum(['none', 'product', 'category', 'external', 'wholesale']),
-  linkValue: z.string().optional(),
-  regionCode: z.string().nullable(),
+  linkType: z.enum(['none', 'product', 'category', 'external', 'wholesale']).default('none'),
+  linkValue: z.string().nullable().optional(),
+  regionCode: z.string().nullable().optional(),
   isActive: z.boolean().default(true),
   sortOrder: z.coerce.number().default(0),
 })
@@ -68,10 +69,15 @@ export function BannerSheet({ open, onClose, banner, onSuccess }: Props) {
     if (banner) {
       reset({
         ...banner,
+        title: banner.title || '',
+        imageUrl: banner.imageUrl || '',
+        linkType: banner.linkType || 'none',
+        linkValue: banner.linkValue || '',
         regionCode: banner.regionCode || null,
       })
     } else {
       reset({
+        title: '',
         imageUrl: '',
         linkType: 'none',
         isActive: true,
@@ -96,6 +102,20 @@ export function BannerSheet({ open, onClose, banner, onSuccess }: Props) {
 
   const linkType = watch('linkType')
 
+  const onSubmit = (data: BannerForm) => mutation.mutate(data)
+
+  const onInvalid = (formErrors: any) => {
+    const errorMessages = Object.values(formErrors)
+      .map((err: any) => err.message)
+      .filter(Boolean)
+    if (errorMessages.length > 0) {
+      toast.error(`Xatolik: ${errorMessages.join(', ')}`)
+    } else {
+      toast.error("Formada xatoliklar mavjud. Iltimos tekshiring.")
+    }
+    console.error('Form validation errors:', formErrors)
+  }
+
   return (
     <Sheet open={open} onOpenChange={onClose}>
       <SheetContent className="sm:max-w-md overflow-y-auto">
@@ -103,7 +123,13 @@ export function BannerSheet({ open, onClose, banner, onSuccess }: Props) {
           <SheetTitle>{isEdit ? 'Bannerni tahrirlash' : 'Yangi banner'}</SheetTitle>
         </SheetHeader>
 
-        <form onSubmit={handleSubmit((data) => mutation.mutate(data))} className="space-y-4 py-4">
+        <form onSubmit={handleSubmit(onSubmit, onInvalid)} className="space-y-4 py-4">
+          <div className="space-y-2">
+            <Label>Sarlavha</Label>
+            <Input {...register('title')} placeholder="Banner sarlavhasi (ixtiyoriy)" />
+            {errors.title && <p className="text-xs text-red-500">{errors.title.message}</p>}
+          </div>
+
           <div className="space-y-2">
             <Label>Rasm <span className="text-red-500">*</span></Label>
             <Controller

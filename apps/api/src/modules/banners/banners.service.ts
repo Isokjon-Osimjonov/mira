@@ -26,6 +26,7 @@ export async function getAllBanners() {
 }
 
 export async function createBanner(data: {
+  title?: string | null
   imageUrl: string
   linkType?: string
   linkValue?: string
@@ -35,6 +36,7 @@ export async function createBanner(data: {
 }) {
   const [created] = await db.insert(banners)
     .values({
+      title: data.title || null,
       imageUrl: data.imageUrl,
       linkType: data.linkType ?? 'none',
       linkValue: data.linkValue || null,
