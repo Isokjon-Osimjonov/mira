@@ -392,7 +392,21 @@ export async function getPLReport(period: Period, dateFrom?: string, dateTo?: st
 
   const [summaryData] = await db
     .select({
-      cogs: sql<string>`COALESCE(SUM(${dailySalesSummary.cogsKrw}), 0)`,
+      cogs: sql<string>`COALESCE(SUM(${orderItems.quantity} * ${inventoryBatches.costPrice}), 0)`,
+    })
+    .from(orderItems)
+    .innerJoin(orders, eq(orders.id, orderItems.orderId))
+    .innerJoin(inventoryBatches, eq(inventoryBatches.id, orderItems.batchId))
+    .where(
+      and(
+        gte(orders.paymentConfirmedAt, startDate),
+        lte(orders.paymentConfirmedAt, endDate),
+        inArray(orders.status, REVENUE_STATUSES)
+      )
+    )
+
+  const [cargoAndCoupons] = await db
+    .select({
       cargo: sql<string>`COALESCE(SUM(${dailySalesSummary.cargoKrw}), 0)`,
       coupons: sql<string>`COALESCE(SUM(${dailySalesSummary.couponDiscountKrw}), 0)`,
     })
@@ -431,8 +445,8 @@ export async function getPLReport(period: Period, dateFrom?: string, dateTo?: st
     .groupBy(expenseCategories.name, expenseCategories.icon)
 
   const cogs = BigInt(summaryData?.cogs || '0')
-  const cargo = BigInt(summaryData?.cargo || '0')
-  const couponsAmt = BigInt(summaryData?.coupons || '0')
+  const cargo = BigInt(cargoAndCoupons?.cargo || '0')
+  const couponsAmt = BigInt(cargoAndCoupons?.coupons || '0')
   const generalExpenses = BigInt(expensesTotal?.total || '0')
   const totalExpenses = cargo + couponsAmt + generalExpenses
 

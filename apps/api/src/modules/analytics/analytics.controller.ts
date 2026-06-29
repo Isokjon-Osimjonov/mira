@@ -37,8 +37,9 @@ export async function getTopProducts(req: Request, res: Response, next: NextFunc
 
 export async function getPL(req: Request, res: Response, next: NextFunction) {
   try {
-    const { year, month } = req.query as { year: string; month?: string }
-    const data = await service.getPL(parseInt(year), month ? parseInt(month) : undefined)
+    const { from, to } = req.query as { from: string; to: string }
+    if (!from || !to) throw { status: 400, message: 'from and to dates are required' }
+    const data = await service.getPL(from, to)
     res.json({ data, error: null })
   } catch (err) {
     next(err)

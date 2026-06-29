@@ -1,4 +1,5 @@
 import { db } from '../../config/db'
+import { startOfDay, endOfDay } from 'date-fns'
 import {
   orders,
   orderItems,
@@ -48,9 +49,8 @@ export async function getOverview(from: string, to: string) {
   const cached = await getCached<any>(cacheKey)
   if (cached) return cached
 
-  const startDate = new Date(from)
-  const endDate = new Date(to)
-  endDate.setHours(23, 59, 59, 999)
+  const startDate = startOfDay(new Date(from))
+  const endDate = endOfDay(new Date(to))
 
   // 1. Revenue & Orders
   const [revenueStats] = await db
@@ -78,13 +78,21 @@ export async function getOverview(from: string, to: string) {
   const completedOrders = Number(revenueStats?.completedCount || 0)
   const cancelledOrders = Number(revenueStats?.cancelledCount || 0)
 
-  // 2. COGS from Daily Summary
+  // 2. COGS from transactional data
   const [cogsStats] = await db
     .select({
-      cogs: sql<string>`COALESCE(SUM(${dailySalesSummary.cogsKrw})::text, '0')`,
+      cogs: sql<string>`COALESCE(SUM(${orderItems.quantity} * ${inventoryBatches.costPrice})::text, '0')`,
     })
-    .from(dailySalesSummary)
-    .where(and(gte(dailySalesSummary.date, from), lte(dailySalesSummary.date, to)))
+    .from(orderItems)
+    .innerJoin(orders, eq(orders.id, orderItems.orderId))
+    .innerJoin(inventoryBatches, eq(inventoryBatches.id, orderItems.batchId))
+    .where(
+      and(
+        gte(orders.paymentConfirmedAt, startDate),
+        lte(orders.paymentConfirmedAt, endDate),
+        inArray(orders.status, REVENUE_STATUSES)
+      )
+    )
 
   const cogs = BigInt(cogsStats?.cogs || '0')
   const grossProfit = revenueTotal - cogs
@@ -235,25 +243,13 @@ export async function getTopProducts(from: string, to: string, limit = 10) {
   return result
 }
 
-export async function getPL(year: number, month?: number) {
-  const cacheKey = `pl:${year}:${month ?? 'all'}`
+export async function getPL(from: string, to: string) {
+  const cacheKey = `pl:${from}:${to}`
   const cached = await getCached<any>(cacheKey)
   if (cached) return cached
 
-  let from: string
-  let to: string
-
-  if (month) {
-    from = `${year}-${String(month).padStart(2, '0')}-01`
-    to = new Date(year, month, 0).toISOString().split('T')[0]
-  } else {
-    from = `${year}-01-01`
-    to = `${year}-12-31`
-  }
-
-  const startDate = new Date(from)
-  const endDate = new Date(to)
-  endDate.setHours(23, 59, 59, 999)
+  const startDate = startOfDay(new Date(from))
+  const endDate = endOfDay(new Date(to))
 
   const [revenueStats] = await db
     .select({
@@ -272,10 +268,18 @@ export async function getPL(year: number, month?: number) {
 
   const [summaryData] = await db
     .select({
-      cogs: sql<string>`COALESCE(SUM(${dailySalesSummary.cogsKrw})::text, '0')`,
+      cogs: sql<string>`COALESCE(SUM(${orderItems.quantity} * ${inventoryBatches.costPrice})::text, '0')`,
     })
-    .from(dailySalesSummary)
-    .where(and(gte(dailySalesSummary.date, from), lte(dailySalesSummary.date, to)))
+    .from(orderItems)
+    .innerJoin(orders, eq(orders.id, orderItems.orderId))
+    .innerJoin(inventoryBatches, eq(inventoryBatches.id, orderItems.batchId))
+    .where(
+      and(
+        gte(orders.paymentConfirmedAt, startDate),
+        lte(orders.paymentConfirmedAt, endDate),
+        inArray(orders.status, REVENUE_STATUSES)
+      )
+    )
 
   const cogs = Number(summaryData?.cogs || 0)
   const grossProfit = revenue - cogs
@@ -296,7 +300,7 @@ export async function getPL(year: number, month?: number) {
   const netMargin = revenue > 0 ? (netProfit * 100) / revenue : 0
 
   const result = {
-    period: month ? `${year}-${month}` : `${year}`,
+    period: `${from} to ${to}`,
     revenue,
     cogs,
     grossProfit,
@@ -510,7 +514,7 @@ export async function exportCSV(type: 'pl' | 'orders' | 'products' | 'revenue' |
   endDate.setHours(23, 59, 59, 999)
 
   if (type === 'pl') {
-    const pl = await getPL(startDate.getFullYear(), startDate.getMonth() + 1)
+    const pl = await getPL(from, to)
     let csv = 'Kategoriya,Miqdor (KRW)\n'
     csv += `Daromad,${Number(pl.revenue)}\n`
     csv += `Tannarx (COGS),${Number(pl.cogs)}\n`
