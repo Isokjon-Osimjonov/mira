@@ -58,9 +58,7 @@ export const ProductCard = ({
     if (product.isNew) {
       return { label: 'YANGI', color: tokens.colors.success }
     }
-    if (product.wholesalePrice < product.retailPrice * 0.9) {
-      return { label: 'CHEGIRMA', color: tokens.colors.error }
-    }
+
     if (product.totalStock <= 5) {
       return { label: 'OZ QOLDI', color: tokens.colors.warning }
     }

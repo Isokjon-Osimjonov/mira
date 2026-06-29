@@ -150,7 +150,9 @@ export async function getProducts(query: {
     where = and(where, eq(products.isFeatured, true))
   }
 
-  if (query.isActive !== undefined) {
+  if (!query.isAdmin) {
+    where = and(where, eq(products.isActive, true))
+  } else if (query.isActive !== undefined) {
     where = and(where, eq(products.isActive, query.isActive === 'true'))
   }
 
