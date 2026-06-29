@@ -219,10 +219,15 @@ export function CustomerDetailPage({ id }: { id: string }) {
                 <span className="text-xs font-semibold">{stats?.totalOrders ?? 0} ta</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-xs text-muted-foreground flex items-center gap-1.5">
-                  <Wallet className="h-3 w-3" strokeWidth={1.5} />
-                  Jami xarid
-                </span>
+                <div className="flex flex-col">
+                  <span className="text-xs text-muted-foreground flex items-center gap-1.5">
+                    <Wallet className="h-3 w-3" strokeWidth={1.5} />
+                    Jami xarid
+                  </span>
+                  <span className="text-[10px] text-muted-foreground/70 pl-[18px] mt-0.5 leading-tight">
+                    Faqat yetkazib berilgan buyurtmalar
+                  </span>
+                </div>
                 <div className="text-right">
                   <p className="text-xs font-semibold">{formatKRW(stats?.totalSpent ?? 0)}</p>
                   {isUZB && rate && (
