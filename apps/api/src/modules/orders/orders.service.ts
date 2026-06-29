@@ -660,19 +660,32 @@ export async function createOrder(params: {
         data: { orderId: newOrder.id, type: 'PAYMENT_CONFIRMED' },
       })
     } else {
+      const isStorefront = params.source === 'STOREFRONT'
+      
+      const title = 'Buyurtma qabul qilindi! 🛍'
+      const body = isStorefront
+        ? `#${orderNumber} — To'lov chekingiz tekshirilmoqda`
+        : `#${orderNumber} — To'lovni ${appSettings.paymentTimeoutMinutes} daqiqa ichida yuklang`
+        
+      const telegramMessage = isStorefront
+        ? `✅ <b>Buyurtmangiz qabul qilindi!</b>\n\n` +
+          `📦 <b>#${orderNumber}</b>\n` +
+          `💰 ₩${Number(totalAmount).toLocaleString()}\n\n` +
+          `To'lov chekingiz tekshirilmoqda.`
+        : `✅ <b>Buyurtmangiz qabul qilindi!</b>\n\n` +
+          `📦 <b>#${orderNumber}</b>\n` +
+          `💰 ₩${Number(totalAmount).toLocaleString()}\n` +
+          `⏰ To'lovni <b>${appSettings.paymentTimeoutMinutes} daqiqa</b> ichida yuklang`
+
       await notifyCustomerFull({
         customerId: params.customerId,
         telegramId: tokens.telegramId,
         expoPushToken: tokens.expoPushToken,
         type: 'ORDER_STATUS',
         channel: 'BOTH',
-        title: 'Buyurtma qabul qilindi! 🛍',
-        body: `#${orderNumber} — To'lovni ${appSettings.paymentTimeoutMinutes} daqiqa ichida yuklang`,
-        telegramMessage:
-          `✅ <b>Buyurtmangiz qabul qilindi!</b>\n\n` +
-          `📦 <b>#${orderNumber}</b>\n` +
-          `💰 ₩${Number(totalAmount).toLocaleString()}\n` +
-          `⏰ To'lovni <b>${appSettings.paymentTimeoutMinutes} daqiqa</b> ichida yuklang`,
+        title,
+        body,
+        telegramMessage,
         data: { orderId: newOrder.id, type: 'ORDER_CREATED' },
       })
     }
