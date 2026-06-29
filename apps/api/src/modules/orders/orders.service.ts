@@ -1210,7 +1210,18 @@ export async function bulkUpdateStatus(
 
   for (const orderId of orderIds) {
     try {
-      await adminUpdateStatus(orderId, adminId, { status: newStatus, ...payloadOverrides }, adminName)
+      if (newStatus === 'REFUNDED') {
+        const [order] = await db.select().from(orders).where(eq(orders.id, orderId)).limit(1)
+        const productOnlyRefund = Number(order.subtotal) - Number(order.discountAmount ?? 0)
+        await refundOrder(orderId, adminId, {
+          refundAmount: payloadOverrides?.refundAmount ?? productOnlyRefund,
+          refundNote: payloadOverrides?.note
+        })
+      } else if (newStatus === 'CANCELED') {
+        await cancelOrder(orderId, adminId, payloadOverrides?.note)
+      } else {
+        await adminUpdateStatus(orderId, adminId, { status: newStatus, ...payloadOverrides }, adminName)
+      }
       results.succeeded.push(orderId)
     } catch (err: any) {
       results.failed.push({ orderId, reason: err.message })
