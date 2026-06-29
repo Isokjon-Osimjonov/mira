@@ -92,7 +92,7 @@ export function ManualOrderPage() {
       customerId: '',
       paymentMethod: 'KOREAN_BANK',
       paymentMode: 'RECEIPT',
-      items: [{ productId: '', productName: '', quantity: 1 }],
+      items: [],
     },
   })
 
@@ -129,7 +129,7 @@ export function ManualOrderPage() {
 
   const createAddressMutation = useMutation({
     mutationFn: async (data: any) => {
-      const res = await api.post(`/admin/addresses/${selectedCustomerId}/addresses`, data)
+      const res = await api.post(`/admin/customers/${selectedCustomerId}/addresses`, data)
       return res.data
     },
     onSuccess: (res) => {
@@ -319,29 +319,43 @@ export function ManualOrderPage() {
                         <Label className="text-xs">Telefon</Label>
                         <Input className="h-9" value={newAddr.phone} onChange={(e) => setNewAddr({ ...newAddr, phone: e.target.value })} />
                       </div>
-                      <div>
-                        <Label className="text-xs">Pochta indeksi</Label>
-                        <Input className="h-9" value={newAddr.postalCode} onChange={(e) => setNewAddr({ ...newAddr, postalCode: e.target.value })} />
-                      </div>
+                      {newAddr.regionCode === 'KOR' ? (
+                        <div>
+                          <Label className="text-xs">Pochta indeksi</Label>
+                          <Input className="h-9" value={newAddr.postalCode} onChange={(e) => setNewAddr({ ...newAddr, postalCode: e.target.value })} placeholder="00000" />
+                        </div>
+                      ) : (
+                        <div>
+                          <Label className="text-xs">Pochta indeksi (ixtiyoriy)</Label>
+                          <Input className="h-9" value={newAddr.postalCode} onChange={(e) => setNewAddr({ ...newAddr, postalCode: e.target.value })} placeholder="100000" />
+                        </div>
+                      )}
                     </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <Label className="text-xs">Viloyat (UZB)</Label>
-                        <Input className="h-9" value={newAddr.province} onChange={(e) => setNewAddr({ ...newAddr, province: e.target.value })} />
+                    
+                    {newAddr.regionCode === 'UZB' && (
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <Label className="text-xs">Viloyat *</Label>
+                          <Input className="h-9" value={newAddr.province} onChange={(e) => setNewAddr({ ...newAddr, province: e.target.value })} placeholder="Toshkent viloyati..." />
+                        </div>
+                        <div>
+                          <Label className="text-xs">Shahar/tuman *</Label>
+                          <Input className="h-9" value={newAddr.city} onChange={(e) => setNewAddr({ ...newAddr, city: e.target.value })} placeholder="Toshkent shahri..." />
+                        </div>
                       </div>
-                      <div>
-                        <Label className="text-xs">Shahar (UZB)</Label>
-                        <Input className="h-9" value={newAddr.city} onChange={(e) => setNewAddr({ ...newAddr, city: e.target.value })} />
-                      </div>
-                    </div>
+                    )}
+                    
                     <div>
-                      <Label className="text-xs">Asosiy manzil</Label>
-                      <Input className="h-9" value={newAddr.addressLine1} onChange={(e) => setNewAddr({ ...newAddr, addressLine1: e.target.value })} />
+                      <Label className="text-xs">{newAddr.regionCode === 'UZB' ? "Ko'cha, uy raqami *" : "Asosiy manzil"}</Label>
+                      <Input className="h-9" value={newAddr.addressLine1} onChange={(e) => setNewAddr({ ...newAddr, addressLine1: e.target.value })} placeholder={newAddr.regionCode === 'UZB' ? "Navoiy ko'chasi, 1-uy..." : "Ko'cha, uy..."} />
                     </div>
-                    <div>
-                      <Label className="text-xs">Kvartira/Xona (KOR)</Label>
-                      <Input className="h-9" value={newAddr.addressLine2} onChange={(e) => setNewAddr({ ...newAddr, addressLine2: e.target.value })} />
-                    </div>
+                    
+                    {newAddr.regionCode === 'KOR' && (
+                      <div>
+                        <Label className="text-xs">Qo'shimcha manzil (xona/kvartira) *</Label>
+                        <Input className="h-9" value={newAddr.addressLine2} onChange={(e) => setNewAddr({ ...newAddr, addressLine2: e.target.value })} placeholder="Xona raqami, bino..." />
+                      </div>
+                    )}
                     <div className="flex gap-2 justify-end pt-2">
                       <Button size="sm" variant="ghost" type="button" onClick={() => setShowAddAddress(false)}>Bekor qilish</Button>
                       <Button size="sm" type="button" onClick={() => createAddressMutation.mutate(newAddr)} disabled={createAddressMutation.isPending}>
@@ -400,29 +414,43 @@ export function ManualOrderPage() {
                         <Label className="text-xs">Telefon</Label>
                         <Input className="h-9" value={newAddr.phone} onChange={(e) => setNewAddr({ ...newAddr, phone: e.target.value })} />
                       </div>
-                      <div>
-                        <Label className="text-xs">Pochta indeksi</Label>
-                        <Input className="h-9" value={newAddr.postalCode} onChange={(e) => setNewAddr({ ...newAddr, postalCode: e.target.value })} />
-                      </div>
+                      {newAddr.regionCode === 'KOR' ? (
+                        <div>
+                          <Label className="text-xs">Pochta indeksi</Label>
+                          <Input className="h-9" value={newAddr.postalCode} onChange={(e) => setNewAddr({ ...newAddr, postalCode: e.target.value })} placeholder="00000" />
+                        </div>
+                      ) : (
+                        <div>
+                          <Label className="text-xs">Pochta indeksi (ixtiyoriy)</Label>
+                          <Input className="h-9" value={newAddr.postalCode} onChange={(e) => setNewAddr({ ...newAddr, postalCode: e.target.value })} placeholder="100000" />
+                        </div>
+                      )}
                     </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <Label className="text-xs">Viloyat (UZB)</Label>
-                        <Input className="h-9" value={newAddr.province} onChange={(e) => setNewAddr({ ...newAddr, province: e.target.value })} />
+                    
+                    {newAddr.regionCode === 'UZB' && (
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <Label className="text-xs">Viloyat *</Label>
+                          <Input className="h-9" value={newAddr.province} onChange={(e) => setNewAddr({ ...newAddr, province: e.target.value })} placeholder="Toshkent viloyati..." />
+                        </div>
+                        <div>
+                          <Label className="text-xs">Shahar/tuman *</Label>
+                          <Input className="h-9" value={newAddr.city} onChange={(e) => setNewAddr({ ...newAddr, city: e.target.value })} placeholder="Toshkent shahri..." />
+                        </div>
                       </div>
-                      <div>
-                        <Label className="text-xs">Shahar (UZB)</Label>
-                        <Input className="h-9" value={newAddr.city} onChange={(e) => setNewAddr({ ...newAddr, city: e.target.value })} />
-                      </div>
-                    </div>
+                    )}
+                    
                     <div>
-                      <Label className="text-xs">Asosiy manzil</Label>
-                      <Input className="h-9" value={newAddr.addressLine1} onChange={(e) => setNewAddr({ ...newAddr, addressLine1: e.target.value })} />
+                      <Label className="text-xs">{newAddr.regionCode === 'UZB' ? "Ko'cha, uy raqami *" : "Asosiy manzil"}</Label>
+                      <Input className="h-9" value={newAddr.addressLine1} onChange={(e) => setNewAddr({ ...newAddr, addressLine1: e.target.value })} placeholder={newAddr.regionCode === 'UZB' ? "Navoiy ko'chasi, 1-uy..." : "Ko'cha, uy..."} />
                     </div>
-                    <div>
-                      <Label className="text-xs">Kvartira/Xona (KOR)</Label>
-                      <Input className="h-9" value={newAddr.addressLine2} onChange={(e) => setNewAddr({ ...newAddr, addressLine2: e.target.value })} />
-                    </div>
+                    
+                    {newAddr.regionCode === 'KOR' && (
+                      <div>
+                        <Label className="text-xs">Qo'shimcha manzil (xona/kvartira) *</Label>
+                        <Input className="h-9" value={newAddr.addressLine2} onChange={(e) => setNewAddr({ ...newAddr, addressLine2: e.target.value })} placeholder="Xona raqami, bino..." />
+                      </div>
+                    )}
                     <div className="flex gap-2 justify-end pt-2">
                       <Button size="sm" variant="ghost" type="button" onClick={() => setShowAddAddress(false)}>Bekor qilish</Button>
                       <Button size="sm" type="button" onClick={() => createAddressMutation.mutate(newAddr)} disabled={createAddressMutation.isPending}>
