@@ -1,5 +1,5 @@
 import { db } from '../../config/db'
-import { settings, shippingTiers, paymentMethods } from '@mira/db'
+import { settings, paymentMethods } from '@mira/db'
 import { eq, asc } from 'drizzle-orm'
 import type { UpdateSettingsDto } from './settings.schema'
 import { cacheGet, cacheSet, cacheDelete, CACHE_TTL } from '../../lib/cache'
@@ -54,38 +54,6 @@ export async function updatePaymentMethod(method: string, data: any) {
   return updated
 }
 
-export async function getShippingTiers() {
-  return await db.select().from(shippingTiers).orderBy(asc(shippingTiers.minOrderAmount))
-}
-
-export async function createShippingTier(data: any) {
-  const [tier] = await db
-    .insert(shippingTiers)
-    .values({
-      region: data.region,
-      minOrderAmount: BigInt(data.minOrderAmount),
-      shippingCost: BigInt(data.shippingCost),
-      currency: data.currency || (data.region === 'KOR' ? 'KRW' : 'UZS'),
-    })
-    .returning()
-  return tier
-}
-
-export async function updateShippingTier(id: string, data: any) {
-  const update: any = { updatedAt: new Date() }
-  if (data.minOrderAmount !== undefined) update.minOrderAmount = BigInt(data.minOrderAmount)
-  if (data.shippingCost !== undefined) update.shippingCost = BigInt(data.shippingCost)
-  if (data.currency !== undefined) update.currency = data.currency
-
-  const [tier] = await db.update(shippingTiers).set(update).where(eq(shippingTiers.id, id)).returning()
-  return tier
-}
-
-export async function deleteShippingTier(id: string) {
-  await db.delete(shippingTiers).where(eq(shippingTiers.id, id))
-  return { success: true }
-}
-
 export async function getOrderSettings() {
   const s = await getSettings()
   return {
@@ -95,21 +63,8 @@ export async function getOrderSettings() {
     cargoTransitDaysMax: s.cargoTransitDaysMax,
     uzbCargoUsdPerKg: s.uzbCargoUsdPerKg,
     usdToKrw: s.usdToKrw,
-    standardShippingFeeKrw: Number(s.standardShippingFeeKrw),
-    freeShippingThresholdKrw: Number(s.freeShippingThresholdKrw),
     minOrderKorKrw: Number(s.minOrderKorKrw),
     minOrderUzbUzs: Number(s.minOrderUzbUzs),
-    korBankEnabled: s.korBankEnabled,
-    korBankName: s.korBankName,
-    korBankHolder: s.korBankHolder,
-    korBankNumber: s.korBankNumber,
-    korE9payEnabled: s.korE9payEnabled,
-    korE9payName: s.korE9payName,
-    korE9payAccount: s.korE9payAccount,
-    uzbBankEnabled: s.uzbBankEnabled,
-    uzbBankName: s.uzbBankName,
-    uzbBankHolder: s.uzbBankHolder,
-    uzbBankNumber: s.uzbBankNumber,
     telegramUrl: s.telegramUrl,
     instagramUrl: s.instagramUrl,
     websiteUrl: s.websiteUrl,
@@ -126,25 +81,8 @@ export async function updateOrderSettings(data: any) {
   if (data.cargoTransitDaysMax !== undefined) update.cargoTransitDaysMax = data.cargoTransitDaysMax
   if (data.uzbCargoUsdPerKg !== undefined) update.uzbCargoUsdPerKg = data.uzbCargoUsdPerKg
   if (data.usdToKrw !== undefined) update.usdToKrw = data.usdToKrw
-  if (data.standardShippingFeeKrw !== undefined) update.standardShippingFeeKrw = BigInt(data.standardShippingFeeKrw)
-  if (data.freeShippingThresholdKrw !== undefined) update.freeShippingThresholdKrw = BigInt(data.freeShippingThresholdKrw)
   if (data.minOrderKorKrw !== undefined) update.minOrderKorKrw = data.minOrderKorKrw
   if (data.minOrderUzbUzs !== undefined) update.minOrderUzbUzs = data.minOrderUzbUzs
-  
-  if (data.korBankEnabled !== undefined) update.korBankEnabled = data.korBankEnabled
-  if (data.korBankName !== undefined) update.korBankName = data.korBankName
-  if (data.korBankHolder !== undefined) update.korBankHolder = data.korBankHolder
-  if (data.korBankNumber !== undefined) update.korBankNumber = data.korBankNumber
-  
-  if (data.korE9payEnabled !== undefined) update.korE9payEnabled = data.korE9payEnabled
-  if (data.korE9payName !== undefined) update.korE9payName = data.korE9payName
-  if (data.korE9payAccount !== undefined) update.korE9payAccount = data.korE9payAccount
-  
-  if (data.uzbBankEnabled !== undefined) update.uzbBankEnabled = data.uzbBankEnabled
-  if (data.uzbBankName !== undefined) update.uzbBankName = data.uzbBankName
-  if (data.uzbBankHolder !== undefined) update.uzbBankHolder = data.uzbBankHolder
-  if (data.uzbBankNumber !== undefined) update.uzbBankNumber = data.uzbBankNumber
-  
   if (data.telegramUrl !== undefined) update.telegramUrl = data.telegramUrl
   if (data.instagramUrl !== undefined) update.instagramUrl = data.instagramUrl
   if (data.websiteUrl !== undefined) update.websiteUrl = data.websiteUrl
@@ -208,11 +146,7 @@ export async function updateSettings(data: UpdateSettingsDto) {
   delete cleanData.lockColumn
   delete cleanData.createdAt
 
-  // BigInt conversion for specific fields
-  if (data.standardShippingFeeKrw !== undefined)
-    cleanData.standardShippingFeeKrw = BigInt(data.standardShippingFeeKrw)
-  if (data.freeShippingThresholdKrw !== undefined)
-    cleanData.freeShippingThresholdKrw = BigInt(data.freeShippingThresholdKrw)
+
   if (data.minOrderKorKrw !== undefined) cleanData.minOrderKorKrw = data.minOrderKorKrw
   if (data.minOrderUzbUzs !== undefined) cleanData.minOrderUzbUzs = data.minOrderUzbUzs
 

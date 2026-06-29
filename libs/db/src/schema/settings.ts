@@ -18,25 +18,8 @@ export const settings = pgTable('settings', {
   uzbCargoUsdPerKg: integer('uzb_cargo_usd_per_kg').default(10).notNull(),
   usdToKrw: integer('usd_to_krw').default(1350).notNull(),
   
-  standardShippingFeeKrw: bigint('standard_shipping_fee_krw', { mode: 'bigint' }).default(sql`3000`).notNull(),
-  freeShippingThresholdKrw: bigint('free_shipping_threshold_krw', { mode: 'bigint' }).default(sql`50000`).notNull(),
-  
   minOrderKorKrw: integer('min_order_kor_krw').default(0).notNull(),
   minOrderUzbUzs: integer('min_order_uzb_uzs').default(0).notNull(),
-  
-  korBankEnabled: boolean('kor_bank_enabled').default(false).notNull(),
-  korBankName: text('kor_bank_name'),
-  korBankHolder: text('kor_bank_holder'),
-  korBankNumber: text('kor_bank_number'),
-  
-  korE9payEnabled: boolean('kor_e9pay_enabled').default(false).notNull(),
-  korE9payName: text('kor_e9pay_name'),
-  korE9payAccount: text('kor_e9pay_account'),
-  
-  uzbBankEnabled: boolean('uzb_bank_enabled').default(false).notNull(),
-  uzbBankName: text('uzb_bank_name'),
-  uzbBankHolder: text('uzb_bank_holder'),
-  uzbBankNumber: text('uzb_bank_number'),
   
   telegramUrl: varchar('telegram_url', { length: 200 }),
   instagramUrl: varchar('instagram_url', { length: 200 }),
@@ -82,19 +65,6 @@ export const exchangeRateSnapshotsRelations = relations(exchangeRateSnapshots, (
   }),
 }));
 
-export const shippingTiers = pgTable('shipping_tiers', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  region: varchar('region', { length: 10 }).notNull(), // 'KOR' or 'UZB'
-  minOrderAmount: bigint('min_order_amount', { mode: 'bigint' }).notNull(),
-  shippingCost: bigint('shipping_cost', { mode: 'bigint' }).notNull(),
-  currency: varchar('currency', { length: 3 }).default('KRW').notNull(),
-  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
-}, (t) => ({
-  regionIdx: index('shipping_tiers_region_idx').on(t.region),
-  amountIdx: index('shipping_tiers_min_amount_idx').on(t.minOrderAmount),
-}));
-
 export type Setting = typeof settings.$inferSelect;
 export type NewSetting = typeof settings.$inferInsert;
 
@@ -104,5 +74,4 @@ export type NewPaymentMethod = typeof paymentMethods.$inferInsert;
 export type ExchangeRateSnapshot = typeof exchangeRateSnapshots.$inferSelect;
 export type NewExchangeRateSnapshot = typeof exchangeRateSnapshots.$inferInsert;
 
-export type ShippingTier = typeof shippingTiers.$inferSelect;
-export type NewShippingTier = typeof shippingTiers.$inferInsert;
+

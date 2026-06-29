@@ -10,8 +10,31 @@ import { eq, and, isNull, sql, desc, asc, ilike, or, isNotNull } from 'drizzle-o
 import { escapeLikeQuery } from '../../lib/sanitize'
 import { validateSort } from '../../lib/sort-whitelist'
 import { isValidCloudinaryUrl } from '../../lib/validate-url'
+import { cloudinary, UPLOAD_FOLDERS } from '../../config/cloudinary'
 import { cacheGet, cacheSet, CACHE_TTL } from '../../lib/cache'
 import type { CreateProductDto, UpdateProductDto, UpdatePricingDto } from './products.schema'
+
+async function processImageUrls(urls: string[], existingUrls: string[] = []): Promise<string[]> {
+  const processedUrls: string[] = []
+  for (const url of urls) {
+    if (isValidCloudinaryUrl(url)) {
+      processedUrls.push(url)
+    } else if (existingUrls.includes(url)) {
+      processedUrls.push(url)
+    } else {
+      try {
+        const result = await cloudinary.uploader.upload(url, {
+          folder: UPLOAD_FOLDERS.products,
+        })
+        processedUrls.push(result.secure_url)
+      } catch (err) {
+        console.error("Cloudinary upload error:", err)
+        throw { status: 400, code: 'UPLOAD_FAILED', message: `Rasmni yuklashda xatolik: ${url}` }
+      }
+    }
+  }
+  return processedUrls
+}
 import { logAudit } from '../../lib/audit'
 
 // Flat regional-pricing fields stripped from the product payload before update.
@@ -307,6 +330,10 @@ export async function getAdminProductById(id: string) {
 }
 
 export async function createProduct(data: CreateProductDto, adminId?: string, adminName?: string) {
+  if (data.imageUrls) {
+    data.imageUrls = await processImageUrls(data.imageUrls)
+  }
+
   return await db.transaction(async (tx) => {
     // Strip flat regional-pricing keys from the product insert payload.
     const productData = pickProductColumns(data)
@@ -365,9 +392,11 @@ export async function createProduct(data: CreateProductDto, adminId?: string, ad
 }
 
 export async function updateProduct(id: string, data: UpdateProductDto, adminId?: string, adminName?: string) {
-  // Validate images
-  if (data.imageUrls?.some((url) => !isValidCloudinaryUrl(url))) {
-    throw { status: 400, code: 'INVALID_URL', message: 'Faqat Cloudinary URL qabul qilinadi' }
+  const [existing] = await db.select({ imageUrls: products.imageUrls }).from(products).where(eq(products.id, id)).limit(1)
+  if (!existing) throw { status: 404, message: 'Mahsulot topilmadi' }
+
+  if (data.imageUrls) {
+    data.imageUrls = await processImageUrls(data.imageUrls, existing.imageUrls as string[] || [])
   }
 
   return await db.transaction(async (tx) => {
@@ -410,14 +439,14 @@ export async function updateProduct(id: string, data: UpdateProductDto, adminId?
 }
 
 export async function updateProductImages(id: string, imageUrls: string[]) {
-  // Validate images
-  if (imageUrls.some((url) => !isValidCloudinaryUrl(url))) {
-    throw { status: 400, code: 'INVALID_URL', message: 'Faqat Cloudinary URL qabul qilinadi' }
-  }
+  const [existing] = await db.select({ imageUrls: products.imageUrls }).from(products).where(eq(products.id, id)).limit(1)
+  if (!existing) throw { status: 404, message: 'Mahsulot topilmadi' }
+
+  const processedUrls = await processImageUrls(imageUrls, existing.imageUrls as string[] || [])
 
   const [updated] = await db
     .update(products)
-    .set({ imageUrls, updatedAt: new Date() })
+    .set({ imageUrls: processedUrls, updatedAt: new Date() })
     .where(eq(products.id, id))
     .returning()
 

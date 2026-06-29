@@ -122,7 +122,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarContent>
 
       <SidebarFooter>
-        <div className="px-4 py-2 mb-2 bg-gray-50/50 rounded-xl border-[0.5px] border-border/50 mx-2">
+        <div className="px-4 py-2 mb-2 bg-gray-50/50 rounded-xl border-[0.5px] border-border/50 mx-2 group-data-[collapsible=icon]:hidden">
           <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider mb-1">
             Valyuta kursi
           </p>
