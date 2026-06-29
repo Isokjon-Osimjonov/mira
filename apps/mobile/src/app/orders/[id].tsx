@@ -8,6 +8,7 @@ import {
   Alert,
   ActivityIndicator,
   Linking,
+  Modal,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Image } from 'expo-image'
@@ -79,6 +80,7 @@ export default function OrderDetailScreen() {
   const [isUploading, setIsUploading] = useState(false)
   const [isCanceling, setIsCanceling] = useState(false)
   const [isRefunding, setIsRefunding] = useState(false)
+  const [receiptModalVisible, setReceiptModalVisible] = useState(false)
 
   useEffect(() => {
     if (!order?.paymentDeadline) return
@@ -266,14 +268,14 @@ export default function OrderDetailScreen() {
                     <View
                       style={[
                         styles.timelineCircle,
-                        idx < currentIdx
+                        idx < currentIdx || (idx === STEPS.length - 1 && order.status === 'DELIVERED')
                           ? styles.circleDone
                           : idx === currentIdx
                             ? styles.circleActive
                             : styles.circleNext,
                       ]}
                     >
-                      {idx < currentIdx ? (
+                      {idx < currentIdx || (idx === STEPS.length - 1 && order.status === 'DELIVERED') ? (
                         <Feather name="check" size={14} color="white" />
                       ) : (
                         <View style={idx === currentIdx ? styles.dotActive : styles.dotNext} />
@@ -383,7 +385,7 @@ export default function OrderDetailScreen() {
             <Text style={styles.sectionTitle}>To'lov cheki</Text>
             {order.paymentReceiptUrl && (
               <View style={{ marginBottom: 12 }}>
-                <TouchableOpacity onPress={() => Linking.openURL(order.paymentReceiptUrl!)}>
+                <TouchableOpacity onPress={() => setReceiptModalVisible(true)}>
                   <Image
                     source={order.paymentReceiptUrl}
                     style={styles.receiptImage}
@@ -391,6 +393,31 @@ export default function OrderDetailScreen() {
                   />
                   <Text style={styles.zoomText}>Kattalashtirish ↗</Text>
                 </TouchableOpacity>
+                {order.status === 'PAYMENT_SUBMITTED' && (
+                  <TouchableOpacity
+                    onPress={() => {
+                      Alert.alert(
+                        "Chekni almashtirmoqchimisiz?",
+                        "Yangi chek yuklaganingizda oldingisi o'chiriladi.",
+                        [
+                          { text: 'Bekor qilish', style: 'cancel' },
+                          { text: "O'zgartirish", onPress: handleUploadReceipt },
+                        ]
+                      )
+                    }}
+                    style={[styles.uploadBtn, { marginTop: 12 }]}
+                    disabled={isUploading}
+                  >
+                    {isUploading ? (
+                      <ActivityIndicator color={tokens.colors.primary} />
+                    ) : (
+                      <>
+                        <Feather name="refresh-cw" size={16} color={tokens.colors.primary} />
+                        <Text style={styles.uploadText}>Chekni o'zgartirish</Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+                )}
               </View>
             )}
 
@@ -465,6 +492,37 @@ export default function OrderDetailScreen() {
           </View>
         )}
       </ScrollView>
+
+      {/* RECEIPT MODAL */}
+      <Modal
+        visible={receiptModalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setReceiptModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity 
+            style={styles.modalCloseArea} 
+            activeOpacity={1} 
+            onPress={() => setReceiptModalVisible(false)} 
+          />
+          <View style={styles.modalContent}>
+            <TouchableOpacity
+              style={styles.modalCloseBtn}
+              onPress={() => setReceiptModalVisible(false)}
+            >
+              <Feather name="x" size={24} color="white" />
+            </TouchableOpacity>
+            {order?.paymentReceiptUrl && (
+              <Image
+                source={order.paymentReceiptUrl}
+                style={styles.modalImage}
+                contentFit="contain"
+              />
+            )}
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   )
 }
@@ -570,7 +628,7 @@ const styles = StyleSheet.create({
   },
   timelineItem: {
     alignItems: 'center',
-    width: 50,
+    width: 68,
   },
   timelineCircle: {
     width: 28,
@@ -785,5 +843,31 @@ const styles = StyleSheet.create({
   cancelText: {
     fontSize: 14,
     color: '#DC2626',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalCloseArea: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  modalContent: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalCloseBtn: {
+    position: 'absolute',
+    top: 60,
+    right: 24,
+    zIndex: 10,
+    padding: 8,
+  },
+  modalImage: {
+    width: '100%',
+    height: '80%',
   },
 })

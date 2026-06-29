@@ -738,7 +738,7 @@ export async function uploadReceipt(orderId: string, customerId: string, dto: Up
     if (!order) throw { status: 404, code: 'ORDER_NOT_FOUND', message: 'Buyurtma topilmadi' }
     if (order.customerId !== customerId)
       throw { status: 403, code: 'ORDER_UNAUTHORIZED', message: 'Ruxsat etilmagan' }
-    if (!['PENDING_PAYMENT', 'PAYMENT_REJECTED'].includes(order.status))
+    if (!['PENDING_PAYMENT', 'PAYMENT_REJECTED', 'PAYMENT_SUBMITTED'].includes(order.status))
       throw { status: 400, code: 'INVALID_STATUS_TRANSITION', message: "Noto'g'ri holat" }
     if (order.paymentDeadline && new Date() > order.paymentDeadline)
       throw { status: 400, code: 'PAYMENT_DEADLINE_PASSED', message: "To'lov muddati tugagan" }
@@ -763,11 +763,13 @@ export async function uploadReceipt(orderId: string, customerId: string, dto: Up
 
     const [updated] = await tx.update(orders).set(updates).where(eq(orders.id, orderId)).returning()
 
-    await tx.insert(orderStatusHistory).values({
-      orderId,
-      fromStatus: order.status,
-      toStatus: 'PAYMENT_SUBMITTED',
-    })
+    if (order.status !== 'PAYMENT_SUBMITTED') {
+      await tx.insert(orderStatusHistory).values({
+        orderId,
+        fromStatus: order.status,
+        toStatus: 'PAYMENT_SUBMITTED',
+      })
+    }
 
     const [customer] = await tx
       .select()

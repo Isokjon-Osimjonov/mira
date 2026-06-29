@@ -75,21 +75,32 @@ export default function OrderConfirmedScreen() {
 
           <View style={styles.divider} />
 
-          {timeLeft !== null && timeLeft > 0 && (
-            <View style={styles.paymentCard}>
-              <Text style={styles.paymentLabel}>To'lov muddati:</Text>
-              <Text style={styles.countdown}>{formatCountdown(timeLeft)}</Text>
-              <Text style={styles.paymentSub}>ichida to'lovni amalga oshiring</Text>
-            </View>
-          )}
+          {order.status === 'PENDING_PAYMENT' ? (
+            <>
+              {timeLeft !== null && timeLeft > 0 && (
+                <View style={styles.paymentCard}>
+                  <Text style={styles.paymentLabel}>To'lov muddati:</Text>
+                  <Text style={styles.countdown}>{formatCountdown(timeLeft)}</Text>
+                  <Text style={styles.paymentSub}>ichida to'lovni amalga oshiring</Text>
+                </View>
+              )}
 
-          {timeLeft === 0 && (
-            <View style={[styles.paymentCard, { backgroundColor: tokens.colors.error + '10' }]}>
-              <Text style={[styles.paymentSub, { color: tokens.colors.error }]}>
-                To'lov muddati tugadi
+              {timeLeft === 0 && (
+                <View style={[styles.paymentCard, { backgroundColor: tokens.colors.error + '10' }]}>
+                  <Text style={[styles.paymentSub, { color: tokens.colors.error }]}>
+                    To'lov muddati tugadi
+                  </Text>
+                </View>
+              )}
+            </>
+          ) : order.status === 'PAYMENT_SUBMITTED' ? (
+            <View style={[styles.paymentCard, { backgroundColor: tokens.colors.primary + '10' }]}>
+              <Feather name="check-circle" size={24} color={tokens.colors.primary} style={{ marginBottom: 8 }} />
+              <Text style={[styles.paymentSub, { color: tokens.colors.primary, fontSize: 14, fontWeight: '500' }]}>
+                Chek yuklandi, tasdiqlash kutilmoqda
               </Text>
             </View>
-          )}
+          ) : null}
 
           <View style={styles.instructionsBox}>
             <Text style={styles.instructionsTitle}>To'lov ma'lumotlari</Text>
