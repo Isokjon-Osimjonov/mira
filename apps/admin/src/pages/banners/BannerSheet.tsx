@@ -1,10 +1,13 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query'
 import { toast } from 'sonner'
+import { Search } from 'lucide-react'
 import { bannersApi } from '../../api/banners.api'
+import { productsApi } from '../../api/products.api'
+import { categoriesApi } from '../../api/categories.api'
 import { ImageUploadField } from '../../components/shared/ImageUploadField'
 import {
   Sheet,
@@ -53,6 +56,7 @@ export function BannerSheet({ open, onClose, banner, onSuccess }: Props) {
     control,
     reset,
     watch,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<BannerForm>({
     resolver: zodResolver(bannerSchema) as any,
@@ -80,12 +84,47 @@ export function BannerSheet({ open, onClose, banner, onSuccess }: Props) {
         title: '',
         imageUrl: '',
         linkType: 'none',
+        linkValue: '',
         isActive: true,
         sortOrder: 0,
         regionCode: null,
       })
     }
   }, [banner, reset, open])
+
+  const [productSearch, setProductSearch] = useState('')
+  const [productResults, setProductResults] = useState<any[]>([])
+
+  useEffect(() => {
+    if (banner?.linkType === 'product' && banner.linkValue) {
+      productsApi.getById(banner.linkValue).then((res) => {
+        setProductSearch(res.data?.name || res.data?.nameKo || banner.linkValue)
+      }).catch(() => {
+        setProductSearch(banner.linkValue)
+      })
+    } else {
+      setProductSearch('')
+    }
+  }, [banner, open])
+
+  useEffect(() => {
+    if (!productSearch || productSearch.length < 2) {
+      setProductResults([])
+      return
+    }
+    const t = setTimeout(async () => {
+      try {
+        const res = await productsApi.list({ q: productSearch, limit: 5 })
+        setProductResults(res.data ?? [])
+      } catch { /* ignore */ }
+    }, 300)
+    return () => clearTimeout(t)
+  }, [productSearch])
+
+  const { data: categories = [] } = useQuery({
+    queryKey: ['categories'],
+    queryFn: categoriesApi.getFlat,
+  })
 
   const mutation = useMutation({
     mutationFn: (data: BannerForm) =>
@@ -197,16 +236,70 @@ export function BannerSheet({ open, onClose, banner, onSuccess }: Props) {
             </div>
           </div>
 
-          {linkType !== 'none' && (
+          {linkType === 'product' && (
             <div className="space-y-2">
-              <Label>Havola qiymati</Label>
+              <Label>Mahsulot</Label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                <Input
+                  value={productSearch}
+                  onChange={(e) => {
+                    setProductSearch(e.target.value)
+                    if (!e.target.value) setValue('linkValue', '')
+                  }}
+                  placeholder="Mahsulot nomi bilan qidiring..."
+                  className="pl-9 h-9"
+                />
+                {productResults.length > 0 && (
+                  <div className="absolute z-10 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                    {productResults.map((p) => (
+                      <button
+                        key={p.id}
+                        type="button"
+                        className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 border-b last:border-0"
+                        onClick={() => {
+                          setValue('linkValue', p.id)
+                          setProductSearch(p.name || p.nameKo || 'Nomsiz')
+                          setProductResults([])
+                        }}
+                      >
+                        <div className="font-medium">{p.name || p.nameKo}</div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {linkType === 'category' && (
+            <div className="space-y-2">
+              <Label>Kategoriya</Label>
+              <Controller
+                control={control}
+                name="linkValue"
+                render={({ field }) => (
+                  <Select onValueChange={field.onChange} value={field.value || undefined}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Kategoriyani tanlang" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categories.map((c: any) => (
+                        <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+            </div>
+          )}
+
+          {linkType === 'external' && (
+            <div className="space-y-2">
+              <Label>Tashqi havola</Label>
               <Input 
                 {...register('linkValue')} 
-                placeholder={
-                  linkType === 'product' ? 'Mahsulot ID' :
-                  linkType === 'category' ? 'Kategoriya ID' :
-                  'https://...'
-                }
+                placeholder="https://..."
               />
             </div>
           )}
