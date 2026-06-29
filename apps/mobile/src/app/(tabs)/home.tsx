@@ -74,11 +74,7 @@ export default function HomeScreen() {
     staleTime: 2 * 60 * 1000,
   })
 
-  const { data: featuredData } = useQuery({
-    queryKey: ['products', 'featured'],
-    queryFn: () => productService.getProducts({ featured: true, limit: 1 }),
-    staleTime: 5 * 60 * 1000,
-  })
+
 
   const { data: rateData } = useQuery({
     queryKey: ['exchange-rate'],
@@ -96,7 +92,6 @@ export default function HomeScreen() {
   const banners = bannersData ?? []
   const newProducts = newProductsData?.data ?? []
   const bestsellerProducts = bestsellerData?.data ?? []
-  const featuredProduct = featuredData?.data?.[0] ?? null
 
   useEffect(() => {
     if (banners.length <= 1) return
