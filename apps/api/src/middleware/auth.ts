@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken'
 import { env } from '../config/env'
 import { db } from '../config/db'
 import { rolePermissions, adminUsers } from '@mira/db'
-import { eq, and } from 'drizzle-orm'
+import { eq, and, isNull } from 'drizzle-orm'
 
 // ─── JWT Payload types ────────────────────────────────────────
 export interface CustomerJwtPayload {
@@ -69,9 +69,37 @@ export function requireCustomer(req: Request, res: Response, next: NextFunction)
 
 // ─── Middleware: require any admin ────────────────────────────
 export function requireAdmin(req: Request, res: Response, next: NextFunction) {
-  requireAuth(req, res, () => {
+  requireAuth(req, res, async () => {
     if (req.user?.type !== 'admin') return forbidden(res, 'Admin access only')
-    next()
+
+    try {
+      const [admin] = await db
+        .select({
+          id: adminUsers.id,
+          isActive: adminUsers.isActive,
+          roleId: adminUsers.roleId,
+          isSuperAdmin: adminUsers.isSuperAdmin,
+        })
+        .from(adminUsers)
+        .where(and(eq(adminUsers.id, req.user.sub), isNull(adminUsers.deletedAt)))
+        .limit(1)
+
+      if (!admin || !admin.isActive) {
+        return unauthorized(res, 'Admin account is disabled or deleted')
+      }
+
+      // Update req.user with live DB state
+      const userPayload = req.user as AdminJwtPayload
+      userPayload.roleId = admin.roleId
+      userPayload.isSuperAdmin = admin.isSuperAdmin
+
+      next()
+    } catch {
+      res.status(500).json({
+        data: null,
+        error: { message: 'Auth check failed', code: 'INTERNAL_ERROR' },
+      })
+    }
   })
 }
 
