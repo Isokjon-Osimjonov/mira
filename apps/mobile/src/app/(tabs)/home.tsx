@@ -231,7 +231,7 @@ export default function HomeScreen() {
         <TouchableOpacity
           style={styles.searchBar}
           activeOpacity={0.8}
-          onPress={() => {}} // Navigate to search screen later
+          onPress={() => router.push('/search')}
         >
           <Feather
             name="search"
