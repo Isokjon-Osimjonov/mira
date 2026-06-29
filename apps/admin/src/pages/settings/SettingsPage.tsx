@@ -47,14 +47,14 @@ export function SettingsPage() {
 
       <div className="flex flex-col lg:flex-row gap-6">
         {/* Tab navigation */}
-        <div className="flex lg:flex-col gap-1 overflow-x-auto lg:overflow-visible lg:w-60 shrink-0 pb-1 lg:pb-0">
+        <div className="flex lg:flex-col gap-1 overflow-x-auto lg:overflow-visible lg:w-60 shrink-0 pb-1 lg:pb-0 snap-x snap-mandatory [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
           {TABS.map((t) => (
             <button
               key={t.id}
               onClick={() => setTab(t.id)}
               className={cn(
                 'flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all border-[0.5px]',
-                'text-left w-full',
+                'text-left w-full snap-start shrink-0',
                 tab === t.id
                   ? 'bg-primary text-white border-primary shadow-sm'
                   : 'bg-white text-muted-foreground border-border hover:bg-gray-50'
@@ -141,23 +141,23 @@ function PaymentMethodsTab() {
         return (
           <div key={key} className={cn("bg-white rounded-2xl border-[0.5px] border-border p-5 space-y-4 shadow-sm transition-all", !isConfigured && "opacity-80 bg-gray-50/50")}>
             {/* Header row */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <span className="text-2xl">{cfg.icon}</span>
+            <div className="flex flex-row items-start sm:items-center justify-between gap-4">
+              <div className="flex items-start sm:items-center gap-3">
+                <span className="text-2xl mt-1 sm:mt-0 shrink-0">{cfg.icon}</span>
                 <div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <p className="text-sm font-bold text-gray-900">{cfg.label}</p>
-                    <span className="text-[10px] px-1.5 py-0.5 rounded-lg bg-gray-100 text-gray-600 font-bold border-[0.5px]">
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-lg bg-gray-100 text-gray-600 font-bold border-[0.5px] whitespace-nowrap">
                       {cfg.flag} {cfg.region}
                     </span>
                     {!isConfigured && (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded-lg bg-amber-50 text-amber-600 font-bold border-[0.5px] border-amber-200">
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-lg bg-amber-50 text-amber-600 font-bold border-[0.5px] border-amber-200 whitespace-nowrap">
                         Sozlanmagan
                       </span>
                     )}
                   </div>
                   {cfg.cardTypes && (
-                    <p className="text-[11px] text-muted-foreground font-medium">
+                    <p className="text-[11px] text-muted-foreground font-medium mt-1">
                       {cfg.cardTypes.join(' / ')}
                     </p>
                   )}
@@ -165,16 +165,18 @@ function PaymentMethodsTab() {
               </div>
 
               {/* Toggle */}
-              <ToggleSwitch
-                checked={method?.isEnabled ?? false}
-                disabled={updateMutation.isPending}
-                onChange={(v) =>
-                  updateMutation.mutate({
-                    method: key,
-                    payload: { isEnabled: v, region: cfg.region },
-                  })
-                }
-              />
+              <div className="shrink-0 mt-1 sm:mt-0">
+                <ToggleSwitch
+                  checked={method?.isEnabled ?? false}
+                  disabled={updateMutation.isPending}
+                  onChange={(v) =>
+                    updateMutation.mutate({
+                      method: key,
+                      payload: { isEnabled: v, region: cfg.region },
+                    })
+                  }
+                />
+              </div>
             </div>
 
             {/* Details (always visible) */}
@@ -362,7 +364,57 @@ function ShippingTiersTab() {
           </p>
         </div>
 
-        <div className="overflow-x-auto">
+        {adding && (
+          <div className="p-4 bg-primary/5 border-b border-border/50">
+            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-end p-4 rounded-xl bg-blue-50/50 border-[0.5px] border-blue-100">
+              <div className="w-full sm:flex-1 space-y-1.5">
+                <Label className="text-[10px] font-bold uppercase text-blue-700">
+                  Minimal summa ({region === 'KOR' ? '₩' : "so'm"})
+                </Label>
+                <Input
+                  value={newTier.minOrderAmount}
+                  onChange={(e) => setNewTier((p) => ({ ...p, minOrderAmount: e.target.value }))}
+                  type="number"
+                  placeholder={region === 'KOR' ? '100000' : '1200000'}
+                  className="h-10 text-sm rounded-xl border-blue-200 focus:ring-blue-200 bg-white"
+                  autoFocus
+                />
+              </div>
+              <div className="w-full sm:flex-1 space-y-1.5">
+                <Label className="text-[10px] font-bold uppercase text-blue-700">
+                  Yetkazib berish ({region === 'KOR' ? '₩' : "so'm"})
+                </Label>
+                <Input
+                  value={newTier.shippingCost}
+                  onChange={(e) => setNewTier((p) => ({ ...p, shippingCost: e.target.value }))}
+                  type="number"
+                  placeholder="0 = bepul"
+                  className="h-10 text-sm rounded-xl border-blue-200 focus:ring-blue-200 bg-white"
+                />
+              </div>
+              <div className="flex gap-2 w-full sm:w-auto mt-2 sm:mt-0">
+                <Button
+                  size="sm"
+                  onClick={() => addMutation.mutate()}
+                  disabled={!newTier.minOrderAmount || !newTier.shippingCost || addMutation.isPending}
+                  className="h-10 rounded-xl px-5 font-bold flex-1 sm:flex-none"
+                >
+                  {addMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Saqlash'}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setAdding(false)}
+                  className="h-10 w-10 p-0 rounded-xl text-muted-foreground shrink-0 bg-white/50 hover:bg-white/80 border-[0.5px] border-blue-100"
+                >
+                  <X className="h-5 w-5" />
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border/50 bg-gray-50/50">
@@ -423,60 +475,54 @@ function ShippingTiersTab() {
                     </tr>
                   ))
               )}
-
-              {adding && (
-                <tr className="bg-primary/5">
-                  <td colSpan={3} className="p-4">
-                    <div className="flex gap-3 items-end p-4 rounded-xl bg-blue-50/50 border-[0.5px] border-blue-100">
-                      <div className="flex-1 space-y-1.5">
-                        <Label className="text-[10px] font-bold uppercase text-blue-700">
-                          Minimal summa ({region === 'KOR' ? '₩' : "so'm"})
-                        </Label>
-                        <Input
-                          value={newTier.minOrderAmount}
-                          onChange={(e) => setNewTier((p) => ({ ...p, minOrderAmount: e.target.value }))}
-                          type="number"
-                          placeholder={region === 'KOR' ? '100000' : '1200000'}
-                          className="h-10 text-sm rounded-xl border-blue-200 focus:ring-blue-200"
-                          autoFocus
-                        />
-                      </div>
-                      <div className="flex-1 space-y-1.5">
-                        <Label className="text-[10px] font-bold uppercase text-blue-700">
-                          Yetkazib berish ({region === 'KOR' ? '₩' : "so'm"})
-                        </Label>
-                        <Input
-                          value={newTier.shippingCost}
-                          onChange={(e) => setNewTier((p) => ({ ...p, shippingCost: e.target.value }))}
-                          type="number"
-                          placeholder="0 = bepul"
-                          className="h-10 text-sm rounded-xl border-blue-200 focus:ring-blue-200"
-                        />
-                      </div>
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          onClick={() => addMutation.mutate()}
-                          disabled={!newTier.minOrderAmount || !newTier.shippingCost || addMutation.isPending}
-                          className="h-10 rounded-xl px-5 font-bold"
-                        >
-                          {addMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Saqlash'}
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => setAdding(false)}
-                          className="h-10 w-10 p-0 rounded-xl text-muted-foreground"
-                        >
-                          <X className="h-5 w-5" />
-                        </Button>
-                      </div>
-                    </div>
-                  </td>
-                </tr>
-              )}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile Cards */}
+        <div className="md:hidden flex flex-col divide-y divide-border/30">
+          {isLoading ? (
+            [1, 2, 3].map((i) => (
+              <div key={i} className="p-4 space-y-3">
+                <div className="h-4 bg-gray-100 rounded animate-pulse w-1/2" />
+                <div className="h-4 bg-gray-100 rounded animate-pulse w-1/3" />
+              </div>
+            ))
+          ) : filtered.length === 0 && !adding ? (
+            <div className="px-6 py-12 text-center text-sm text-muted-foreground font-medium">
+              Yetkazib berish qoidalari mavjud emas.
+            </div>
+          ) : (
+            filtered
+              .sort((a: any, b: any) => Number(a.minOrderAmount) - Number(b.minOrderAmount))
+              .map((tier: any) => (
+                <div key={tier.id} className="p-4 bg-white hover:bg-gray-50/50 transition-colors flex items-center justify-between gap-4">
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1">Minimal summa</p>
+                    <p className="text-sm font-bold text-gray-900">
+                      {region === 'KOR' ? formatKRW(Number(tier.minOrderAmount)) : formatUZS(Number(tier.minOrderAmount))} dan yuqori
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-3 mb-1">Yetkazib berish narxi</p>
+                    {Number(tier.shippingCost) === 0 ? (
+                      <span className="text-sm font-bold text-green-600 bg-green-50 px-2 py-1 rounded-lg">
+                        Bepul 🎉
+                      </span>
+                    ) : (
+                      <span className="text-sm font-bold text-gray-900">
+                        {region === 'KOR' ? formatKRW(Number(tier.shippingCost)) : formatUZS(Number(tier.shippingCost))}
+                      </span>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => deleteMutation.mutate(tier.id)}
+                    disabled={deleteMutation.isPending}
+                    className="w-10 h-10 shrink-0 rounded-xl flex items-center justify-center bg-red-50 text-red-500 transition-all active:scale-95"
+                  >
+                    <Trash2 className="h-5 w-5" strokeWidth={2} />
+                  </button>
+                </div>
+              ))
+          )}
         </div>
       </div>
     </div>
@@ -565,16 +611,16 @@ function ExchangeRateTab() {
           Kursni yangilash
         </p>
         <div className="flex flex-col gap-4">
-          <div className="flex flex-col sm:flex-row gap-4 items-end">
+          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-end">
             <div className="flex-1 w-full">
               <Label className="text-xs font-bold mb-2 block">Yangi kurs (1 ₩ = ? so'm)</Label>
-              <div className="flex gap-2">
+              <div className="flex flex-col sm:flex-row gap-3">
                 <Input
                   value={newRate}
                   onChange={(e) => setNewRate(e.target.value)}
                   type="number"
                   placeholder={currentRate ? Number(currentRate.krwToUzs).toString() : '12'}
-                  className="h-11 text-base font-bold rounded-xl border-[0.5px] focus:ring-primary/20 flex-1"
+                  className="h-11 text-base font-bold rounded-xl border-[0.5px] focus:ring-primary/20 w-full sm:flex-1"
                 />
                 <Button
                   type="button"
@@ -582,7 +628,7 @@ function ExchangeRateTab() {
                   size="sm"
                   onClick={handleFetchLive}
                   disabled={fetching}
-                  className="h-11 rounded-xl gap-2 shrink-0 border-[0.5px] text-xs font-bold text-blue-600 border-blue-200 hover:bg-blue-50 px-4"
+                  className="h-11 w-full sm:w-auto rounded-xl gap-2 shrink-0 border-[0.5px] text-xs font-bold text-blue-600 border-blue-200 hover:bg-blue-50 px-4"
                 >
                   {fetching ? <RefreshCw className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
                   Kursni olish
@@ -630,14 +676,14 @@ function ExchangeRateTab() {
           </p>
           <div className="divide-y divide-border/30">
             {rates.map((r: any, i: number) => (
-              <div key={r.id} className="flex items-center justify-between px-6 py-4 hover:bg-gray-50/50 transition-colors">
+              <div key={r.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between px-6 py-4 hover:bg-gray-50/50 transition-colors gap-2">
                 <div className="flex items-center gap-3">
                   {i === 0 && <CheckCircle2 className="h-5 w-5 text-green-600 shrink-0" />}
                   <p className="text-sm font-bold text-gray-900">
                     1 ₩ = {Number(r.krwToUzs).toLocaleString()} so'm
                   </p>
                 </div>
-                <p className="text-xs text-muted-foreground font-medium">{formatDateTime(r.createdAt)}</p>
+                <p className="text-xs text-muted-foreground font-medium sm:text-right">{formatDateTime(r.createdAt)}</p>
               </div>
             ))}
           </div>
@@ -702,7 +748,7 @@ function OrderSettingsTab() {
             type="number"
             min="5"
             max="1440"
-            className="h-11 rounded-xl border-[0.5px] focus:ring-primary/20 max-w-[240px]"
+            className="h-11 rounded-xl border-[0.5px] focus:ring-primary/20 w-full sm:max-w-[240px]"
           />
           <p className="text-[11px] text-muted-foreground font-medium">
             To'lov qilinmasa, buyurtma avtomatik bekor qilinadi. Default: 30 daqiqa
