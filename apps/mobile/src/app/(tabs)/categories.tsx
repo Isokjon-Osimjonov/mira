@@ -8,6 +8,7 @@ import {
   Dimensions,
   FlatList,
   ScrollView,
+  RefreshControl,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Image } from 'expo-image'
@@ -65,14 +66,16 @@ export default function CategoriesScreen() {
   const addItem = useCartStore(s => s.addItem)
   const [addingId, setAddingId] = useState<string | null>(null)
 
-  const { data: categoriesData } = useQuery({
+  const [isRefreshing, setIsRefreshing] = useState(false)
+
+  const { data: categoriesData, refetch: refetchCategories } = useQuery({
     queryKey: ['categories'],
     queryFn: productService.getCategories,
     staleTime: 5 * 60 * 1000,
   })
 
   // We use `category: activeCategoryId` instead of categoryId because our updated backend parameter is `category`
-  const { data: popularData, isLoading: popularLoading } = useQuery({
+  const { data: popularData, isLoading: popularLoading, refetch: refetchPopular } = useQuery({
     queryKey: ['products', 'bestselling', activeCategoryId, searchQuery],
     queryFn: () =>
       productService.getProducts({
@@ -84,7 +87,7 @@ export default function CategoriesScreen() {
     staleTime: 2 * 60 * 1000,
   })
 
-  const { data: newArrivalData, isLoading: newLoading } = useQuery({
+  const { data: newArrivalData, isLoading: newLoading, refetch: refetchNewArrivals } = useQuery({
     queryKey: ['products', 'newest', activeCategoryId, searchQuery],
     queryFn: () =>
       productService.getProducts({
@@ -95,6 +98,16 @@ export default function CategoriesScreen() {
       }),
     staleTime: 2 * 60 * 1000,
   })
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true)
+    await Promise.all([
+      refetchCategories(),
+      refetchPopular(),
+      refetchNewArrivals(),
+    ])
+    setIsRefreshing(false)
+  }
 
   const categories = categoriesData ?? []
   const popularProducts = popularData?.data ?? []
@@ -160,6 +173,14 @@ export default function CategoriesScreen() {
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={handleRefresh}
+            tintColor={tokens.colors.primary}
+            colors={[tokens.colors.primary]}
+          />
+        }
       >
         {/* SEARCH BAR */}
         <View style={styles.searchWrapper}>
