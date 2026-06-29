@@ -211,7 +211,7 @@ export async function getOverview(period: Period) {
 
   const [todayRev] = await db
     .select({
-      revenue: sql<string>`COALESCE(SUM(${orders.totalAmount} - ${orders.refundAmount}), 0)`,
+      revenue: sql<string>`COALESCE(SUM(${orders.totalAmount} - COALESCE(${orders.refundAmount}, 0)), 0)`,
     })
     .from(orders)
     .where(
@@ -224,7 +224,7 @@ export async function getOverview(period: Period) {
 
   const [yestRev] = await db
     .select({
-      revenue: sql<string>`COALESCE(SUM(${orders.totalAmount} - ${orders.refundAmount}), 0)`,
+      revenue: sql<string>`COALESCE(SUM(${orders.totalAmount} - COALESCE(${orders.refundAmount}, 0)), 0)`,
     })
     .from(orders)
     .where(
@@ -243,7 +243,7 @@ export async function getOverview(period: Period) {
   // 2. Period vs Previous Period
   const [periodRev] = await db
     .select({
-      revenue: sql<string>`COALESCE(SUM(${orders.totalAmount} - ${orders.refundAmount}), 0)`,
+      revenue: sql<string>`COALESCE(SUM(${orders.totalAmount} - COALESCE(${orders.refundAmount}, 0)), 0)`,
       count: count(orders.id),
     })
     .from(orders)
@@ -257,7 +257,7 @@ export async function getOverview(period: Period) {
 
   const [prevRev] = await db
     .select({
-      revenue: sql<string>`COALESCE(SUM(${orders.totalAmount} - ${orders.refundAmount}), 0)`,
+      revenue: sql<string>`COALESCE(SUM(${orders.totalAmount} - COALESCE(${orders.refundAmount}, 0)), 0)`,
     })
     .from(orders)
     .where(
@@ -274,10 +274,15 @@ export async function getOverview(period: Period) {
     previousRevenue > 0 ? Math.round(((periodRevenue - previousRevenue) / previousRevenue) * 100) : 0
 
   // 3. Pending & Total
-  const [pending] = await db
+  const [pendingPaymentCount] = await db
     .select({ count: count() })
     .from(orders)
-    .where(inArray(orders.status, ['PENDING_PAYMENT', 'PAYMENT_SUBMITTED']))
+    .where(eq(orders.status, 'PENDING_PAYMENT'))
+
+  const [pendingConfirmationCount] = await db
+    .select({ count: count() })
+    .from(orders)
+    .where(eq(orders.status, 'PAYMENT_SUBMITTED'))
 
   const [totalInPeriod] = await db
     .select({ count: count() })
@@ -289,7 +294,8 @@ export async function getOverview(period: Period) {
     todayRevenueChange,
     periodRevenue,
     periodRevenueChange,
-    pendingOrders: Number(pending?.count || 0),
+    pendingPayment: Number(pendingPaymentCount?.count || 0),
+    pendingConfirmation: Number(pendingConfirmationCount?.count || 0),
     totalOrders: Number(totalInPeriod?.count || 0),
   }
 }
@@ -369,7 +375,7 @@ export async function getPLReport(period: Period, dateFrom?: string, dateTo?: st
 
   const [prevRev] = await db
     .select({
-      net: sql<string>`COALESCE(SUM(${orders.totalAmount} - ${orders.refundAmount}), 0)`,
+      net: sql<string>`COALESCE(SUM(${orders.totalAmount} - COALESCE(${orders.refundAmount}, 0)), 0)`,
     })
     .from(orders)
     .where(

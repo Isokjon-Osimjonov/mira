@@ -22,6 +22,7 @@ import {
   AlertTriangle,
   Clock,
   DollarSign,
+  ClipboardCheck,
 } from 'lucide-react'
 import { analyticsApi, type DashboardPeriod } from '../../api/analytics.api'
 import { ordersApi } from '../../api/orders.api'
@@ -287,11 +288,11 @@ export function DashboardPage() {
           loading={overviewLoading}
         />
 
-        {/* 3. Kutilayotgan buyurtmalar */}
+        {/* 3. To'lov kutilmoqda */}
         <KpiCard
-          title="Kutilayotgan"
-          value={`${overview?.pendingOrders ?? 0} ta`}
-          sub="to'lov kerak"
+          title="To'lov kutilmoqda"
+          value={`${overview?.pendingPayment ?? 0} ta`}
+          sub="mijoz to'lashi kerak"
           icon={Clock}
           iconColor="bg-amber-50 text-amber-600"
           loading={overviewLoading}
@@ -299,6 +300,22 @@ export function DashboardPage() {
             navigate({
               to: '/orders',
               search: { status: 'PENDING_PAYMENT' },
+            })
+          }
+        />
+
+        {/* 3.5. Tasdiqlash kutilmoqda */}
+        <KpiCard
+          title="Tasdiqlash kutilmoqda"
+          value={`${overview?.pendingConfirmation ?? 0} ta`}
+          sub="admin tekshirishi kerak"
+          icon={ClipboardCheck}
+          iconColor="bg-orange-50 text-orange-600"
+          loading={overviewLoading}
+          onClick={() =>
+            navigate({
+              to: '/orders',
+              search: { status: 'PAYMENT_SUBMITTED' },
             })
           }
         />
