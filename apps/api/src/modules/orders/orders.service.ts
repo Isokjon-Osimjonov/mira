@@ -1203,13 +1203,14 @@ export async function bulkUpdateStatus(
   orderIds: string[],
   newStatus: string,
   adminId: string,
+  adminName?: string,
   payloadOverrides?: any
 ) {
   const results = { succeeded: [] as string[], failed: [] as any[] }
 
   for (const orderId of orderIds) {
     try {
-      await adminUpdateStatus(orderId, adminId, { status: newStatus, ...payloadOverrides })
+      await adminUpdateStatus(orderId, adminId, { status: newStatus, ...payloadOverrides }, adminName)
       results.succeeded.push(orderId)
     } catch (err: any) {
       results.failed.push({ orderId, reason: err.message })

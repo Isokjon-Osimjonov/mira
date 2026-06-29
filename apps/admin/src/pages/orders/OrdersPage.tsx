@@ -590,29 +590,35 @@ export function OrdersPage() {
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-900 text-white rounded-xl px-4 py-3 shadow-xl flex items-center gap-3 z-50">
           <span className="text-sm font-medium">{selected.size} ta tanlandi</span>
           <div className="w-px h-4 bg-white/30" />
-          <Button
-            size="sm"
-            variant="ghost"
-            className="text-white hover:bg-white/10 rounded-lg text-xs h-7"
-            onClick={() => bulkStatusMutation.mutate({ ids: Array.from(selected), status: 'PACKING' })}
+          
+          <Select
+            value=""
+            onValueChange={(val) => {
+              if (val) {
+                bulkStatusMutation.mutate({ ids: Array.from(selected), status: val })
+              }
+            }}
           >
-            → Yig'ilmoqda
-          </Button>
+            <SelectTrigger className="w-[180px] h-8 bg-white/10 border-white/20 text-white text-xs focus:ring-0 focus:ring-offset-0">
+              <SelectValue placeholder="Holatni o'zgartirish..." />
+            </SelectTrigger>
+            <SelectContent className="rounded-xl">
+              <SelectItem value="PAYMENT_CONFIRMED">Tasdiqlash</SelectItem>
+              <SelectItem value="PACKING">Tayyorlash</SelectItem>
+              <SelectItem value="SHIPPED">Jo'natish</SelectItem>
+              <SelectItem value="DELIVERED">Yetkazildi deb belgilash</SelectItem>
+              <SelectItem value="CANCELED">Bekor qilish</SelectItem>
+              <SelectItem value="REFUNDED">Pulni qaytarish</SelectItem>
+            </SelectContent>
+          </Select>
+
           <Button
             size="sm"
             variant="ghost"
-            className="text-white hover:bg-white/10 rounded-lg text-xs h-7"
-            onClick={() => bulkStatusMutation.mutate({ ids: Array.from(selected), status: 'SHIPPED' })}
-          >
-            → Jo'natildi
-          </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            className="text-red-300 hover:bg-white/10 rounded-lg text-xs h-7"
+            className="text-red-300 hover:bg-white/10 rounded-lg text-xs h-8 px-2"
             onClick={() => setSelected(new Set())}
           >
-            <X className="h-3.5 w-3.5" />
+            <X className="h-4 w-4" />
           </Button>
         </div>
       )}

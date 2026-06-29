@@ -17,7 +17,8 @@ adminRouter.post('/bulk-status', requirePermission('orders', 'write'), async (re
       message: 'ids va status talab qilinadi'
     }
 
-    const results = await service.bulkUpdateStatus(ids, status, req.adminUser.id, req.body.payloadOverrides)
+    const admin = req.user as import('../../middleware/auth').AdminJwtPayload;
+    const results = await service.bulkUpdateStatus(ids, status, admin?.sub, admin?.fullName, req.body.payloadOverrides)
     res.json({ success: true, ...results })
   } catch (err) {
     next(err)
