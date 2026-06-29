@@ -114,6 +114,25 @@ export function requireSuperAdmin(req: Request, res: Response, next: NextFunctio
   })
 }
 
+const resourceLabels: Record<string, string> = {
+  orders: 'Buyurtmalar',
+  products: 'Mahsulotlar',
+  customers: 'Mijozlar',
+  inventory: 'Inventar',
+  coupons: 'Kuponlar',
+  expenses: 'Xarajatlar',
+  analytics: 'Analitika',
+  telegram: 'Telegram',
+  settings: 'Sozlamalar',
+  users: 'Adminlar',
+  roles: 'Rollar'
+}
+
+const actionLabels: Record<string, string> = {
+  read: "ko'rish",
+  write: "o'zgartirish"
+}
+
 // ─── Middleware: require specific permission ──────────────────
 // Usage: requirePermission('products', 'write')
 export function requirePermission(resource: string, action: string) {
@@ -123,10 +142,14 @@ export function requirePermission(resource: string, action: string) {
     authCheck(async () => {
       const user = req.user as AdminJwtPayload
 
+      const rLabel = resourceLabels[resource] || resource
+      const aLabel = actionLabels[action] || action
+      const msg = `Sizda bu amalni bajarish uchun ruxsat yo'q. (${rLabel} - ${aLabel})`
+
       // Super admin bypasses all permission checks
       if (user.isSuperAdmin) return next()
 
-      if (!user.roleId) return forbidden(res, `Missing permission: ${resource}:${action}`)
+      if (!user.roleId) return forbidden(res, msg)
 
       // Check DB for this role's permission
       try {
@@ -142,7 +165,7 @@ export function requirePermission(resource: string, action: string) {
           )
           .limit(1)
 
-        if (!perm) return forbidden(res, `Missing permission: ${resource}:${action}`)
+        if (!perm) return forbidden(res, msg)
         next()
       } catch {
         res
