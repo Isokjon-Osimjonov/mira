@@ -22,6 +22,7 @@ import {
   coupons,
   settings,
   dailySalesSummary,
+  paymentMethods,
 } from '@mira/db'
 import { eq, and, sql, desc, asc, isNull, or, ilike, gte, lte, count } from 'drizzle-orm'
 import { escapeLikeQuery } from '../../lib/sanitize'
@@ -696,6 +697,12 @@ export async function createOrder(params: {
       })
     }
 
+    const [paymentMethodData] = await tx
+      .select()
+      .from(paymentMethods)
+      .where(eq(paymentMethods.method, params.paymentMethod))
+      .limit(1)
+
     return {
       order: {
         id: newOrder.id,
@@ -706,14 +713,10 @@ export async function createOrder(params: {
       },
       paymentInfo: {
         method: params.paymentMethod,
-        korBankName: appSettings.korBankName,
-        korBankHolder: appSettings.korBankHolder,
-        korBankNumber: appSettings.korBankNumber,
-        korE9payName: appSettings.korE9payName,
-        korE9payAccount: appSettings.korE9payAccount,
-        uzbBankName: appSettings.uzbBankName,
-        uzbBankHolder: appSettings.uzbBankHolder,
-        uzbBankNumber: appSettings.uzbBankNumber,
+        bankName: paymentMethodData?.bankName || null,
+        accountNumber: paymentMethodData?.accountNumber || null,
+        holderName: paymentMethodData?.holderName || null,
+        instructions: paymentMethodData?.instructions || null,
       },
     }
   })
@@ -1055,6 +1058,7 @@ export async function adminGetOrders(query: {
   status?: string
   region?: string
   search?: string
+  shippedDate?: string
 }) {
   const page = query.page || 1
   const limit = query.limit || 20
@@ -1071,6 +1075,9 @@ export async function adminGetOrders(query: {
         ilike(orders.deliveryPhone, `%${escapeLikeQuery(query.search)}%`)
       )
     )
+  }
+  if (query.shippedDate) {
+    where = and(where, sql`DATE(${orders.shippedAt} AT TIME ZONE 'Asia/Seoul') = ${query.shippedDate}::date`)
   }
 
   const itemsQuery = await db
@@ -1151,6 +1158,12 @@ export async function adminUpdateStatus(
       updatedAt: new Date(),
     }
     if (payload.trackingNumber) updates.trackingNumber = payload.trackingNumber
+    if (payload.status === 'DELIVERED') {
+      updates.deliveredAt = (payload as any).deliveredAt ? new Date((payload as any).deliveredAt) : new Date()
+    }
+    if (payload.status === 'SHIPPED') {
+      updates.shippedAt = (payload as any).shippedAt ? new Date((payload as any).shippedAt) : new Date()
+    }
 
     const [updated] = await tx.update(orders).set(updates).where(eq(orders.id, orderId)).returning()
 
@@ -1184,6 +1197,26 @@ export async function adminUpdateStatus(
 
     return updated
   })
+}
+
+export async function bulkUpdateStatus(
+  orderIds: string[],
+  newStatus: string,
+  adminId: string,
+  payloadOverrides?: any
+) {
+  const results = { succeeded: [] as string[], failed: [] as any[] }
+
+  for (const orderId of orderIds) {
+    try {
+      await adminUpdateStatus(orderId, adminId, { status: newStatus, ...payloadOverrides })
+      results.succeeded.push(orderId)
+    } catch (err: any) {
+      results.failed.push({ orderId, reason: err.message })
+    }
+  }
+
+  return results
 }
 
 export async function confirmPayment(

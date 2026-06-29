@@ -10,6 +10,7 @@ export interface OrdersParams {
   search?: string
   dateFrom?: string
   dateTo?: string
+  shippedDate?: string
 }
 
 export const ordersApi = {

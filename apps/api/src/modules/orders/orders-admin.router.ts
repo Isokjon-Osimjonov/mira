@@ -1,5 +1,6 @@
 import { Router } from 'express'
 import * as ctrl from './orders.controller'
+import * as service from './orders.service'
 import { requirePermission, requireAdmin } from '../../middleware/auth'
 import { db } from '../../config/db'
 import { orders } from '@mira/db'
@@ -16,18 +17,11 @@ adminRouter.post('/bulk-status', requirePermission('orders', 'write'), async (re
       message: 'ids va status talab qilinadi'
     }
 
-    await db.update(orders)
-      .set({
-        status,
-        updatedAt: new Date()
-      })
-      .where(inArray(orders.id, ids))
-
-    res.json({
-      data: { updated: ids.length },
-      error: null
-    })
-  } catch (err) { next(err) }
+    const results = await service.bulkUpdateStatus(ids, status, req.adminUser.id, req.body.payloadOverrides)
+    res.json({ success: true, ...results })
+  } catch (err) {
+    next(err)
+  }
 })
 
 adminRouter.get('/', requirePermission('orders', 'read'), ctrl.adminGetOrders)

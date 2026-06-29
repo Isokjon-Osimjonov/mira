@@ -12,6 +12,7 @@ import { DataTable } from '../../components/shared/DataTable'
 import { Pagination } from '../../components/shared/Pagination'
 import { EmptyState } from '../../components/shared/EmptyState'
 import { SkeletonTable } from '../../components/shared/SkeletonTable'
+import { KorBulkDeliveryPanel } from './KorBulkDeliveryPanel'
 import { formatKRW, formatUZS } from '../../utils/currency'
 import { formatDateTime, formatDeadline } from '../../utils/date'
 import { useAuthStore } from '../../stores/auth.store'
@@ -33,11 +34,14 @@ import {
 const STATUS_TABS = [
   { value: '', label: 'Barchasi' },
   { value: 'PENDING_PAYMENT', label: 'Kutilmoqda' },
+  { value: 'PAYMENT_REJECTED', label: 'Rad etildi' },
   { value: 'PAYMENT_SUBMITTED', label: 'Tekshirilmoqda' },
+  { value: 'PAYMENT_CONFIRMED', label: 'Tasdiqlandi' },
   { value: 'PACKING', label: 'Tayyorlanmoqda' },
   { value: 'SHIPPED', "label": "Jo'natildi" },
   { value: 'DELIVERED', label: 'Yetkazildi' },
   { value: 'CANCELED', label: 'Bekor' },
+  { value: 'REFUNDED', label: 'Qaytarildi' },
 ]
 
 // ── Countdown component ────────────────────────────────────
@@ -224,9 +228,13 @@ export function OrdersPage() {
   const bulkStatusMutation = useMutation({
     mutationFn: (data: { ids: string[]; status: string }) =>
       api.post('/admin/orders/bulk-status', data).then((r) => r.data),
-    onSuccess: (_, vars) => {
+    onSuccess: (data, vars) => {
       queryClient.removeQueries()
-      toast.success(`${vars.ids.length} ta buyurtma yangilandi`)
+      if (data.failed && data.failed.length > 0) {
+        toast.warning(`${data.succeeded.length} ta yangilandi, ${data.failed.length} ta o'tkazib yuborildi`)
+      } else {
+        toast.success(`${vars.ids.length} ta buyurtma yangilandi`)
+      }
       setSelected(new Set())
     },
     onError: (err: any) => toast.error(getErrorMessage(err?.errorCode ?? ''))
@@ -417,6 +425,8 @@ export function OrdersPage() {
           )
         })}
       </div>
+
+      <KorBulkDeliveryPanel />
 
       {/* Filters */}
       <div className="flex gap-2 flex-wrap">

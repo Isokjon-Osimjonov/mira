@@ -299,8 +299,9 @@ export async function adminGetOrders(req: Request, res: Response) {
     const status = req.query.status as string | undefined
     const region = req.query.region as string | undefined
     const search = req.query.search as string | undefined
+    const shippedDate = req.query.shippedDate as string | undefined
 
-    const result = await service.adminGetOrders({ page, limit, status, region, search })
+    const result = await service.adminGetOrders({ page, limit, status, region, search, shippedDate })
     return res.json({ data: result.items, meta: result.meta, error: null })
   } catch (e: any) {
     return res
