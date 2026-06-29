@@ -64,6 +64,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   extra: {
     apiUrl: process.env.EXPO_PUBLIC_API_URL,
     botUsername: process.env.EXPO_PUBLIC_BOT_USERNAME,
-    eas: { projectId: 'a97bda7b-3df6-485f-b128-305279ae4a20' },
+    eas: { projectId: '95de2ad4-6355-4322-af4e-a56b3629a2be' },
   },
 })
