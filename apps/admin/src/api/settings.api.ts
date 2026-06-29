@@ -23,30 +23,28 @@ export const settingsApi = {
 
   // Shipping tiers
   getShippingTiers: async () => {
-    const res = await api.get('/admin/settings/shipping-tiers')
+    const res = await api.get('/admin/kor-shipping-tiers')
     return res.data.data
   },
 
   createShippingTier: async (payload: {
-    region: string
-    minOrderAmount: number
-    shippingCost: number
-    currency: string
+    maxOrderKrw: number | null
+    cargoFeeKrw: number
   }) => {
-    const res = await api.post('/admin/settings/shipping-tiers', payload)
+    const res = await api.post('/admin/kor-shipping-tiers', payload)
     return res.data
   },
 
   updateShippingTier: async (
     id: string,
-    payload: { minOrderAmount?: number; shippingCost?: number; currency?: string }
+    payload: { maxOrderKrw?: number | null; cargoFeeKrw?: number }
   ) => {
-    const res = await api.patch(`/admin/settings/shipping-tiers/${id}`, payload)
+    const res = await api.patch(`/admin/kor-shipping-tiers/${id}`, payload)
     return res.data
   },
 
   deleteShippingTier: async (id: string) => {
-    const res = await api.delete(`/admin/settings/shipping-tiers/${id}`)
+    const res = await api.delete(`/admin/kor-shipping-tiers/${id}`)
     return res.data
   },
 

@@ -12,5 +12,5 @@ export default defineConfig({
       '@mira/ui-config':    path.resolve(__dirname, '../../libs/ui-config/src'),
     },
   },
-  server: { port: 3000 },
+  server: { port: 3000, host: true },
 })

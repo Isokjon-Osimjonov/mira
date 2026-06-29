@@ -32,14 +32,10 @@ export interface CheckoutResult {
   }
   paymentInfo: {
     method: string
-    korBankName: string | null
-    korBankHolder: string | null
-    korBankNumber: string | null
-    korE9payName: string | null
-    korE9payAccount: string | null
-    uzbBankName: string | null
-    uzbBankHolder: string | null
-    uzbBankNumber: string | null
+    bankName: string | null
+    accountNumber: string | null
+    holderName: string | null
+    instructions: string | null
   }
 }
 

@@ -1,5 +1,5 @@
 import { db } from '../../config/db'
-import { startOfDay, endOfDay } from 'date-fns'
+import { startOfDay, endOfDay, startOfMonth, endOfMonth } from 'date-fns'
 import {
   orders,
   orderItems,
@@ -49,8 +49,8 @@ export async function getOverview(from: string, to: string) {
   const cached = await getCached<any>(cacheKey)
   if (cached) return cached
 
-  const startDate = startOfDay(new Date(from))
-  const endDate = endOfDay(new Date(to))
+  const startDate = from ? startOfDay(new Date(from)) : startOfMonth(new Date())
+  const endDate = to ? endOfDay(new Date(to)) : endOfMonth(new Date())
 
   // 1. Revenue & Orders
   const [revenueStats] = await db
@@ -102,8 +102,8 @@ export async function getOverview(from: string, to: string) {
   const expResult = await db.execute(
     sql`SELECT COALESCE(SUM(amount_krw)::text,'0')
         as total FROM expenses
-        WHERE created_at >= ${from}::date
-        AND created_at <= (${to}::date
+        WHERE created_at >= ${startDate.toISOString()}::date
+        AND created_at <= (${endDate.toISOString()}::date
           + INTERVAL '1 day')`
   )
   const totalExpenses = BigInt((expResult.rows[0] as any)?.total ?? '0')

@@ -39,16 +39,19 @@ export async function getPaymentInfo(req: Request, res: Response) {
     return res.json({
       data: {
         kor: {
+          isEnabled: korBank?.isEnabled ?? false,
           bankName: korBank?.bankName ?? '',
           bankNumber: korBank?.accountNumber ?? '',
           bankHolder: korBank?.holderName ?? '',
         },
         uzb: {
+          isEnabled: uzbBank?.isEnabled ?? false,
           bankName: uzbBank?.bankName ?? '',
           bankNumber: uzbBank?.accountNumber ?? '',
           bankHolder: uzbBank?.holderName ?? '',
         },
         e9pay: {
+          isEnabled: e9pay?.isEnabled ?? false,
           name: e9pay?.holderName ?? '',
           account: e9pay?.accountNumber ?? '',
         },
@@ -125,43 +128,6 @@ export async function updatePaymentMethod(req: Request, res: Response, next: any
   }
 }
 
-export async function getShippingTiers(_req: Request, res: Response, next: any) {
-  try {
-    const data = await service.getShippingTiers()
-    res.json({ data, error: null })
-  } catch (err) {
-    next(err)
-  }
-}
-
-export async function createShippingTier(req: Request, res: Response, next: any) {
-  try {
-    const data = await service.createShippingTier(req.body)
-    res.status(201).json({ data, error: null })
-  } catch (err) {
-    next(err)
-  }
-}
-
-export async function updateShippingTier(req: Request, res: Response, next: any) {
-  try {
-    const { id } = req.params
-    const data = await service.updateShippingTier(id, req.body)
-    res.json({ data, error: null })
-  } catch (err) {
-    next(err)
-  }
-}
-
-export async function deleteShippingTier(req: Request, res: Response, next: any) {
-  try {
-    const { id } = req.params
-    const data = await service.deleteShippingTier(id)
-    res.json({ data, error: null })
-  } catch (err) {
-    next(err)
-  }
-}
 
 export async function getLiveExchangeRate(_req: Request, res: Response, next: any) {
   try {

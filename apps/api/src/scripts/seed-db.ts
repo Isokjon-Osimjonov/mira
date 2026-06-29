@@ -15,13 +15,8 @@ async function seed() {
       paymentTimeoutMinutes: 30,
       lowStockThreshold: 10,
       uzbCargoUsdPerKg: 10,
-      standardShippingFeeKrw: 4000n,
-      freeShippingThresholdKrw: 200000n,
       minOrderKorKrw: 0,
       minOrderUzbUzs: 0,
-      korBankEnabled: false,
-      uzbBankEnabled: false,
-      korE9payEnabled: false,
       lockColumn: 'X',
     })
     console.log('✅ Settings seeded')

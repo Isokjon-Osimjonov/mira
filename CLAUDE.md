@@ -28,7 +28,7 @@ Every developer (human or AI) working on this project MUST follow these rules st
 Nothing that changes between environments or depends on business state may be hardcoded.
 
 - **URLs**: Always use `env.XXX` (e.g., `env.ADMIN_URL`, `env.CORS_ORIGINS`).
-- **Monetary Thresholds**: Always from `settings` table (e.g., `freeShippingThresholdKrw`).
+- **Monetary Thresholds**: Always from `settings` table (e.g., `minOrderKorKrw`).
 - **Timeouts**: Always from `settings` table (e.g., `paymentTimeoutMinutes`).
 - **Currency**: Product prices are stored in KRW. Currency symbol and conversion rates come from DB.
 - **Regions**: `UZB` or `KOR` strings MUST come from JWT payload (`req.user.region`) or DB.
@@ -42,8 +42,8 @@ Nothing that changes between environments or depends on business state may be ha
 ❌ **WRONG**: `if (order.status === 'DELIVERED')`
 ✅ **CORRECT**: `if (order.status === orderStatusEnum.enumValues[7])` (or better, import enum object).
 
-❌ **WRONG**: `const shipping = 3000`
-✅ **CORRECT**: `const { standardShippingFeeKrw } = await getSettings()`
+❌ **BAD**: `const SHIPPING_FEE = 3000`
+✅ **CORRECT**: `const { minOrderKorKrw } = await getSettings()`
 
 ---
 

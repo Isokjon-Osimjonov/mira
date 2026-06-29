@@ -102,9 +102,9 @@ export const productService = {
   },
 
   getPaymentInfo: async (): Promise<{
-    kor: { bankName: string; bankNumber: string; bankHolder: string }
-    uzb: { bankName: string; bankNumber: string; bankHolder: string }
-    e9pay: { name: string; account: string }
+    kor: { isEnabled: boolean; bankName: string; bankNumber: string; bankHolder: string }
+    uzb: { isEnabled: boolean; bankName: string; bankNumber: string; bankHolder: string }
+    e9pay: { isEnabled: boolean; name: string; account: string }
   }> => {
     const res = await api.get('/settings/payment-info')
     return res.data.data

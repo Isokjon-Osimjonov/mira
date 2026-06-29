@@ -16,10 +16,6 @@ adminRouter.put('/', requirePermission('settings', 'write'), ctrl.updateAdminSet
 adminRouter.get('/payment-methods', requirePermission('settings', 'read'), ctrl.getAdminPaymentMethods)
 adminRouter.patch('/payment-methods/:method', requirePermission('settings', 'write'), ctrl.updatePaymentMethod)
 
-adminRouter.get('/shipping-tiers', requirePermission('settings', 'read'), ctrl.getShippingTiers)
-adminRouter.post('/shipping-tiers', requirePermission('settings', 'write'), ctrl.createShippingTier)
-adminRouter.patch('/shipping-tiers/:id', requirePermission('settings', 'write'), ctrl.updateShippingTier)
-adminRouter.delete('/shipping-tiers/:id', requirePermission('settings', 'write'), ctrl.deleteShippingTier)
 
 adminRouter.get('/exchange-rates/live', requirePermission('settings', 'read'), ctrl.getLiveExchangeRate)
 

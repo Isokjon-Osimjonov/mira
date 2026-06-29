@@ -1231,10 +1231,6 @@ Fields:
   uzb_cargo_usd_per_kg        integer NOT NULL default 10
                               -- $10/kg — admin configurable
 
-  -- KOR shipping
-  standard_shipping_fee_krw   bigint NOT NULL default 3000
-  free_shipping_threshold_krw bigint NOT NULL default 50000
-
   -- Order limits
   min_order_uzb_krw           bigint NOT NULL default 0
   min_order_kor_krw           bigint NOT NULL default 0

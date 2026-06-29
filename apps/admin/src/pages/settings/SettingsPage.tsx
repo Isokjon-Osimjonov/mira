@@ -284,9 +284,8 @@ function PaymentMethodsTab() {
 
 function ShippingTiersTab() {
   const qc = useQueryClient()
-  const [region, setRegion] = useState<'KOR' | 'UZB'>('KOR')
   const [adding, setAdding] = useState(false)
-  const [newTier, setNewTier] = useState({ minOrderAmount: '', shippingCost: '' })
+  const [newTier, setNewTier] = useState({ maxOrderKrw: '', cargoFeeKrw: '' })
 
   const { data: tiers = [], isLoading } = useQuery({
     queryKey: QK.SHIPPING_TIERS,
@@ -294,20 +293,16 @@ function ShippingTiersTab() {
     placeholderData: (prev) => prev,
   })
 
-  const filtered = tiers.filter((t: any) => t.region === region)
-
   const addMutation = useMutation({
     mutationFn: () =>
       settingsApi.createShippingTier({
-        region,
-        minOrderAmount: parseInt(newTier.minOrderAmount),
-        shippingCost: parseInt(newTier.shippingCost),
-        currency: region === 'KOR' ? 'KRW' : 'UZS',
+        maxOrderKrw: newTier.maxOrderKrw === '' ? null : parseInt(newTier.maxOrderKrw),
+        cargoFeeKrw: parseInt(newTier.cargoFeeKrw),
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: QK.SHIPPING_TIERS })
       toast.success("Tier qo'shildi")
-      setNewTier({ minOrderAmount: '', shippingCost: '' })
+      setNewTier({ maxOrderKrw: '', cargoFeeKrw: '' })
       setAdding(false)
     },
     onError: (err: any) => toast.error(getErrorMessage(err?.errorCode ?? '')),
@@ -323,25 +318,10 @@ function ShippingTiersTab() {
 
   return (
     <div className="space-y-4">
-      <div className="flex gap-1 bg-gray-100 rounded-xl p-1 w-fit">
-        {(['KOR', 'UZB'] as const).map((r) => (
-          <button
-            key={r}
-            onClick={() => setRegion(r)}
-            className={cn(
-              'flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-bold transition-all',
-              region === r ? 'bg-white shadow-sm text-gray-900' : 'text-muted-foreground hover:text-gray-700'
-            )}
-          >
-            {r === 'KOR' ? '🇰🇷' : '🇺🇿'} {r}
-          </button>
-        ))}
-      </div>
-
       <div className="bg-white rounded-2xl border-[0.5px] border-border overflow-hidden shadow-sm">
         <div className="flex items-center justify-between px-6 py-5 border-b border-border/50 bg-gray-50/30">
           <div>
-            <p className="text-base font-bold text-gray-900">{region} yetkazib berish narxlari</p>
+            <p className="text-base font-bold text-gray-900">Korea yetkazib berish narxlari</p>
             <p className="text-xs text-muted-foreground mt-0.5">
               Buyurtma summasiga qarab narxlarni belgilang
             </p>
@@ -360,7 +340,7 @@ function ShippingTiersTab() {
         <div className="px-6 py-3 bg-blue-50/50 border-b border-blue-100/50">
           <p className="text-[11px] text-blue-700 font-medium flex items-center gap-2">
             <span className="text-base">ℹ️</span>
-            Minimal buyurtma summasi → yetkazib berish narxi. 0 {region === 'KOR' ? 'KRW' : 'UZS'} = bepul
+            Buyurtma maksimal summasi (shundan past) → yetkazib berish narxi. Bo'sh qoldirilsa = cheksiz. 0 KRW = bepul
           </p>
         </div>
 
@@ -369,24 +349,24 @@ function ShippingTiersTab() {
             <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-end p-4 rounded-xl bg-blue-50/50 border-[0.5px] border-blue-100">
               <div className="w-full sm:flex-1 space-y-1.5">
                 <Label className="text-[10px] font-bold uppercase text-blue-700">
-                  Minimal summa ({region === 'KOR' ? '₩' : "so'm"})
+                  Maksimal summa (₩)
                 </Label>
                 <Input
-                  value={newTier.minOrderAmount}
-                  onChange={(e) => setNewTier((p) => ({ ...p, minOrderAmount: e.target.value }))}
+                  value={newTier.maxOrderKrw}
+                  onChange={(e) => setNewTier((p) => ({ ...p, maxOrderKrw: e.target.value }))}
                   type="number"
-                  placeholder={region === 'KOR' ? '100000' : '1200000'}
+                  placeholder="Bo'sh qoldirilsa: Cheksiz"
                   className="h-10 text-sm rounded-xl border-blue-200 focus:ring-blue-200 bg-white"
                   autoFocus
                 />
               </div>
               <div className="w-full sm:flex-1 space-y-1.5">
                 <Label className="text-[10px] font-bold uppercase text-blue-700">
-                  Yetkazib berish ({region === 'KOR' ? '₩' : "so'm"})
+                  Yetkazib berish (₩)
                 </Label>
                 <Input
-                  value={newTier.shippingCost}
-                  onChange={(e) => setNewTier((p) => ({ ...p, shippingCost: e.target.value }))}
+                  value={newTier.cargoFeeKrw}
+                  onChange={(e) => setNewTier((p) => ({ ...p, cargoFeeKrw: e.target.value }))}
                   type="number"
                   placeholder="0 = bepul"
                   className="h-10 text-sm rounded-xl border-blue-200 focus:ring-blue-200 bg-white"
@@ -396,7 +376,7 @@ function ShippingTiersTab() {
                 <Button
                   size="sm"
                   onClick={() => addMutation.mutate()}
-                  disabled={!newTier.minOrderAmount || !newTier.shippingCost || addMutation.isPending}
+                  disabled={!newTier.cargoFeeKrw || addMutation.isPending}
                   className="h-10 rounded-xl px-5 font-bold flex-1 sm:flex-none"
                 >
                   {addMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Saqlash'}
@@ -419,7 +399,7 @@ function ShippingTiersTab() {
             <thead>
               <tr className="border-b border-border/50 bg-gray-50/50">
                 <th className="px-6 py-3 text-left text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                  Minimal buyurtma summasi
+                  Maksimal buyurtma summasi (shu summagacha)
                 </th>
                 <th className="px-6 py-3 text-right text-xs font-bold uppercase tracking-wider text-muted-foreground">
                   Yetkazib berish narxi
@@ -436,30 +416,30 @@ function ShippingTiersTab() {
                     </td>
                   </tr>
                 ))
-              ) : filtered.length === 0 && !adding ? (
+              ) : tiers.length === 0 && !adding ? (
                 <tr>
                   <td colSpan={3} className="px-6 py-12 text-center text-sm text-muted-foreground font-medium">
                     Yetkazib berish qoidalari mavjud emas.
                   </td>
                 </tr>
               ) : (
-                filtered
-                  .sort((a: any, b: any) => Number(a.minOrderAmount) - Number(b.minOrderAmount))
+                [...tiers]
+                  .sort((a: any, b: any) => (a.maxOrderKrw === null ? Infinity : Number(a.maxOrderKrw)) - (b.maxOrderKrw === null ? Infinity : Number(b.maxOrderKrw)))
                   .map((tier: any) => (
                     <tr key={tier.id} className="hover:bg-gray-50/50 group transition-colors">
                       <td className="px-6 py-4">
                         <span className="text-sm font-bold text-gray-900">
-                          {region === 'KOR' ? formatKRW(Number(tier.minOrderAmount)) : formatUZS(Number(tier.minOrderAmount))} dan yuqori
+                          {tier.maxOrderKrw === null ? 'Cheksiz (undan yuqori)' : `${formatKRW(Number(tier.maxOrderKrw))} gacha`}
                         </span>
                       </td>
                       <td className="px-6 py-4 text-right">
-                        {Number(tier.shippingCost) === 0 ? (
+                        {Number(tier.cargoFeeKrw) === 0 ? (
                           <span className="text-sm font-bold text-green-600 bg-green-50 px-2 py-1 rounded-lg">
                             Bepul 🎉
                           </span>
                         ) : (
                           <span className="text-sm font-bold text-gray-900">
-                            {region === 'KOR' ? formatKRW(Number(tier.shippingCost)) : formatUZS(Number(tier.shippingCost))}
+                            {formatKRW(Number(tier.cargoFeeKrw))}
                           </span>
                         )}
                       </td>
@@ -488,28 +468,28 @@ function ShippingTiersTab() {
                 <div className="h-4 bg-gray-100 rounded animate-pulse w-1/3" />
               </div>
             ))
-          ) : filtered.length === 0 && !adding ? (
+          ) : tiers.length === 0 && !adding ? (
             <div className="px-6 py-12 text-center text-sm text-muted-foreground font-medium">
               Yetkazib berish qoidalari mavjud emas.
             </div>
           ) : (
-            filtered
-              .sort((a: any, b: any) => Number(a.minOrderAmount) - Number(b.minOrderAmount))
+            [...tiers]
+              .sort((a: any, b: any) => (a.maxOrderKrw === null ? Infinity : Number(a.maxOrderKrw)) - (b.maxOrderKrw === null ? Infinity : Number(b.maxOrderKrw)))
               .map((tier: any) => (
                 <div key={tier.id} className="p-4 bg-white hover:bg-gray-50/50 transition-colors flex items-center justify-between gap-4">
                   <div>
-                    <p className="text-xs text-muted-foreground mb-1">Minimal summa</p>
+                    <p className="text-xs text-muted-foreground mb-1">Maksimal summa</p>
                     <p className="text-sm font-bold text-gray-900">
-                      {region === 'KOR' ? formatKRW(Number(tier.minOrderAmount)) : formatUZS(Number(tier.minOrderAmount))} dan yuqori
+                      {tier.maxOrderKrw === null ? 'Cheksiz' : `${formatKRW(Number(tier.maxOrderKrw))} gacha`}
                     </p>
                     <p className="text-xs text-muted-foreground mt-3 mb-1">Yetkazib berish narxi</p>
-                    {Number(tier.shippingCost) === 0 ? (
+                    {Number(tier.cargoFeeKrw) === 0 ? (
                       <span className="text-sm font-bold text-green-600 bg-green-50 px-2 py-1 rounded-lg">
                         Bepul 🎉
                       </span>
                     ) : (
                       <span className="text-sm font-bold text-gray-900">
-                        {region === 'KOR' ? formatKRW(Number(tier.shippingCost)) : formatUZS(Number(tier.shippingCost))}
+                        {formatKRW(Number(tier.cargoFeeKrw))}
                       </span>
                     )}
                   </div>
@@ -702,6 +682,8 @@ function OrderSettingsTab() {
     minOrderUzbUzs: z.coerce.number().int().min(0),
     usdToKrw: z.coerce.number().min(0),
     uzbCargoUsdPerKg: z.coerce.number().min(0),
+    cargoTransitDaysMin: z.coerce.number().int().min(1),
+    cargoTransitDaysMax: z.coerce.number().int().min(1),
   })
 
   const { data, isLoading } = useQuery({
@@ -785,6 +767,35 @@ function OrderSettingsTab() {
             />
             <p className="text-[11px] text-muted-foreground font-medium">
               1 kg yuk uchun USD narxi (Koreadan O'zbekistonga)
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-2">
+          <div className="space-y-2">
+            <Label className="text-sm font-bold text-gray-900">Kargo min kun</Label>
+            <Input
+              {...register('cargoTransitDaysMin')}
+              type="number"
+              min="1"
+              placeholder="7"
+              className="h-11 rounded-xl border-[0.5px] focus:ring-primary/20"
+            />
+            <p className="text-[11px] text-muted-foreground font-medium">
+              Yetkazib berish minimal vaqti (kun)
+            </p>
+          </div>
+          <div className="space-y-2">
+            <Label className="text-sm font-bold text-gray-900">Kargo max kun</Label>
+            <Input
+              {...register('cargoTransitDaysMax')}
+              type="number"
+              min="1"
+              placeholder="10"
+              className="h-11 rounded-xl border-[0.5px] focus:ring-primary/20"
+            />
+            <p className="text-[11px] text-muted-foreground font-medium">
+              Yetkazib berish maksimal vaqti (kun)
             </p>
           </div>
         </div>
