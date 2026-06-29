@@ -71,7 +71,11 @@ const REASON_LABELS: Record<string, string> = {
 const batchSchema = z.object({
   quantity: z.coerce.number().int().min(1, "Miqdor 1 dan katta bo'lishi kerak"),
   costPrice: z.coerce.number().min(0).optional(),
-  expiryDate: z.string().optional().nullable(),
+  expiryDate: z.string().optional().nullable().refine((val) => {
+    if (!val) return true;
+    const year = parseInt(val.substring(0, 4), 10);
+    return year >= 2024 && year <= 2100;
+  }, { message: "Yil 2024 va 2100 orasida bo'lishi kerak" }),
   note: z.string().optional(),
 })
 
@@ -625,7 +629,7 @@ export function InventoryPage() {
                                   border-[0.5px] border-border/50"
                     >
                       <div>
-                        <p className="text-xs font-medium">{b.currentQty} ta mavjud</p>
+                        <p className="text-xs font-medium">Mavjud: {b.currentQty} ta (Jami: {b.initialQty} ta)</p>
                         {b.expiryDate && (
                           <p
                             className="text-[11px]
