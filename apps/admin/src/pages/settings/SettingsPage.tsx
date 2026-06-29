@@ -39,22 +39,22 @@ export function SettingsPage() {
   const [tab, setTab] = useState('payment')
 
   return (
-    <div className="flex flex-col gap-6 max-w-6xl mx-auto">
-      <div>
+    <div className="flex flex-col gap-6 max-w-6xl mx-auto w-full">
+      <div className="px-1 sm:px-0">
         <h1 className="text-2xl font-bold text-gray-900 leading-tight">Sozlamalar</h1>
         <p className="text-sm text-muted-foreground mt-1">Tizim sozlamalarini boshqaring</p>
       </div>
 
-      <div className="flex flex-col lg:flex-row gap-6">
+      <div className="flex flex-col lg:flex-row gap-6 w-full max-w-full">
         {/* Tab navigation */}
-        <div className="flex lg:flex-col gap-1 overflow-x-auto lg:overflow-visible lg:w-60 shrink-0 pb-1 lg:pb-0 snap-x snap-mandatory [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+        <div className="flex lg:flex-col gap-1 overflow-x-auto lg:overflow-visible w-full max-w-full lg:w-60 shrink-0 pb-1 lg:pb-0 snap-x snap-mandatory [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
           {TABS.map((t) => (
             <button
               key={t.id}
               onClick={() => setTab(t.id)}
               className={cn(
                 'flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all border-[0.5px]',
-                'text-left w-full snap-start shrink-0',
+                'text-left w-auto lg:w-full snap-start shrink-0',
                 tab === t.id
                   ? 'bg-primary text-white border-primary shadow-sm'
                   : 'bg-white text-muted-foreground border-border hover:bg-gray-50'
