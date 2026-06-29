@@ -1,5 +1,5 @@
 import React, { useCallback } from 'react'
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert } from 'react-native'
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert, RefreshControl } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Feather } from '@expo/vector-icons'
 import { Image } from 'expo-image'
@@ -11,6 +11,8 @@ import { formatKRW } from '../../lib/price'
 import EmptyState from '../../components/ui/EmptyState'
 
 export default function WaitlistScreen() {
+  const [isRefreshing, setIsRefreshing] = React.useState(false)
+  
   const {
     data: items,
     isLoading,
@@ -26,6 +28,12 @@ export default function WaitlistScreen() {
       refetch()
     }, [refetch])
   )
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true)
+    await refetch()
+    setIsRefreshing(false)
+  }
 
   const handleRemove = (productId: string) => {
     Alert.alert("O'chirish", "Mahsulotni kutish ro'yxatidan o'chirmoqchimisiz?", [
@@ -67,6 +75,14 @@ export default function WaitlistScreen() {
       ) : (
         <FlatList
           data={items}
+          refreshControl={
+            <RefreshControl
+              refreshing={isRefreshing}
+              onRefresh={handleRefresh}
+              tintColor={tokens.colors.primary}
+              colors={[tokens.colors.primary]}
+            />
+          }
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.listContent}
           renderItem={({ item }) => (

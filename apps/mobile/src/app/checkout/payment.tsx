@@ -60,7 +60,6 @@ export default function CheckoutPaymentScreen() {
       const res = await api.get('/settings/payment-info')
       return res.data.data
     },
-    staleTime: 10 * 60 * 1000,
   })
 
   const { data: boxes } = useQuery({
@@ -230,15 +229,15 @@ export default function CheckoutPaymentScreen() {
           <View style={styles.inlineInfo}>
             {infoRow(
               'Bank:',
-              paymentInfo?.korBankName || paymentSettings?.kor?.bankName || '---'
+              paymentInfo?.bankName || paymentSettings?.kor?.bankName || '---'
             )}
             {infoRow(
               'Hisob:',
-              paymentInfo?.korBankNumber || paymentSettings?.kor?.bankNumber || '---'
+              paymentInfo?.accountNumber || paymentSettings?.kor?.bankNumber || '---'
             )}
             {infoRow(
               'Egasi:',
-              paymentInfo?.korBankHolder || paymentSettings?.kor?.bankHolder || '---'
+              paymentInfo?.holderName || paymentSettings?.kor?.bankHolder || '---'
             )}
           </View>
         )}
@@ -247,15 +246,15 @@ export default function CheckoutPaymentScreen() {
           <View style={styles.inlineInfo}>
             {infoRow(
               'Bank:',
-              paymentInfo?.uzbBankName || paymentSettings?.uzb?.bankName || '---'
+              paymentInfo?.bankName || paymentSettings?.uzb?.bankName || '---'
             )}
             {infoRow(
               'Hisob:',
-              paymentInfo?.uzbBankNumber || paymentSettings?.uzb?.bankNumber || '---'
+              paymentInfo?.accountNumber || paymentSettings?.uzb?.bankNumber || '---'
             )}
             {infoRow(
               'Egasi:',
-              paymentInfo?.uzbBankHolder || paymentSettings?.uzb?.bankHolder || '---'
+              paymentInfo?.holderName || paymentSettings?.uzb?.bankHolder || '---'
             )}
           </View>
         )}
@@ -264,11 +263,11 @@ export default function CheckoutPaymentScreen() {
           <View style={styles.inlineInfo}>
             {infoRow(
               'E9Pay:',
-              paymentInfo?.korE9payAccount || paymentSettings?.e9pay?.account || '---'
+              paymentInfo?.accountNumber || paymentSettings?.e9pay?.account || '---'
             )}
             {infoRow(
               'Egasi:',
-              paymentInfo?.korE9payName || paymentSettings?.e9pay?.name || '---'
+              paymentInfo?.holderName || paymentSettings?.e9pay?.name || '---'
             )}
           </View>
         )}
@@ -361,22 +360,22 @@ export default function CheckoutPaymentScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>To'lov usuli</Text>
           {!isUZB ? (
-            renderPaymentMethod(
+            paymentSettings?.kor?.isEnabled !== false && renderPaymentMethod(
               'KOREAN_BANK',
               "Korea bank o'tkazmasi",
-              `Toss · ${paymentInfo?.korBankNumber ?? '...'}`
+              `Toss · ${paymentInfo?.accountNumber ?? '...'}`
             )
           ) : (
             <>
-              {renderPaymentMethod(
+              {paymentSettings?.uzb?.isEnabled !== false && renderPaymentMethod(
                 'UZB_BANK',
                 "O'zbekiston bank",
-                `Humo · ${paymentInfo?.uzbBankNumber ?? '...'}`
+                `Humo · ${paymentInfo?.accountNumber ?? '...'}`
               )}
-              {renderPaymentMethod(
+              {paymentSettings?.e9pay?.isEnabled !== false && renderPaymentMethod(
                 'E9PAY',
                 "E9Pay",
-                paymentInfo?.korE9payAccount ?? '...'
+                paymentInfo?.accountNumber ?? '...'
               )}
             </>
           )}

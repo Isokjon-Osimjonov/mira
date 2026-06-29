@@ -1,5 +1,5 @@
 import React, { useCallback } from 'react'
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert } from 'react-native'
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert, RefreshControl } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Feather } from '@expo/vector-icons'
 import { router, useFocusEffect } from 'expo-router'
@@ -14,6 +14,13 @@ import EmptyState from '../../components/ui/EmptyState'
 
 export default function WishlistScreen() {
   const { items, isLoading, fetchWishlist } = useWishlistStore()
+  const [isRefreshing, setIsRefreshing] = React.useState(false)
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true)
+    await fetchWishlist()
+    setIsRefreshing(false)
+  }
   const toggle = useWishlistStore((s) => s.toggle)
   const customer = useAuthStore((s) => s.customer)
   const exchangeRate = useExchangeStore((s) => s.rate)
@@ -71,6 +78,14 @@ export default function WishlistScreen() {
       ) : (
         <FlatList
           data={items}
+          refreshControl={
+            <RefreshControl
+              refreshing={isRefreshing}
+              onRefresh={handleRefresh}
+              tintColor={tokens.colors.primary}
+              colors={[tokens.colors.primary]}
+            />
+          }
           keyExtractor={(item) => item.id}
           numColumns={2}
           contentContainerStyle={styles.listContent}

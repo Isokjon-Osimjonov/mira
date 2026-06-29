@@ -8,6 +8,7 @@ import {
   Alert,
   ActivityIndicator,
   TextInput,
+  RefreshControl,
 } from 'react-native'
 import { Image } from 'expo-image'
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -27,6 +28,7 @@ import EmptyState from '../../components/ui/EmptyState'
 export default function CartScreen() {
   const insets = useSafeAreaInsets()
   const { cart, isLoading, fetchCart, updateItem, removeItem, clearCart } = useCartStore()
+  const [isRefreshing, setIsRefreshing] = useState(false)
   const customer = useAuthStore((s) => s.customer)
   const exchangeRate = useExchangeStore((s) => s.rate)
   const showUzs = customer?.phoneRegion === 'UZB'
@@ -52,6 +54,12 @@ export default function CartScreen() {
       fetchCart()
     }, [fetchCart])
   )
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true)
+    await fetchCart()
+    setIsRefreshing(false)
+  }
 
   const handleClearCart = () => {
     Alert.alert('Savatni tozalash', "Haqiqatan ham barcha mahsulotlarni o'chirmoqchimisiz?", [
@@ -144,6 +152,14 @@ export default function CartScreen() {
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[styles.scrollContent, { paddingBottom: 280 }]}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={handleRefresh}
+            tintColor={tokens.colors.primary}
+            colors={[tokens.colors.primary]}
+          />
+        }
       >
         {items.map((item) => (
           <View key={item.id} style={styles.cartCard}>

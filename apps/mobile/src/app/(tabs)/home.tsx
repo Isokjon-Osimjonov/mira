@@ -10,6 +10,7 @@ import {
   Pressable,
   Linking,
   Animated,
+  RefreshControl,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Image } from 'expo-image'
@@ -50,25 +51,27 @@ export default function HomeScreen() {
     fetchWishlist()
   }, [fetchCart, fetchWishlist])
 
-  const { data: categoriesData, isLoading: categoriesLoading } = useQuery({
+  const [isRefreshing, setIsRefreshing] = useState(false)
+
+  const { data: categoriesData, isLoading: categoriesLoading, refetch: refetchCategories } = useQuery({
     queryKey: ['categories'],
     queryFn: productService.getCategories,
     staleTime: 5 * 60 * 1000,
   })
 
-  const { data: bannersData } = useQuery({
+  const { data: bannersData, refetch: refetchBanners } = useQuery({
     queryKey: ['banners'],
     queryFn: bannerService.getBanners,
     staleTime: 5 * 60 * 1000,
   })
 
-  const { data: newProductsData, isLoading: newLoading } = useQuery({
+  const { data: newProductsData, isLoading: newLoading, refetch: refetchNew } = useQuery({
     queryKey: ['products', 'newest'],
     queryFn: () => productService.getProducts({ sort: 'newest', limit: 10 }),
     staleTime: 2 * 60 * 1000,
   })
 
-  const { data: bestsellerData, isLoading: bestLoading } = useQuery({
+  const { data: bestsellerData, isLoading: bestLoading, refetch: refetchBest } = useQuery({
     queryKey: ['products', 'bestselling'],
     queryFn: () => productService.getProducts({ sort: 'bestselling', limit: 10 }),
     staleTime: 2 * 60 * 1000,
@@ -76,7 +79,7 @@ export default function HomeScreen() {
 
 
 
-  const { data: rateData } = useQuery({
+  const { data: rateData, refetch: refetchRate } = useQuery({
     queryKey: ['exchange-rate'],
     queryFn: productService.getExchangeRate,
     staleTime: 10 * 60 * 1000,
@@ -106,13 +109,26 @@ export default function HomeScreen() {
     return () => clearInterval(interval)
   }, [activeBannerIdx, banners.length])
 
-  const { data: unreadData } = useQuery({
+  const { data: unreadData, refetch: refetchUnread } = useQuery({
     queryKey: ['notifications-unread'],
     queryFn: notificationService.getUnreadCount,
     staleTime: 60_000,
     refetchInterval: 60_000,
   })
   const unreadCount = unreadData ?? 0
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true)
+    await Promise.all([
+      refetchCategories(),
+      refetchBanners(),
+      refetchNew(),
+      refetchBest(),
+      refetchRate(),
+      refetchUnread(),
+    ])
+    setIsRefreshing(false)
+  }
 
   const handleAddToCart = async (productId: string) => {
     if (addingId) return
@@ -186,7 +202,18 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+      <ScrollView 
+        showsVerticalScrollIndicator={false} 
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl 
+            refreshing={isRefreshing} 
+            onRefresh={handleRefresh} 
+            tintColor={tokens.colors.primary}
+            colors={[tokens.colors.primary]}
+          />
+        }
+      >
         {/* HEADER */}
         <View style={styles.header}>
           <View style={styles.headerLeft}>

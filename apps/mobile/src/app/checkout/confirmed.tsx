@@ -106,22 +106,22 @@ export default function OrderConfirmedScreen() {
             <Text style={styles.instructionsTitle}>To'lov ma'lumotlari</Text>
             {paymentInfo?.method === 'KOREAN_BANK' && (
               <>
-                {infoRow("Hisob raqam:", paymentInfo.korBankNumber ?? paymentSettings?.kor.bankNumber)}
-                {infoRow("Bank:", paymentInfo.korBankName ?? paymentSettings?.kor.bankName)}
-                {infoRow("Egasi:", paymentInfo.korBankHolder ?? paymentSettings?.kor.bankHolder)}
+                {infoRow("Hisob raqam:", paymentInfo.accountNumber ?? paymentSettings?.kor.bankNumber)}
+                {infoRow("Bank:", paymentInfo.bankName ?? paymentSettings?.kor.bankName)}
+                {infoRow("Egasi:", paymentInfo.holderName ?? paymentSettings?.kor.bankHolder)}
               </>
             )}
             {paymentInfo?.method === 'UZB_BANK' && (
               <>
-                {infoRow("Hisob:", paymentInfo.uzbBankNumber ?? paymentSettings?.uzb.bankNumber)}
-                {infoRow("Bank:", paymentInfo.uzbBankName ?? paymentSettings?.uzb.bankName)}
-                {infoRow("Egasi:", paymentInfo.uzbBankHolder ?? paymentSettings?.uzb.bankHolder)}
+                {infoRow("Hisob:", paymentInfo.accountNumber ?? paymentSettings?.uzb.bankNumber)}
+                {infoRow("Bank:", paymentInfo.bankName ?? paymentSettings?.uzb.bankName)}
+                {infoRow("Egasi:", paymentInfo.holderName ?? paymentSettings?.uzb.bankHolder)}
               </>
             )}
             {paymentInfo?.method === 'E9PAY' && (
               <>
-                {infoRow("E9Pay:", paymentInfo.korE9payAccount ?? paymentSettings?.e9pay.account)}
-                {infoRow("Egasi:", paymentInfo.korE9payName ?? paymentSettings?.e9pay.name)}
+                {infoRow("E9Pay:", paymentInfo.accountNumber ?? paymentSettings?.e9pay.account)}
+                {infoRow("Egasi:", paymentInfo.holderName ?? paymentSettings?.e9pay.name)}
               </>
             )}
             {!paymentInfo && (
