@@ -1,7 +1,8 @@
 import axios, { AxiosError } from 'axios'
 import createAuthRefreshInterceptor from 'axios-auth-refresh'
+import { env } from '../config/env'
 
-const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:4000/api/v1'
+const API_BASE = env.apiUrl
 
 export const api = axios.create({
   baseURL: API_BASE,

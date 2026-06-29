@@ -40,6 +40,10 @@ export function LoginPage() {
   const { register, handleSubmit,
           formState: { errors } } = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: import.meta.env.DEV ? 'admin@miracosmetics.uz' : '',
+      password: import.meta.env.DEV ? 'MiraAdmin2026!' : '',
+    }
   })
 
   useEffect(() => {

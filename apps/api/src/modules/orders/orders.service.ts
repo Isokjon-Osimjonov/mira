@@ -1302,7 +1302,16 @@ export async function confirmPayment(
           .from(inventoryBatches)
           .where(eq(inventoryBatches.id, res.batchId))
           .limit(1)
+          .for('update')
         if (!batch) continue
+
+        if (batch.currentQty < res.quantity) {
+          throw {
+            status: 400,
+            code: 'INSUFFICIENT_STOCK_ON_CONFIRM',
+            message: `Omborda yetarli mahsulot qolmadi (${batch.currentQty} ta qoldi, ${res.quantity} ta kerak). Buyurtmani qayta ko'rib chiqing.`
+          }
+        }
 
         // Deduct stock
         await tx

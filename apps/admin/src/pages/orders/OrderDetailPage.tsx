@@ -223,7 +223,7 @@ export function OrderDetailPage({ id }: Props) {
       setNote('')
     },
     onError: (_err: any) => {
-      toast.error('Xatolik yuz berdi')
+      toast.error(_err.response?.data?.error?.message || 'Xatolik yuz berdi')
     },
   })
 
@@ -237,7 +237,7 @@ export function OrderDetailPage({ id }: Props) {
       setNote('')
     },
     onError: (_err: any) => {
-      toast.error('Xatolik yuz berdi')
+      toast.error(_err.response?.data?.error?.message || 'Xatolik yuz berdi')
     },
   })
 

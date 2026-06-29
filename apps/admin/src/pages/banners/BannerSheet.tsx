@@ -90,7 +90,7 @@ export function BannerSheet({ open, onClose, banner, onSuccess }: Props) {
       onClose()
     },
     onError: (err: any) => {
-      toast.error(err.message || 'Xatolik yuz berdi')
+      toast.error(err.response?.data?.error?.message || err.message || 'Xatolik yuz berdi')
     },
   })
 
