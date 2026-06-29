@@ -8,6 +8,7 @@ import type {
   CreateExpenseDto,
   UpdateExpenseDto,
 } from './expenses.schema'
+import { invalidateAnalyticsCache } from '../analytics/analytics.service'
 
 // ─── Expense Categories ──────────────────────────────────────────────────
 
@@ -225,6 +226,8 @@ export async function createExpense(data: CreateExpenseDto, adminId: string) {
     })
     .returning()
 
+  await invalidateAnalyticsCache()
+
   return created
 }
 
@@ -250,11 +253,13 @@ export async function updateExpense(id: string, data: UpdateExpenseDto) {
   }
 
   const [updated] = await db.update(expenses).set(updates).where(eq(expenses.id, id)).returning()
+  await invalidateAnalyticsCache()
   return updated
 }
 
 export async function deleteExpense(id: string) {
   const [deleted] = await db.delete(expenses).where(eq(expenses.id, id)).returning()
   if (!deleted) throw { status: 404, code: 'EXPENSE_NOT_FOUND', message: 'Xarajat topilmadi' }
+  await invalidateAnalyticsCache()
   return deleted
 }

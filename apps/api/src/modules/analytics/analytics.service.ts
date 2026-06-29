@@ -42,6 +42,15 @@ async function setCache(key: string, data: any, ttl = 300) {
   await redis.set(`analytics:${key}`, JSON.stringify(data), 'EX', ttl)
 }
 
+export async function invalidateAnalyticsCache() {
+  const redis = getRedis()
+  if (!redis) return
+  const keys = await redis.keys('analytics:*')
+  if (keys.length > 0) {
+    await redis.del(...keys)
+  }
+}
+
 // ─── Analytics Service ───────────────────────────────────────────────────
 
 export async function getOverview(from: string, to: string) {
@@ -102,9 +111,8 @@ export async function getOverview(from: string, to: string) {
   const expResult = await db.execute(
     sql`SELECT COALESCE(SUM(amount_krw)::text,'0')
         as total FROM expenses
-        WHERE created_at >= ${startDate.toISOString()}::date
-        AND created_at <= (${endDate.toISOString()}::date
-          + INTERVAL '1 day')`
+        WHERE expense_date >= ${from}::date
+        AND expense_date <= ${to}::date`
   )
   const totalExpenses = BigInt((expResult.rows[0] as any)?.total ?? '0')
   const netProfit = grossProfit - totalExpenses
@@ -292,7 +300,7 @@ export async function getPL(from: string, to: string) {
     })
     .from(expenses)
     .innerJoin(expenseCategories, eq(expenses.categoryId, expenseCategories.id))
-    .where(and(gte(expenses.createdAt, sql`${from}::date`), lte(expenses.createdAt, sql`(${to}::date + INTERVAL '1 day')`)))
+    .where(and(gte(expenses.expenseDate, sql`${from}::date`), lte(expenses.expenseDate, sql`${to}::date`)))
     .groupBy(expenseCategories.name)
 
   const totalExpenses = expensesByCategory.reduce((acc, e) => acc + Number(e.amount), 0)
@@ -613,12 +621,12 @@ export async function exportCSV(type: 'pl' | 'orders' | 'products' | 'revenue' |
         category: expenseCategories.name,
         amount: expenses.amountKrw,
         description: expenses.description,
-        date: expenses.createdAt,
+        date: expenses.expenseDate,
       })
       .from(expenses)
       .leftJoin(expenseCategories, eq(expenses.categoryId, expenseCategories.id))
-      .where(and(gte(expenses.createdAt, sql`${from}::date`), lte(expenses.createdAt, sql`(${to}::date + INTERVAL '1 day')`)))
-      .orderBy(desc(expenses.createdAt))
+      .where(and(gte(expenses.expenseDate, sql`${from}::date`), lte(expenses.expenseDate, sql`${to}::date`)))
+      .orderBy(desc(expenses.expenseDate))
 
     let csv = 'Sana,Kategoriya,Tavsif,Miqdor (KRW)\n'
     items.forEach((e: any) => {

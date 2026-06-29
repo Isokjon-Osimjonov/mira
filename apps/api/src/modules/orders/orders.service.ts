@@ -1,3 +1,4 @@
+import { invalidateAnalyticsCache } from "../analytics/analytics.service"
 import { db } from '../../config/db'
 import {
   orders,
@@ -225,7 +226,7 @@ export async function createOrder(params: {
   adminNote?: string
   adminId?: string
 }) {
-  return await db.transaction(async (tx) => {
+  const __tx_res = await db.transaction(async (tx) => {
     // 1. Items Validation
     if (params.itemsInput.length === 0)
       throw { status: 400, code: 'CART_EMPTY', message: "Savat bo'sh" }
@@ -720,8 +721,9 @@ export async function createOrder(params: {
       },
     }
   })
+  await invalidateAnalyticsCache()
+  return __tx_res
 }
-
 // ─── Customer Endpoints ──────────────────────────────────────────────────
 
 export async function checkoutCart(customerId: string, region: 'UZB' | 'KOR', dto: CheckoutDto) {
@@ -1457,7 +1459,7 @@ export async function confirmPayment(
 }
 
 export async function rejectPayment(orderId: string, adminId: string, dto: RejectPaymentDto, adminName?: string) {
-  return await db.transaction(async (tx) => {
+  const __tx_res = await db.transaction(async (tx) => {
     const [order] = await tx.select().from(orders).where(eq(orders.id, orderId)).limit(1)
     if (!order) throw { status: 404, code: 'ORDER_NOT_FOUND', message: 'Buyurtma topilmadi' }
     if (order.status !== 'PAYMENT_SUBMITTED')
@@ -1536,10 +1538,12 @@ export async function rejectPayment(orderId: string, adminId: string, dto: Rejec
 
     return updated
   })
+  await invalidateAnalyticsCache()
+  return __tx_res
 }
 
 export async function startPacking(orderId: string, adminId: string, adminName?: string) {
-  return await db.transaction(async (tx) => {
+  const __tx_res = await db.transaction(async (tx) => {
     const [order] = await tx.select().from(orders).where(eq(orders.id, orderId)).limit(1)
     if (!order) throw { status: 404, code: 'ORDER_NOT_FOUND', message: 'Buyurtma topilmadi' }
     if (order.status !== 'PAYMENT_CONFIRMED')
@@ -1597,10 +1601,12 @@ export async function startPacking(orderId: string, adminId: string, adminName?:
 
     return updated
   })
+  await invalidateAnalyticsCache()
+  return __tx_res
 }
 
 export async function shipOrder(orderId: string, adminId: string, dto: ShipOrderDto, adminName?: string) {
-  return await db.transaction(async (tx) => {
+  const __tx_res = await db.transaction(async (tx) => {
     const [order] = await tx.select().from(orders).where(eq(orders.id, orderId)).limit(1)
     if (!order) throw { status: 404, code: 'ORDER_NOT_FOUND', message: 'Buyurtma topilmadi' }
     if (order.status !== 'PACKING')
@@ -1689,10 +1695,12 @@ export async function shipOrder(orderId: string, adminId: string, dto: ShipOrder
 
     return updated
   })
+  await invalidateAnalyticsCache()
+  return __tx_res
 }
 
 export async function deliverOrder(orderId: string, adminId: string) {
-  return await db.transaction(async (tx) => {
+  const __tx_res = await db.transaction(async (tx) => {
     const [order] = await tx.select().from(orders).where(eq(orders.id, orderId)).limit(1)
     if (!order) throw { status: 404, code: 'ORDER_NOT_FOUND', message: 'Buyurtma topilmadi' }
     if (order.status !== 'SHIPPED')
@@ -1739,10 +1747,12 @@ export async function deliverOrder(orderId: string, adminId: string) {
 
     return updated
   })
+  await invalidateAnalyticsCache()
+  return __tx_res
 }
 
 export async function cancelOrder(orderId: string, adminId: string | null, reason?: string) {
-  return await db.transaction(async (tx) => {
+  const __tx_res = await db.transaction(async (tx) => {
     const [order] = await tx.select().from(orders).where(eq(orders.id, orderId)).limit(1)
     if (!order) throw { status: 404, code: 'ORDER_NOT_FOUND', message: 'Buyurtma topilmadi' }
     if (!['PENDING_PAYMENT', 'PAYMENT_REJECTED', 'PAYMENT_SUBMITTED'].includes(order.status)) {
@@ -1819,10 +1829,12 @@ export async function cancelOrder(orderId: string, adminId: string | null, reaso
 
     return updated
   })
+  await invalidateAnalyticsCache()
+  return __tx_res
 }
 
 export async function refundOrder(orderId: string, adminId: string, dto: RefundOrderDto) {
-  return await db.transaction(async (tx) => {
+  const __tx_res = await db.transaction(async (tx) => {
     const [order] = await tx.select().from(orders).where(eq(orders.id, orderId)).limit(1)
     if (!order) throw { status: 404, code: 'ORDER_NOT_FOUND', message: 'Buyurtma topilmadi' }
     if (order.status !== 'DELIVERED')
@@ -1931,6 +1943,8 @@ export async function refundOrder(orderId: string, adminId: string, dto: RefundO
 
     return updated
   })
+  await invalidateAnalyticsCache()
+  return __tx_res
 }
 
 export async function adminCreateOrder(adminId: string, dto: ManualOrderDto) {
