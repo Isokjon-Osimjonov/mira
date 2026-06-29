@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from '@tanstack/react-router'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query'
 import { useForm, useFieldArray, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { ArrowLeft, Loader2, Save, Plus, X, Search } from 'lucide-react'
+import { ArrowLeft, Loader2, Save, Plus, X, Search, MapPin } from 'lucide-react'
+import { api } from '../../lib/api'
 import { toast } from 'sonner'
 import { ordersApi } from '../../api/orders.api'
 import { customersApi } from '../../api/customers.api'
@@ -97,6 +98,58 @@ export function ManualOrderPage() {
 
   const { fields, append, remove } = useFieldArray({ control, name: 'items' })
   const selectedCustomerId = watch('customerId')
+  const paymentMode = watch('paymentMode')
+  const addressId = watch('addressId')
+  
+  const { data: customerData, refetch: refetchCustomer } = useQuery({
+    queryKey: ['admin', 'customers', selectedCustomerId],
+    queryFn: () => customersApi.getById(selectedCustomerId!),
+    enabled: !!selectedCustomerId,
+  })
+
+  const addresses = customerData?.data?.addresses || []
+
+  useEffect(() => {
+    if (addresses.length > 0 && !addressId) {
+      setValue('addressId', addresses[0].id)
+    }
+  }, [addresses, addressId, setValue])
+
+  const [showAddAddress, setShowAddAddress] = useState(false)
+  const [newAddr, setNewAddr] = useState({
+    fullName: '',
+    phone: '',
+    regionCode: 'UZB',
+    province: '',
+    city: '',
+    postalCode: '',
+    addressLine1: '',
+    addressLine2: '',
+  })
+
+  const createAddressMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const res = await api.post(`/admin/addresses/${selectedCustomerId}/addresses`, data)
+      return res.data
+    },
+    onSuccess: (res) => {
+      toast.success("Manzil qo'shildi")
+      setShowAddAddress(false)
+      setNewAddr({
+        fullName: '', phone: '', regionCode: 'UZB', province: '', city: '', postalCode: '', addressLine1: '', addressLine2: ''
+      })
+      refetchCustomer().then((latest) => {
+        const latestAddrs = latest.data?.data?.addresses || []
+        if (latestAddrs.length > 0) {
+          setValue('addressId', latestAddrs[latestAddrs.length - 1].id)
+        }
+      })
+    },
+    onError: (err: any) => toast.error(getErrorMessage(err))
+  })
+
+  const isAddressMissing = paymentMode === 'RECEIPT' && !addressId
+
   
   // Fetch specific customer to get addresses (optional, since addressId is optional)
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null)
@@ -229,8 +282,164 @@ export function ManualOrderPage() {
           </div>
 
           <div className="space-y-1.5">
-            <Label className="text-xs">Manzil (Address ID) - Ixtiyoriy</Label>
-            <Input {...register('addressId')} placeholder="Manzil UUID agar mavjud bo'lsa" className="h-9" />
+            <Label className="text-xs">
+              Manzil {paymentMode === 'RECEIPT' && <span className="text-red-500">*</span>}
+            </Label>
+            {!selectedCustomerId ? (
+              <div className="text-sm text-muted-foreground italic border p-3 rounded-lg bg-gray-50">
+                Mijozni tanlang
+              </div>
+            ) : addresses.length === 0 ? (
+              <div className="border border-dashed p-4 rounded-lg flex flex-col items-center justify-center space-y-3 bg-gray-50">
+                <div className="text-sm text-muted-foreground">Bu mijozda saqlangan manzil yo'q</div>
+                {!showAddAddress ? (
+                  <Button variant="outline" size="sm" type="button" onClick={() => setShowAddAddress(true)}>
+                    Yangi manzil qo'shish
+                  </Button>
+                ) : (
+                  <div className="w-full bg-white p-4 rounded border space-y-3 text-left">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label className="text-xs">Viloyat / Davlat</Label>
+                        <Select value={newAddr.regionCode} onValueChange={(v) => setNewAddr({ ...newAddr, regionCode: v })}>
+                          <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="UZB">O'zbekiston</SelectItem>
+                            <SelectItem value="KOR">Janubiy Koreya</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label className="text-xs">Ism familiya</Label>
+                        <Input className="h-9" value={newAddr.fullName} onChange={(e) => setNewAddr({ ...newAddr, fullName: e.target.value })} />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label className="text-xs">Telefon</Label>
+                        <Input className="h-9" value={newAddr.phone} onChange={(e) => setNewAddr({ ...newAddr, phone: e.target.value })} />
+                      </div>
+                      <div>
+                        <Label className="text-xs">Pochta indeksi</Label>
+                        <Input className="h-9" value={newAddr.postalCode} onChange={(e) => setNewAddr({ ...newAddr, postalCode: e.target.value })} />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label className="text-xs">Viloyat (UZB)</Label>
+                        <Input className="h-9" value={newAddr.province} onChange={(e) => setNewAddr({ ...newAddr, province: e.target.value })} />
+                      </div>
+                      <div>
+                        <Label className="text-xs">Shahar (UZB)</Label>
+                        <Input className="h-9" value={newAddr.city} onChange={(e) => setNewAddr({ ...newAddr, city: e.target.value })} />
+                      </div>
+                    </div>
+                    <div>
+                      <Label className="text-xs">Asosiy manzil</Label>
+                      <Input className="h-9" value={newAddr.addressLine1} onChange={(e) => setNewAddr({ ...newAddr, addressLine1: e.target.value })} />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Kvartira/Xona (KOR)</Label>
+                      <Input className="h-9" value={newAddr.addressLine2} onChange={(e) => setNewAddr({ ...newAddr, addressLine2: e.target.value })} />
+                    </div>
+                    <div className="flex gap-2 justify-end pt-2">
+                      <Button size="sm" variant="ghost" type="button" onClick={() => setShowAddAddress(false)}>Bekor qilish</Button>
+                      <Button size="sm" type="button" onClick={() => createAddressMutation.mutate(newAddr)} disabled={createAddressMutation.isPending}>
+                        {createAddressMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Saqlash'}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <div className="grid gap-2">
+                  {addresses.map((addr: any) => (
+                    <div
+                      key={addr.id}
+                      onClick={() => setValue('addressId', addr.id)}
+                      className={`cursor-pointer border p-3 rounded-lg flex items-start gap-3 transition-colors ${
+                        addressId === addr.id ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'hover:border-gray-300'
+                      }`}
+                    >
+                      <div className={`mt-0.5 flex-shrink-0 w-4 h-4 rounded-full border flex items-center justify-center ${
+                        addressId === addr.id ? 'border-primary' : 'border-gray-300'
+                      }`}>
+                        {addressId === addr.id && <div className="w-2 h-2 bg-primary rounded-full" />}
+                      </div>
+                      <div className="flex-1 text-sm">
+                        <div className="font-medium">{addr.fullName} ({addr.regionCode})</div>
+                        <div className="text-muted-foreground text-xs mt-0.5">
+                          {[addr.province, addr.city, addr.addressLine1, addr.addressLine2].filter(Boolean).join(', ')}
+                        </div>
+                        <div className="text-xs mt-0.5 text-muted-foreground">{addr.phone} • {addr.postalCode}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {showAddAddress ? (
+                  <div className="w-full bg-white p-4 rounded border mt-3 space-y-3 text-left">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label className="text-xs">Viloyat / Davlat</Label>
+                        <Select value={newAddr.regionCode} onValueChange={(v) => setNewAddr({ ...newAddr, regionCode: v })}>
+                          <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="UZB">O'zbekiston</SelectItem>
+                            <SelectItem value="KOR">Janubiy Koreya</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label className="text-xs">Ism familiya</Label>
+                        <Input className="h-9" value={newAddr.fullName} onChange={(e) => setNewAddr({ ...newAddr, fullName: e.target.value })} />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label className="text-xs">Telefon</Label>
+                        <Input className="h-9" value={newAddr.phone} onChange={(e) => setNewAddr({ ...newAddr, phone: e.target.value })} />
+                      </div>
+                      <div>
+                        <Label className="text-xs">Pochta indeksi</Label>
+                        <Input className="h-9" value={newAddr.postalCode} onChange={(e) => setNewAddr({ ...newAddr, postalCode: e.target.value })} />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label className="text-xs">Viloyat (UZB)</Label>
+                        <Input className="h-9" value={newAddr.province} onChange={(e) => setNewAddr({ ...newAddr, province: e.target.value })} />
+                      </div>
+                      <div>
+                        <Label className="text-xs">Shahar (UZB)</Label>
+                        <Input className="h-9" value={newAddr.city} onChange={(e) => setNewAddr({ ...newAddr, city: e.target.value })} />
+                      </div>
+                    </div>
+                    <div>
+                      <Label className="text-xs">Asosiy manzil</Label>
+                      <Input className="h-9" value={newAddr.addressLine1} onChange={(e) => setNewAddr({ ...newAddr, addressLine1: e.target.value })} />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Kvartira/Xona (KOR)</Label>
+                      <Input className="h-9" value={newAddr.addressLine2} onChange={(e) => setNewAddr({ ...newAddr, addressLine2: e.target.value })} />
+                    </div>
+                    <div className="flex gap-2 justify-end pt-2">
+                      <Button size="sm" variant="ghost" type="button" onClick={() => setShowAddAddress(false)}>Bekor qilish</Button>
+                      <Button size="sm" type="button" onClick={() => createAddressMutation.mutate(newAddr)} disabled={createAddressMutation.isPending}>
+                        {createAddressMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Saqlash'}
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <Button variant="ghost" size="sm" type="button" onClick={() => setShowAddAddress(true)} className="mt-2 text-primary">
+                    <Plus className="w-4 h-4 mr-1" /> Boshqa manzil qo'shish
+                  </Button>
+                )}
+              </div>
+            )}
+            {isAddressMissing && (
+              <p className="text-xs text-red-500 font-medium">Yetkazib berish uchun manzil tanlanishi shart</p>
+            )}
           </div>
         </div>
 
@@ -391,7 +600,7 @@ export function ManualOrderPage() {
           </Button>
           <Button
             type="submit"
-            disabled={mutation.isPending}
+            disabled={mutation.isPending || isAddressMissing}
             className="flex-1 rounded-lg h-10 gap-2"
           >
             {mutation.isPending ? (
