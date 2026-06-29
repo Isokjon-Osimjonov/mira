@@ -5,11 +5,7 @@ import {
 
 export const banners = pgTable('banners', {
   id: uuid('id').primaryKey().defaultRandom(),
-  title: varchar('title', { length: 200 }).notNull(),
-  subtitle: varchar('subtitle', { length: 300 }),
-  buttonText: varchar('button_text', { length: 50 }),
   imageUrl: text('image_url'),
-  bgColor: varchar('bg_color', { length: 7 }).default('#E11D74'),
   linkType: varchar('link_type', { length: 20 })
     .default('none'),
     // values: none | product | category | external | wholesale

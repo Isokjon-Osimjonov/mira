@@ -84,7 +84,6 @@ export function BannersPage() {
               <thead>
                 <tr className="border-b border-border/50 bg-gray-50/80">
                   <th className="w-16 px-4 py-3 text-left text-xs font-medium text-muted-foreground">Rasm</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Sarlavha</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Tur</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Hudud</th>
                   <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground">Holat</th>
@@ -107,13 +106,6 @@ export function BannersPage() {
                           <ImageIcon className="h-4 w-4 text-gray-400" />
                         </div>
                       )}
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 rounded-full border" style={{ backgroundColor: b.bgColor }} />
-                        <span className="font-medium text-gray-900">{b.title}</span>
-                      </div>
-                      {b.subtitle && <p className="text-[11px] text-muted-foreground mt-0.5">{b.subtitle}</p>}
                     </td>
                     <td className="px-4 py-3 capitalize text-gray-600">{b.linkType}</td>
                     <td className="px-4 py-3">
@@ -181,7 +173,7 @@ export function BannersPage() {
         open={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
         title="Bannerni o'chirish"
-        description={`"${deleteTarget?.title}" bannerini o'chirishni tasdiqlaysizmi?`}
+        description="Ushbu bannerni o'chirishni tasdiqlaysizmi?"
         variant="destructive"
         loading={deleteMutation.isPending}
         onConfirm={() => deleteMutation.mutate(deleteTarget.id)}

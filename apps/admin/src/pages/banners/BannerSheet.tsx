@@ -28,7 +28,6 @@ import {
 } from '@/components/ui/select'
 
 const bannerSchema = z.object({
-  title: z.string().nullable().optional(),
   imageUrl: z.string().min(1, 'Rasm talab qilinadi'),
   linkType: z.enum(['none', 'product', 'category', 'external', 'wholesale']).default('none'),
   linkValue: z.string().nullable().optional(),
@@ -73,7 +72,6 @@ export function BannerSheet({ open, onClose, banner, onSuccess }: Props) {
     if (banner) {
       reset({
         ...banner,
-        title: banner.title || '',
         imageUrl: banner.imageUrl || '',
         linkType: banner.linkType || 'none',
         linkValue: banner.linkValue || '',
@@ -81,7 +79,6 @@ export function BannerSheet({ open, onClose, banner, onSuccess }: Props) {
       })
     } else {
       reset({
-        title: '',
         imageUrl: '',
         linkType: 'none',
         linkValue: '',
@@ -163,12 +160,6 @@ export function BannerSheet({ open, onClose, banner, onSuccess }: Props) {
         </SheetHeader>
 
         <form onSubmit={handleSubmit(onSubmit, onInvalid)} className="space-y-4 py-4">
-          <div className="space-y-2">
-            <Label>Sarlavha</Label>
-            <Input {...register('title')} placeholder="Banner sarlavhasi (ixtiyoriy)" />
-            {errors.title && <p className="text-xs text-red-500">{errors.title.message}</p>}
-          </div>
-
           <div className="space-y-2">
             <Label>Rasm <span className="text-red-500">*</span></Label>
             <Controller
