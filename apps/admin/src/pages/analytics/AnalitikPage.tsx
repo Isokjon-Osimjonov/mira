@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react'
+import { format } from 'date-fns'
 import { useQuery } from '@tanstack/react-query'
 import {
   AreaChart,
@@ -36,26 +37,26 @@ export function AnalitikPage() {
       {
         key: 'this_month',
         label: 'Bu oy',
-        from: new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0],
-        to: now.toISOString().split('T')[0],
+        from: format(new Date(now.getFullYear(), now.getMonth(), 1), 'yyyy-MM-dd'),
+        to: format(now, 'yyyy-MM-dd'),
       },
       {
         key: 'last_month',
         label: "O'tgan oy",
-        from: new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString().split('T')[0],
-        to: new Date(now.getFullYear(), now.getMonth(), 0).toISOString().split('T')[0],
+        from: format(new Date(now.getFullYear(), now.getMonth() - 1, 1), 'yyyy-MM-dd'),
+        to: format(new Date(now.getFullYear(), now.getMonth(), 0), 'yyyy-MM-dd'),
       },
       {
         key: 'this_year',
         label: 'Bu yil',
-        from: new Date(now.getFullYear(), 0, 1).toISOString().split('T')[0],
-        to: now.toISOString().split('T')[0],
+        from: format(new Date(now.getFullYear(), 0, 1), 'yyyy-MM-dd'),
+        to: format(now, 'yyyy-MM-dd'),
       },
       {
         key: 'last_30',
         label: 'Oxirgi 30 kun',
-        from: new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-        to: now.toISOString().split('T')[0],
+        from: format(new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd'),
+        to: format(now, 'yyyy-MM-dd'),
       },
       {
         key: 'custom',
