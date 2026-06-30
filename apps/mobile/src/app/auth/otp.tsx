@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { View, Text, TouchableOpacity, StyleSheet, Linking } from 'react-native'
+import { View, Text, TouchableOpacity, StyleSheet, Linking, ToastAndroid, Platform, Alert } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLocalSearchParams, router } from 'expo-router'
 import { tokens } from '../../lib/tokens'
@@ -7,6 +7,8 @@ import OtpInput from '../../components/ui/OtpInput'
 import PrimaryButton from '../../components/ui/PrimaryButton'
 import { authService } from '../../services/auth.service'
 import { useAuthStore } from '../../lib/auth-store'
+import { useCartStore } from '../../lib/cart-store'
+import { cartService } from '../../services/cart.service'
 
 export default function OtpScreen() {
   const { phone, region, deepLink, returnTo } = useLocalSearchParams<{
@@ -105,9 +107,6 @@ export default function OtpScreen() {
       useAuthStore.getState().setAuth(accessToken, refreshToken ?? '', customer)
 
       // --- CART MERGE LOGIC ---
-      const { useCartStore } = require('../../lib/cart-store')
-      const { cartService } = require('../../services/cart.service')
-      const { ToastAndroid, Platform, Alert } = require('react-native')
       const cartStore = useCartStore.getState()
       const guestItems = cartStore.guestItems
 

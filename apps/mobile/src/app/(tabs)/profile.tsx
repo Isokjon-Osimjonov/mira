@@ -9,12 +9,15 @@ import { useCartStore } from '../../lib/cart-store'
 import { useWishlistStore } from '../../lib/wishlist-store'
 import { authService } from '../../services/auth.service'
 import { tokens } from '../../lib/tokens'
+import { useRegionStore } from '../../lib/region-store'
 import PrimaryButton from '../../components/ui/PrimaryButton'
 
 export default function ProfileScreen() {
   const customer = useAuthStore((s) => s.customer)
   const logout = useAuthStore((s) => s.logout)
   const clearCart = useCartStore((s) => s.clearCart)
+  const guestRegion = useRegionStore((s) => s.guestRegion)
+  const setGuestRegion = useRegionStore((s) => s.setGuestRegion)
 
   const handleLogout = () => {
     Alert.alert('Chiqish', 'Hisobdan chiqmoqchimisiz?', [
@@ -141,9 +144,6 @@ export default function ProfileScreen() {
   ]
 
   if (!customer) {
-    const { useRegionStore } = require('../../lib/region-store')
-    const guestRegion = useRegionStore((s: any) => s.guestRegion)
-    const setGuestRegion = useRegionStore((s: any) => s.setGuestRegion)
 
     return (
       <SafeAreaView style={styles.container}>

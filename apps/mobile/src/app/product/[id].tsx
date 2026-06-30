@@ -25,6 +25,7 @@ import { formatKRW, formatUZS, krwToUzs } from '../../lib/price'
 import SkeletonLoader from '../../components/ui/SkeletonLoader'
 import { Toast, useToast } from '../../components/ui/Toast'
 import CartBadgeIcon from '../../components/ui/CartBadgeIcon'
+import { requireAuth } from '../../lib/require-auth'
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window')
 
@@ -33,7 +34,6 @@ const WaitlistButton = ({ productId, showToast }: { productId: string; showToast
   const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
-    const { useAuthStore } = require('../../lib/auth-store')
     if (!useAuthStore.getState().isAuthenticated) return
     
     waitlistService
@@ -46,9 +46,6 @@ const WaitlistButton = ({ productId, showToast }: { productId: string; showToast
 
   const handlePress = async () => {
     if (isOnWaitlist) return
-    const { requireAuth } = require('../../lib/require-auth')
-    const { useAuthStore } = require('../../lib/auth-store')
-    const { router } = require('expo-router')
     if (!requireAuth(useAuthStore.getState().isAuthenticated, router, `/product/${productId}`)) return
 
     setIsLoading(true)
