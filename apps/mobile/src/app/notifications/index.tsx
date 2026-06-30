@@ -5,6 +5,8 @@ import { Feather } from '@expo/vector-icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { router, useFocusEffect } from 'expo-router'
 import { notificationService, Notification } from '../../services/notification.service'
+import { useAuthStore } from '../../lib/auth-store'
+import { requireAuth } from '../../lib/require-auth'
 import { formatDate } from '../../lib/price'
 import { tokens } from '../../lib/tokens'
 import EmptyState from '../../components/ui/EmptyState'
@@ -59,6 +61,7 @@ export default function NotificationsScreen() {
 
   useFocusEffect(
     useCallback(() => {
+      if (!requireAuth(useAuthStore.getState().isAuthenticated, router, '/notifications')) return
       refetch()
     }, [refetch])
   )

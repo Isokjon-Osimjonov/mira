@@ -119,6 +119,9 @@ export default function CategoriesScreen() {
 
   const handleAddToCart = async (productId: string) => {
     if (addingId) return
+    const { requireAuth } = require('../../lib/require-auth')
+    if (!requireAuth(useAuthStore.getState().isAuthenticated, router, '/(tabs)/categories')) return
+
     setAddingId(productId)
     try {
       await addItem(productId, 1)

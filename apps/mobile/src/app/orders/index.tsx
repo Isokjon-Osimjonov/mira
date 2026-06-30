@@ -6,6 +6,8 @@ import { Feather } from '@expo/vector-icons'
 import { useQuery } from '@tanstack/react-query'
 import { router, useFocusEffect } from 'expo-router'
 import { orderService } from '../../services/order.service'
+import { useAuthStore } from '../../lib/auth-store'
+import { requireAuth } from '../../lib/require-auth'
 import { formatKRW, formatDate, formatCountdown } from '../../lib/price'
 import { tokens } from '../../lib/tokens'
 import PrimaryButton from '../../components/ui/PrimaryButton'
@@ -58,6 +60,7 @@ export default function OrdersScreen() {
 
   useFocusEffect(
     useCallback(() => {
+      if (!requireAuth(useAuthStore.getState().isAuthenticated, router, '/orders')) return
       refetch()
     }, [refetch])
   )

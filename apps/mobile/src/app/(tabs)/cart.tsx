@@ -16,6 +16,7 @@ import { Feather } from '@expo/vector-icons'
 import { router, useFocusEffect } from 'expo-router'
 import { useCartStore } from '../../lib/cart-store'
 import { useAuthStore } from '../../lib/auth-store'
+import { requireAuth } from '../../lib/require-auth'
 import { useExchangeStore } from '../../lib/exchange-store'
 import { formatKRW, formatUZS, krwToUzs } from '../../lib/price'
 import { tokens } from '../../lib/tokens'
@@ -299,14 +300,15 @@ export default function CartScreen() {
           <PrimaryButton
             label="Buyurtma berish"
             disabled={items.length === 0 || items.some((i) => !i.inStock)}
-            onPress={() =>
+            onPress={() => {
+              if (!requireAuth(useAuthStore.getState().isAuthenticated, router, '/checkout/address')) return
               router.push({
                 pathname: '/checkout/address',
                 params: {
                   couponCode: couponResult?.coupon.code ?? '',
                 },
               })
-            }
+            }}
           />
         </View>
       </View>

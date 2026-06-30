@@ -9,6 +9,7 @@ import { useCartStore } from '../../lib/cart-store'
 import { useWishlistStore } from '../../lib/wishlist-store'
 import { authService } from '../../services/auth.service'
 import { tokens } from '../../lib/tokens'
+import PrimaryButton from '../../components/ui/PrimaryButton'
 
 export default function ProfileScreen() {
   const customer = useAuthStore((s) => s.customer)
@@ -139,7 +140,27 @@ export default function ProfileScreen() {
     },
   ]
 
-  if (!customer) return null
+  if (!customer) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.guestContainer}>
+          <View style={styles.guestIconContainer}>
+            <Feather name="user" size={48} color={tokens.colors.primary} />
+          </View>
+          <Text style={styles.guestTitle}>Hisobingizga kiring</Text>
+          <Text style={styles.guestSubtitle}>
+            Buyurtmalarni kuzatish, sevimlilarni saqlash va boshqalar uchun
+          </Text>
+          <View style={{ marginTop: 24, width: '100%', paddingHorizontal: 24 }}>
+            <PrimaryButton 
+              label="Kirish / Ro'yxatdan o'tish" 
+              onPress={() => router.push({ pathname: '/auth/login', params: { returnTo: '/(tabs)/profile' } })} 
+            />
+          </View>
+        </View>
+      </SafeAreaView>
+    )
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -226,6 +247,37 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: tokens.colors.background,
+  },
+  guestContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+  },
+  guestIconContainer: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    backgroundColor: tokens.colors.primaryLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 24,
+  },
+  guestTitle: {
+    fontSize: 24,
+    fontWeight: '600',
+    color: tokens.colors.text,
+    fontFamily: 'Inter_400Regular',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  guestSubtitle: {
+    fontSize: 14,
+    color: tokens.colors.textMuted,
+    fontFamily: 'Inter_400Regular',
+    textAlign: 'center',
+    paddingHorizontal: 16,
+    lineHeight: 20,
   },
   header: {
     paddingHorizontal: 24,

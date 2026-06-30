@@ -9,10 +9,11 @@ import { authService } from '../../services/auth.service'
 import { useAuthStore } from '../../lib/auth-store'
 
 export default function OtpScreen() {
-  const { phone, region, deepLink } = useLocalSearchParams<{
+  const { phone, region, deepLink, returnTo } = useLocalSearchParams<{
     phone: string
     region: string
     deepLink: string
+    returnTo?: string
   }>()
 
   const [otp, setOtp] = useState('')
@@ -104,9 +105,9 @@ export default function OtpScreen() {
       useAuthStore.getState().setAuth(accessToken, refreshToken ?? '', customer)
 
       if (isNewCustomer || !customer.firstName) {
-        router.replace('/auth/profile-setup')
+        router.replace({ pathname: '/auth/profile-setup', params: { returnTo } })
       } else {
-        router.replace('/(tabs)/home')
+        router.replace(returnTo ? String(returnTo) : '/(tabs)/home')
       }
     } catch (err: any) {
       const msg = err?.response?.data?.error?.message

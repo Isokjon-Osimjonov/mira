@@ -1,24 +1,25 @@
 import React from 'react'
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { router } from 'expo-router'
+import { router, useLocalSearchParams } from 'expo-router'
 import { tokens } from '../../lib/tokens'
 import PrimaryButton from '../../components/ui/PrimaryButton'
 import { Feather } from '@expo/vector-icons'
 
 export default function NotificationPermissionScreen() {
+  const { returnTo } = useLocalSearchParams()
   const handleAllow = async () => {
     try {
       // expo-notifications requires dev build
       // For now just navigate — token save in Sprint 4
-      router.replace('/(tabs)/home')
+      router.replace(returnTo ? String(returnTo) : '/(tabs)/home')
     } catch {
-      router.replace('/(tabs)/home')
+      router.replace(returnTo ? String(returnTo) : '/(tabs)/home')
     }
   }
 
   const handleSkip = () => {
-    router.replace('/(tabs)/home')
+    router.replace(returnTo ? String(returnTo) : '/(tabs)/home')
   }
 
   return (

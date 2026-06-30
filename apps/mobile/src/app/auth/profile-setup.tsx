@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { View, Text, TextInput, Image, TouchableOpacity, StyleSheet, Pressable } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { router } from 'expo-router'
+import { router, useLocalSearchParams } from 'expo-router'
 import * as ImagePicker from 'expo-image-picker'
 import { tokens } from '../../lib/tokens'
 import PrimaryButton from '../../components/ui/PrimaryButton'
@@ -56,7 +56,8 @@ export default function ProfileSetupScreen() {
         profileImageUrl,
       })
       useAuthStore.getState().setCustomer(updated)
-      router.replace('/auth/notification-permission')
+      const { returnTo } = useLocalSearchParams()
+      router.replace({ pathname: '/auth/notification-permission', params: { returnTo: returnTo as string } })
     } catch (err: any) {
       const msg = err?.response?.data?.error?.message
       Alert.alert('Xatolik', msg ?? 'Profil saqlanmadi.')

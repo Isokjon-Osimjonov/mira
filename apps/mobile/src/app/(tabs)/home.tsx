@@ -122,6 +122,7 @@ export default function HomeScreen() {
   const { data: unreadData, refetch: refetchUnread } = useQuery({
     queryKey: ['notifications-unread'],
     queryFn: notificationService.getUnreadCount,
+    enabled: !!customer,
     staleTime: 60_000,
     refetchInterval: 60_000,
   })
@@ -142,6 +143,9 @@ export default function HomeScreen() {
 
   const handleAddToCart = async (productId: string) => {
     if (addingId) return
+    const { requireAuth } = require('../../lib/require-auth')
+    if (!requireAuth(useAuthStore.getState().isAuthenticated, router, '/(tabs)/home')) return
+
     setAddingId(productId)
     try {
       await addItem(productId, 1)

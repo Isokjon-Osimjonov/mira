@@ -16,6 +16,14 @@ export const useWishlistStore = create<WishlistState>((set, get) => ({
   isLoading: false,
 
   fetchWishlist: async () => {
+    try {
+      const { useAuthStore } = await import('./auth-store')
+      if (!useAuthStore.getState().isAuthenticated) {
+        set({ items: [], productIds: new Set() })
+        return
+      }
+    } catch {}
+
     set({ isLoading: true })
     try {
       const items = await wishlistService.getWishlist()

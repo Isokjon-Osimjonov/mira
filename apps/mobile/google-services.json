@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "214783252903",
+    "project_id": "mira-market-c9ac7",
+    "storage_bucket": "mira-market-c9ac7.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:214783252903:android:dcc72b0e6178818a48be82",
+        "android_client_info": {
+          "package_name": "uz.miramarket.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBmd3O6Wf-3aphMzXU1KMwO3eRbR0s1Pks"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

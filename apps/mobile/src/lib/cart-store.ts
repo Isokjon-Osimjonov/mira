@@ -26,6 +26,14 @@ export const useCartStore = create<CartState>((set, get) => ({
     }),
 
   fetchCart: async () => {
+    try {
+      const { useAuthStore } = await import('./auth-store')
+      if (!useAuthStore.getState().isAuthenticated) {
+        set({ cart: null, itemCount: 0 })
+        return
+      }
+    } catch {}
+
     set({ isLoading: true })
     try {
       const cart = await cartService.getCart()

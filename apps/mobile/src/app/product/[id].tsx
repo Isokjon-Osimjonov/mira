@@ -32,6 +32,9 @@ const WaitlistButton = ({ productId, showToast }: { productId: string; showToast
   const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
+    const { useAuthStore } = require('../../lib/auth-store')
+    if (!useAuthStore.getState().isAuthenticated) return
+    
     waitlistService
       .getWaitlist()
       .then((items) => {
@@ -42,6 +45,11 @@ const WaitlistButton = ({ productId, showToast }: { productId: string; showToast
 
   const handlePress = async () => {
     if (isOnWaitlist) return
+    const { requireAuth } = require('../../lib/require-auth')
+    const { useAuthStore } = require('../../lib/auth-store')
+    const { router } = require('expo-router')
+    if (!requireAuth(useAuthStore.getState().isAuthenticated, router, `/product/${productId}`)) return
+
     setIsLoading(true)
     try {
       const result = await waitlistService.addToWaitlist(productId)
@@ -122,6 +130,9 @@ export default function ProductDetailScreen() {
 
   const handleAddToCart = async () => {
     if (isAdding || !id || isOutOfStock) return
+    const { requireAuth } = require('../../lib/require-auth')
+    if (!requireAuth(useAuthStore.getState().isAuthenticated, router, `/product/${id}`)) return
+
     setIsAdding(true)
     try {
       await addItem(id as string, 1)
@@ -136,6 +147,13 @@ export default function ProductDetailScreen() {
     } finally {
       setIsAdding(false)
     }
+  }
+
+  const handleWishlistToggle = () => {
+    if (!product) return
+    const { requireAuth } = require('../../lib/require-auth')
+    if (!requireAuth(useAuthStore.getState().isAuthenticated, router, `/product/${product.id}`)) return
+    toggleWishlist(product.id)
   }
 
   if (isLoading) {
@@ -193,10 +211,7 @@ export default function ProductDetailScreen() {
             <Feather name="arrow-left" size={20} color={tokens.colors.text} />
           </TouchableOpacity>
           <TouchableOpacity
-            onPress={() => {
-              if (!product) return
-              toggleWishlist(product.id)
-            }}
+            onPress={handleWishlistToggle}
             style={[styles.wishlistBtn, { top: insets.top + 12 }]}
             activeOpacity={0.7}
           >

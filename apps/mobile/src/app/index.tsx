@@ -3,6 +3,7 @@ import { View, ActivityIndicator } from 'react-native'
 import { router } from 'expo-router'
 import { useAuthStore } from '../lib/auth-store'
 import { tokens } from '../lib/tokens'
+import * as ExpoStorage from 'expo-secure-store'
 
 export default function IndexScreen() {
   const initialize = useAuthStore((s) => s.initialize)
@@ -15,12 +16,21 @@ export default function IndexScreen() {
 
   useEffect(() => {
     if (!ready) return
+    checkOnboardingAndAuth()
+  }, [ready, isAuthenticated])
+
+  async function checkOnboardingAndAuth() {
+    const seenOnboarding = await ExpoStorage.getItemAsync('onboarding_complete')
+    if (!seenOnboarding) {
+      router.replace('/onboarding')
+      return
+    }
     if (isAuthenticated) {
       router.replace('/(tabs)/home')
     } else {
-      router.replace('/auth/login')
+      router.replace('/(tabs)/home')
     }
-  }, [ready, isAuthenticated])
+  }
 
   // Show spinner while initializing
   return (
