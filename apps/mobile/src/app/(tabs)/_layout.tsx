@@ -3,8 +3,9 @@ import { Feather } from '@expo/vector-icons'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { tokens } from '../../lib/tokens'
 
-import { View, Text } from 'react-native'
+import { useAuthStore } from '../../lib/auth-store'
 import { useCartStore } from '../../lib/cart-store'
+import CartBadgeIcon from '../../components/ui/CartBadgeIcon'
 
 export default function TabsLayout() {
   const insets = useSafeAreaInsets()
@@ -50,38 +51,7 @@ export default function TabsLayout() {
         name="cart"
         options={{
           title: 'Savat',
-          tabBarIcon: ({ color }) => (
-            <View>
-              <Feather name="shopping-bag" size={22} color={color} />
-              {itemCount > 0 && (
-                <View
-                  style={{
-                    position: 'absolute',
-                    top: -4,
-                    right: -6,
-                    backgroundColor: tokens.colors.primary,
-                    borderRadius: 8,
-                    minWidth: 16,
-                    height: 16,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    paddingHorizontal: 3,
-                  }}
-                >
-                  <Text
-                    style={{
-                      color: '#fff',
-                      fontSize: 9,
-                      fontFamily: 'Inter_400Regular',
-                      fontWeight: '500',
-                    }}
-                  >
-                    {itemCount > 99 ? '99+' : itemCount}
-                  </Text>
-                </View>
-              )}
-            </View>
-          ),
+          tabBarIcon: ({ color }) => <CartBadgeIcon size={22} color={color} />,
         }}
       />
       <Tabs.Screen

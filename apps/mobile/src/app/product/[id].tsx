@@ -24,6 +24,7 @@ import { useWishlistStore } from '../../lib/wishlist-store'
 import { formatKRW, formatUZS, krwToUzs } from '../../lib/price'
 import SkeletonLoader from '../../components/ui/SkeletonLoader'
 import { Toast, useToast } from '../../components/ui/Toast'
+import CartBadgeIcon from '../../components/ui/CartBadgeIcon'
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window')
 
@@ -207,6 +208,11 @@ export default function ProductDetailScreen() {
           >
             <Feather name="arrow-left" size={20} color={tokens.colors.text} />
           </TouchableOpacity>
+          <View style={[styles.cartBtn, { top: insets.top + 12 }]}>
+            <View style={styles.wishlistIconCircle}>
+              <CartBadgeIcon size={18} />
+            </View>
+          </View>
           <TouchableOpacity
             onPress={handleWishlistToggle}
             style={[styles.wishlistBtn, { top: insets.top + 12 }]}
@@ -401,6 +407,11 @@ const styles = StyleSheet.create({
   wishlistBtn: {
     position: 'absolute',
     right: 24,
+    zIndex: 10,
+  },
+  cartBtn: {
+    position: 'absolute',
+    right: 72,
     zIndex: 10,
   },
   wishlistIconCircle: {
