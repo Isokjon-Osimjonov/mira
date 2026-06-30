@@ -8,7 +8,7 @@ import {
   ActivityIndicator,
 } from 'react-native'
 import { Image } from 'expo-image'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { router, useLocalSearchParams } from 'expo-router'
 import { Feather } from '@expo/vector-icons'
 import { useQuery } from '@tanstack/react-query'
@@ -56,8 +56,10 @@ export default function CheckoutBoxScreen() {
     })
   }
 
+  const insets = useSafeAreaInsets()
+
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
           <Feather name="arrow-left" size={20} color={tokens.colors.text} />
@@ -141,7 +143,7 @@ export default function CheckoutBoxScreen() {
         )}
       </ScrollView>
 
-      <View style={styles.bottomBar}>
+      <View style={[styles.bottomBar, { paddingBottom: insets.bottom + 16 }]}>
         {selectedBox && <Text style={styles.selectionNote}>Tanlangan: {selectedBox.name}</Text>}
         <PrimaryButton label="Davom etish" disabled={!selectedBoxId} onPress={handleContinue} />
       </View>

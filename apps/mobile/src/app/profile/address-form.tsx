@@ -143,7 +143,11 @@ export default function AddressFormScreen() {
           <View style={{ width: 40 }} />
         </View>
 
-        <ScrollView showsVerticalScrollIndicator={false} style={styles.scroll}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          style={styles.scroll}
+          keyboardShouldPersistTaps="handled"
+        >
           {/* REGION SELECTOR */}
           <View style={styles.regionSelector}>
             <TouchableOpacity

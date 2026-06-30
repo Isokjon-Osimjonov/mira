@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Feather } from '@expo/vector-icons'
@@ -72,61 +73,66 @@ export default function DeleteAccountScreen() {
 
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-        <View style={styles.content}>
-          <View style={styles.warningBox}>
-            <Feather name="alert-triangle" size={32} color="#DC2626" style={styles.warningIcon} />
-            <Text style={styles.warningTitle}>Bu amalni qaytarib bo'lmaydi</Text>
+        <ScrollView
+          contentContainerStyle={{ flexGrow: 1 }}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={styles.content}>
+            <View style={styles.warningBox}>
+              <Feather name="alert-triangle" size={32} color="#DC2626" style={styles.warningIcon} />
+              <Text style={styles.warningTitle}>Bu amalni qaytarib bo'lmaydi</Text>
 
-            <View style={styles.bulletList}>
-              <View style={styles.bulletItem}>
-                <View style={styles.bulletPoint} />
-                <Text style={styles.bulletText}>Profil ma'lumotlari butunlay o'chiriladi</Text>
+              <View style={styles.bulletList}>
+                <View style={styles.bulletItem}>
+                  <View style={styles.bulletPoint} />
+                  <Text style={styles.bulletText}>Profil ma'lumotlari butunlay o'chiriladi</Text>
+                </View>
+                <View style={styles.bulletItem}>
+                  <View style={styles.bulletPoint} />
+                  <Text style={styles.bulletText}>Sevimlilar va kutish ro'yxati o'chiriladi</Text>
+                </View>
+                <View style={styles.bulletItem}>
+                  <View style={styles.bulletPoint} />
+                  <Text style={styles.bulletText}>Saqlangan manzillar o'chiriladi</Text>
+                </View>
+                <View style={styles.bulletItem}>
+                  <View style={styles.bulletPoint} />
+                  <Text style={styles.bulletText}>
+                    Faol buyurtmalar bo'lsa, avval ularni yakunlash kerak
+                  </Text>
+                </View>
               </View>
-              <View style={styles.bulletItem}>
-                <View style={styles.bulletPoint} />
-                <Text style={styles.bulletText}>Sevimlilar va kutish ro'yxati o'chiriladi</Text>
-              </View>
-              <View style={styles.bulletItem}>
-                <View style={styles.bulletPoint} />
-                <Text style={styles.bulletText}>Saqlangan manzillar o'chiriladi</Text>
-              </View>
-              <View style={styles.bulletItem}>
-                <View style={styles.bulletPoint} />
-                <Text style={styles.bulletText}>
-                  Faol buyurtmalar bo'lsa, avval ularni yakunlash kerak
-                </Text>
-              </View>
+            </View>
+
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>Tasdiqlash uchun "O'CHIRISH" so'zini kiriting</Text>
+              <TextInput
+                style={styles.input}
+                value={confirmText}
+                onChangeText={setConfirmText}
+                placeholder="O'CHIRISH"
+                autoCapitalize="characters"
+                autoCorrect={false}
+              />
             </View>
           </View>
 
-          <View style={styles.inputContainer}>
-            <Text style={styles.inputLabel}>Tasdiqlash uchun "O'CHIRISH" so'zini kiriting</Text>
-            <TextInput
-              style={styles.input}
-              value={confirmText}
-              onChangeText={setConfirmText}
-              placeholder="O'CHIRISH"
-              autoCapitalize="characters"
-              autoCorrect={false}
-            />
+          <View style={styles.footer}>
+            <TouchableOpacity
+              style={[styles.deleteBtn, (!isMatched || loading) && styles.deleteBtnDisabled]}
+              disabled={!isMatched || loading}
+              onPress={handleDelete}
+            >
+              {loading ? (
+                <ActivityIndicator color="#FFFFFF" />
+              ) : (
+                <Text style={styles.deleteBtnText}>Hisobni o'chirish</Text>
+              )}
+            </TouchableOpacity>
           </View>
-        </View>
-
-        <View style={styles.footer}>
-          <TouchableOpacity
-            style={[styles.deleteBtn, (!isMatched || loading) && styles.deleteBtnDisabled]}
-            disabled={!isMatched || loading}
-            onPress={handleDelete}
-          >
-            {loading ? (
-              <ActivityIndicator color="#FFFFFF" />
-            ) : (
-              <Text style={styles.deleteBtnText}>Hisobni o'chirish</Text>
-            )}
-          </TouchableOpacity>
-        </View>
+        </ScrollView>
       </KeyboardAvoidingView>
       <Toast message={toast.message} type={toast.type} visible={toast.visible} onHide={hideToast} />
     </SafeAreaView>
