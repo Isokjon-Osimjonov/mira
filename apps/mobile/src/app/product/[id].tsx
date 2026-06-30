@@ -208,11 +208,6 @@ export default function ProductDetailScreen() {
           >
             <Feather name="arrow-left" size={20} color={tokens.colors.text} />
           </TouchableOpacity>
-          <View style={[styles.cartBtn, { top: insets.top + 12 }]}>
-            <View style={styles.wishlistIconCircle}>
-              <CartBadgeIcon size={18} />
-            </View>
-          </View>
           <TouchableOpacity
             onPress={handleWishlistToggle}
             style={[styles.wishlistBtn, { top: insets.top + 12 }]}
@@ -356,24 +351,36 @@ export default function ProductDetailScreen() {
         {isOutOfStock ? (
           <View style={styles.oosContainer}>
             <Text style={styles.oosText}>Bu mahsulot hozir mavjud emas</Text>
-            <WaitlistButton productId={product.id} showToast={showToast} />
+            <View style={styles.actionRow}>
+              <View style={styles.cartIconWrapper}>
+                <CartBadgeIcon size={22} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <WaitlistButton productId={product.id} showToast={showToast} />
+              </View>
+            </View>
           </View>
         ) : (
-          <TouchableOpacity
-            style={styles.addToCartBtnMain}
-            onPress={handleAddToCart}
-            disabled={isAdding}
-            activeOpacity={0.8}
-          >
-            {isAdding ? (
-              <ActivityIndicator color={tokens.colors.white} />
-            ) : (
-              <Feather name="shopping-bag" size={18} color={tokens.colors.white} />
-            )}
-            <Text style={styles.addToCartTextMain}>
-              {isAdding ? "Qo'shilmoqda..." : "Savatga qo'shish"}
-            </Text>
-          </TouchableOpacity>
+          <View style={styles.actionRow}>
+            <View style={styles.cartIconWrapper}>
+              <CartBadgeIcon size={22} />
+            </View>
+            <TouchableOpacity
+              style={[styles.addToCartBtnMain, { flex: 1 }]}
+              onPress={handleAddToCart}
+              disabled={isAdding}
+              activeOpacity={0.8}
+            >
+              {isAdding ? (
+                <ActivityIndicator color={tokens.colors.white} />
+              ) : (
+                <Feather name="shopping-bag" size={18} color={tokens.colors.white} />
+              )}
+              <Text style={styles.addToCartTextMain}>
+                {isAdding ? "Qo'shilmoqda..." : "Savatga qo'shish"}
+              </Text>
+            </TouchableOpacity>
+          </View>
         )}
       </View>
 
@@ -407,11 +414,6 @@ const styles = StyleSheet.create({
   wishlistBtn: {
     position: 'absolute',
     right: 24,
-    zIndex: 10,
-  },
-  cartBtn: {
-    position: 'absolute',
-    right: 72,
     zIndex: 10,
   },
   wishlistIconCircle: {
@@ -565,6 +567,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: 12,
     zIndex: 10,
+  },
+  actionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  cartIconWrapper: {
+    width: 52,
+    height: 52,
+    borderRadius: 14,
+    backgroundColor: tokens.colors.surface,
+    borderWidth: 1,
+    borderColor: tokens.colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   addToCartBtnMain: {
     flexDirection: 'row',
