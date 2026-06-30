@@ -283,7 +283,12 @@ export default function OrderDetailScreen() {
                         <View style={idx === currentIdx ? styles.dotActive : styles.dotNext} />
                       )}
                     </View>
-                    <Text style={styles.timelineLabel} numberOfLines={2}>
+                    <Text
+                      style={styles.timelineLabel}
+                      numberOfLines={1}
+                      adjustsFontSizeToFit
+                      minimumFontScale={0.8}
+                    >
                       {step.label}
                     </Text>
                   </View>
@@ -632,7 +637,7 @@ const styles = StyleSheet.create({
   },
   timelineItem: {
     alignItems: 'center',
-    width: 68,
+    width: 57,
   },
   timelineCircle: {
     width: 28,
@@ -665,7 +670,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#9CA3AF',
   },
   timelineLabel: {
-    fontSize: 8,
+    fontSize: 7,
     color: tokens.colors.textMuted,
     textAlign: 'center',
     marginTop: 4,
@@ -674,7 +679,7 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 2,
     backgroundColor: '#E5E7EB',
-    marginHorizontal: 4,
+    marginHorizontal: 1,
   },
   deliveryEstimateCard: {
     flexDirection: 'row',
