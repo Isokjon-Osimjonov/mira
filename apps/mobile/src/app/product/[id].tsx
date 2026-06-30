@@ -130,9 +130,6 @@ export default function ProductDetailScreen() {
 
   const handleAddToCart = async () => {
     if (isAdding || !id || isOutOfStock) return
-    const { requireAuth } = require('../../lib/require-auth')
-    if (!requireAuth(useAuthStore.getState().isAuthenticated, router, `/product/${id}`)) return
-
     setIsAdding(true)
     try {
       await addItem(id as string, 1)

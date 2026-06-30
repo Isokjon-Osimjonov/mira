@@ -71,6 +71,7 @@ export const productService = {
     page?: number
     category?: string
     categoryId?: string
+    region?: string
     q?: string
   }): Promise<ProductsResponse> => {
     const res = await api.get('/products', { params })

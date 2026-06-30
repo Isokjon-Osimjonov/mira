@@ -141,6 +141,10 @@ export default function ProfileScreen() {
   ]
 
   if (!customer) {
+    const { useRegionStore } = require('../../lib/region-store')
+    const guestRegion = useRegionStore((s: any) => s.guestRegion)
+    const setGuestRegion = useRegionStore((s: any) => s.setGuestRegion)
+
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.guestContainer}>
@@ -156,6 +160,26 @@ export default function ProfileScreen() {
               label="Kirish / Ro'yxatdan o'tish" 
               onPress={() => router.push({ pathname: '/auth/login', params: { returnTo: '/(tabs)/profile' } })} 
             />
+          </View>
+
+          <View style={{ marginTop: 60, alignItems: 'center' }}>
+            <Text style={{ fontFamily: 'Inter_400Regular', color: tokens.colors.textMuted, marginBottom: 16 }}>
+              Narxlarni ko'rish hududi:
+            </Text>
+            <View style={{ flexDirection: 'row', gap: 12 }}>
+              <TouchableOpacity 
+                style={{ paddingVertical: 8, paddingHorizontal: 16, borderRadius: 20, backgroundColor: guestRegion === 'KOR' ? tokens.colors.primary : tokens.colors.surface, borderWidth: 1, borderColor: guestRegion === 'KOR' ? tokens.colors.primary : tokens.colors.border }}
+                onPress={() => setGuestRegion('KOR')}
+              >
+                <Text style={{ color: guestRegion === 'KOR' ? tokens.colors.white : tokens.colors.text }}>🇰🇷 Korea (KRW)</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={{ paddingVertical: 8, paddingHorizontal: 16, borderRadius: 20, backgroundColor: guestRegion === 'UZB' ? tokens.colors.primary : tokens.colors.surface, borderWidth: 1, borderColor: guestRegion === 'UZB' ? tokens.colors.primary : tokens.colors.border }}
+                onPress={() => setGuestRegion('UZB')}
+              >
+                <Text style={{ color: guestRegion === 'UZB' ? tokens.colors.white : tokens.colors.text }}>🇺🇿 O'zbekiston (UZS)</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </SafeAreaView>

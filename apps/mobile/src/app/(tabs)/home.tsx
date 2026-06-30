@@ -18,6 +18,7 @@ import { Feather } from '@expo/vector-icons'
 import { useQuery } from '@tanstack/react-query'
 import { router } from 'expo-router'
 import { useAuthStore } from '../../lib/auth-store'
+import { useRegionStore } from '../../lib/region-store'
 import { useExchangeStore } from '../../lib/exchange-store'
 import { productService } from '../../services/product.service'
 import { bannerService, Banner } from '../../services/banner.service'
@@ -37,6 +38,10 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window')
 
 export default function HomeScreen() {
   const customer = useAuthStore((s) => s.customer)
+  const guestRegion = useRegionStore((s) => s.guestRegion)
+  const activeRegion = customer?.phoneRegion || guestRegion
+  const showUzs = activeRegion === 'UZB'
+  
   const setRate = useExchangeStore((s) => s.setRate)
   const addItem = useCartStore((s) => s.addItem)
   const [addingId, setAddingId] = useState<string | null>(null)
@@ -74,8 +79,8 @@ export default function HomeScreen() {
     isLoading: newLoading,
     refetch: refetchNew,
   } = useQuery({
-    queryKey: ['products', 'newest'],
-    queryFn: () => productService.getProducts({ sort: 'newest', limit: 10 }),
+    queryKey: ['products', 'newest', activeRegion],
+    queryFn: () => productService.getProducts({ sort: 'newest', limit: 10, region: activeRegion } as any),
     staleTime: 2 * 60 * 1000,
   })
 
@@ -84,8 +89,8 @@ export default function HomeScreen() {
     isLoading: bestLoading,
     refetch: refetchBest,
   } = useQuery({
-    queryKey: ['products', 'bestselling'],
-    queryFn: () => productService.getProducts({ sort: 'bestselling', limit: 10 }),
+    queryKey: ['products', 'bestselling', activeRegion],
+    queryFn: () => productService.getProducts({ sort: 'bestselling', limit: 10, region: activeRegion } as any),
     staleTime: 2 * 60 * 1000,
   })
 
@@ -143,9 +148,6 @@ export default function HomeScreen() {
 
   const handleAddToCart = async (productId: string) => {
     if (addingId) return
-    const { requireAuth } = require('../../lib/require-auth')
-    if (!requireAuth(useAuthStore.getState().isAuthenticated, router, '/(tabs)/home')) return
-
     setAddingId(productId)
     try {
       await addItem(productId, 1)
@@ -406,7 +408,7 @@ export default function HomeScreen() {
               renderItem={({ item }) => (
                 <ProductCard
                   product={item}
-                  showUzs={customer?.phoneRegion === 'UZB'}
+                  showUzs={showUzs}
                   onPress={() => router.push(`/product/${item.id}`)}
                   onAddToCart={() => handleAddToCart(item.id)}
                 />
@@ -462,7 +464,7 @@ export default function HomeScreen() {
               renderItem={({ item }) => (
                 <ProductCard
                   product={item}
-                  showUzs={customer?.phoneRegion === 'UZB'}
+                  showUzs={showUzs}
                   onPress={() => router.push(`/product/${item.id}`)}
                   onAddToCart={() => handleAddToCart(item.id)}
                 />

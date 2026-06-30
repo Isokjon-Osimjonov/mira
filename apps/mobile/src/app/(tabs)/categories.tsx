@@ -16,6 +16,7 @@ import { Feather } from '@expo/vector-icons'
 import { useQuery } from '@tanstack/react-query'
 import { router, useLocalSearchParams } from 'expo-router'
 import { useAuthStore } from '../../lib/auth-store'
+import { useRegionStore } from '../../lib/region-store'
 import { useExchangeStore } from '../../lib/exchange-store'
 import { productService } from '../../services/product.service'
 import { ProductCard } from '../../components/ui/ProductCard'
@@ -60,8 +61,10 @@ export default function CategoriesScreen() {
   const [searchFocused, setSearchFocused] = useState(false)
 
   const customer = useAuthStore((s) => s.customer)
+  const guestRegion = useRegionStore((s) => s.guestRegion)
+  const activeRegion = customer?.phoneRegion || guestRegion
   const exchangeRate = useExchangeStore((s) => s.rate)
-  const showUzs = customer?.phoneRegion === 'UZB'
+  const showUzs = activeRegion === 'UZB'
 
   const addItem = useCartStore((s) => s.addItem)
   const [addingId, setAddingId] = useState<string | null>(null)
@@ -80,13 +83,14 @@ export default function CategoriesScreen() {
     isLoading: popularLoading,
     refetch: refetchPopular,
   } = useQuery({
-    queryKey: ['products', 'bestselling', activeCategoryId, searchQuery],
+    queryKey: ['products', 'bestselling', activeCategoryId, searchQuery, activeRegion],
     queryFn: () =>
       productService.getProducts({
         sort: 'bestselling',
         limit: 10,
         category: activeCategoryId ?? undefined,
         q: searchQuery ? searchQuery : undefined,
+        region: activeRegion as any,
       }),
     staleTime: 2 * 60 * 1000,
   })
@@ -96,13 +100,14 @@ export default function CategoriesScreen() {
     isLoading: newLoading,
     refetch: refetchNewArrivals,
   } = useQuery({
-    queryKey: ['products', 'newest', activeCategoryId, searchQuery],
+    queryKey: ['products', 'newest', activeCategoryId, searchQuery, activeRegion],
     queryFn: () =>
       productService.getProducts({
         sort: 'newest',
         limit: 20,
         category: activeCategoryId ?? undefined,
         q: searchQuery ? searchQuery : undefined,
+        region: activeRegion as any,
       }),
     staleTime: 2 * 60 * 1000,
   })
@@ -119,9 +124,6 @@ export default function CategoriesScreen() {
 
   const handleAddToCart = async (productId: string) => {
     if (addingId) return
-    const { requireAuth } = require('../../lib/require-auth')
-    if (!requireAuth(useAuthStore.getState().isAuthenticated, router, '/(tabs)/categories')) return
-
     setAddingId(productId)
     try {
       await addItem(productId, 1)

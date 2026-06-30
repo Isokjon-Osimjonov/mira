@@ -104,6 +104,38 @@ export default function OtpScreen() {
       const { accessToken, refreshToken, customer, isNewCustomer } = result
       useAuthStore.getState().setAuth(accessToken, refreshToken ?? '', customer)
 
+      // --- CART MERGE LOGIC ---
+      const { useCartStore } = require('../../lib/cart-store')
+      const { cartService } = require('../../services/cart.service')
+      const { ToastAndroid, Platform, Alert } = require('react-native')
+      const cartStore = useCartStore.getState()
+      const guestItems = cartStore.guestItems
+
+      if (guestItems && guestItems.length > 0) {
+        const mergeResults = { succeeded: [], failed: [] as { item: any; reason: string }[] }
+        for (const item of guestItems) {
+          try {
+            await cartService.addItem(item.productId, item.quantity)
+            mergeResults.succeeded.push(item as never)
+          } catch (err: any) {
+            mergeResults.failed.push({ item, reason: err.message || 'Xato' })
+          }
+        }
+        
+        cartStore.clearGuestItems()
+        await cartStore.fetchCart()
+
+        if (mergeResults.failed.length > 0) {
+          const msg = `${mergeResults.failed.length} ta mahsulot savatga qo'shilmadi (omborda yo'q yoki mavjud emas)`
+          if (Platform.OS === 'android') {
+            ToastAndroid.show(msg, ToastAndroid.LONG)
+          } else {
+            Alert.alert('Diqqat', msg)
+          }
+        }
+      }
+      // --- END CART MERGE LOGIC ---
+
       if (isNewCustomer || !customer.firstName) {
         router.replace({ pathname: '/auth/profile-setup', params: { returnTo } })
       } else {
