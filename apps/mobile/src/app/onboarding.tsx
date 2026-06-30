@@ -10,6 +10,7 @@ import {
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
+import { Feather } from '@expo/vector-icons'
 import * as ExpoStorage from 'expo-secure-store'
 import { tokens } from '../lib/tokens'
 
@@ -103,9 +104,11 @@ export default function OnboardingScreen() {
           onPress={handleNext}
           activeOpacity={0.8}
         >
-          <Text style={[styles.arrowIcon, { color: currentIndex === 2 ? '#E11D74' : '#FFFFFF' }]}>
-            ↗
-          </Text>
+          <Feather
+            name="arrow-right"
+            size={24}
+            color={currentIndex === 2 ? '#E11D74' : '#FFFFFF'}
+          />
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -166,8 +169,5 @@ const styles = StyleSheet.create({
     borderRadius: 26,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  arrowIcon: {
-    fontSize: 20,
   },
 })

@@ -12,7 +12,7 @@ import {
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Image } from 'expo-image'
-import { Feather } from '@expo/vector-icons'
+import { Ionicons, Feather } from '@expo/vector-icons'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { router, useLocalSearchParams } from 'expo-router'
 import * as ImagePicker from 'expo-image-picker'
@@ -392,7 +392,10 @@ export default function OrderDetailScreen() {
                     style={styles.receiptImage}
                     contentFit="cover"
                   />
-                  <Text style={styles.zoomText}>Kattalashtirish ↗</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                    <Text style={styles.zoomText}>Kattalashtirish</Text>
+                    <Feather name="maximize-2" size={14} color={styles.zoomText.color} />
+                  </View>
                 </TouchableOpacity>
                 {order.status === 'PAYMENT_SUBMITTED' && (
                   <TouchableOpacity
