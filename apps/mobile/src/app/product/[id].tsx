@@ -134,7 +134,6 @@ export default function ProductDetailScreen() {
     setIsAdding(true)
     try {
       await addItem(id as string, 1)
-      showToast("Savatga qo'shildi ✓", 'success')
     } catch (err: any) {
       const code = err?.response?.data?.error?.code
       if (code === 'REGION_MISMATCH') {

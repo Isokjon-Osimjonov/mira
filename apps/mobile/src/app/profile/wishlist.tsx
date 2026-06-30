@@ -44,7 +44,6 @@ export default function WishlistScreen() {
   const handleAddToCart = async (productId: string) => {
     try {
       await addItem(productId, 1)
-      showToast("Savatga qo'shildi ✓", 'success')
     } catch (err: any) {
       const msg = err?.response?.data?.error?.message ?? "Savatga qo'shib bo'lmadi"
       showToast(msg, 'error')
