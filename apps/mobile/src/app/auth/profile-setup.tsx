@@ -12,6 +12,7 @@ import { useAuthStore } from '../../lib/auth-store'
 import { Alert } from 'react-native'
 
 export default function ProfileSetupScreen() {
+  const { returnTo } = useLocalSearchParams()
   const [name, setName] = useState('')
   const [photo, setPhoto] = useState<string | null>(null)
   const [focused, setFocused] = useState(false)
@@ -56,7 +57,6 @@ export default function ProfileSetupScreen() {
         profileImageUrl,
       })
       useAuthStore.getState().setCustomer(updated)
-      const { returnTo } = useLocalSearchParams()
       router.replace({ pathname: '/auth/notification-permission', params: { returnTo: returnTo as string } })
     } catch (err: any) {
       const msg = err?.response?.data?.error?.message

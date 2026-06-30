@@ -8,6 +8,7 @@ import PrimaryButton from '../../components/ui/PrimaryButton'
 import { authService } from '../../services/auth.service'
 
 export default function LoginScreen() {
+  const { returnTo } = useLocalSearchParams()
   const [phone, setPhone] = useState('')
   const [region, setRegion] = useState<'UZB' | 'KOR'>('UZB')
   const [loading, setLoading] = useState(false)
@@ -27,7 +28,6 @@ export default function LoginScreen() {
         phone: fullPhone,
         region,
       })
-      const { returnTo } = useLocalSearchParams()
       router.push({
         pathname: '/auth/otp',
         params: { phone: fullPhone, region, deepLink, returnTo: returnTo as string },
