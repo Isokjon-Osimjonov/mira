@@ -89,8 +89,13 @@ export async function validateCoupon(params: {
     }
   }
 
-  // 8. One Per Customer
-  if (coupon.onePerCustomer) {
+  // 8. Per-customer usage limit
+  // onePerCustomer is a shorthand for maxUsesPerCustomer=1
+  const effectiveMaxPerCustomer = coupon.onePerCustomer
+    ? 1
+    : (coupon.maxUsesPerCustomer ?? null)
+
+  if (effectiveMaxPerCustomer !== null) {
     const [redemptionCount] = await db
       .select({ count: sql<number>`count(*)` })
       .from(couponRedemptions)
@@ -112,11 +117,13 @@ export async function validateCoupon(params: {
         )
       )
 
-    if (Number(redemptionCount?.count || 0) > 0 || Number(userCouponCount?.count || 0) > 0) {
+    const totalUses = Number(redemptionCount?.count || 0) + Number(userCouponCount?.count || 0)
+
+    if (totalUses >= effectiveMaxPerCustomer) {
       throw {
         status: 400,
-        code: 'COUPON_ONE_PER_CUSTOMER',
-        message: 'Siz allaqachon ushbu kupondan foydalangansiz',
+        code: 'COUPON_USAGE_LIMIT',
+        message: `Bu kupondan faqat ${effectiveMaxPerCustomer} marta foydalanish mumkin`,
       }
     }
   }

@@ -7,6 +7,7 @@ import {
   ScrollView,
   Alert,
   ActivityIndicator,
+  TextInput,
 } from 'react-native'
 import { Image } from 'expo-image'
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -45,6 +46,7 @@ export default function CheckoutPaymentScreen() {
   const isUZB = customer?.phoneRegion === 'UZB'
 
   const [couponResult, setCouponResult] = useState<any>(null)
+  const [couponInput, setCouponInput] = useState(initialCouponCode || '')
   const [receiptUri, setReceiptUri] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [paymentInfo, setPaymentInfo] = useState<CheckoutResult['paymentInfo'] | null>(null)
@@ -73,21 +75,24 @@ export default function CheckoutPaymentScreen() {
   })
   const selectedBox = boxes?.find((b) => b.id === boxId)
 
-  React.useEffect(() => {
-    if (initialCouponCode) {
-      handleValidateCoupon(initialCouponCode)
-    }
-  }, [initialCouponCode])
-
-  const handleValidateCoupon = async (code: string) => {
+  const handleApplyCoupon = async () => {
+    const code = couponInput.trim().toUpperCase()
+    if (!code) return
     try {
       const res = await cartService.validateCoupon(code)
       if (res.valid) {
         setCouponResult(res)
       }
-    } catch (err) {
+    } catch (err: any) {
+      const msg = err?.response?.data?.error?.message || err?.message || 'Kuponni tekshirishda xatolik'
+      Alert.alert('Xatolik', msg)
       console.error('Coupon validation failed', err)
     }
+  }
+
+  const handleRemoveCoupon = () => {
+    setCouponInput('')
+    setCouponResult(null)
   }
 
   const pickImage = async () => {
@@ -113,7 +118,7 @@ export default function CheckoutPaymentScreen() {
       const result = await orderService.checkout({
         addressId: addressId,
         paymentMethod: selectedPaymentMethod,
-        couponCode: couponResult?.coupon?.code ?? initialCouponCode,
+        couponCode: couponResult?.coupon?.code,
         boxId: boxId,
       })
 
@@ -301,16 +306,31 @@ export default function CheckoutPaymentScreen() {
             <Text style={styles.summaryValue}>{formatKRW(subtotal)}</Text>
           </View>
 
-          {couponResult && (
-            <View style={styles.summaryRow}>
-              <Text style={[styles.summaryLabel, { color: tokens.colors.success }]}>
-                Kupon chegirmasi:
-              </Text>
-              <Text style={[styles.summaryValue, { color: tokens.colors.success }]}>
-                -{formatKRW(discount)}
-              </Text>
+          {/* Coupon Input Area */}
+          <View style={styles.couponSection}>
+            <View style={styles.couponInputRow}>
+              <TextInput
+                value={couponInput}
+                onChangeText={setCouponInput}
+                placeholder="Kupon kodini kiriting"
+                autoCapitalize="characters"
+                style={styles.couponInput}
+              />
+              <TouchableOpacity onPress={handleApplyCoupon} style={styles.couponApplyBtn}>
+                <Text style={styles.couponApplyText}>Qo'llash</Text>
+              </TouchableOpacity>
             </View>
-          )}
+            {couponResult && (
+              <View style={styles.couponResultRow}>
+                <Text style={styles.couponSuccessText}>
+                  ✓ {formatKRW(couponResult.discountAmount)} chegirma qo'llanildi
+                </Text>
+                <TouchableOpacity onPress={handleRemoveCoupon} style={styles.couponRemoveBtn}>
+                  <Feather name="x" size={16} color={tokens.colors.success} />
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
 
           {!isUZB && tiers && (
             <View style={styles.summaryRow}>
@@ -595,6 +615,62 @@ const styles = StyleSheet.create({
     textAlign: 'right',
     marginTop: -4,
     marginBottom: 8,
+  },
+  couponSection: {
+    marginTop: 12,
+    marginBottom: 4,
+  },
+  couponInputRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 8,
+  },
+  couponInput: {
+    flex: 1,
+    height: 40,
+    borderWidth: 0.5,
+    borderColor: tokens.colors.border,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    fontSize: 13,
+    fontFamily: 'Inter_400Regular',
+    backgroundColor: tokens.colors.background,
+  },
+  couponApplyBtn: {
+    height: 40,
+    paddingHorizontal: 16,
+    backgroundColor: tokens.colors.surface,
+    borderWidth: 0.5,
+    borderColor: tokens.colors.border,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  couponApplyText: {
+    fontSize: 13,
+    fontFamily: 'Inter_400Regular',
+    fontWeight: '500',
+    color: tokens.colors.text,
+  },
+  couponResultRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#f0fdf4', // light green
+    borderWidth: 0.5,
+    borderColor: '#bbf7d0', // green border
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  couponSuccessText: {
+    fontSize: 13,
+    fontFamily: 'Inter_400Regular',
+    color: tokens.colors.success,
+    fontWeight: '500',
+  },
+  couponRemoveBtn: {
+    padding: 4,
   },
   totalRow: {
     marginTop: 8,

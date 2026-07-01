@@ -55,6 +55,10 @@ const couponSchema = z.object({
 
   expiresAt: z.string().optional().nullable(),
   description: z.string().optional().nullable(),
+  onePerCustomer: z.boolean().default(false),
+  firstOrderOnly: z.boolean().default(false),
+  maxDiscountCap: z.coerce.number().min(0).optional().nullable(),
+  excludeWholesale: z.boolean().default(false),
   isActive: z.boolean().default(true),
 })
 
@@ -199,6 +203,10 @@ export function KupunlarPage() {
       productId: null,
       categoryId: null,
       customerId: null,
+      onePerCustomer: false,
+      firstOrderOnly: false,
+      maxDiscountCap: null,
+      excludeWholesale: false,
     },
   })
 
@@ -272,6 +280,10 @@ export function KupunlarPage() {
       productId: null,
       categoryId: null,
       customerId: null,
+      onePerCustomer: false,
+      firstOrderOnly: false,
+      maxDiscountCap: null,
+      excludeWholesale: false,
     })
     setProductSearch('')
     setCustomerSearch('')
@@ -298,6 +310,10 @@ export function KupunlarPage() {
       expiresAt: coupon.expiresAt ? new Date(coupon.expiresAt).toISOString().split('T')[0] : null,
       description: coupon.description,
       isActive: coupon.status === 'ACTIVE',
+      onePerCustomer: coupon.onePerCustomer ?? false,
+      firstOrderOnly: coupon.firstOrderOnly ?? false,
+      maxDiscountCap: coupon.maxDiscountCap ?? null,
+      excludeWholesale: coupon.excludeWholesale ?? false,
     })
     setProductSearch(coupon.productName || '')
     setCustomerSearch(coupon.customerName || '')
@@ -907,6 +923,58 @@ export function KupunlarPage() {
                 placeholder="Qo'shimcha ma'lumot..."
                 className="h-9 text-sm rounded-lg border-[0.5px]"
               />
+            </div>
+
+            <div className="pt-4 border-t border-border/50">
+              <h3 className="text-sm font-medium mb-3">Qo'shimcha cheklovlar</h3>
+              
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs">Har bir mijoz faqat 1 marta ishlatishi mumkin</Label>
+                  <Controller
+                    name="onePerCustomer"
+                    control={control}
+                    render={({ field }) => (
+                      <ToggleSwitch checked={field.value} onChange={field.onChange} size="sm" />
+                    )}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs">Faqat birinchi buyurtma uchun</Label>
+                  <Controller
+                    name="firstOrderOnly"
+                    control={control}
+                    render={({ field }) => (
+                      <ToggleSwitch checked={field.value} onChange={field.onChange} size="sm" />
+                    )}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs">Ulgurji narxdan istisno</Label>
+                  <Controller
+                    name="excludeWholesale"
+                    control={control}
+                    render={({ field }) => (
+                      <ToggleSwitch checked={field.value} onChange={field.onChange} size="sm" />
+                    )}
+                  />
+                </div>
+
+                {watchType === 'PERCENTAGE' && (
+                  <div>
+                    <Label className="text-xs mb-1.5 block">Maksimal chegirma miqdori (KRW)</Label>
+                    <Input
+                      {...register('maxDiscountCap')}
+                      type="number"
+                      min="0"
+                      placeholder="Cheklov yo'q"
+                      className="h-9 text-sm rounded-lg border-[0.5px]"
+                    />
+                  </div>
+                )}
+              </div>
             </div>
             <div className="flex gap-2 pt-2">
               <Button
