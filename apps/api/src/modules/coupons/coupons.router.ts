@@ -1,8 +1,13 @@
 import { Router } from 'express'
 import * as ctrl from './coupons.controller'
-import { requirePermission } from '../../middleware/auth'
+import { requirePermission, requireAuth } from '../../middleware/auth'
 
 const adminRouter = Router()
+const publicRouter = Router()
+
+// Public
+publicRouter.get('/available', requireAuth, ctrl.getAvailableCoupons)
+publicRouter.get('/my-redemptions', requireAuth, ctrl.getMyRedemptions)
 
 // Admin
 adminRouter.get('/', requirePermission('coupons', 'read'), ctrl.getCoupons)
@@ -14,4 +19,4 @@ adminRouter.patch('/:id/status', requirePermission('coupons', 'write'), ctrl.upd
 adminRouter.delete('/:id', requirePermission('coupons', 'write'), ctrl.deleteCoupon)
 adminRouter.get('/:id/redemptions', requirePermission('coupons', 'read'), ctrl.getCouponRedemptions)
 
-export { adminRouter as couponsAdminRouter }
+export { adminRouter as couponsAdminRouter, publicRouter as couponsRouter }

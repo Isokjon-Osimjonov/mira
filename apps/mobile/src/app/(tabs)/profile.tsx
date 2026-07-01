@@ -66,6 +66,13 @@ export default function ProfileScreen() {
           onPress: () => router.push('/orders'),
         },
         {
+          icon: 'tag',
+          iconBg: '#FFF7ED',
+          iconColor: '#F97316',
+          label: 'Kuponlarim',
+          onPress: () => router.push('/profile/coupons'),
+        },
+        {
           icon: 'calendar',
           iconBg: '#F0FDF4',
           iconColor: '#16A34A',

@@ -469,3 +469,90 @@ export async function getCouponRedemptions(id: string, query: { page?: number; l
     meta: { page, limit, total, hasNext: offset + limit < total, hasPrev: page > 1 },
   }
 }
+
+export async function getAvailableCoupons(customerId: string, regionCode: string | null) {
+  const activeCoupons = await db
+    .select()
+    .from(coupons)
+    .where(
+      and(
+        eq(coupons.status, 'ACTIVE'),
+        eq(coupons.isPromotional, true),
+        sql`${coupons.startsAt} IS NULL OR ${coupons.startsAt} <= NOW()`,
+        sql`${coupons.expiresAt} IS NULL OR ${coupons.expiresAt} >= NOW()`,
+        sql`${coupons.regionCode} IS NULL OR ${coupons.regionCode} = ${regionCode || ''}`,
+        sql`${coupons.maxUsesTotal} IS NULL OR ${coupons.usageCount} < ${coupons.maxUsesTotal}`
+      )
+    )
+
+  const result = await Promise.all(
+    activeCoupons.map(async (c) => {
+      const [redemptionCount] = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(couponRedemptions)
+        .where(
+          and(
+            eq(couponRedemptions.couponId, c.id),
+            eq(couponRedemptions.customerId, customerId)
+          )
+        )
+      
+      const [userCouponCount] = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(userCoupons)
+        .where(
+          and(
+            eq(userCoupons.couponId, c.id),
+            eq(userCoupons.customerId, customerId),
+            eq(userCoupons.isUsed, true)
+          )
+        )
+
+      const totalUses = Number(redemptionCount?.count || 0) + Number(userCouponCount?.count || 0)
+      
+      const effectiveMaxPerCustomer = c.onePerCustomer ? 1 : (c.maxUsesPerCustomer ?? null)
+      const usedByCustomer = effectiveMaxPerCustomer !== null && totalUses >= effectiveMaxPerCustomer
+
+      return {
+        id: c.id,
+        code: c.code,
+        name: c.name,
+        type: c.type,
+        value: Number(c.value),
+        minOrderAmount: Number(c.minOrderAmount),
+        maxDiscountCap: c.maxDiscountCap ? Number(c.maxDiscountCap) : null,
+        expiresAt: c.expiresAt,
+        description: c.description,
+        scope: c.scope,
+        firstOrderOnly: c.firstOrderOnly,
+        onePerCustomer: c.onePerCustomer,
+        maxUsesPerCustomer: c.maxUsesPerCustomer,
+        usedByCustomer,
+      }
+    })
+  )
+
+  return result
+}
+
+export async function getMyRedemptions(customerId: string) {
+  const items = await db
+    .select({
+      couponCode: coupons.code,
+      couponName: coupons.name,
+      discountAmount: couponRedemptions.discountAmount,
+      orderId: couponRedemptions.orderId,
+      orderNumber: orders.orderNumber,
+      usedAt: couponRedemptions.createdAt,
+    })
+    .from(couponRedemptions)
+    .innerJoin(coupons, eq(couponRedemptions.couponId, coupons.id))
+    .innerJoin(orders, eq(couponRedemptions.orderId, orders.id))
+    .where(eq(couponRedemptions.customerId, customerId))
+    .orderBy(desc(couponRedemptions.createdAt))
+
+  return items.map((i) => ({
+    ...i,
+    discountAmount: Number(i.discountAmount),
+  }))
+}

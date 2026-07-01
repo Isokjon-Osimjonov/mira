@@ -59,6 +59,7 @@ const couponSchema = z.object({
   firstOrderOnly: z.boolean().default(false),
   maxDiscountCap: z.coerce.number().min(0).optional().nullable(),
   excludeWholesale: z.boolean().default(false),
+  isPromotional: z.boolean().default(false),
   isActive: z.boolean().default(true),
 })
 
@@ -314,6 +315,7 @@ export function KupunlarPage() {
       firstOrderOnly: coupon.firstOrderOnly ?? false,
       maxDiscountCap: coupon.maxDiscountCap ?? null,
       excludeWholesale: coupon.excludeWholesale ?? false,
+      isPromotional: coupon.isPromotional ?? false,
     })
     setProductSearch(coupon.productName || '')
     setCustomerSearch(coupon.customerName || '')
@@ -929,6 +931,20 @@ export function KupunlarPage() {
               <h3 className="text-sm font-medium mb-3">Qo'shimcha cheklovlar</h3>
               
               <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label className="text-xs">Ilovada ko'rsatish (ommaviy kupon)</Label>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">Yoqilganda, bu kupon mijozlar ilovasidagi 'Kuponlarim' bo'limida ko'rinadi</p>
+                  </div>
+                  <Controller
+                    name="isPromotional"
+                    control={control}
+                    render={({ field }) => (
+                      <ToggleSwitch checked={field.value} onChange={field.onChange} size="sm" />
+                    )}
+                  />
+                </div>
+
                 <div className="flex items-center justify-between">
                   <Label className="text-xs">Har bir mijoz faqat 1 marta ishlatishi mumkin</Label>
                   <Controller

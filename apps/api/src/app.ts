@@ -32,7 +32,7 @@ import {
   exchangeRateAdminRouter,
 } from './modules/exchange-rates/exchange-rates.router'
 import cartRouter from './modules/cart/cart.router'
-import { couponsAdminRouter } from './modules/coupons/coupons.router'
+import { couponsAdminRouter, couponsRouter } from './modules/coupons/coupons.router'
 import ordersRouter from './modules/orders/orders.router'
 import { ordersAdminRouter } from './modules/orders/orders-admin.router'
 import pickPackRouter from './modules/pick-pack/pick-pack.router'
@@ -293,6 +293,7 @@ export function createApp() {
 
   // Customer specific
   app.use('/api/v1/cart', cartRouter)
+  app.use('/api/v1/coupons', couponsRouter)
   app.use('/api/v1/orders', ordersRouter)
   app.use('/api/v1/addresses', addressesRouter)
   app.use('/api/v1/wishlists', wishlistRouter)

@@ -13,7 +13,7 @@ import {
 import { Image } from 'expo-image'
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Feather } from '@expo/vector-icons'
-import { router, useFocusEffect } from 'expo-router'
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router'
 import { useCartStore } from '../../lib/cart-store'
 import { useAuthStore } from '../../lib/auth-store'
 import { requireAuth } from '../../lib/require-auth'
@@ -42,6 +42,14 @@ export default function CartScreen() {
   } | null>(null)
   const [couponError, setCouponError] = useState('')
   const [validatingCoupon, setValidatingCoupon] = useState(false)
+
+  const { couponCode: incomingCode } = useLocalSearchParams<{ couponCode?: string }>()
+
+  React.useEffect(() => {
+    if (incomingCode) {
+      setCouponCode(incomingCode)
+    }
+  }, [incomingCode])
 
   const { data: tiers } = useQuery({
     queryKey: ['kor-shipping-tiers'],
@@ -214,7 +222,16 @@ export default function CartScreen() {
 
         {/* COUPON SECTION */}
         <View style={styles.couponSection}>
-          <Text style={styles.couponLabel}>Kupon kodi</Text>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+            <Text style={[styles.couponLabel, { marginBottom: 0 }]}>Kupon kodi</Text>
+            {customer && (
+              <TouchableOpacity onPress={() => router.push('/profile/coupons')}>
+                <Text style={{ color: tokens.colors.primary, fontSize: 13 }}>
+                  Mavjud kuponlar →
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
           <View style={styles.couponInputRow}>
             <TextInput
               style={styles.couponInput}

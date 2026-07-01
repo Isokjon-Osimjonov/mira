@@ -182,3 +182,28 @@ export async function generateCode(_req: Request, res: Response) {
       .json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
   }
 }
+
+export async function getAvailableCoupons(req: Request, res: Response) {
+  try {
+    const customerId = (req.user as any).sub
+    const regionCode = req.query.regionCode as string | undefined || null
+    const data = await service.getAvailableCoupons(customerId, regionCode)
+    return res.json({ data, error: null })
+  } catch (e: any) {
+    return res
+      .status(e.status ?? 500)
+      .json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
+  }
+}
+
+export async function getMyRedemptions(req: Request, res: Response) {
+  try {
+    const customerId = (req.user as any).sub
+    const data = await service.getMyRedemptions(customerId)
+    return res.json({ data, error: null })
+  } catch (e: any) {
+    return res
+      .status(e.status ?? 500)
+      .json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
+  }
+}
