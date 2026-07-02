@@ -23,6 +23,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   ios: {
     bundleIdentifier: 'uz.miramarket.app',
     buildNumber: '1',
+    appleTeamId: '47779M8Z2K',
     supportsTablet: false,
     infoPlist: {
       NSCameraUsageDescription: 'Kvitansiya rasmi yuklash uchun',
