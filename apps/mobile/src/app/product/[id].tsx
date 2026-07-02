@@ -145,7 +145,6 @@ export default function ProductDetailScreen() {
 
   const handleWishlistToggle = () => {
     if (!product) return
-    const { requireAuth } = require('../../lib/require-auth')
     if (!requireAuth(useAuthStore.getState().isAuthenticated, router, `/product/${product.id}`)) return
     toggleWishlist(product.id)
   }
