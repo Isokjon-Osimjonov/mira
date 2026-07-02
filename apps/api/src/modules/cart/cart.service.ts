@@ -1,6 +1,6 @@
 import { db } from '../../config/db'
-import { carts, cartItems, products, productRegionalConfigs, inventoryBatches } from '@mira/db'
-import { eq, and, sql, isNull } from 'drizzle-orm'
+import { carts, cartItems, products, productRegionalConfigs, inventoryBatches, orders } from '@mira/db'
+import { eq, and, sql, isNull, inArray } from 'drizzle-orm'
 import type { AddCartItemDto, UpdateCartItemDto } from './cart.schema'
 import { validateCoupon } from '../coupons/coupons.service'
 
@@ -291,13 +291,29 @@ export async function validateCartCoupon(
     isWholesale: item.isWholesale,
   }))
 
+  const [orderCountRes] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(orders)
+    .where(
+      and(
+        eq(orders.customerId, customerId),
+        inArray(orders.status, [
+          'PAYMENT_CONFIRMED',
+          'PACKING',
+          'SHIPPED',
+          'DELIVERED',
+        ])
+      )
+    )
+  const orderCount = Number(orderCountRes?.count || 0)
+
   const result = await validateCoupon({
     code,
     customerId,
     region: regionCode,
     cartItems: cartItemsMapped,
     cartSubtotal: cartData.summary.subtotal,
-    orderCount: 0, // Should realistically query orders table, but passed 0 as instructed for now
+    orderCount,
   })
 
   return {
