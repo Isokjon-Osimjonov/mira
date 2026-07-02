@@ -29,6 +29,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       NSCameraUsageDescription: 'Kvitansiya rasmi yuklash uchun',
       NSPhotoLibraryUsageDescription: 'Galereyadagi rasmni tanlash uchun',
       NSUserNotificationsUsageDescription: 'Buyurtma holati haqida xabar olish uchun',
+      LSApplicationQueriesSchemes: ['tg', 'telegram'],
     },
   },
   android: {
