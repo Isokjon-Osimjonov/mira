@@ -252,7 +252,11 @@ export function DashboardPage() {
         <KpiCard
           title="Bugungi daromad"
           value={formatKRW(overview?.todayRevenue ?? 0)}
-          sub={rate ? formatUZS(Math.round((overview?.todayRevenue ?? 0) * rate)) : undefined}
+          sub={
+            overview?.todayDiscounts > 0
+              ? `Chegirmalar: -${formatKRW(overview.todayDiscounts)}`
+              : 'Bugungi tushum'
+          }
           change={
             overview?.todayRevenueChange
               ? { value: overview.todayRevenueChange, label: 'kechadan' }
@@ -267,7 +271,11 @@ export function DashboardPage() {
         <KpiCard
           title="Oy daromadi"
           value={formatKRW(overview?.periodRevenue ?? 0)}
-          sub={rate ? formatUZS(Math.round((overview?.periodRevenue ?? 0) * rate)) : undefined}
+          sub={
+            overview?.hasDiscounts
+              ? `Chegirmalar: -${formatKRW(overview.periodDiscounts)}`
+              : 'Jami tushum'
+          }
           change={
             overview?.periodRevenueChange
               ? { value: overview.periodRevenueChange, label: "o'tgandan" }

@@ -26,7 +26,7 @@ import { ORDER_STATUS_LABELS } from '../../constants/order-transitions'
 export function AnalitikPage() {
   const now = new Date()
 
-  const [preset, setPreset] = useState<string>('this_month')
+  const [preset, setPreset] = useState<string>('last_30')
   const [groupBy, setGroupBy] = useState<'day' | 'week' | 'month'>('day')
   const [customFrom, setCustomFrom] = useState('')
   const [customTo, setCustomTo] = useState('')

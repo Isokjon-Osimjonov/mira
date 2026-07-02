@@ -215,65 +215,58 @@ export async function getOverview(period: Period) {
 
   const [todayRev] = await db
     .select({
-      revenue: sql<string>`COALESCE(SUM(${orders.totalAmount} - COALESCE(${orders.refundAmount}, 0)), 0)`,
+      gross: sql<string>`COALESCE(SUM(${dailySalesSummary.revenueKrw}), 0)::text`,
+      discounts: sql<string>`COALESCE(SUM(${dailySalesSummary.couponDiscountKrw}), 0)::text`,
     })
-    .from(orders)
-    .where(
-      and(
-        gte(orders.paymentConfirmedAt, today),
-        lte(orders.paymentConfirmedAt, endOfDay(today)),
-        inArray(orders.status, REVENUE_STATUSES)
-      )
-    )
+    .from(dailySalesSummary)
+    .where(eq(dailySalesSummary.date, format(today, 'yyyy-MM-dd')))
 
   const [yestRev] = await db
     .select({
-      revenue: sql<string>`COALESCE(SUM(${orders.totalAmount} - COALESCE(${orders.refundAmount}, 0)), 0)`,
+      gross: sql<string>`COALESCE(SUM(${dailySalesSummary.revenueKrw}), 0)::text`,
     })
-    .from(orders)
-    .where(
-      and(
-        gte(orders.paymentConfirmedAt, startOfDay(yesterday)),
-        lte(orders.paymentConfirmedAt, endOfDay(yesterday)),
-        inArray(orders.status, REVENUE_STATUSES)
-      )
-    )
+    .from(dailySalesSummary)
+    .where(eq(dailySalesSummary.date, format(yesterday, 'yyyy-MM-dd')))
 
-  const todayRevenue = Number(todayRev.revenue)
-  const yestRevenue = Number(yestRev.revenue)
+  const todayRevenue = Number(todayRev?.gross || 0)
+  const todayDiscounts = Number(todayRev?.discounts || 0)
+  const todayRevenueNet = todayRevenue - todayDiscounts
+  
+  const yestRevenue = Number(yestRev?.gross || 0)
   const todayRevenueChange =
     yestRevenue > 0 ? Math.round(((todayRevenue - yestRevenue) / yestRevenue) * 100) : 0
 
   // 2. Period vs Previous Period
   const [periodRev] = await db
     .select({
-      revenue: sql<string>`COALESCE(SUM(${orders.totalAmount} - COALESCE(${orders.refundAmount}, 0)), 0)`,
-      count: count(orders.id),
+      gross: sql<string>`COALESCE(SUM(${dailySalesSummary.revenueKrw}), 0)::text`,
+      discounts: sql<string>`COALESCE(SUM(${dailySalesSummary.couponDiscountKrw}), 0)::text`,
     })
-    .from(orders)
+    .from(dailySalesSummary)
     .where(
       and(
-        gte(orders.paymentConfirmedAt, startDate),
-        lte(orders.paymentConfirmedAt, endDate),
-        inArray(orders.status, REVENUE_STATUSES)
+        gte(dailySalesSummary.date, format(startDate, 'yyyy-MM-dd')),
+        lte(dailySalesSummary.date, format(endDate, 'yyyy-MM-dd'))
       )
     )
 
   const [prevRev] = await db
     .select({
-      revenue: sql<string>`COALESCE(SUM(${orders.totalAmount} - COALESCE(${orders.refundAmount}, 0)), 0)`,
+      gross: sql<string>`COALESCE(SUM(${dailySalesSummary.revenueKrw}), 0)::text`,
     })
-    .from(orders)
+    .from(dailySalesSummary)
     .where(
       and(
-        gte(orders.paymentConfirmedAt, prevStart),
-        lte(orders.paymentConfirmedAt, prevEnd),
-        inArray(orders.status, REVENUE_STATUSES)
+        gte(dailySalesSummary.date, format(prevStart, 'yyyy-MM-dd')),
+        lte(dailySalesSummary.date, format(prevEnd, 'yyyy-MM-dd'))
       )
     )
 
-  const periodRevenue = Number(periodRev.revenue)
-  const previousRevenue = Number(prevRev.revenue)
+  const periodRevenue = Number(periodRev?.gross || 0)
+  const periodDiscounts = Number(periodRev?.discounts || 0)
+  const periodRevenueNet = periodRevenue - periodDiscounts
+  
+  const previousRevenue = Number(prevRev?.gross || 0)
   const periodRevenueChange =
     previousRevenue > 0
       ? Math.round(((periodRevenue - previousRevenue) / previousRevenue) * 100)
@@ -297,9 +290,14 @@ export async function getOverview(period: Period) {
 
   return {
     todayRevenue,
+    todayRevenueNet,
+    todayDiscounts,
     todayRevenueChange,
     periodRevenue,
+    periodRevenueNet,
+    periodDiscounts,
     periodRevenueChange,
+    hasDiscounts: periodDiscounts > 0,
     pendingPayment: Number(pendingPaymentCount?.count || 0),
     pendingConfirmation: Number(pendingConfirmationCount?.count || 0),
     totalOrders: Number(totalInPeriod?.count || 0),
