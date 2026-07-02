@@ -76,6 +76,17 @@ export async function getCouponStats(req: Request, res: Response, next: NextFunc
   }
 }
 
+export async function getCouponPerformance(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { from, to } = req.query as { from: string; to: string }
+    if (!from || !to) throw { status: 400, message: 'from and to dates are required' }
+    const data = await service.getCouponPerformance(from, to)
+    res.json({ data, error: null })
+  } catch (err) {
+    next(err)
+  }
+}
+
 export async function exportCSV(req: Request, res: Response, next: NextFunction) {
   try {
     const { type, from, to } = req.query as {

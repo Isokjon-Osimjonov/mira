@@ -61,6 +61,11 @@ export const analyticsApi = {
     return res.data.data
   },
 
+  getCouponPerformance: async (params: { from: string; to: string }) => {
+    const res = await api.get('/admin/analytics/coupon-performance', { params })
+    return res.data.data
+  },
+
   exportCSV: async (params: { type: 'pl' | 'orders' | 'products'; from: string; to: string }) => {
     const res = await api.get('/admin/analytics/export', { params, responseType: 'blob' })
     const url = URL.createObjectURL(res.data)

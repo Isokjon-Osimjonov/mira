@@ -9,6 +9,8 @@ import {
   expenseCategories,
   dailySalesSummary,
   inventoryBatches,
+  coupons,
+  couponRedemptions,
 } from '@mira/db'
 import { eq, and, sql, desc, asc, sum, count, gte, lte, inArray, countDistinct } from 'drizzle-orm'
 import { getRedis } from '../../config/redis'
@@ -49,12 +51,34 @@ export async function getOverview(from: string, to: string) {
   const startDate = from ? startOfDay(new Date(from)) : startOfMonth(new Date())
   const endDate = to ? endOfDay(new Date(to)) : endOfMonth(new Date())
 
-  // 1. Revenue & Orders
+  const startStr = from || startOfMonth(new Date()).toISOString().split('T')[0]
+  const endStr = to || endOfMonth(new Date()).toISOString().split('T')[0]
+
+  // 1. Revenue
   const [revenueStats] = await db
     .select({
-      total: sql<string>`COALESCE(SUM(${orders.totalAmount})::text, '0')`,
-      kor: sql<string>`COALESCE(SUM(CASE WHEN ${orders.deliveryRegion} = 'KOR' THEN ${orders.totalAmount} ELSE 0 END)::text, '0')`,
-      uzb: sql<string>`COALESCE(SUM(CASE WHEN ${orders.deliveryRegion} = 'UZB' THEN ${orders.totalAmount} ELSE 0 END)::text, '0')`,
+      gross: sql<string>`COALESCE(SUM(${dailySalesSummary.revenueKrw})::text, '0')`,
+      kor: sql<string>`COALESCE(SUM(CASE WHEN ${dailySalesSummary.regionCode} = 'KOR' THEN ${dailySalesSummary.revenueKrw} ELSE 0 END)::text, '0')`,
+      uzb: sql<string>`COALESCE(SUM(CASE WHEN ${dailySalesSummary.regionCode} = 'UZB' THEN ${dailySalesSummary.revenueKrw} ELSE 0 END)::text, '0')`,
+      discounts: sql<string>`COALESCE(SUM(${dailySalesSummary.couponDiscountKrw})::text, '0')`,
+    })
+    .from(dailySalesSummary)
+    .where(
+      and(
+        gte(dailySalesSummary.date, startStr),
+        lte(dailySalesSummary.date, endStr)
+      )
+    )
+
+  const grossRevenue = Number(revenueStats?.gross || 0)
+  const totalDiscounts = Number(revenueStats?.discounts || 0)
+  const netRevenue = grossRevenue - totalDiscounts
+  const revenueKor = Number(revenueStats?.kor || 0)
+  const revenueUzb = Number(revenueStats?.uzb || 0)
+
+  // 1b. Orders
+  const [orderStats] = await db
+    .select({
       orderCount: count(orders.id),
       completedCount: sql<number>`COUNT(*) FILTER (WHERE ${orders.status} = 'DELIVERED')`,
       cancelledCount: sql<number>`COUNT(*) FILTER (WHERE ${orders.status} = 'CANCELED')`,
@@ -68,12 +92,9 @@ export async function getOverview(from: string, to: string) {
       )
     )
 
-  const revenueTotal = BigInt(revenueStats?.total || '0')
-  const revenueKor = BigInt(revenueStats?.kor || '0')
-  const revenueUzb = BigInt(revenueStats?.uzb || '0')
-  const totalOrders = Number(revenueStats?.orderCount || 0)
-  const completedOrders = Number(revenueStats?.completedCount || 0)
-  const cancelledOrders = Number(revenueStats?.cancelledCount || 0)
+  const totalOrders = Number(orderStats?.orderCount || 0)
+  const completedOrders = Number(orderStats?.completedCount || 0)
+  const cancelledOrders = Number(orderStats?.cancelledCount || 0)
 
   // 2. COGS from transactional data
   const [cogsStats] = await db
@@ -91,20 +112,25 @@ export async function getOverview(from: string, to: string) {
       )
     )
 
-  const cogs = BigInt(cogsStats?.cogs || '0')
-  const grossProfit = revenueTotal - cogs
-  const grossMargin = revenueTotal > 0n ? Number((grossProfit * 10000n) / revenueTotal) / 100 : 0
+  const cogs = Number(cogsStats?.cogs || 0)
+  const grossProfit = grossRevenue - cogs
+  const grossMargin = grossRevenue > 0 ? (grossProfit / grossRevenue) * 100 : 0
 
   // 3. Expenses
   const expResult = await db.execute(
     sql`SELECT COALESCE(SUM(amount_krw)::text,'0')
         as total FROM expenses
-        WHERE expense_date >= ${from}::date
-        AND expense_date <= ${to}::date`
+        WHERE expense_date >= ${from || '2000-01-01'}::date
+        AND expense_date <= ${to || '2100-01-01'}::date`
   )
-  const totalExpenses = BigInt((expResult.rows[0] as any)?.total ?? '0')
-  const netProfit = grossProfit - totalExpenses
-  const netMargin = revenueTotal > 0n ? Number((netProfit * 10000n) / revenueTotal) / 100 : 0
+  const totalExpenses = Number((expResult.rows[0] as any)?.total || 0)
+  
+  const adjustedGrossProfit = grossProfit - totalDiscounts
+  const netProfit = adjustedGrossProfit - totalExpenses
+  // Net proof: gross - discounts - cogs - expenses
+  // = (gross - discounts) - cogs - expenses
+  // = netRevenue - cogs - expenses ✓ same result
+  const netMargin = grossRevenue > 0 ? (netProfit / grossRevenue) * 100 : 0
 
   // 4. Customers
   const [customerStats] = await db
@@ -120,20 +146,25 @@ export async function getOverview(from: string, to: string) {
     .from(orders)
     .where(and(gte(orders.createdAt, startDate), lte(orders.createdAt, endDate)))
 
-  const avgOrderValue = totalOrders > 0 ? Number(revenueTotal / BigInt(totalOrders)) : 0
+  const avgOrderValue = totalOrders > 0 ? netRevenue / totalOrders : 0
 
   const result = {
     revenue: {
-      total: Number(revenueTotal),
-      kor: Number(revenueKor),
-      uzb: Number(revenueUzb),
+      gross: grossRevenue,
+      discounts: totalDiscounts,
+      net: netRevenue,
+      kor: revenueKor,
+      uzb: revenueUzb,
     },
-    cogs: Number(cogs),
-    grossProfit: Number(grossProfit),
+    cogs,
+    grossProfit,
     grossMargin,
-    expenses: Number(totalExpenses),
-    netProfit: Number(netProfit),
+    discounts: totalDiscounts,
+    adjustedGrossProfit,
+    expenses: totalExpenses,
+    netProfit,
     netMargin,
+    hasDiscounts: totalDiscounts > 0,
     orders: {
       total: totalOrders,
       completed: completedOrders,
@@ -247,20 +278,24 @@ export async function getPL(from: string, to: string) {
   const startDate = startOfDay(new Date(from))
   const endDate = endOfDay(new Date(to))
 
+  const startStr = from || startOfMonth(new Date()).toISOString().split('T')[0]
+  const endStr = to || endOfMonth(new Date()).toISOString().split('T')[0]
+
   const [revenueStats] = await db
     .select({
-      total: sql<string>`COALESCE(SUM(${orders.totalAmount})::text, '0')`,
+      gross: sql<string>`COALESCE(SUM(${dailySalesSummary.revenueKrw})::text, '0')`,
+      discounts: sql<string>`COALESCE(SUM(${dailySalesSummary.couponDiscountKrw})::text, '0')`,
     })
-    .from(orders)
+    .from(dailySalesSummary)
     .where(
       and(
-        gte(orders.paymentConfirmedAt, startDate),
-        lte(orders.paymentConfirmedAt, endDate),
-        inArray(orders.status, REVENUE_STATUSES)
+        gte(dailySalesSummary.date, startStr),
+        lte(dailySalesSummary.date, endStr)
       )
     )
 
-  const revenue = Number(revenueStats?.total || 0)
+  const grossRevenue = Number(revenueStats?.gross || 0)
+  const totalDiscounts = Number(revenueStats?.discounts || 0)
 
   const [summaryData] = await db
     .select({
@@ -278,8 +313,8 @@ export async function getPL(from: string, to: string) {
     )
 
   const cogs = Number(summaryData?.cogs || 0)
-  const grossProfit = revenue - cogs
-  const grossMargin = revenue > 0 ? (grossProfit * 100) / revenue : 0
+  const grossProfit = grossRevenue - cogs
+  const grossMargin = grossRevenue > 0 ? (grossProfit / grossRevenue) * 100 : 0
 
   const expensesByCategory = await db
     .select({
@@ -297,22 +332,29 @@ export async function getPL(from: string, to: string) {
     .groupBy(expenseCategories.name)
 
   const totalExpenses = expensesByCategory.reduce((acc, e) => acc + Number(e.amount), 0)
-  const netProfit = grossProfit - totalExpenses
-  const netMargin = revenue > 0 ? (netProfit * 100) / revenue : 0
+  
+  const adjustedGrossProfit = grossProfit - totalDiscounts
+  const adjustedGrossMargin = grossRevenue > 0 ? (adjustedGrossProfit / grossRevenue) * 100 : 0
+  const netProfit = adjustedGrossProfit - totalExpenses
+  const netMargin = grossRevenue > 0 ? (netProfit / grossRevenue) * 100 : 0
 
   const result = {
     period: `${from} to ${to}`,
-    revenue,
+    revenue: grossRevenue,
     cogs,
     grossProfit,
     grossMargin,
-    expenses: expensesByCategory.map((e) => ({
+    discounts: totalDiscounts,
+    adjustedGrossProfit,
+    adjustedGrossMargin,
+    expenses: totalExpenses,
+    expensesByCategory: expensesByCategory.map((e) => ({
       category: e.category,
       amount: Number(e.amount),
     })),
-    totalExpenses,
     netProfit,
     netMargin,
+    hasDiscounts: totalDiscounts > 0,
   }
 
   await setCache(cacheKey, result)
@@ -638,4 +680,35 @@ export async function exportCSV(
   }
 
   return ''
+}
+
+export async function getCouponPerformance(from: string, to: string) {
+  const results = await db
+    .select({
+      code: coupons.code,
+      name: coupons.name,
+      type: coupons.type,
+      uses: sql<number>`count(${couponRedemptions.id})::int`,
+      totalDiscount: sql<string>`COALESCE(SUM(${couponRedemptions.discountAmount})::text, '0')`,
+      avgDiscount: sql<string>`COALESCE(AVG(${couponRedemptions.discountAmount})::text, '0')`
+    })
+    .from(couponRedemptions)
+    .innerJoin(coupons, eq(couponRedemptions.couponId, coupons.id))
+    .where(
+      and(
+        gte(couponRedemptions.createdAt, startOfDay(new Date(from))),
+        lte(couponRedemptions.createdAt, endOfDay(new Date(to)))
+      )
+    )
+    .groupBy(coupons.id, coupons.code, coupons.name, coupons.type)
+    .orderBy(desc(sql`SUM(${couponRedemptions.discountAmount})`))
+
+  return results.map(r => ({
+    code: r.code,
+    name: r.name,
+    type: r.type,
+    uses: r.uses,
+    totalDiscount: Number(r.totalDiscount),
+    avgDiscount: Math.round(Number(r.avgDiscount))
+  }))
 }

@@ -14,6 +14,7 @@ router.get('/pl', ctrl.getPL)
 router.get('/order-funnel', ctrl.getOrderFunnel)
 router.get('/customers', ctrl.getCustomers)
 router.get('/coupons', ctrl.getCouponStats)
+router.get('/coupon-performance', ctrl.getCouponPerformance)
 router.get('/export', ctrl.exportCSV)
 
 export default router

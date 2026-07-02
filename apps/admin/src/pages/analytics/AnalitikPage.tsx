@@ -120,6 +120,12 @@ export function AnalitikPage() {
     enabled,
   })
 
+  const { data: couponPerformance } = useQuery({
+    queryKey: ['analytics', 'coupon-performance', dateFrom, dateTo],
+    queryFn: () => analyticsApi.getCouponPerformance(dateParams),
+    enabled,
+  })
+
   const handleExport = async (type: 'pl' | 'orders' | 'products') => {
     if (!dateFrom || !dateTo) return
     setExporting(true)
@@ -132,6 +138,13 @@ export function AnalitikPage() {
       setExporting(false)
     }
   }
+
+  const typeLabel = (type: string) =>
+    ({
+      PERCENTAGE: 'Foiz',
+      FIXED: 'Summa',
+      FREE_SHIPPING: 'Yetkazish',
+    }[type] ?? type)
 
   const CHART_COLORS = {
     kor: '#E30B5C',
@@ -251,14 +264,27 @@ export function AnalitikPage() {
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
           {/* 1. Revenue */}
           <div className="bg-white rounded-xl border-[0.5px] border-border p-4">
-            <p className="text-[11px] text-muted-foreground mb-1">Jami daromad</p>
+            <p className="text-[11px] text-muted-foreground mb-1">Brüt daromad</p>
             <p className="text-base font-bold text-gray-900">
-              {formatKRW(overview?.revenue?.total ?? 0)}
+              {formatKRW(overview?.revenue?.gross ?? 0)}
             </p>
             <p className="text-[10px] text-muted-foreground mt-1">
-              KOR: {formatKRW(overview?.revenue?.kor ?? 0)}
+              Mijozlar to'lashi kerak bo'lgan summa
             </p>
           </div>
+
+          {/* Tuzatilgan daromad (net) */}
+          {overview?.hasDiscounts && (
+            <div className="bg-blue-50 rounded-xl border-[0.5px] border-blue-200 p-4">
+              <p className="text-[11px] text-muted-foreground mb-1">Tuzatilgan daromad</p>
+              <p className="text-base font-bold text-blue-800">
+                {formatKRW(overview?.revenue?.net ?? 0)}
+              </p>
+              <p className="text-[10px] text-muted-foreground mt-1">
+                Chegirmalardan keyin
+              </p>
+            </div>
+          )}
 
           {/* 2. COGS */}
           <div className="bg-orange-50 rounded-xl border-[0.5px] border-orange-100 p-4">
@@ -289,6 +315,30 @@ export function AnalitikPage() {
               Margin: {(overview?.grossMargin ?? 0).toFixed(1)}%
             </p>
           </div>
+
+          {/* Kupon chegirmalari */}
+          {overview?.hasDiscounts && (
+            <div className="bg-orange-50 rounded-xl border-[0.5px] border-orange-300 p-4">
+              <p className="text-[11px] text-muted-foreground mb-1">Kupon chegirmalari</p>
+              <p className="text-base font-bold text-orange-700">
+                -{formatKRW(overview?.discounts ?? 0)}
+              </p>
+              <p className="text-[10px] text-muted-foreground mt-1">Chegirma sifatida berilgan</p>
+            </div>
+          )}
+
+          {/* Tuzatilgan yalpi foyda */}
+          {overview?.hasDiscounts && (
+            <div className="bg-green-50 rounded-xl border-[0.5px] border-green-200 p-4">
+              <p className="text-[11px] text-muted-foreground mb-1">Tuzatilgan yalpi foyda</p>
+              <p className="text-base font-bold text-green-800">
+                {formatKRW(overview?.adjustedGrossProfit ?? 0)}
+              </p>
+              <p className="text-[10px] text-muted-foreground mt-1">
+                Kupon xarajatlaridan so'ng
+              </p>
+            </div>
+          )}
 
           {/* 4. Expenses */}
           <div className="bg-red-50 rounded-xl border-[0.5px] border-red-100 p-4">
@@ -724,6 +774,57 @@ export function AnalitikPage() {
           </div>
         </div>
       </div>
+
+      {couponPerformance && couponPerformance.length > 0 && (
+        <div className="bg-white rounded-xl border-[0.5px] border-border overflow-hidden mt-4">
+          <div className="px-5 py-4 border-b border-border/50">
+            <h2 className="text-sm font-semibold text-gray-900">Kupon samaradorligi</h2>
+          </div>
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-border/50 bg-gray-50/80">
+                <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Kupon kodi</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Nomi</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Turi</th>
+                <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground">Ishlatildi</th>
+                <th className="px-4 py-3 text-right text-xs font-medium text-muted-foreground">Jami chegirma</th>
+                <th className="px-4 py-3 text-right text-xs font-medium text-muted-foreground">O'rtacha chegirma</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border/30">
+              {couponPerformance.map((c: any) => (
+                <tr key={c.code} className="hover:bg-gray-50/60">
+                  <td className="px-4 py-3">
+                    <code className="text-sm font-mono font-bold text-gray-900 bg-gray-100 px-2 py-0.5 rounded">
+                      {c.code}
+                    </code>
+                  </td>
+                  <td className="px-4 py-3 text-gray-900">{c.name}</td>
+                  <td className="px-4 py-3 text-muted-foreground">{typeLabel(c.type)}</td>
+                  <td className="px-4 py-3 text-center font-semibold">{c.uses} ta</td>
+                  <td className="px-4 py-3 text-right font-semibold text-red-600">
+                    -{formatKRW(c.totalDiscount)}
+                  </td>
+                  <td className="px-4 py-3 text-right text-muted-foreground">
+                    {formatKRW(c.avgDiscount)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot className="border-t border-border/50 bg-gray-50/80">
+              <tr>
+                <td colSpan={4} className="px-4 py-3 font-semibold text-right text-gray-900">Jami</td>
+                <td className="px-4 py-3 text-right font-bold text-red-600">
+                  -{formatKRW(
+                    couponPerformance.reduce((s: number, c: any) => s + c.totalDiscount, 0)
+                  )}
+                </td>
+                <td></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      )}
     </div>
   )
 }
