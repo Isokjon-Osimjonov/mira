@@ -327,15 +327,15 @@ export function AnalitikPage() {
             </div>
           )}
 
-          {/* Tuzatilgan yalpi foyda */}
+          {/* Chegirmadan keyingi foyda */}
           {overview?.hasDiscounts && (
             <div className="bg-green-50 rounded-xl border-[0.5px] border-green-200 p-4">
-              <p className="text-[11px] text-muted-foreground mb-1">Tuzatilgan yalpi foyda</p>
+              <p className="text-[11px] text-muted-foreground mb-1">Chegirmadan keyingi foyda</p>
               <p className="text-base font-bold text-green-800">
                 {formatKRW(overview?.adjustedGrossProfit ?? 0)}
               </p>
               <p className="text-[10px] text-muted-foreground mt-1">
-                Kupon xarajatlaridan so'ng
+                Chegirmalar hisobga olingandan keyin
               </p>
             </div>
           )}

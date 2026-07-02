@@ -1,7 +1,7 @@
 // KRW formatting
 export function formatKRW(amount: number | bigint): string {
   const num = typeof amount === 'bigint' ? Number(amount) : amount
-  return `₩${num.toLocaleString('ko-KR')}`
+  return `₩${Math.round(num).toLocaleString('ko-KR')}`
 }
 
 // UZS formatting
