@@ -11,12 +11,25 @@ import { uploadService } from '../../services/upload.service'
 import { useAuthStore } from '../../lib/auth-store'
 import { Alert } from 'react-native'
 
+const FieldError = ({ message }: { message?: string }) =>
+  message ? (
+    <Text style={{
+      color: tokens.colors.error,
+      fontSize: 12,
+      marginTop: 4,
+      marginLeft: 2
+    }}>
+      {message}
+    </Text>
+  ) : null
+
 export default function ProfileSetupScreen() {
   const { returnTo } = useLocalSearchParams()
   const [name, setName] = useState('')
   const [photo, setPhoto] = useState<string | null>(null)
   const [focused, setFocused] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [errors, setErrors] = useState<Record<string, string>>({})
 
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -31,8 +44,20 @@ export default function ProfileSetupScreen() {
     }
   }
 
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {}
+    const nameRegex = /^[\p{L}\s'\-]+$/u
+    if (name.trim().length < 2) {
+      newErrors.name = "Ism kamida 2 ta belgidan iborat bo'lishi kerak"
+    } else if (!nameRegex.test(name.trim())) {
+      newErrors.name = "Ism faqat harflardan iborat bo'lishi kerak"
+    }
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
+  }
+
   const handleSubmit = async () => {
-    if (name.trim().length < 2) return
+    if (!validateForm()) return
     setLoading(true)
     try {
       const nameParts = name.trim().split(' ')
@@ -96,7 +121,11 @@ export default function ProfileSetupScreen() {
       <View style={styles.form}>
         <Text style={styles.label}>Ism va familiya</Text>
         <TextInput
-          style={[styles.input, focused && styles.inputFocused]}
+          style={[
+            styles.input, 
+            focused && styles.inputFocused,
+            errors.name && { borderColor: tokens.colors.error, borderWidth: 1.5 }
+          ]}
           placeholder="Ism Familiya"
           placeholderTextColor={tokens.colors.primaryLight}
           value={name}
@@ -105,6 +134,7 @@ export default function ProfileSetupScreen() {
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
         />
+        <FieldError message={errors.name} />
       </View>
 
       <View style={styles.bottom}>
@@ -112,7 +142,6 @@ export default function ProfileSetupScreen() {
           label="Davom etish"
           onPress={handleSubmit}
           loading={loading}
-          disabled={name.trim().length < 2}
         />
       </View>
     </SafeAreaView>
