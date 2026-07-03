@@ -276,7 +276,7 @@ export async function downloadInvoice(req: Request, res: Response) {
       }))
     })
 
-    res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'unsafe-inline'; style-src 'unsafe-inline';")
+    res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' https: data:;")
     res.setHeader('Content-Type', 'text/html')
     return res.send(invoiceHtml)
   } catch (e: any) {
