@@ -8,6 +8,7 @@ build
 .expo
 android
 ios
+google-services.json
 
 # Nx cache
 .nx/cache

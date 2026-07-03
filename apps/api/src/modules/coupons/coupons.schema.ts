@@ -28,6 +28,7 @@ const baseCouponSchema = z.object({
   maxUsesTotal: z.number().int().optional().nullable(),
   maxUsesPerCustomer: z.number().int().optional(),
   autoApply: z.boolean().optional(),
+  status: z.enum(['DRAFT', 'ACTIVE']).default('DRAFT'),
   isStackable: z.boolean().optional(),
   isPromotional: z.boolean().optional(),
   promoDisplayText: z.string().optional().nullable(),

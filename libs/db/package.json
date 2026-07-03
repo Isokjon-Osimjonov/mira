@@ -2,6 +2,10 @@
   "name": "@mira/db",
   "version": "0.0.1",
   "private": true,
+  "scripts": {
+    "db:migrate": "cd libs/db && npx drizzle-kit migrate --config=drizzle.config.ts",
+    "db:migrate:prod": "cd libs/db && DATABASE_URL=$PROD_DATABASE_URL npx drizzle-kit migrate --config=drizzle.config.ts"
+  },
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
