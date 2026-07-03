@@ -26,7 +26,6 @@ import {
 } from '../../constants/order-transitions'
 import { StatusBadge } from '../../components/ui/status-badge'
 import { ConfirmDialog } from '../../components/shared/ConfirmDialog'
-import { OrderStatusBadge } from '@/components/orders/OrderStatusBadge'
 import { EmptyState } from '../../components/shared/EmptyState'
 import { formatKRW, formatUZS } from '../../utils/currency'
 import { formatDateTime } from '../../utils/date'
