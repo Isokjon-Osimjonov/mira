@@ -3,7 +3,12 @@ import { z } from 'zod'
 export const baseAddressSchema = z.object({
   label: z.string().max(50).optional(),
   regionCode: z.enum(['UZB', 'KOR']),
-  fullName: z.string().min(2).max(100),
+  fullName: z.string()
+    .min(2)
+    .max(100)
+    .regex(/^[\p{L}\s'\-]+$/u, {
+      message: "Ism faqat harflardan iborat bo'lishi kerak",
+    }),
   phone: z.string().min(7).max(20),
   postalCode: z.string().max(10),
   isDefault: z.boolean().default(false),
@@ -14,7 +19,17 @@ export const baseAddressSchema = z.object({
 })
 
 export const createAddressSchema = baseAddressSchema.superRefine((data, ctx) => {
+  const korPhoneRegex = /^\+82[0-9]{9,10}$/
+  const uzbPhoneRegex = /^\+998[0-9]{9}$/
+
   if (data.regionCode === 'UZB') {
+    if (!uzbPhoneRegex.test(data.phone)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['phone'],
+        message: "O'zbekiston raqami +998 bilan boshlanishi va 13 belgidan iborat bo'lishi kerak"
+      })
+    }
     if (!data.province) {
       ctx.addIssue({
         code: 'custom',
@@ -31,6 +46,13 @@ export const createAddressSchema = baseAddressSchema.superRefine((data, ctx) => 
     }
   }
   if (data.regionCode === 'KOR') {
+    if (!korPhoneRegex.test(data.phone)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['phone'],
+        message: "Koreya raqami +82 bilan boshlanishi va 12-13 belgidan iborat bo'lishi kerak"
+      })
+    }
     if (data.postalCode?.length !== 5) {
       ctx.addIssue({
         code: 'custom',

@@ -4,6 +4,12 @@ import { sendPushNotification } from '../../lib/push'
 import { db } from '../../config/db'
 import { notificationsLog } from '@mira/db'
 
+const escHtml = (s: string) =>
+  s.replace(/&/g,'&amp;')
+   .replace(/</g,'&lt;')
+   .replace(/>/g,'&gt;')
+   .replace(/"/g,'&quot;')
+
 // Send message to admin group
 export async function sendAdminAlert(message: string): Promise<void> {
   try {
@@ -28,7 +34,7 @@ export async function notifyNewOrder(data: {
     `🛒 <b>YANGI BUYURTMA!</b>\n` +
       `━━━━━━━━━━━━━━━━━━━━\n` +
       `📦 <b>${data.orderNumber}</b>\n` +
-      `👤 ${data.customerName} ${data.customerPhone}\n` +
+      `👤 ${escHtml(data.customerName)} ${escHtml(data.customerPhone)}\n` +
       `🌍 ${data.region} | ${data.itemCount} ta mahsulot\n` +
       `💰 ₩${data.totalAmount.toLocaleString()}\n` +
       `⏰ To'lov kutilmoqda`
@@ -44,7 +50,7 @@ export async function notifyPaymentSubmitted(data: {
 }): Promise<void> {
   await sendAdminAlert(
     `💳 <b>TO'LOV YUKLANDI!</b>\n` +
-      `📦 ${data.orderNumber} — ${data.customerName}\n` +
+      `📦 ${data.orderNumber} — ${escHtml(data.customerName)}\n` +
       `🏦 ${data.paymentMethod}: ${data.paymentAmount}\n` +
       `✅ Tekshiring: admin.miracosmetics.uz`
   )

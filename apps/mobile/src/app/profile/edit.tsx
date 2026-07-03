@@ -22,6 +22,19 @@ import api from '../../lib/api'
 import { tokens } from '../../lib/tokens'
 import PrimaryButton from '../../components/ui/PrimaryButton'
 
+const FieldError = ({ message }: { message?: string }) =>
+  message ? (
+    <Text style={{
+      color: tokens.colors.error,
+      fontSize: 12,
+      marginTop: -12,
+      marginBottom: 16,
+      marginLeft: 2
+    }}>
+      {message}
+    </Text>
+  ) : null
+
 export default function EditProfileScreen() {
   const customer = useAuthStore((s) => s.customer)
   const setCustomer = useAuthStore((s) => s.setCustomer)
@@ -30,6 +43,7 @@ export default function EditProfileScreen() {
   const [lastName, setLastName] = useState(customer?.lastName ?? '')
   const [avatarUri, setAvatarUri] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [errors, setErrors] = useState<Record<string, string>>({})
 
   const pickAvatar = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -43,11 +57,25 @@ export default function EditProfileScreen() {
     }
   }
 
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {}
+    const nameRegex = /^[\p{L}\s'\-]+$/u
+    if (firstName.trim() && !nameRegex.test(firstName.trim())) {
+      newErrors.firstName = "Ism faqat harflardan iborat bo'lishi kerak"
+    }
+    if (lastName.trim() && !nameRegex.test(lastName.trim())) {
+      newErrors.lastName = "Familiya faqat harflardan iborat bo'lishi kerak"
+    }
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
+  }
+
   const handleSave = async () => {
     if (!firstName.trim()) {
       Alert.alert('Xatolik', 'Ismni kiriting')
       return
     }
+    if (!validateForm()) return
     setIsSubmitting(true)
     try {
       let profileImageUrl = customer?.profileImageUrl ?? null
@@ -118,19 +146,27 @@ export default function EditProfileScreen() {
           <View style={styles.form}>
             <Text style={styles.label}>Ism *</Text>
             <TextInput
-              style={styles.input}
+              style={[
+                styles.input,
+                errors.firstName && { borderColor: tokens.colors.error, borderWidth: 1.5 }
+              ]}
               value={firstName}
               onChangeText={setFirstName}
               placeholder="Ismingizni kiriting"
             />
+            <FieldError message={errors.firstName} />
 
             <Text style={styles.label}>Familiya</Text>
             <TextInput
-              style={styles.input}
+              style={[
+                styles.input,
+                errors.lastName && { borderColor: tokens.colors.error, borderWidth: 1.5 }
+              ]}
               value={lastName}
               onChangeText={setLastName}
               placeholder="Familiyangizni kiriting"
             />
+            <FieldError message={errors.lastName} />
 
             <View style={styles.phoneBox}>
               <Text style={styles.phoneLabel}>Telefon raqam</Text>

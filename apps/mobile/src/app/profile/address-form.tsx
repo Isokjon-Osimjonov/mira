@@ -19,6 +19,19 @@ import { tokens } from '../../lib/tokens'
 import { addressService, type JusoResult } from '../../services/address.service'
 import PrimaryButton from '../../components/ui/PrimaryButton'
 
+const FieldError = ({ message }: { message?: string }) =>
+  message ? (
+    <Text style={{
+      color: tokens.colors.error,
+      fontSize: 12,
+      marginTop: -8,
+      marginBottom: 12,
+      marginLeft: 2
+    }}>
+      {message}
+    </Text>
+  ) : null
+
 export default function AddressFormScreen() {
   const { addressId, editData } = useLocalSearchParams<{
     addressId?: string
@@ -42,6 +55,7 @@ export default function AddressFormScreen() {
   const [jusoResults, setJusoResults] = useState<JusoResult[]>([])
   const [jusoQuery, setJusoQuery] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [errors, setErrors] = useState<Record<string, string>>({})
 
   useEffect(() => {
     if (editData) {
@@ -89,7 +103,35 @@ export default function AddressFormScreen() {
     setJusoResults([])
   }
 
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {}
+    const nameRegex = /^[\p{L}\s'\-]+$/u
+    if (!nameRegex.test(form.fullName)) {
+      newErrors.fullName = "Ism faqat harflardan iborat bo'lishi kerak"
+    }
+
+    if (regionCode === 'KOR') {
+      if (!/^\+82[0-9]{9,10}$/.test(form.phone)) {
+        newErrors.phone = "Koreya raqami: +82XXXXXXXXX"
+      }
+      if (form.postalCode && !/^[0-9]{5}$/.test(form.postalCode)) {
+        newErrors.postalCode = "Koreya pochta kodi 5 raqamdan iborat"
+      }
+    } else {
+      if (!/^\+998[0-9]{9}$/.test(form.phone)) {
+        newErrors.phone = "O'zbekiston raqami: +998XXXXXXXXX"
+      }
+      if (form.postalCode && !/^[0-9]{6}$/.test(form.postalCode)) {
+        newErrors.postalCode = "O'zbekiston pochta kodi 6 raqamdan iborat"
+      }
+    }
+
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
+  }
+
   const handleSubmit = async () => {
+    if (!validateForm()) return
     setIsSubmitting(true)
     try {
       const payload: any = {
@@ -179,20 +221,29 @@ export default function AddressFormScreen() {
 
             <Text style={styles.inputLabel}>Ism familiya *</Text>
             <TextInput
-              style={styles.input}
+              style={[
+                styles.input,
+                errors.fullName && { borderColor: tokens.colors.error, borderWidth: 1.5 }
+              ]}
               placeholder="Qabul qiluvchi ismi"
               value={form.fullName}
               onChangeText={(t) => setForm((p) => ({ ...p, fullName: t }))}
             />
+            <FieldError message={errors.fullName} />
 
             <Text style={styles.inputLabel}>Telefon *</Text>
             <TextInput
-              style={styles.input}
-              placeholder="Telefon raqami"
+              style={[
+                styles.input,
+                errors.phone && { borderColor: tokens.colors.error, borderWidth: 1.5 }
+              ]}
+              placeholder={regionCode === 'KOR' ? "+82XXXXXXXXX" : "+998XXXXXXXXX"}
+              maxLength={13}
               value={form.phone}
               onChangeText={(t) => setForm((p) => ({ ...p, phone: t }))}
               keyboardType="phone-pad"
             />
+            <FieldError message={errors.phone} />
 
             {regionCode === 'KOR' ? (
               <>
@@ -229,12 +280,16 @@ export default function AddressFormScreen() {
 
                 <Text style={styles.inputLabel}>Pochta indeksi</Text>
                 <TextInput
-                  style={styles.input}
+                  style={[
+                    styles.input,
+                    errors.postalCode && { borderColor: tokens.colors.error, borderWidth: 1.5 }
+                  ]}
                   placeholder="00000"
                   value={form.postalCode}
                   onChangeText={(t) => setForm((p) => ({ ...p, postalCode: t }))}
                   editable={false}
                 />
+                <FieldError message={errors.postalCode} />
 
                 <Text style={styles.inputLabel}>Asosiy manzil</Text>
                 <TextInput
@@ -281,12 +336,16 @@ export default function AddressFormScreen() {
 
                 <Text style={styles.inputLabel}>Pochta indeksi (ixtiyoriy)</Text>
                 <TextInput
-                  style={styles.input}
+                  style={[
+                    styles.input,
+                    errors.postalCode && { borderColor: tokens.colors.error, borderWidth: 1.5 }
+                  ]}
                   placeholder="100000"
                   value={form.postalCode}
                   onChangeText={(t) => setForm((p) => ({ ...p, postalCode: t }))}
                   keyboardType="number-pad"
                 />
+                <FieldError message={errors.postalCode} />
               </>
             )}
 

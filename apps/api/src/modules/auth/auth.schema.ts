@@ -23,8 +23,21 @@ export const VerifyOtpSchema = z.object({
 })
 
 export const UpdateProfileSchema = z.object({
-  firstName: z.string().min(1).max(100).optional(),
-  lastName: z.string().max(100).nullable().optional(),
+  firstName: z.string()
+    .min(2)
+    .max(50)
+    .regex(/^[\p{L}\s'\-]+$/u, {
+      message: "Ism faqat harflardan iborat bo'lishi kerak"
+    })
+    .optional(),
+  lastName: z.string()
+    .min(2)
+    .max(50)
+    .regex(/^[\p{L}\s'\-]+$/u, {
+      message: "Familiya faqat harflardan iborat bo'lishi kerak"
+    })
+    .nullable()
+    .optional(),
   profileImageUrl: z.union([z.string().url(), z.null(), z.undefined()]).optional(),
 })
 

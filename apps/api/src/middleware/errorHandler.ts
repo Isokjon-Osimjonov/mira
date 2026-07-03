@@ -11,7 +11,9 @@ export function errorHandler(err: any, req: Request, res: Response, _next: NextF
     })
   }
 
-  const status = err.status ?? err.statusCode ?? 500
+  const status = err.name === 'ZodError'
+    ? 400
+    : (err.status ?? err.statusCode ?? 500)
   const code = err.code ?? (err.name === 'ZodError' ? 'VALIDATION_ERROR' : 'INTERNAL_ERROR')
   const message =
     err.name === 'ZodError'

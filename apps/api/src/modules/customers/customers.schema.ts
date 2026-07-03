@@ -13,8 +13,19 @@ export const assignCouponSchema = z.object({
 })
 
 export const createWalkInCustomerSchema = z.object({
-  firstName: z.string().min(1).max(100),
-  lastName: z.string().max(100).optional(),
+  firstName: z.string()
+    .min(2)
+    .max(50)
+    .regex(/^[\p{L}\s'\-]+$/u, {
+      message: "Ism faqat harflardan iborat bo'lishi kerak"
+    }),
+  lastName: z.string()
+    .min(2)
+    .max(50)
+    .regex(/^[\p{L}\s'\-]+$/u, {
+      message: "Familiya faqat harflardan iborat bo'lishi kerak"
+    })
+    .optional(),
   phone: z.string().optional(),
   region: z.enum(['UZB', 'KOR']),
   note: z.string().max(500).optional(),
