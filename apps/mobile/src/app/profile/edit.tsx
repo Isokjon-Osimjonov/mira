@@ -70,6 +70,22 @@ export default function EditProfileScreen() {
     return Object.keys(newErrors).length === 0
   }
 
+  const validateField = (field: string, value: string) => {
+    const nameRegex = /^[\p{L}\s'\-]+$/u
+    if (!value.trim()) {
+      setErrors(p => ({ ...p, [field]: '' }))
+      return
+    }
+    if (!nameRegex.test(value.trim())) {
+      setErrors(p => ({
+        ...p,
+        [field]: "Faqat harflar ishlatilishi mumkin"
+      }))
+    } else {
+      setErrors(p => ({ ...p, [field]: '' }))
+    }
+  }
+
   const handleSave = async () => {
     if (!firstName.trim()) {
       Alert.alert('Xatolik', 'Ismni kiriting')
@@ -86,7 +102,7 @@ export default function EditProfileScreen() {
 
       const res = await api.patch('/auth/profile', {
         firstName: firstName.trim(),
-        lastName: lastName.trim() || undefined,
+        lastName: lastName.trim() || null,
         profileImageUrl,
       })
 
@@ -151,7 +167,10 @@ export default function EditProfileScreen() {
                 errors.firstName && { borderColor: tokens.colors.error, borderWidth: 1.5 }
               ]}
               value={firstName}
-              onChangeText={setFirstName}
+              onChangeText={(t) => {
+                setFirstName(t)
+                validateField('firstName', t)
+              }}
               placeholder="Ismingizni kiriting"
             />
             <FieldError message={errors.firstName} />
@@ -163,7 +182,10 @@ export default function EditProfileScreen() {
                 errors.lastName && { borderColor: tokens.colors.error, borderWidth: 1.5 }
               ]}
               value={lastName}
-              onChangeText={setLastName}
+              onChangeText={(t) => {
+                setLastName(t)
+                validateField('lastName', t)
+              }}
               placeholder="Familiyangizni kiriting"
             />
             <FieldError message={errors.lastName} />

@@ -57,6 +57,15 @@ export default function AddressFormScreen() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
 
+  const phonePrefix = regionCode === 'KOR' ? '+82' : '+998'
+
+  useEffect(() => {
+    setForm(p => {
+      if (p.phone.startsWith(phonePrefix)) return p
+      return { ...p, phone: phonePrefix }
+    })
+  }, [regionCode])
+
   useEffect(() => {
     if (editData) {
       const data = JSON.parse(editData)
@@ -238,9 +247,15 @@ export default function AddressFormScreen() {
                 errors.phone && { borderColor: tokens.colors.error, borderWidth: 1.5 }
               ]}
               placeholder={regionCode === 'KOR' ? "+82XXXXXXXXX" : "+998XXXXXXXXX"}
-              maxLength={13}
+              maxLength={regionCode === 'KOR' ? 13 : 13}
               value={form.phone}
-              onChangeText={(t) => setForm((p) => ({ ...p, phone: t }))}
+              onChangeText={(text) => {
+                if (!text.startsWith(phonePrefix)) {
+                  setForm(p => ({ ...p, phone: phonePrefix }))
+                  return
+                }
+                setForm(p => ({ ...p, phone: text }))
+              }}
               keyboardType="phone-pad"
             />
             <FieldError message={errors.phone} />

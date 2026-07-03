@@ -25,6 +25,7 @@ export const createWalkInCustomerSchema = z.object({
     .regex(/^[\p{L}\s'\-]+$/u, {
       message: "Familiya faqat harflardan iborat bo'lishi kerak"
     })
+    .nullable()
     .optional(),
   phone: z.string().optional(),
   region: z.enum(['UZB', 'KOR']),
