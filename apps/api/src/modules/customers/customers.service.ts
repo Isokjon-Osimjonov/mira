@@ -361,7 +361,7 @@ export async function assignCoupon(customerId: string, couponId: string) {
 
 export async function createWalkInCustomer(params: {
   firstName: string
-  lastName?: string
+  lastName?: string | null
   phone?: string
   region: 'UZB' | 'KOR'
   note?: string
