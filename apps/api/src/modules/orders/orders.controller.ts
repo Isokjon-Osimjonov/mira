@@ -199,6 +199,8 @@ export async function downloadInvoice(req: Request, res: Response) {
         unitPriceSnapshot: orderItems.unitPriceSnapshot,
         subtotalSnapshot: orderItems.subtotalSnapshot,
         isWholesale: sql<boolean>`${orderItems.quantity} >= ${productRegionalConfigs.minWholesaleQty}`,
+        retailPrice: productRegionalConfigs.retailPrice,
+        wholesalePrice: productRegionalConfigs.wholesalePrice,
       })
       .from(orderItems)
       .innerJoin(products, eq(orderItems.productId, products.id))
@@ -238,45 +240,44 @@ export async function downloadInvoice(req: Request, res: Response) {
       isWholesale: item.isWholesale ?? false,
       hasCoupon: (order.discountAmount ?? 0n) > 0n,
       imageUrl: item.product.imageUrls?.[0] ?? undefined,
+      retailPrice: item.retailPrice,
+      wholesalePrice: item.wholesalePrice,
     }))
 
-    const { generateInvoicePDF } = await import('../../lib/invoice')
-    await generateInvoicePDF(
-      {
-        order: {
-          orderNumber: order.orderNumber,
-          createdAt: order.createdAt,
-          paymentConfirmedAt: order.paymentConfirmedAt ?? undefined,
-          status: order.status,
-          subtotal: order.subtotal ?? order.totalAmount,
-          couponDiscount: order.discountAmount ?? 0n,
-          orderDiscount: BigInt(order.orderDiscountFlat ?? 0),
-          orderDiscountPct: order.orderDiscountPct ?? undefined,
-          cargoFee: order.cargoFee ?? 0n,
-          totalAmount: order.totalAmount,
-          couponCode: redemption?.code ?? undefined,
-          regionCode: order.deliveryRegion ?? 'KOR',
-        },
-        items: invoiceItems,
-        customer: {
-          firstName: customer.firstName,
-          lastName: customer.lastName,
-          phone: customer.phone,
-        },
-        delivery: {
-          fullName: order.deliveryFullName ?? customer.firstName,
-          phone: order.deliveryPhone ?? customer.phone,
-          addressLine1: order.deliveryAddressLine1 ?? '',
-          addressLine2: order.deliveryAddressLine2,
-          city: order.deliveryCity,
-          province: null, // Not snapshotted in orders table
-          postalCode: order.deliveryPostalCode,
-          regionCode: order.deliveryRegion ?? 'KOR',
-        },
-        exchangeRate: rate ? { krwToUzs: Number(rate.krwToUzs) } : undefined,
-      },
-      res
-    )
+    const { generateInvoiceHtml } = await import('../../lib/invoice')
+    const invoiceHtml = generateInvoiceHtml({
+      orderNumber: order.orderNumber,
+      createdAt: order.createdAt,
+      regionCode: order.deliveryRegion as 'KOR' | 'UZB',
+      customerName: `${customer.firstName} ${customer.lastName ?? ''}`.trim(),
+      customerPhone: customer.phone,
+      deliveryAddress: [
+        order.deliveryAddressLine1,
+        order.deliveryAddressLine2,
+        order.deliveryCity,
+      ].filter(Boolean).join(', '),
+      subtotal: order.subtotal ?? order.totalAmount,
+      cargoFee: order.cargoFee ?? 0,
+      boxCostKrw: order.boxCostKrw ?? 0,
+      totalAmount: order.totalAmount,
+      discountAmount: order.discountAmount ?? 0,
+      couponCode: redemption?.code ?? null,
+      items: invoiceItems.map(item => ({
+        name: item.productName,
+        brandName: item.brandName,
+        barcode: item.barcode,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        subtotal: item.subtotal,
+        retailPrice: item.retailPrice,
+        wholesalePrice: item.wholesalePrice,
+        isWholesale: item.isWholesale,
+      }))
+    })
+
+    res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'unsafe-inline'; style-src 'unsafe-inline';")
+    res.setHeader('Content-Type', 'text/html')
+    return res.send(invoiceHtml)
   } catch (e: any) {
     if (!res.headersSent) {
       res.status(e.status ?? 500).json({

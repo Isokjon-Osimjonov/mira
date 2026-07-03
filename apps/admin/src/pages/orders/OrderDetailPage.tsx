@@ -26,6 +26,7 @@ import {
 } from '../../constants/order-transitions'
 import { StatusBadge } from '../../components/ui/status-badge'
 import { ConfirmDialog } from '../../components/shared/ConfirmDialog'
+import { OrderStatusBadge } from '@/components/orders/OrderStatusBadge'
 import { EmptyState } from '../../components/shared/EmptyState'
 import { formatKRW, formatUZS } from '../../utils/currency'
 import { formatDateTime } from '../../utils/date'
@@ -193,16 +194,10 @@ export function OrderDetailPage({ id }: Props) {
 
   const [invoiceLoading, setInvoiceLoading] = useState(false)
 
-  const handleInvoiceDownload = async () => {
-    setInvoiceLoading(true)
-    try {
-      await ordersApi.downloadInvoice(id)
-      toast.success('Invoice yuklab olindi')
-    } catch {
-      toast.error('Invoice yuklab olinmadi')
-    } finally {
-      setInvoiceLoading(false)
-    }
+  const handleInvoiceDownload = () => {
+    const token = useAuthStore.getState().accessToken
+    const base = (import.meta.env.VITE_API_URL || '').replace('/api/v1', '')
+    window.open(`${base}/api/v1/admin/orders/${id}/invoice?token=${token}`, '_blank')
   }
 
   // ── Status update mutation ─────────────────────────────

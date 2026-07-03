@@ -1,402 +1,397 @@
-import PDFDocument from 'pdfkit'
-import axios from 'axios'
-import { Response } from 'express'
+import { format } from 'date-fns'
 
 interface InvoiceItem {
-  productName: string
-  brandName: string
-  barcode: string
-  sku: string
+  name: string
+  brandName?: string | null
+  barcode?: string | null
   quantity: number
-  unitPrice: bigint // KRW
-  subtotal: bigint // KRW
+  unitPrice: bigint | string | number
+  subtotal: bigint | string | number
+  retailPrice?: bigint | string | number | null
+  wholesalePrice?: bigint | string | number | null
   isWholesale: boolean
-  hasCoupon: boolean // if coupon applied to this item
-  imageUrl?: string // Cloudinary URL (may be empty)
 }
 
 interface InvoiceData {
-  order: {
-    orderNumber: string
-    createdAt: Date
-    paymentConfirmedAt?: Date
-    status: string
-    subtotal: bigint // before discounts + cargo
-    couponDiscount: bigint // from coupon
-    orderDiscount: bigint // manual order level discount
-    orderDiscountPct?: number // if percentage discount
-    cargoFee: bigint
-    totalAmount: bigint // final total
-    couponCode?: string // if coupon used
-    regionCode: string // UZB or KOR
-  }
+  orderNumber: string
+  createdAt: Date | string
+  regionCode: 'KOR' | 'UZB'
+  customerName: string
+  customerPhone: string
+  deliveryAddress: string
+  subtotal: bigint | string | number
+  cargoFee: bigint | string | number
+  boxCostKrw?: bigint | string | number | null
+  totalAmount: bigint | string | number
+  discountAmount?: bigint | string | number | null
+  couponCode?: string | null
   items: InvoiceItem[]
-  customer: { firstName: string; lastName?: string | null; phone: string }
-  delivery: {
-    fullName: string
-    phone: string
-    addressLine1: string
-    addressLine2?: string | null
-    city?: string | null
-    province?: string | null
-    postalCode?: string | null
-    regionCode: string
-  }
-  exchangeRate?: { krwToUzs: number }
 }
 
-// ── ASYNC image loader ──────────────────
-
-async function loadImageBuffer(url: string): Promise<Buffer | null> {
-  if (!url) return null
-  try {
-    const res = await axios.get(url, {
-      responseType: 'arraybuffer',
-      timeout: 5000,
-      headers: { 'User-Agent': 'MiraInvoice/1.0' },
-    })
-    return Buffer.from(res.data)
-  } catch {
-    return null
-  }
+function formatPrice(
+  amount: bigint | string | number,
+  region: 'KOR' | 'UZB'
+): string {
+  const num = Math.round(Number(amount))
+  // Both regions show KRW since all price
+  // snapshots are stored in KRW
+  return `₩${num.toLocaleString('ko-KR')}`
 }
 
-// ── Draw rounded image ──────────────────
-
-function drawRoundedImage(
-  doc: PDFKit.PDFDocument,
-  buffer: Buffer,
-  x: number,
-  y: number,
-  size: number,
-  radius: number = 4
-): void {
-  doc
-    .save()
-    .roundedRect(x, y, size, size, radius)
-    .clip()
-    .image(buffer, x, y, { width: size, height: size, cover: [size, size] })
-    .restore()
-}
-
-// ── Draw placeholder (when no image) ───
-
-function drawImagePlaceholder(doc: PDFKit.PDFDocument, x: number, y: number, size: number): void {
-  doc.save().roundedRect(x, y, size, size, 4).fillAndStroke('#f0f0f0', '#e0e0e0').restore()
-  // Camera icon text
-  doc
-    .fillColor('#cccccc')
-    .fontSize(8)
-    .text('📷', x, y + size / 2 - 5, { width: size, align: 'center' })
-}
-
-// ── MAIN FUNCTION (now ASYNC) ───────────
-
-export async function generateInvoicePDF(data: InvoiceData, res: Response): Promise<void> {
-  // Pre-load all product images BEFORE starting PDF
-  const imageBuffers: (Buffer | null)[] = await Promise.all(
-    data.items.map((item) =>
-      item.imageUrl ? loadImageBuffer(item.imageUrl) : Promise.resolve(null)
-    )
+export function generateInvoiceHtml(
+  data: InvoiceData
+): string {
+  const dateStr = format(
+    new Date(data.createdAt),
+    'dd.MM.yyyy HH:mm'
   )
+  const region = data.regionCode
 
-  const doc = new PDFDocument({
-    size: 'A4',
-    margin: 50,
-    info: {
-      Title: `Invoice ${data.order.orderNumber}`,
-      Author: 'Mira Cosmetics',
-    },
-  })
+  // Calculate retail sum for savings display
+  const retailSum = data.items.reduce((acc, item) => {
+    const retail = item.retailPrice
+      ? BigInt(Math.round(Number(item.retailPrice)))
+      : BigInt(Math.round(Number(item.unitPrice)))
+    return acc + retail * BigInt(item.quantity)
+  }, 0n)
 
-  res.setHeader('Content-Type', 'application/pdf')
-  res.setHeader(
-    'Content-Disposition',
-    `attachment; filename="invoice-${data.order.orderNumber}.pdf"`
-  )
-  doc.pipe(res)
+  const wholesaleSavings =
+    retailSum - BigInt(Math.round(Number(data.subtotal)))
+  const couponSavings =
+    BigInt(Math.round(Number(data.discountAmount || 0)))
+  const totalSavings = wholesaleSavings + couponSavings
 
-  const PINK = '#E11D74'
-  const DARK = '#1a1a1a'
-  const GRAY = '#666666'
-  const LG = '#f5f5f5'
-  const LINE = '#e0e0e0'
-  const W = 495 // usable width (595 - 50*2)
-  const IMG = 36 // product thumbnail size
+  const itemsHtml = data.items.map(item => {
+    const unitPrice =
+      BigInt(Math.round(Number(item.unitPrice)))
+    const retailPrice = item.retailPrice
+      ? BigInt(Math.round(Number(item.retailPrice)))
+      : null
+    const hasDiscount =
+      retailPrice !== null && retailPrice > unitPrice
 
-  // Helper: format money
-  const fmtKRW = (n: bigint) => `₩${Number(n).toLocaleString()}`
-  const fmtUZS = (n: bigint, rate: number) =>
-    `${Math.round(Number(n) * rate).toLocaleString()} so'm`
-  const isUZB = data.order.regionCode === 'UZB'
+    return `
+    <tr style="border-bottom:0.5px solid #eee;">
+      <td style="padding:8px;text-align:left;">
+        <div style="font-size:12px;font-weight:500;
+          color:#000;">${item.name}</div>
+        <div style="font-size:10px;color:#888;">
+          ${item.brandName ?? ''}
+          ${item.barcode ? `• ${item.barcode}` : ''}
+        </div>
+      </td>
+      <td style="padding:8px;text-align:center;
+        font-size:12px;">${item.quantity}</td>
+      <td style="padding:8px;text-align:right;
+        font-size:12px;">
+        ${hasDiscount
+          ? `<div style="font-size:10px;color:#888;
+              text-decoration:line-through;">
+              ${formatPrice(retailPrice!, region)}
+             </div>`
+          : ''}
+        <div>${formatPrice(item.unitPrice, region)}</div>
+        ${item.isWholesale
+          ? `<div style="font-size:9px;
+              color:#16a34a;font-weight:500;">
+              (ulgurji)</div>`
+          : ''}
+      </td>
+      <td style="padding:8px;text-align:right;
+        font-size:12px;font-weight:500;">
+        ${formatPrice(item.subtotal, region)}
+      </td>
+    </tr>`
+  }).join('')
 
-  // ── HEADER ────────────────────────────
-  doc.rect(50, 45, W, 65).fill(PINK)
-
-  doc.fillColor('white').font('Helvetica-Bold').fontSize(20).text('MIRA COSMETICS', 65, 57)
-  doc.font('Helvetica').fontSize(9).text('miracosmetics.uz  |  @mira_cosmetics_bot', 65, 82)
-
-  // Right side
-  const orderDate = (data.order.paymentConfirmedAt ?? data.order.createdAt).toLocaleDateString(
-    'uz-Latn-UZ',
-    {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
+  return `<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+    content="width=device-width,initial-scale=1.0">
+  <title>Hisob-faktura ${data.orderNumber}</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #f0f0f0;
+      font-family: system-ui,-apple-system,sans-serif;
+      color: #333; line-height: 1.4;
     }
-  )
-  doc
-    .font('Helvetica-Bold')
-    .fontSize(11)
-    .text('HISOB-FAKTURA', 350, 57, { align: 'right', width: 195 })
-  doc
-    .font('Helvetica')
-    .fontSize(9)
-    .text(`#${data.order.orderNumber}`, 350, 73, { align: 'right', width: 195 })
-    .text(orderDate, 350, 86, { align: 'right', width: 195 })
-
-  // ── CUSTOMER + DELIVERY (2 columns) ──
-  let y = 130
-  const COL1 = 50
-  const COL2 = 310
-
-  // Section labels
-  doc
-    .fillColor(PINK)
-    .font('Helvetica-Bold')
-    .fontSize(8)
-    .text('MIJOZ:', COL1, y)
-    .text('YETKAZISH BERISH:', COL2, y)
-
-  y += 14
-  // Customer
-  doc
-    .fillColor(DARK)
-    .font('Helvetica-Bold')
-    .fontSize(10)
-    .text(`${data.customer.firstName} ${data.customer.lastName ?? ''}`, COL1, y)
-  doc
-    .font('Helvetica')
-    .fontSize(9)
-    .fillColor(GRAY)
-    .text(data.customer.phone, COL1, y + 14)
-
-  // Delivery address
-  doc.fillColor(DARK).font('Helvetica-Bold').fontSize(10).text(data.delivery.fullName, COL2, y)
-  doc.font('Helvetica').fontSize(9).fillColor(GRAY)
-  let addrY = y + 14
-  doc.text(data.delivery.phone, COL2, addrY)
-  addrY += 12
-  doc.text(data.delivery.addressLine1, COL2, addrY, { width: 235 })
-  addrY += 12
-  if (data.delivery.city || data.delivery.province) {
-    doc.text([data.delivery.province, data.delivery.city].filter(Boolean).join(', '), COL2, addrY)
-    addrY += 12
-  }
-  if (data.delivery.postalCode) {
-    doc.text(data.delivery.postalCode, COL2, addrY)
-  }
-
-  // ── DIVIDER ──────────────────────────
-  y = 215
-  doc.moveTo(50, y).lineTo(545, y).strokeColor(LINE).lineWidth(1).stroke()
-
-  // ── ITEMS TABLE HEADER ───────────────
-  y += 12
-  const NAME_COL = 97
-  const QTY_COL = 360
-  const PRICE_COL = 400
-  const TOTAL_COL = 450
-
-  doc.rect(50, y, W, 22).fill(PINK)
-  doc
-    .fillColor('white')
-    .font('Helvetica-Bold')
-    .fontSize(8)
-    .text('MAHSULOT', NAME_COL, y + 7)
-    .text('MIQDOR', QTY_COL, y + 7, { width: 40, align: 'center' })
-    .text(isUZB ? 'NARX (UZS)' : 'NARX (KRW)', PRICE_COL, y + 7, { width: 50, align: 'right' })
-    .text(isUZB ? 'JAMI (UZS)' : 'JAMI (KRW)', TOTAL_COL, y + 7, { width: 90, align: 'right' })
-  y += 22
-
-  // ── ITEMS ─────────────────────────────
-  for (let i = 0; i < data.items.length; i++) {
-    const item = data.items[i]
-    const ROW_H = 46
-
-    // Alternate bg
-    if (i % 2 === 0) {
-      doc.rect(50, y, W, ROW_H).fill(LG)
+    .invoice-page {
+      width: 210mm; min-height: 297mm;
+      margin: 20px auto; background: #fff;
+      padding: 15mm 20mm;
+      display: flex; flex-direction: column;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
     }
-
-    // Product image (40x40 with rounded corners)
-    const buf = imageBuffers[i]
-    if (buf) {
-      drawRoundedImage(doc, buf, COL1, y + 4, IMG, 4)
-    } else {
-      drawImagePlaceholder(doc, COL1, y + 4, IMG)
+    @media print {
+      @page { size: A4 portrait; margin: 15mm 20mm; }
+      body { background: #fff; }
+      .invoice-page {
+        box-shadow: none; margin: 0;
+        width: 100%; min-height: auto; padding: 0;
+      }
+      .no-print { display: none !important; }
+      body {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
     }
-
-    // Product name
-    doc
-      .fillColor(DARK)
-      .font('Helvetica-Bold')
-      .fontSize(9)
-      .text(item.productName, NAME_COL, y + 6, { width: 255 })
-
-    // Barcode + tags
-    let tagX = NAME_COL
-    const tagY = y + 20
-    doc.font('Helvetica').fontSize(7).fillColor(GRAY).text(`${item.barcode}`, tagX, tagY)
-
-    // Wholesale badge
-    if (item.isWholesale) {
-      tagX += 70
-      doc.roundedRect(tagX, tagY - 1, 35, 10, 2).fill('#FFF0F7')
-      doc
-        .fillColor(PINK)
-        .font('Helvetica-Bold')
-        .fontSize(6)
-        .text('ULGUJI', tagX + 3, tagY + 1)
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 24px;
     }
-
-    // Coupon badge
-    if (item.hasCoupon) {
-      tagX += item.isWholesale ? 42 : 70
-      doc.roundedRect(tagX, tagY - 1, 38, 10, 2).fill('#F0FFF4')
-      doc
-        .fillColor('#16a34a')
-        .font('Helvetica-Bold')
-        .fontSize(6)
-        .text('KUPON', tagX + 3, tagY + 1)
+    .brand-name {
+      font-size: 18px; font-weight: 700;
+      color: #7C3AED; letter-spacing: -0.5px;
     }
+    .brand-url { font-size: 10px; color: #888; }
+    .invoice-title {
+      font-size: 13px; font-weight: 600;
+      text-align: right;
+    }
+    .invoice-meta {
+      font-size: 10px; color: #888;
+      text-align: right;
+    }
+    .divider { border-top: 0.5px solid #e0e0e0; }
+    .customer-delivery {
+      display: flex;
+      justify-content: space-between;
+      padding: 12px 0; margin-bottom: 4px;
+    }
+    .section-label {
+      font-size: 9px; color: #888;
+      text-transform: uppercase;
+      letter-spacing: 0.5px; margin-bottom: 4px;
+    }
+    .customer-name {
+      font-size: 12px; font-weight: 600;
+      margin-bottom: 2px;
+    }
+    .detail { font-size: 10px; color: #888; }
+    .delivery-address {
+      font-size: 10px; color: #888;
+      max-width: 200px; text-align: right;
+    }
+    .products-table {
+      width: 100%; border-collapse: collapse;
+      margin: 16px 0;
+    }
+    .products-table th {
+      font-size: 9px; color: #888;
+      text-transform: uppercase;
+      padding: 6px 8px; font-weight: 500;
+      border-top: 0.5px solid #e0e0e0;
+      border-bottom: 0.5px solid #e0e0e0;
+      background: #fafafa;
+    }
+    .totals {
+      display: flex; flex-direction: column;
+      align-items: flex-end;
+      gap: 5px; margin-top: 8px;
+      padding-right: 8px;
+    }
+    .total-row {
+      display: flex; justify-content: space-between;
+      width: 230px; font-size: 11px;
+    }
+    .total-row.main {
+      font-size: 14px; font-weight: 700;
+      color: #7C3AED;
+      border-top: 1.5px solid #7C3AED;
+      padding-top: 8px; margin-top: 4px;
+    }
+    .savings { color: #16a34a; }
+    .footer {
+      margin-top: auto;
+      border-top: 0.5px solid #e0e0e0;
+      padding-top: 14px;
+      display: flex; justify-content: space-between;
+    }
+    .footer-brand {
+      font-size: 11px; font-weight: 600;
+      color: #7C3AED; margin-bottom: 4px;
+    }
+    .footer-detail {
+      font-size: 10px; color: #888;
+      margin-bottom: 2px;
+    }
+    .footer-thanks {
+      font-size: 10px; color: #888;
+      font-style: italic; text-align: center;
+      margin-top: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="no-print" style="text-align:center;
+    padding:16px 0 20px;display:flex;gap:8px;
+    justify-content:center;">
+    <button onclick="window.print()" style="
+      padding:8px 20px;font-size:12px;
+      font-weight:500;cursor:pointer;
+      border:none;background:#7C3AED;
+      color:#fff;border-radius:6px;">
+      🖨️ Chop etish
+    </button>
+    <button onclick="window.print()" style="
+      padding:8px 20px;font-size:12px;
+      font-weight:500;cursor:pointer;
+      border:1px solid #7C3AED;
+      background:#fff;color:#7C3AED;
+      border-radius:6px;">
+      📥 PDF saqlash
+    </button>
+  </div>
 
-    // Quantity
-    doc
-      .fillColor(DARK)
-      .font('Helvetica')
-      .fontSize(9)
-      .text(item.quantity.toString(), QTY_COL, y + 14, { width: 40, align: 'center' })
+  <div class="invoice-page">
+    <div class="header">
+      <div>
+        <div class="brand-name">Mira Market</div>
+        <div class="brand-url">miramarket.uz</div>
+      </div>
+      <div>
+        <div class="invoice-title">
+          Hisob-faktura
+        </div>
+        <div class="invoice-meta">
+          № ${data.orderNumber}
+        </div>
+        <div class="invoice-meta">${dateStr}</div>
+      </div>
+    </div>
 
-    // Prices
-    const unitDisplay =
-      isUZB && data.exchangeRate
-        ? fmtUZS(item.unitPrice, data.exchangeRate.krwToUzs)
-        : fmtKRW(item.unitPrice)
-    const totalDisplay =
-      isUZB && data.exchangeRate
-        ? fmtUZS(item.subtotal, data.exchangeRate.krwToUzs)
-        : fmtKRW(item.subtotal)
+    <div class="divider"></div>
 
-    doc
-      .fillColor(DARK)
-      .font('Helvetica')
-      .fontSize(9)
-      .text(unitDisplay, PRICE_COL, y + 14, { width: 50, align: 'right' })
-    doc.font('Helvetica-Bold').text(totalDisplay, TOTAL_COL, y + 14, { width: 90, align: 'right' })
+    <div class="customer-delivery">
+      <div>
+        <div class="section-label">MIJOZ</div>
+        <div class="customer-name">
+          ${data.customerName}
+        </div>
+        <div class="detail">${data.customerPhone}</div>
+        <div class="detail">
+          ${region === 'KOR'
+            ? '🇰🇷 Koreya' : "🇺🇿 O'zbekiston"}
+        </div>
+      </div>
+      <div>
+        <div class="section-label">
+          YETKAZIB BERISH
+        </div>
+        <div class="delivery-address">
+          ${data.deliveryAddress}
+        </div>
+      </div>
+    </div>
 
-    y += ROW_H
-  }
+    <div class="divider" style="margin-bottom:4px;">
+    </div>
 
-  // ── TOTALS ────────────────────────────
-  y += 8
-  doc.moveTo(320, y).lineTo(545, y).strokeColor(LINE).stroke()
-  y += 8
+    <table class="products-table">
+      <thead>
+        <tr>
+          <th style="text-align:left;">MAHSULOT</th>
+          <th style="text-align:center;width:55px;">
+            MIQDOR</th>
+          <th style="text-align:right;width:110px;">
+            NARX</th>
+          <th style="text-align:right;width:110px;">
+            JAMI</th>
+        </tr>
+      </thead>
+      <tbody>${itemsHtml}</tbody>
+    </table>
 
-  const totalRowKRW = (label: string, val: bigint, color = GRAY) => {
-    const display =
-      isUZB && data.exchangeRate ? fmtUZS(val, data.exchangeRate.krwToUzs) : fmtKRW(val)
-    doc.fillColor(color).font('Helvetica').fontSize(9).text(label, 320, y, { width: 135 })
-    doc.text(display, 455, y, { width: 90, align: 'right' })
-    y += 16
-  }
+    <div class="totals">
 
-  // Subtotal (before discounts)
-  const itemsSubtotal = data.order.subtotal + data.order.couponDiscount + data.order.orderDiscount
-  totalRowKRW('Mahsulotlar jami:', itemsSubtotal)
+      ${wholesaleSavings > 0n ? `
+      <div class="total-row">
+        <span>Chakana jami</span>
+        <span>${formatPrice(retailSum, region)}</span>
+      </div>
+      <div class="total-row savings">
+        <span>Ulgurji chegirma</span>
+        <span>−${formatPrice(
+          wholesaleSavings, region)}</span>
+      </div>` : ''}
 
-  // Coupon discount
-  if (data.order.couponDiscount > 0n) {
-    const couponLabel = data.order.couponCode
-      ? `Kupon (${data.order.couponCode}):`
-      : 'Kupon chegirma:'
-    totalRowKRW(couponLabel, -data.order.couponDiscount, '#16a34a')
-  }
+      <div class="total-row">
+        <span>Mahsulotlar jami</span>
+        <span>${formatPrice(
+          data.subtotal, region)}</span>
+      </div>
 
-  // Order level discount
-  if (data.order.orderDiscount > 0n) {
-    const discLabel = data.order.orderDiscountPct
-      ? `Chegirma (${data.order.orderDiscountPct}%):`
-      : "Qo'shimcha chegirma:"
-    totalRowKRW(discLabel, -data.order.orderDiscount, '#16a34a')
-  }
+      ${data.couponCode && couponSavings > 0n ? `
+      <div class="total-row savings">
+        <span>Kupon (${data.couponCode})</span>
+        <span>−${formatPrice(
+          couponSavings, region)}</span>
+      </div>` : ''}
 
-  // Cargo
-  if (data.order.cargoFee > 0n) {
-    totalRowKRW('Yetkazish:', data.order.cargoFee, GRAY)
-  } else {
-    doc
-      .fillColor('#16a34a')
-      .font('Helvetica')
-      .fontSize(9)
-      .text('Yetkazish:', 320, y, { width: 135 })
-      .text('BEPUL', 455, y, { width: 90, align: 'right' })
-    y += 16
-  }
+      ${Number(data.cargoFee) > 0 ? `
+      <div class="total-row">
+        <span>${region === 'KOR'
+          ? 'Yetkazib berish'
+          : 'Kargo'}</span>
+        <span>${formatPrice(
+          data.cargoFee, region)}</span>
+      </div>` : ''}
 
-  // Total line
-  doc.moveTo(320, y).lineTo(545, y).strokeColor(PINK).lineWidth(1.5).stroke()
-  y += 6
-  doc.fillColor(DARK).font('Helvetica-Bold').fontSize(11).text('JAMI:', 320, y, { width: 135 })
-  const totalDisplay =
-    isUZB && data.exchangeRate
-      ? fmtUZS(data.order.totalAmount, data.exchangeRate.krwToUzs)
-      : fmtKRW(data.order.totalAmount)
-  doc
-    .fillColor(PINK)
-    .font('Helvetica-Bold')
-    .fontSize(11)
-    .text(totalDisplay, 455, y, { width: 90, align: 'right' })
-  y += 18
+      ${data.boxCostKrw
+        && Number(data.boxCostKrw) > 0 ? `
+      <div class="total-row">
+        <span>Quti narxi</span>
+        <span>${formatPrice(
+          data.boxCostKrw, region)}</span>
+      </div>` : ''}
 
-  // Dual currency (KOR customers → show UZS equivalent, UZB → show KRW)
-  if (isUZB && data.exchangeRate) {
-    doc
-      .fillColor(GRAY)
-      .font('Helvetica')
-      .fontSize(8)
-      .text(
-        `= ${fmtKRW(data.order.totalAmount)} (kurs: 1₩ = ${data.exchangeRate.krwToUzs} so'm)`,
-        320,
-        y,
-        {
-          width: 225,
-          align: 'right',
-        }
-      )
-    y += 14
-  }
+      <div class="total-row main">
+        <span>JAMI TO'LOV</span>
+        <span>${formatPrice(
+          data.totalAmount, region)}</span>
+      </div>
 
-  // ── FOOTER ────────────────────────────
-  const FOOTER_Y = 760 // A4 bottom area
-  doc.moveTo(50, FOOTER_Y).lineTo(545, FOOTER_Y).strokeColor(LINE).lineWidth(0.5).stroke()
+      ${totalSavings > 0n ? `
+      <div class="total-row savings" style="
+        font-weight:500;
+        border-top:0.5px dashed #16a34a;
+        padding-top:5px;margin-top:2px;">
+        <span>✨ Tejadingiz</span>
+        <span>${formatPrice(
+          totalSavings, region)}</span>
+      </div>` : ''}
+    </div>
 
-  doc
-    .fillColor(GRAY)
-    .font('Helvetica-Bold')
-    .fontSize(8)
-    .text('Mira Cosmetics', 50, FOOTER_Y + 8)
-  doc
-    .font('Helvetica')
-    .fontSize(8)
-    .text('miracosmetics.uz', 50, FOOTER_Y + 19)
-    .text('@mira_cosmetics_bot', 50, FOOTER_Y + 30)
+    <div class="footer">
+      <div>
+        <div class="footer-brand">Mira Market</div>
+        <div class="footer-detail">DI COSMETICS</div>
+        <div class="footer-detail">
+          서울특별시 양천구 가로공원로71길 2, 1층
+        </div>
+        <div class="footer-detail">
+          Ro'yxat: 472-41-01304
+        </div>
+      </div>
+      <div style="text-align:right;">
+        <div class="footer-detail">
+          miramarket.uz
+        </div>
+        <div class="footer-detail">
+          Telegram: @mira_cosmetics_bot
+        </div>
+      </div>
+    </div>
 
-  doc
-    .fillColor(PINK)
-    .font('Helvetica-Bold')
-    .fontSize(9)
-    .text('Xaridingiz uchun rahmat! 🌸', 0, FOOTER_Y + 19, { align: 'center', width: 595 })
-
-  doc.end()
+    <div class="footer-thanks">
+      Xaridingiz uchun rahmat! 🌸
+    </div>
+  </div>
+</body>
+</html>`
 }

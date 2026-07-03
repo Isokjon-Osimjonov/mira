@@ -46,10 +46,14 @@ const forbidden = (res: Response, message = 'Forbidden') =>
 
 // ─── Middleware: require any valid JWT ────────────────────────
 export function requireAuth(req: Request, res: Response, next: NextFunction) {
+  let token = req.query.token as string
   const header = req.headers.authorization
-  if (!header?.startsWith('Bearer ')) return unauthorized(res)
+  if (header?.startsWith('Bearer ')) {
+    token = header.slice(7)
+  }
 
-  const token = header.slice(7)
+  if (!token) return unauthorized(res)
+
   try {
     req.user = jwt.verify(token, env.JWT_SECRET) as JwtPayload
     next()
