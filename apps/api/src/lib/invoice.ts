@@ -10,6 +10,7 @@ interface InvoiceItem {
   retailPrice?: bigint | string | number | null
   wholesalePrice?: bigint | string | number | null
   isWholesale: boolean
+  imageUrl?: string | null
 }
 
 interface InvoiceData {
@@ -72,12 +73,37 @@ export function generateInvoiceHtml(
 
     return `
     <tr style="border-bottom:0.5px solid #eee;">
-      <td style="padding:8px;text-align:left;">
-        <div style="font-size:12px;font-weight:500;
-          color:#000;">${item.name}</div>
-        <div style="font-size:10px;color:#888;">
-          ${item.brandName ?? ''}
-          ${item.barcode ? `• ${item.barcode}` : ''}
+      <td style="padding:6px 8px;">
+        <div style="display:flex;align-items:center;
+          gap:8px;">
+          ${item.imageUrl ? `
+            <img
+              src="${item.imageUrl}"
+              width="36" height="36"
+              style="border-radius:4px;
+                object-fit:cover;
+                flex-shrink:0;
+                background:#f5f5f5;"
+              onerror="this.onerror=null;
+                this.style.background='#ede9fe';
+                this.src='';"
+            />` : `
+            <div style="width:36px;height:36px;
+              border-radius:4px;
+              background:#ede9fe;
+              flex-shrink:0;">
+            </div>`}
+          <div>
+            <div style="font-size:12px;
+              font-weight:500;color:#000;">
+              ${item.name}
+            </div>
+            <div style="font-size:10px;color:#888;">
+              ${item.brandName ?? ''}
+              ${item.barcode
+                ? `• ${item.barcode}` : ''}
+            </div>
+          </div>
         </div>
       </td>
       <td style="padding:8px;text-align:center;

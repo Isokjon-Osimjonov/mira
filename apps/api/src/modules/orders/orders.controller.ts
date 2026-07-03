@@ -272,6 +272,7 @@ export async function downloadInvoice(req: Request, res: Response) {
         retailPrice: item.retailPrice,
         wholesalePrice: item.wholesalePrice,
         isWholesale: item.isWholesale,
+        imageUrl: item.imageUrl ?? null,
       }))
     })
 
