@@ -235,6 +235,7 @@ export function KupunlarPage() {
         code: data.code.toUpperCase(),
         startsAt: data.startsAt ? new Date(data.startsAt).toISOString() : null,
         expiresAt: data.expiresAt ? new Date(data.expiresAt).toISOString() : null,
+        regionCode: data.regionCode || null,
       } as any
       return editTarget ? couponsApi.update(editTarget.id, payload) : couponsApi.create(payload)
     },
@@ -550,11 +551,7 @@ export function KupunlarPage() {
                         </td>
                         <td className="px-4 py-3 text-center hidden lg:table-cell">
                           <span className="text-[11px] text-muted-foreground">
-                            {c.regionCode === 'KOR'
-                              ? '🇰🇷 KOR'
-                              : c.regionCode === 'UZB'
-                                ? '🇺🇿 UZB'
-                                : '🌍 Barchasi'}
+                            {!c.regionCode || c.regionCode === 'all' ? '🌍 Barchasi' : c.regionCode === 'KOR' ? '🇰🇷 Koreya' : c.regionCode === 'UZB' ? "🇺🇿 O'zbekiston" : c.regionCode}
                           </span>
                         </td>
                         <td className="px-4 py-3 text-center hidden lg:table-cell">

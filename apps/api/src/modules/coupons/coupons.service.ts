@@ -288,6 +288,7 @@ export async function getCoupons(query: {
       maxUsesTotal: coupons.maxUsesTotal,
       expiresAt: coupons.expiresAt,
       createdAt: coupons.createdAt,
+      regionCode: coupons.regionCode,
     })
     .from(coupons)
     .where(where)
@@ -494,10 +495,10 @@ export async function getAvailableCoupons(customerId: string, regionCode: string
       and(
         eq(coupons.status, 'ACTIVE'),
         eq(coupons.isPromotional, true),
-        sql`${coupons.startsAt} IS NULL OR ${coupons.startsAt} <= NOW()`,
-        sql`${coupons.expiresAt} IS NULL OR ${coupons.expiresAt} >= NOW()`,
-        sql`${coupons.regionCode} IS NULL OR ${coupons.regionCode} = ${regionCode || ''}`,
-        sql`${coupons.maxUsesTotal} IS NULL OR ${coupons.usageCount} < ${coupons.maxUsesTotal}`
+        sql`(${coupons.startsAt} IS NULL OR ${coupons.startsAt} <= NOW())`,
+        sql`(${coupons.expiresAt} IS NULL OR ${coupons.expiresAt} >= NOW())`,
+        sql`(${coupons.regionCode} IS NULL OR ${coupons.regionCode} = ${regionCode || ''})`,
+        sql`(${coupons.maxUsesTotal} IS NULL OR ${coupons.usageCount} < ${coupons.maxUsesTotal})`
       )
     )
 
