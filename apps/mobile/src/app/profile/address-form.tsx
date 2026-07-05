@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import {
   View,
   Text,
@@ -21,13 +21,7 @@ import PrimaryButton from '../../components/ui/PrimaryButton'
 
 const FieldError = ({ message }: { message?: string }) =>
   message ? (
-    <Text style={{
-      color: tokens.colors.error,
-      fontSize: 12,
-      marginTop: -8,
-      marginBottom: 12,
-      marginLeft: 2
-    }}>
+    <Text style={styles.fieldError}>
       {message}
     </Text>
   ) : null
@@ -38,6 +32,7 @@ export default function AddressFormScreen() {
     editData?: string
   }>()
   const queryClient = useQueryClient()
+  const scrollViewRef = useRef<ScrollView>(null)
 
   const [regionCode, setRegionCode] = useState<'UZB' | 'KOR'>('KOR')
   const [form, setForm] = useState({
@@ -110,31 +105,74 @@ export default function AddressFormScreen() {
     }))
     setJusoQuery('')
     setJusoResults([])
+    
+    // Clear errors for fields auto-filled
+    setErrors(prev => ({ ...prev, postalCode: '', addressLine1: '' }))
   }
 
-  const validateForm = () => {
+  const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {}
     const nameRegex = /^[\p{L}\s'\-]+$/u
-    if (!nameRegex.test(form.fullName)) {
+    const korPhoneRegex = /^\+82[0-9]{9,10}$/
+    const uzbPhoneRegex = /^\+998[0-9]{9}$/
+
+    // Recipient name
+    if (!form.fullName.trim()) {
+      newErrors.fullName = "Qabul qiluvchi ismini kiriting"
+    } else if (!nameRegex.test(form.fullName.trim())) {
       newErrors.fullName = "Ism faqat harflardan iborat bo'lishi kerak"
-    }
-    if (form.addressLine1.length < 5) {
-      newErrors.addressLine1 = "Manzil kamida 5 ta belgidan iborat bo'lishi kerak"
+    } else if (form.fullName.trim().length < 2) {
+      newErrors.fullName = "Ism kamida 2 ta belgidan iborat bo'lishi kerak"
     }
 
-    if (regionCode === 'KOR') {
-      if (!/^\+82[0-9]{9,10}$/.test(form.phone)) {
-        newErrors.phone = "Koreya raqami: +82XXXXXXXXX"
-      }
-      if (form.postalCode && !/^[0-9]{5}$/.test(form.postalCode)) {
-        newErrors.postalCode = "Koreya pochta kodi 5 raqamdan iborat"
+    // Phone — region specific
+    if (!form.phone.trim() || form.phone === '+82' || form.phone === '+998') {
+      newErrors.phone = "Telefon raqamini kiriting"
+    } else if (regionCode === 'KOR') {
+      if (!korPhoneRegex.test(form.phone)) {
+        newErrors.phone = "Koreya raqami to'liq bo'lishi kerak: +82XXXXXXXXX"
       }
     } else {
-      if (!/^\+998[0-9]{9}$/.test(form.phone)) {
-        newErrors.phone = "O'zbekiston raqami: +998XXXXXXXXX"
+      if (!uzbPhoneRegex.test(form.phone)) {
+        newErrors.phone = "O'zbekiston raqami to'liq bo'lishi kerak: +998XXXXXXXXX"
       }
-      if (form.postalCode && !/^[0-9]{6}$/.test(form.postalCode)) {
-        newErrors.postalCode = "O'zbekiston pochta kodi 6 raqamdan iborat"
+    }
+
+    // Address line 1
+    if (!form.addressLine1.trim()) {
+      newErrors.addressLine1 = "Ko'cha va uy raqamini kiriting"
+    } else if (form.addressLine1.trim().length < 3) {
+      newErrors.addressLine1 = "Aniqroq manzil kiriting (kamida 3 belgi)"
+    }
+
+    // City
+    if (regionCode === 'UZB') {
+      if (!form.city.trim()) {
+        newErrors.city = "Shahar nomini kiriting"
+      } else if (form.city.trim().length < 2) {
+        newErrors.city = "To'liq shahar nomini kiriting"
+      }
+
+      // Province — UZB only
+      if (!form.province.trim()) {
+        newErrors.province = "Viloyat nomini kiriting"
+      } else if (form.province.trim().length < 2) {
+        newErrors.province = "To'liq viloyat nomini kiriting"
+      }
+    }
+
+    // Postal code — region specific
+    if (regionCode === 'KOR') {
+      if (!form.postalCode.trim()) {
+        newErrors.postalCode = "Pochta kodini kiriting (5 raqam)"
+      } else if (!/^[0-9]{5}$/.test(form.postalCode)) {
+        newErrors.postalCode = "Koreya pochta kodi aniq 5 ta raqamdan iborat"
+      }
+    } else {
+      if (!form.postalCode.trim()) {
+        newErrors.postalCode = "Pochta kodini kiriting (6 raqam)"
+      } else if (!/^[0-9]{6}$/.test(form.postalCode)) {
+        newErrors.postalCode = "O'zbekiston pochta kodi aniq 6 ta raqamdan iborat"
       }
     }
 
@@ -142,8 +180,79 @@ export default function AddressFormScreen() {
     return Object.keys(newErrors).length === 0
   }
 
+  const validateField = (field: string, value: string) => {
+    const tempErrors: Record<string, string> = {}
+    const nameRegex = /^[\p{L}\s'\-]+$/u
+
+    if (field === 'fullName') {
+      if (!value.trim()) {
+        tempErrors.fullName = "Qabul qiluvchi ismini kiriting"
+      } else if (!nameRegex.test(value.trim())) {
+        tempErrors.fullName = "Ism faqat harflardan iborat bo'lishi kerak"
+      } else if (value.trim().length < 2) {
+        tempErrors.fullName = "Ism kamida 2 ta belgidan iborat bo'lishi kerak"
+      }
+    }
+
+    if (field === 'phone') {
+      const korRe = /^\+82[0-9]{9,10}$/
+      const uzbRe = /^\+998[0-9]{9}$/
+      const isEmpty = !value.trim() || value === '+82' || value === '+998'
+      if (isEmpty) {
+        tempErrors.phone = "Telefon raqamini kiriting"
+      } else if (regionCode === 'KOR' && !korRe.test(value)) {
+        tempErrors.phone = "Koreya raqami: +82XXXXXXXXX"
+      } else if (regionCode === 'UZB' && !uzbRe.test(value)) {
+        tempErrors.phone = "O'zbekiston raqami: +998XXXXXXXXX"
+      }
+    }
+
+    if (field === 'addressLine1') {
+      if (!value.trim()) {
+        tempErrors.addressLine1 = "Ko'cha va uy raqamini kiriting"
+      } else if (value.trim().length < 3) {
+        tempErrors.addressLine1 = "Aniqroq manzil kiriting (kamida 3 belgi)"
+      }
+    }
+
+    if (field === 'city') {
+      if (!value.trim()) {
+        tempErrors.city = "Shahar nomini kiriting"
+      } else if (value.trim().length < 2) {
+        tempErrors.city = "To'liq shahar nomini kiriting"
+      }
+    }
+
+    if (field === 'province') {
+      if (!value.trim()) {
+        tempErrors.province = "Viloyat nomini kiriting"
+      } else if (value.trim().length < 2) {
+        tempErrors.province = "To'liq viloyat nomini kiriting"
+      }
+    }
+
+    if (field === 'postalCode') {
+      const korValid = /^[0-9]{5}$/.test(value)
+      const uzbValid = /^[0-9]{6}$/.test(value)
+      if (regionCode === 'KOR' && !korValid && value.length > 0) {
+        tempErrors.postalCode = "Koreya pochta kodi 5 ta raqam"
+      }
+      if (regionCode === 'UZB' && !uzbValid && value.length > 0) {
+        tempErrors.postalCode = "O'zbekiston pochta kodi 6 ta raqam"
+      }
+    }
+
+    setErrors(prev => ({
+      ...prev,
+      [field]: tempErrors[field] ?? ''
+    }))
+  }
+
   const handleSubmit = async () => {
-    if (!validateForm()) return
+    if (!validateForm()) {
+      scrollViewRef.current?.scrollTo({ y: 0, animated: true })
+      return
+    }
     setIsSubmitting(true)
     try {
       const payload: any = {
@@ -170,28 +279,16 @@ export default function AddressFormScreen() {
     } catch (err: any) {
       const apiError = err.response?.data?.error
       if (apiError?.fields) {
-        const backendErrors: Record<string, string> = {}
-        Object.entries(apiError.fields).forEach(([field, msg]) => {
-          backendErrors[field] = msg as string
-        })
         setErrors(prev => ({
           ...prev,
-          ...backendErrors
+          ...apiError.fields
         }))
-        Alert.alert('Xatolik', "Iltimos, qizil rang bilan belgilangan maydonlardagi xatolarni to'g'rilang")
       } else {
-        Alert.alert('Xatolik', apiError?.message ?? "Saqlab bo'lmadi")
+        Alert.alert('Xatolik', apiError?.message ?? "Xatolik yuz berdi")
       }
     } finally {
       setIsSubmitting(false)
     }
-  }
-
-  const isFormValid = () => {
-    if (!form.fullName || !form.phone || !form.addressLine1 || form.addressLine1.length < 5) return false
-    if (regionCode === 'KOR' && !form.addressLine2) return false
-    if (regionCode === 'UZB' && (!form.province || !form.city)) return false
-    return true
   }
 
   return (
@@ -211,6 +308,7 @@ export default function AddressFormScreen() {
         </View>
 
         <ScrollView
+          ref={scrollViewRef}
           showsVerticalScrollIndicator={false}
           style={styles.scroll}
           keyboardShouldPersistTaps="handled"
@@ -238,21 +336,31 @@ export default function AddressFormScreen() {
           <View style={styles.formContainer}>
             <Text style={styles.inputLabel}>Sarlavha (ixtiyoriy)</Text>
             <TextInput
-              style={styles.input}
+              style={[
+                styles.input,
+                errors.label ? styles.inputError : null
+              ]}
               placeholder="Uy, Ish va h.k."
               value={form.label}
-              onChangeText={(t) => setForm((p) => ({ ...p, label: t }))}
+              onChangeText={(t) => {
+                setForm((p) => ({ ...p, label: t }))
+                validateField('label', t)
+              }}
             />
+            <FieldError message={errors.label} />
 
             <Text style={styles.inputLabel}>Ism familiya *</Text>
             <TextInput
               style={[
                 styles.input,
-                errors.fullName && { borderColor: tokens.colors.error, borderWidth: 1.5 }
+                errors.fullName ? styles.inputError : null
               ]}
               placeholder="Qabul qiluvchi ismi"
               value={form.fullName}
-              onChangeText={(t) => setForm((p) => ({ ...p, fullName: t }))}
+              onChangeText={(t) => {
+                setForm((p) => ({ ...p, fullName: t }))
+                validateField('fullName', t)
+              }}
             />
             <FieldError message={errors.fullName} />
 
@@ -260,17 +368,18 @@ export default function AddressFormScreen() {
             <TextInput
               style={[
                 styles.input,
-                errors.phone && { borderColor: tokens.colors.error, borderWidth: 1.5 }
+                errors.phone ? styles.inputError : null
               ]}
               placeholder={regionCode === 'KOR' ? "+82XXXXXXXXX" : "+998XXXXXXXXX"}
-              maxLength={regionCode === 'KOR' ? 13 : 13}
+              maxLength={13}
               value={form.phone}
-              onChangeText={(text) => {
-                if (!text.startsWith(phonePrefix)) {
+              onChangeText={(t) => {
+                if (!t.startsWith(phonePrefix)) {
                   setForm(p => ({ ...p, phone: phonePrefix }))
                   return
                 }
-                setForm(p => ({ ...p, phone: text }))
+                setForm(p => ({ ...p, phone: t }))
+                validateField('phone', t)
               }}
               keyboardType="phone-pad"
             />
@@ -313,67 +422,108 @@ export default function AddressFormScreen() {
                 <TextInput
                   style={[
                     styles.input,
-                    errors.postalCode && { borderColor: tokens.colors.error, borderWidth: 1.5 }
+                    errors.postalCode ? styles.inputError : null
                   ]}
                   placeholder="00000"
                   value={form.postalCode}
-                  onChangeText={(t) => setForm((p) => ({ ...p, postalCode: t }))}
+                  onChangeText={(t) => {
+                    setForm((p) => ({ ...p, postalCode: t }))
+                    validateField('postalCode', t)
+                  }}
                   editable={false}
                 />
                 <FieldError message={errors.postalCode} />
 
                 <Text style={styles.inputLabel}>Asosiy manzil</Text>
                 <TextInput
-                  style={styles.input}
+                  style={[
+                    styles.input,
+                    errors.addressLine1 ? styles.inputError : null
+                  ]}
                   placeholder="Ko'cha, uy..."
                   value={form.addressLine1}
-                  onChangeText={(t) => setForm((p) => ({ ...p, addressLine1: t }))}
+                  onChangeText={(t) => {
+                    setForm((p) => ({ ...p, addressLine1: t }))
+                    validateField('addressLine1', t)
+                  }}
                   editable={false}
                 />
+                <FieldError message={errors.addressLine1} />
 
                 <Text style={styles.inputLabel}>Qo'shimcha manzil (xona/kvartira) *</Text>
                 <TextInput
-                  style={styles.input}
+                  style={[
+                    styles.input,
+                    errors.addressLine2 ? styles.inputError : null
+                  ]}
                   placeholder="Xona raqami, bino..."
                   value={form.addressLine2}
-                  onChangeText={(t) => setForm((p) => ({ ...p, addressLine2: t }))}
+                  onChangeText={(t) => {
+                    setForm((p) => ({ ...p, addressLine2: t }))
+                    validateField('addressLine2', t)
+                  }}
                 />
+                <FieldError message={errors.addressLine2} />
               </>
             ) : (
               <>
                 <Text style={styles.inputLabel}>Viloyat *</Text>
                 <TextInput
-                  style={styles.input}
+                  style={[
+                    styles.input,
+                    errors.province ? styles.inputError : null
+                  ]}
                   placeholder="Toshkent viloyati..."
                   value={form.province}
-                  onChangeText={(t) => setForm((p) => ({ ...p, province: t }))}
+                  onChangeText={(t) => {
+                    setForm((p) => ({ ...p, province: t }))
+                    validateField('province', t)
+                  }}
                 />
+                <FieldError message={errors.province} />
 
                 <Text style={styles.inputLabel}>Shahar/tuman *</Text>
                 <TextInput
-                  style={styles.input}
+                  style={[
+                    styles.input,
+                    errors.city ? styles.inputError : null
+                  ]}
                   placeholder="Toshkent shahri..."
                   value={form.city}
-                  onChangeText={(t) => setForm((p) => ({ ...p, city: t }))}
+                  onChangeText={(t) => {
+                    setForm((p) => ({ ...p, city: t }))
+                    validateField('city', t)
+                  }}
                 />
+                <FieldError message={errors.city} />
 
                 <Text style={styles.inputLabel}>Ko'cha, uy raqami *</Text>
                 <TextInput
-                  style={styles.input}
+                  style={[
+                    styles.input,
+                    errors.addressLine1 ? styles.inputError : null
+                  ]}
                   placeholder="Navoiy ko'chasi, 1-uy..."
                   value={form.addressLine1}
-                  onChangeText={(t) => setForm((p) => ({ ...p, addressLine1: t }))}
+                  onChangeText={(t) => {
+                    setForm((p) => ({ ...p, addressLine1: t }))
+                    validateField('addressLine1', t)
+                  }}
                 />
+                <FieldError message={errors.addressLine1} />
 
                 <Text style={styles.inputLabel}>Pochta indeksi (ixtiyoriy)</Text>
                 <TextInput
                   style={[
                     styles.input,
-                    errors.postalCode && { borderColor: tokens.colors.error, borderWidth: 1.5 }
+                    errors.postalCode ? styles.inputError : null
                   ]}
                   placeholder="100000"
                   value={form.postalCode}
-                  onChangeText={(t) => setForm((p) => ({ ...p, postalCode: t }))}
+                  onChangeText={(t) => {
+                    setForm((p) => ({ ...p, postalCode: t }))
+                    validateField('postalCode', t)
+                  }}
                   keyboardType="number-pad"
                 />
                 <FieldError message={errors.postalCode} />
@@ -478,6 +628,17 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter_400Regular',
     color: tokens.colors.text,
     marginBottom: 12,
+  },
+  inputError: {
+    borderColor: tokens.colors.error,
+    borderWidth: 1.5,
+  },
+  fieldError: {
+    color: tokens.colors.error,
+    fontSize: 12,
+    marginTop: -8,
+    marginBottom: 12,
+    marginLeft: 2,
   },
   searchContainer: {
     position: 'relative',
