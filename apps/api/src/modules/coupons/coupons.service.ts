@@ -498,7 +498,14 @@ export async function getAvailableCoupons(customerId: string, regionCode: string
         sql`(${coupons.startsAt} IS NULL OR ${coupons.startsAt} <= NOW())`,
         sql`(${coupons.expiresAt} IS NULL OR ${coupons.expiresAt} >= NOW())`,
         sql`(${coupons.regionCode} IS NULL OR ${coupons.regionCode} = ${regionCode || ''})`,
-        sql`(${coupons.maxUsesTotal} IS NULL OR ${coupons.usageCount} < ${coupons.maxUsesTotal})`
+        sql`(${coupons.maxUsesTotal} IS NULL OR ${coupons.usageCount} < ${coupons.maxUsesTotal})`,
+        sql`(
+          ${coupons.scope} != 'CUSTOMER'
+          OR (
+            ${coupons.scope} = 'CUSTOMER'
+            AND ${coupons.customerId} = ${customerId}
+          )
+        )`
       )
     )
 
