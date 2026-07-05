@@ -402,7 +402,7 @@ export async function createOrder(params: {
         paymentMode: params.paymentMode ?? 'RECEIPT',
         orderSource: params.source,
         subtotal,
-        discountAmount: totalDiscount,
+        discountAmount: discountAmount,
         orderDiscountPct: params.orderDiscountPct ?? null,
         orderDiscountFlat: orderLevelDiscount > 0n ? orderLevelDiscount : null,
         cargoFee: cargoFeeKrw,

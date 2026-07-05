@@ -603,66 +603,6 @@ export function AnalitikPage() {
             ))}
           </div>
         )}
-
-        {/* Top coupons table */}
-        {!enabled ? (
-          <div className="px-5 py-8 text-center">
-            <p className="text-sm text-muted-foreground">Davr tanlang</p>
-          </div>
-        ) : couponStats?.topCoupons?.length > 0 ? (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border/50 bg-gray-50/80">
-                <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">
-                  Kupon kodi
-                </th>
-                <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground w-24">
-                  Foydalanish
-                </th>
-                <th className="px-4 py-3 text-right text-xs font-medium text-muted-foreground w-32">
-                  Chegirma
-                </th>
-                <th className="px-4 py-3 text-right text-xs font-medium text-muted-foreground w-32 hidden md:table-cell">
-                  Daromad
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border/30">
-              {couponStats.topCoupons.map((c: any, i: number) => (
-                <tr key={c.code} className="hover:bg-gray-50/60">
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-muted-foreground w-5">{i + 1}</span>
-                      <code className="text-sm font-mono font-bold text-gray-900 bg-gray-100 px-2 py-0.5 rounded">
-                        {c.code}
-                      </code>
-                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-50 text-blue-600">
-                        {c.type}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-center">
-                    <span className="text-sm font-semibold">{c.usageCount}</span>
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <span className="text-sm font-semibold text-red-600">
-                      -{formatKRW(c.totalDiscount ?? 0)}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-right hidden md:table-cell">
-                    <span className="text-sm font-semibold text-gray-900">
-                      {formatKRW(c.revenue ?? 0)}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        ) : (
-          <div className="px-5 py-8 text-center">
-            <p className="text-sm text-muted-foreground">Bu davrda kupon ishlatilmagan</p>
-          </div>
-        )}
       </div>
 
       {/* 2-column: Customers */}
@@ -786,7 +726,8 @@ export function AnalitikPage() {
                 <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Kupon kodi</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Nomi</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Turi</th>
-                <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground">Ishlatildi</th>
+                <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground">Foydalanish</th>
+                <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground">Buyurtmalardagi ulushi</th>
                 <th className="px-4 py-3 text-right text-xs font-medium text-muted-foreground">Jami chegirma</th>
                 <th className="px-4 py-3 text-right text-xs font-medium text-muted-foreground">O'rtacha chegirma</th>
               </tr>
@@ -802,6 +743,9 @@ export function AnalitikPage() {
                   <td className="px-4 py-3 text-gray-900">{c.name}</td>
                   <td className="px-4 py-3 text-muted-foreground">{typeLabel(c.type)}</td>
                   <td className="px-4 py-3 text-center font-semibold">{c.uses} ta</td>
+                  <td className="px-4 py-3 text-center text-muted-foreground">
+                    {c.orderPct ? `${c.orderPct.toFixed(1)}%` : '0%'}
+                  </td>
                   <td className="px-4 py-3 text-right font-semibold text-red-600">
                     -{formatKRW(c.totalDiscount)}
                   </td>
@@ -813,7 +757,7 @@ export function AnalitikPage() {
             </tbody>
             <tfoot className="border-t border-border/50 bg-gray-50/80">
               <tr>
-                <td colSpan={4} className="px-4 py-3 font-semibold text-right text-gray-900">Jami</td>
+                <td colSpan={5} className="px-4 py-3 font-semibold text-right text-gray-900">Jami</td>
                 <td className="px-4 py-3 text-right font-bold text-red-600">
                   -{formatKRW(
                     couponPerformance.reduce((s: number, c: any) => s + c.totalDiscount, 0)

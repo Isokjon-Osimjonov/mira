@@ -12,7 +12,7 @@ import {
   coupons,
   couponRedemptions,
 } from '@mira/db'
-import { eq, and, sql, desc, asc, sum, count, gte, lte, inArray, countDistinct } from 'drizzle-orm'
+import { eq, and, sql, desc, asc, sum, count, gte, lte, inArray, notInArray, countDistinct } from 'drizzle-orm'
 import { getRedis } from '../../config/redis'
 
 const REVENUE_STATUSES = ['PAYMENT_CONFIRMED', 'PACKING', 'SHIPPED', 'DELIVERED'] as any[]
@@ -683,6 +683,23 @@ export async function exportCSV(
 }
 
 export async function getCouponPerformance(from: string, to: string) {
+  const startDate = new Date(from)
+  const endDate = new Date(to)
+  endDate.setHours(23, 59, 59, 999)
+
+  const [totalOrdersRes] = await db
+    .select({ count: count() })
+    .from(orders)
+    .where(
+      and(
+        gte(orders.createdAt, startDate),
+        lte(orders.createdAt, endDate),
+        notInArray(orders.status, ['CANCELED'])
+      )
+    )
+
+  const totalOrders = Number(totalOrdersRes?.count || 0)
+
   const results = await db
     .select({
       code: coupons.code,
@@ -696,8 +713,8 @@ export async function getCouponPerformance(from: string, to: string) {
     .innerJoin(coupons, eq(couponRedemptions.couponId, coupons.id))
     .where(
       and(
-        gte(couponRedemptions.createdAt, startOfDay(new Date(from))),
-        lte(couponRedemptions.createdAt, endOfDay(new Date(to)))
+        gte(couponRedemptions.createdAt, startDate),
+        lte(couponRedemptions.createdAt, endDate)
       )
     )
     .groupBy(coupons.id, coupons.code, coupons.name, coupons.type)
@@ -708,6 +725,7 @@ export async function getCouponPerformance(from: string, to: string) {
     name: r.name,
     type: r.type,
     uses: r.uses,
+    orderPct: totalOrders > 0 ? (r.uses / totalOrders) * 100 : 0,
     totalDiscount: Number(r.totalDiscount),
     avgDiscount: Math.round(Number(r.avgDiscount))
   }))
