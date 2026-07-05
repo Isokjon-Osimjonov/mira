@@ -1,119 +1,136 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { ScrollView, View, Text, TextInput, Pressable, Alert, ActivityIndicator, StyleSheet } from 'react-native'
+import {
+  ScrollView,
+  View,
+  Text,
+  TextInput,
+  Pressable,
+  Alert,
+  ActivityIndicator,
+  StyleSheet,
+  Image,
+} from 'react-native'
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Feather } from '@expo/vector-icons'
 import { useRouter } from 'expo-router'
+import * as ImagePicker from 'expo-image-picker'
+import * as Clipboard from 'expo-clipboard'
+
 import { useAuthStore } from '../../lib/auth-store'
 import { useCartStore } from '../../lib/cart-store'
 import { tokens } from '../../lib/tokens'
 import { addressService, type Address } from '../../services/address.service'
 import { boxService, type Box } from '../../services/box.service'
 import { cartService } from '../../services/cart.service'
-import { orderService, type CheckoutResult } from '../../services/order.service'
+import { orderService } from '../../services/order.service'
+import { paymentService, type PaymentMethod } from '../../services/payment.service'
 import { uploadService } from '../../services/upload.service'
-import * as ImagePicker from 'expo-image-picker'
-import api from '../../lib/api'
-import { useQuery } from '@tanstack/react-query'
 
-const getBoxStatus = (box: Box, totalWeightG: number) => {
-  const totalWeightKg = totalWeightG / 1000
-  const maxKg = Number(box.maxWeightKg)
-
-  if (totalWeightKg > maxKg) {
-    return {
-      status: 'too_small' as const,
-      reason: `Juda kichik (${totalWeightKg.toFixed(1)}kg > ${maxKg}kg)`
-    }
-  }
-
-  return {
-    status: totalWeightKg <= maxKg ? 'available' as const : 'too_small' as const,
-    reason: null
-  }
+interface OrderResult {
+  id: string
+  orderNumber: string
+  totalAmount: number
+  cargoFee: number
+  subtotal: number
+  discountAmount: number
+  boxCostKrw: number
 }
 
-const getRecommendedBoxId = (boxes: Box[], totalWeightG: number): string | null => {
-  const totalWeightKg = totalWeightG / 1000
-  const fitting = [...boxes]
-    .sort((a, b) => Number(a.maxWeightKg) - Number(b.maxWeightKg))
-    .find(box => Number(box.maxWeightKg) >= totalWeightKg)
-  return fitting?.id ?? null
-}
-
-export default function SingleCheckoutScreen() {
+export default function CheckoutScreen() {
   const router = useRouter()
   const insets = useSafeAreaInsets()
   const customer = useAuthStore((s) => s.customer)
-  const region = customer?.phoneRegion || 'UZB'
-  const cartItems = useCartStore((s) => s.cart?.items || [])
+  const { cart } = useCartStore()
+  const cartItems = cart?.items || []
+  const region = customer?.phoneRegion ?? 'KOR'
 
-  const scrollRef = useRef<ScrollView>(null)
+  // Main state variables:
+  const [orderResult, setOrderResult] = useState<OrderResult | null>(null)
 
-  // STATE 1 & 2
-  const [orderPlaced, setOrderPlaced] = useState<{
-    orderId: string
-    orderNumber: string
-    totalAmount: number
-    bankDetails: CheckoutResult['paymentInfo'] | null
-  } | null>(null)
-
-  // -- STATE 1 VARIABLES --
-
-  // Address
+  // CONFIG state (STATE 1 only):
   const [addresses, setAddresses] = useState<Address[]>([])
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null)
-
-  // Box (UZB only)
   const [boxes, setBoxes] = useState<Box[]>([])
   const [selectedBoxId, setSelectedBoxId] = useState<string | null>(null)
   const [totalWeightG, setTotalWeightG] = useState(0)
-
-  // Coupon
   const [couponCode, setCouponCode] = useState('')
-  const [couponResult, setCouponResult] = useState<{ code: string; discountAmount: number } | null>(null)
+  const [couponResult, setCouponResult] = useState<{
+    code: string
+    discountAmount: number
+  } | null>(null)
   const [couponLoading, setCouponLoading] = useState(false)
-
-  // Payment method
-  const [paymentMethod, setPaymentMethod] = useState<'UZB_BANK' | 'KOREAN_BANK' | 'E9PAY'>(
+  const [paymentMethod, setPaymentMethod] = useState<string>(
     region === 'UZB' ? 'UZB_BANK' : 'KOREAN_BANK'
   )
 
-  // Submission
+  // RECEIPT state (STATE 2 only):
+  const [receiptUri, setReceiptUri] = useState<string | null>(null)
+  const [receiptUploading, setReceiptUploading] = useState(false)
+  const [receiptUploaded, setReceiptUploaded] = useState(false)
+
+  // PAYMENT METHODS:
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([])
+
+  // SUBMISSION:
   const [submitting, setSubmitting] = useState(false)
 
-  // Payment settings for account numbers (fallback)
-  const { data: paymentSettings } = useQuery({
-    queryKey: ['payment-settings'],
-    queryFn: async () => {
-      const res = await api.get('/settings/payment-info')
-      return res.data.data
-    },
-  })
+  const scrollRef = useRef<ScrollView>(null)
 
   useEffect(() => {
-    // Load addresses
-    addressService.getAddresses().then(data => {
-      setAddresses(data)
-      const def = data.find(a => a.isDefault)
+    const load = async () => {
+      // Load addresses
+      const addrs = await addressService.getAddresses()
+      setAddresses(addrs)
+      const def = addrs.find((a) => a.isDefault)
       if (def) setSelectedAddressId(def.id)
-      else if (data.length > 0) setSelectedAddressId(data[0].id)
-    })
+      else if (addrs.length > 0) setSelectedAddressId(addrs[0].id)
 
-    // Calculate total weight
-    const weightG = cartItems.reduce((sum, item) => sum + (Number(item.weightGrams ?? 0) * item.quantity), 0)
-    setTotalWeightG(weightG)
+      // Load payment methods
+      const methods = await paymentService.getPaymentMethods()
+      setPaymentMethods(methods.filter((m) => m.isEnabled))
 
-    // Load boxes (UZB only)
-    if (region === 'UZB') {
-      boxService.getBoxes().then(data => {
-        setBoxes(data)
-        const recommended = getRecommendedBoxId(data, weightG)
-        if (recommended) {
-          setSelectedBoxId(recommended)
-        }
-      })
+      // Load boxes + calculate weight (UZB)
+      if (region === 'UZB') {
+        const bxs = await boxService.getBoxes()
+        setBoxes(bxs)
+        const wg = cartItems.reduce(
+          (sum: number, item: any) => sum + Number(item.weightGrams ?? 0) * item.quantity,
+          0
+        )
+        setTotalWeightG(wg)
+        const rec = getRecommendedBoxId(bxs, wg)
+        if (rec) setSelectedBoxId(rec)
+      }
     }
-  }, [region, cartItems])
+    load()
+  }, [])
+
+  const getRecommendedBoxId = (boxes: Box[], weightG: number): string | null => {
+    const kg = weightG / 1000
+    return [...boxes]
+      .sort((a, b) => Number(a.maxWeightKg) - Number(b.maxWeightKg))
+      .find((b) => Number(b.maxWeightKg) >= kg)?.id ?? null
+  }
+
+  const isBoxTooSmall = (box: Box, weightG: number): boolean =>
+    Number(box.maxWeightKg) < weightG / 1000
+
+  const cartSubtotal = cartItems.reduce(
+    (sum: number, item: any) => sum + item.unitPrice * item.quantity,
+    0
+  )
+
+  const couponDiscount = couponResult?.discountAmount ?? 0
+
+  const selectedBox = boxes.find((b) => b.id === selectedBoxId)
+  const boxCost = selectedBox ? Number(selectedBox.costKrw) : 0
+
+  const estimatedTotal = cartSubtotal - couponDiscount + boxCost
+
+  // Active payment method to display
+  // Use a fallback to KOREAN_BANK for KOR regions if they chose KOR_BANK in frontend earlier
+  const searchMethod = paymentMethod === 'KOR_BANK' ? 'KOREAN_BANK' : paymentMethod
+  const activePaymentMethod = paymentMethods.find((m) => m.type === searchMethod)
 
   const handleApplyCoupon = async () => {
     if (!couponCode.trim()) return
@@ -122,11 +139,14 @@ export default function SingleCheckoutScreen() {
       const res = await cartService.validateCoupon(couponCode.trim())
       setCouponResult({
         code: couponCode.trim(),
-        discountAmount: res.discountAmount
+        discountAmount: Number(res.discountAmount),
       })
       setCouponCode('')
     } catch (err: any) {
-      Alert.alert('Kupon xatosi', err.response?.data?.error?.message ?? 'Kupon qo\'llanilmadi')
+      Alert.alert(
+        'Kupon',
+        err.response?.data?.error?.message ?? "Kupon qo'llanilmadi"
+      )
     } finally {
       setCouponLoading(false)
     }
@@ -137,24 +157,81 @@ export default function SingleCheckoutScreen() {
     setCouponCode('')
   }
 
-  const handleCreateOrder = async () => {
-    if (!selectedAddressId) return
-    if (region === 'UZB' && !selectedBoxId) return
+  const handlePickReceipt = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.8,
+    })
+    if (!result.canceled && result.assets[0]) {
+      setReceiptUri(result.assets[0].uri)
+    }
+  }
+
+  const handleCameraReceipt = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync()
+    if (status !== 'granted') {
+      Alert.alert('Kamera ruxsati kerak')
+      return
+    }
+    const result = await ImagePicker.launchCameraAsync({
+      quality: 0.8,
+    })
+    if (!result.canceled && result.assets[0]) {
+      setReceiptUri(result.assets[0].uri)
+    }
+  }
+
+  const handleSubmit = async () => {
+    if (!selectedAddressId) {
+      Alert.alert('Manzil tanlang')
+      scrollRef.current?.scrollTo({ y: 0, animated: true })
+      return
+    }
+    if (region === 'UZB' && !selectedBoxId) {
+      Alert.alert('Quti tanlang')
+      return
+    }
 
     setSubmitting(true)
     try {
-      const result = await orderService.checkout({
+      // Step 1: Create order
+      const res = await orderService.checkout({
         addressId: selectedAddressId,
         boxId: selectedBoxId ?? undefined,
-        paymentMethod,
+        paymentMethod: searchMethod as any,
         couponCode: couponResult?.code ?? undefined,
       })
-      setOrderPlaced({
-        orderId: result.order.id,
-        orderNumber: result.order.orderNumber,
-        totalAmount: result.order.totalAmount,
-        bankDetails: result.paymentInfo,
+
+      const order = res.order
+
+      let uploaded = false
+      // Step 2: Upload receipt if selected
+      if (receiptUri) {
+        try {
+          const receiptUrl = await uploadService.uploadReceipt(receiptUri)
+          const paymentCurrency = region === 'UZB' ? 'UZS' : 'KRW'
+          await orderService.uploadReceipt(order.id, receiptUrl, Number(order.totalAmount), paymentCurrency)
+          uploaded = true
+        } catch (e) {
+          Alert.alert('Diqqat', 'Buyurtma yaratildi, lekin kvitansiya yuklanmadi.')
+        }
+      }
+
+      await useCartStore.getState().clearCart()
+
+      // Step 3: Transition to STATE 2
+      setOrderResult({
+        id: order.id,
+        orderNumber: order.orderNumber,
+        totalAmount: Number(order.totalAmount),
+        cargoFee: 0, // Backend determines this later
+        subtotal: cartSubtotal,
+        discountAmount: couponDiscount,
+        boxCostKrw: boxCost,
       })
+      setReceiptUploaded(uploaded)
+
+      scrollRef.current?.scrollTo({ y: 0, animated: true })
     } catch (err: any) {
       Alert.alert('Xatolik', err.response?.data?.error?.message ?? 'Buyurtma yaratilmadi')
     } finally {
@@ -162,356 +239,582 @@ export default function SingleCheckoutScreen() {
     }
   }
 
-  // -- STATE 2 VARIABLES --
-  const [receiptUri, setReceiptUri] = useState<string | null>(null)
-  const [isUploading, setIsUploading] = useState(false)
-  const [uploadSuccess, setUploadSuccess] = useState(false)
-
-  const handlePickImage = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsEditing: true,
-      quality: 0.8,
-    })
-
-    if (!result.canceled && result.assets && result.assets.length > 0) {
-      setReceiptUri(result.assets[0].uri)
-      handleUploadReceipt(result.assets[0].uri)
-    }
-  }
-
-  const handleUploadReceipt = async (uri: string) => {
-    if (!orderPlaced) return
-    setIsUploading(true)
+  const handleUploadReceipt = async () => {
+    if (!orderResult || !receiptUri) return
+    setReceiptUploading(true)
     try {
-      const receiptUrl = await uploadService.uploadReceipt(uri)
-      // Since it's a bank transfer, passing the amount.
-      // Payment currency is UZS if UZB, else KRW, but the backend accepts it.
+      const receiptUrl = await uploadService.uploadReceipt(receiptUri)
       const paymentCurrency = region === 'UZB' ? 'UZS' : 'KRW'
-      // Note: in a real scenario we'd use krwToUzs for UZS, but passing orderTotal is fine for backend receipt logic here.
-      await orderService.uploadReceipt(
-        orderPlaced.orderId,
-        receiptUrl,
-        Number(orderPlaced.totalAmount),
-        paymentCurrency
-      )
-      setUploadSuccess(true)
-      await useCartStore.getState().clearCart()
+      await orderService.uploadReceipt(orderResult.id, receiptUrl, orderResult.totalAmount, paymentCurrency)
+      setReceiptUploaded(true)
     } catch (err: any) {
-      Alert.alert('Xatolik', 'Chekni yuklashda xatolik yuz berdi. Qaytadan urinib ko\'ring.')
-      setReceiptUri(null)
+      Alert.alert('Xatolik', 'Kvitansiya yuklanmadi')
     } finally {
-      setIsUploading(false)
+      setReceiptUploading(false)
     }
   }
 
-  // Calculate totals
-  const cartSubtotal = cartItems.reduce((sum, item) => sum + (item.unitPrice * item.quantity), 0)
-  const couponDiscount = couponResult?.discountAmount ?? 0
-  const selectedBox = boxes.find(b => b.id === selectedBoxId)
-  const boxCost = selectedBox ? Number(selectedBox.costKrw) : 0
-
-  if (orderPlaced) {
-    // STATE 2: Receipt Upload
-    const bankDetails = orderPlaced.bankDetails
-    const bankName = bankDetails?.bankName || (region === 'UZB' ? paymentSettings?.uzb?.bankName : paymentSettings?.kor?.bankName) || 'Bank'
-    const accountNumber = bankDetails?.accountNumber || (region === 'UZB' ? paymentSettings?.uzb?.bankNumber : paymentSettings?.kor?.bankNumber) || '---'
-    const holderName = bankDetails?.holderName || (region === 'UZB' ? paymentSettings?.uzb?.bankHolder : paymentSettings?.kor?.bankHolder) || '---'
-
-    return (
-      <SafeAreaView edges={['top']} style={styles.container}>
-        <View style={styles.header}>
-          <Text style={[styles.headerTitle, { flex: 1, textAlign: 'center' }]}>Buyurtma qabul qilindi</Text>
-        </View>
-        <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
-          <View style={[styles.section, styles.orderConfirmed]}>
-            <Text style={styles.orderNumber}>Buyurtma: {orderPlaced.orderNumber}</Text>
-            <Text style={styles.orderTotal}>To'lov summasi: ₩{Number(orderPlaced.totalAmount).toLocaleString('ko-KR')}</Text>
-            <Text style={styles.orderNote}>Buyurtmangizni tasdiqlash uchun quyidagi hisobga to'lov qiling va chekni yuklang.</Text>
-          </View>
-
-          <View style={styles.section}>
-            <Text style={styles.sectionLabel}>To'lov rekvizitlari</Text>
-            <View style={styles.bankCard}>
-              <View style={styles.bankRow}>
-                <Text style={styles.bankLabel}>Bank:</Text>
-                <Text style={styles.bankValue}>{bankName}</Text>
-              </View>
-              <View style={styles.bankRow}>
-                <Text style={styles.bankLabel}>Hisob raqam:</Text>
-                <Text style={styles.referenceCode}>{accountNumber}</Text>
-              </View>
-              <View style={styles.bankRow}>
-                <Text style={styles.bankLabel}>Qabul qiluvchi:</Text>
-                <Text style={styles.bankValue}>{holderName}</Text>
-              </View>
-              <View style={styles.priceDivider} />
-              <View style={styles.bankRow}>
-                <Text style={styles.bankLabel}>Jami summa:</Text>
-                <Text style={styles.bankAmount}>₩{Number(orderPlaced.totalAmount).toLocaleString('ko-KR')}</Text>
-              </View>
-            </View>
-          </View>
-
-          <View style={styles.section}>
-            <Text style={styles.sectionLabel}>To'lov cheki</Text>
-            {uploadSuccess ? (
-              <View style={styles.uploadedBadge}>
-                <Feather name="check-circle" size={20} color={tokens.colors.success} />
-                <Text style={styles.uploadedText}>Kvitansiya yuborildi</Text>
-              </View>
-            ) : isUploading ? (
-              <View style={[styles.uploadButton, { borderColor: tokens.colors.border }]}>
-                <ActivityIndicator color={tokens.colors.primary} />
-                <Text style={[styles.uploadButtonText, { marginTop: 8, color: tokens.colors.textMuted }]}>Yuklanmoqda...</Text>
-              </View>
-            ) : (
-              <Pressable style={styles.uploadButton} onPress={handlePickImage}>
-                <Feather name="upload-cloud" size={24} color={tokens.colors.primary} style={{ marginBottom: 8 }} />
-                <Text style={styles.uploadButtonText}>Chek rasmiga bosing yoki yuklang</Text>
-              </Pressable>
-            )}
-
-            <Pressable
-              style={[styles.viewOrdersButton, { marginTop: 16 }]}
-              onPress={() => router.replace('/(tabs)/orders')}
-            >
-              <Text style={styles.viewOrdersText}>Buyurtmalarni ko'rish</Text>
-            </Pressable>
-          </View>
-        </ScrollView>
-      </SafeAreaView>
-    )
-  }
-
-  // STATE 1: Checkout Form
   return (
     <SafeAreaView edges={['top']} style={styles.container}>
+      {/* HEADER */}
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()}>
-          <Feather name="arrow-left" size={24} color={tokens.colors.text} />
-        </Pressable>
-        <Text style={styles.headerTitle}>Buyurtmani rasmiylashtirish</Text>
+        {!orderResult ? (
+          <Pressable onPress={() => router.back()}>
+            <Feather name="arrow-left" size={24} color={tokens.colors.text} />
+          </Pressable>
+        ) : (
+          <View style={{ width: 24 }} />
+        )}
+        <Text style={styles.headerTitle}>
+          {orderResult ? "To'lov" : 'Buyurtma'}
+        </Text>
         <View style={{ width: 24 }} />
       </View>
 
-      <ScrollView ref={scrollRef} style={styles.scroll} showsVerticalScrollIndicator={false}>
-        
-        {/* SECTION 1: ORDER ITEMS */}
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Mahsulotlar</Text>
-          {cartItems.map(item => (
-            <View key={item.productId} style={styles.orderItem}>
-              <Text style={styles.orderItemName} numberOfLines={1}>{item.name}</Text>
-              <Text style={styles.orderItemQty}>{item.quantity} ta</Text>
-              <Text style={styles.orderItemPrice}>₩{(item.unitPrice * item.quantity).toLocaleString('ko-KR')}</Text>
+      <ScrollView
+        ref={scrollRef}
+        style={styles.scroll}
+        contentContainerStyle={{
+          paddingBottom: 120,
+        }}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* ═══════════════════════════ */}
+        {/* STATE 1: CHECKOUT CONFIG   */}
+        {/* ═══════════════════════════ */}
+        {!orderResult && (
+          <>
+            {/* PRODUCTS WITH IMAGES */}
+            <View style={styles.section}>
+              <Text style={styles.sectionLabel}>Mahsulotlar</Text>
+              {cartItems.map((item: any, i: number) => (
+                <View
+                  key={item.productId}
+                  style={[
+                    styles.productRow,
+                    i < cartItems.length - 1 && styles.productRowBorder,
+                  ]}
+                >
+                  {item.imageUrls?.[0] ? (
+                    <Image
+                      source={{
+                        uri: item.imageUrls[0],
+                      }}
+                      style={styles.productImage}
+                    />
+                  ) : (
+                    <View
+                      style={[styles.productImage, styles.productImagePlaceholder]}
+                    />
+                  )}
+                  <View style={styles.productInfo}>
+                    <Text style={styles.productName} numberOfLines={2}>
+                      {item.name}
+                    </Text>
+                    <Text style={styles.productQty}>{item.quantity} ta</Text>
+                  </View>
+                  <Text style={styles.productPrice}>
+                    ₩{(item.unitPrice * item.quantity).toLocaleString('ko-KR')}
+                  </Text>
+                </View>
+              ))}
             </View>
-          ))}
-          <View style={styles.subtotalRow}>
-            <Text style={styles.subtotalLabel}>Mahsulotlar jami</Text>
-            <Text style={styles.subtotalValue}>₩{cartSubtotal.toLocaleString('ko-KR')}</Text>
-          </View>
-        </View>
 
-        {/* SECTION 2: COUPON */}
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Kupon</Text>
-          {couponResult ? (
-            <View style={styles.couponApplied}>
-              <Text style={styles.couponAppliedText}>
-                {couponResult.code} (₩{couponResult.discountAmount.toLocaleString('ko-KR')})
-              </Text>
-              <Pressable onPress={handleRemoveCoupon}>
-                <Feather name="x" size={18} color={tokens.colors.success} />
-              </Pressable>
-            </View>
-          ) : (
-            <View style={styles.couponRow}>
-              <TextInput
-                value={couponCode}
-                onChangeText={t => setCouponCode(t.toUpperCase())}
-                placeholder="Kupon kodini kiriting"
-                autoCapitalize="characters"
-                style={styles.couponInput}
-                editable={!couponLoading}
-              />
-              <Pressable
-                onPress={handleApplyCoupon}
-                disabled={!couponCode.trim() || couponLoading}
-                style={[
-                  styles.couponButton,
-                  (!couponCode.trim() || couponLoading) && { opacity: 0.5 }
-                ]}>
-                {couponLoading ? (
-                  <ActivityIndicator size="small" color="#fff" />
-                ) : (
-                  <Text style={styles.couponButtonText}>Qo'llash</Text>
-                )}
-              </Pressable>
-            </View>
-          )}
-          <Pressable onPress={() => router.push('/profile/coupons')} style={styles.viewCouponsLink}>
-            <Text style={styles.viewCouponsText}>Mavjud kuponlarni ko'rish</Text>
-          </Pressable>
-        </View>
-
-        {/* SECTION 3: BOX SELECTION (UZB ONLY) */}
-        {region === 'UZB' && (
-          <View style={styles.section}>
-            <Text style={styles.sectionLabel}>Quti</Text>
-            <Text style={styles.weightText}>Jami og'irlik: {(totalWeightG / 1000).toFixed(2)}kg</Text>
-            {boxes
-              .sort((a, b) => Number(a.maxWeightKg) - Number(b.maxWeightKg))
-              .map(box => {
-                const status = getBoxStatus(box, totalWeightG)
-                const isRecommended = box.id === getRecommendedBoxId(boxes, totalWeightG)
-                const isSelected = selectedBoxId === box.id
-                const isDisabled = status.status === 'too_small'
-
-                return (
-                  <Pressable
-                    key={box.id}
-                    disabled={isDisabled}
-                    onPress={() => {
-                      if (!isDisabled) setSelectedBoxId(box.id)
-                    }}
-                    style={[
-                      styles.boxOption,
-                      isSelected && styles.boxOptionSelected,
-                      isDisabled && styles.boxOptionDisabled,
-                    ]}>
-                    <View style={[styles.radioOuter, isSelected && !isDisabled && styles.radioOuterSelected]}>
-                      {isSelected && !isDisabled && <View style={styles.radioInner} />}
-                    </View>
-                    <View style={{ flex: 1, marginLeft: 12 }}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
-                        <Text style={styles.boxName}>{box.name}</Text>
-                        {isRecommended && !isDisabled && (
-                          <View style={styles.boxRecommendedBadge}>
-                            <Text style={styles.boxRecommendedText}>Tavsiya</Text>
-                          </View>
-                        )}
-                      </View>
-                      <Text style={styles.boxDetail}>
-                        Max {box.maxWeightKg}kg · ₩{Number(box.costKrw).toLocaleString('ko-KR')}
-                      </Text>
-                      {isDisabled && (
-                        <Text style={styles.boxDisabledText}>{status.reason}</Text>
-                      )}
-                    </View>
+            {/* COUPON */}
+            <View style={styles.section}>
+              <Text style={styles.sectionLabel}>Kupon kodi</Text>
+              {couponResult ? (
+                <View style={styles.couponApplied}>
+                  <View>
+                    <Text style={styles.couponCode}>{couponResult.code}</Text>
+                    <Text style={styles.couponDiscount}>
+                      −₩{couponResult.discountAmount.toLocaleString('ko-KR')} chegirma
+                    </Text>
+                  </View>
+                  <Pressable onPress={handleRemoveCoupon} hitSlop={8}>
+                    <Feather name="x" size={18} color={tokens.colors.textMuted} />
                   </Pressable>
-                )
-              })}
-          </View>
+                </View>
+              ) : (
+                <View style={styles.couponRow}>
+                  <TextInput
+                    value={couponCode}
+                    onChangeText={(t) => setCouponCode(t.toUpperCase())}
+                    placeholder="Kod kiriting"
+                    placeholderTextColor={tokens.colors.textMuted}
+                    autoCapitalize="characters"
+                    style={styles.couponInput}
+                    editable={!couponLoading}
+                  />
+                  <Pressable
+                    onPress={handleApplyCoupon}
+                    disabled={!couponCode.trim() || couponLoading}
+                    style={[
+                      styles.couponBtn,
+                      (!couponCode.trim() || couponLoading) && styles.couponBtnDisabled,
+                    ]}
+                  >
+                    {couponLoading ? (
+                      <ActivityIndicator size="small" color="#fff" />
+                    ) : (
+                      <Text style={styles.couponBtnText}>Qo'llash</Text>
+                    )}
+                  </Pressable>
+                </View>
+              )}
+              <Pressable
+                onPress={() => router.push('/profile/coupons')}
+                style={{ marginTop: 10 }}
+              >
+                <Text style={styles.couponLink}>Mavjud kuponlar</Text>
+              </Pressable>
+            </View>
+
+            {/* BOX SELECTION (UZB ONLY) */}
+            {region === 'UZB' && (
+              <View style={styles.section}>
+                <Text style={styles.sectionLabel}>Quti tanlash</Text>
+                <Text style={styles.weightNote}>
+                  Jami og'irlik: {(totalWeightG / 1000).toFixed(2)}kg
+                </Text>
+                {[...boxes]
+                  .sort((a, b) => Number(a.maxWeightKg) - Number(b.maxWeightKg))
+                  .map((box) => {
+                    const tooSmall = isBoxTooSmall(box, totalWeightG)
+                    const recommended =
+                      box.id === getRecommendedBoxId(boxes, totalWeightG)
+                    const selected = selectedBoxId === box.id
+
+                    return (
+                      <Pressable
+                        key={box.id}
+                        disabled={tooSmall}
+                        onPress={() => !tooSmall && setSelectedBoxId(box.id)}
+                        style={[
+                          styles.boxOption,
+                          selected && styles.boxSelected,
+                          tooSmall && styles.boxDisabled,
+                        ]}
+                      >
+                        {/* Radio */}
+                        <View style={[styles.radio, selected && styles.radioSelected]}>
+                          {selected && <View style={styles.radioDot} />}
+                        </View>
+
+                        {/* Info */}
+                        <View style={{ flex: 1 }}>
+                          <View
+                            style={{
+                              flexDirection: 'row',
+                              alignItems: 'center',
+                              gap: 8,
+                            }}
+                          >
+                            <Text style={[styles.boxName, tooSmall && styles.textMuted]}>
+                              {box.name}
+                            </Text>
+                            {recommended && !tooSmall && (
+                              <View style={styles.badge}>
+                                <Text style={styles.badgeText}>Tavsiya</Text>
+                              </View>
+                            )}
+                          </View>
+                          <Text style={[styles.boxMeta, tooSmall && styles.textMuted]}>
+                            {`Max ${box.maxWeightKg}kg`}
+                            {Number(box.costKrw) > 0
+                              ? ` · ₩${Number(box.costKrw).toLocaleString('ko-KR')}`
+                              : ''}
+                          </Text>
+                          {tooSmall && (
+                            <Text style={styles.boxError}>
+                              {`Juda kichik (${(totalWeightG / 1000).toFixed(1)}kg > ${box.maxWeightKg}kg)`}
+                            </Text>
+                          )}
+                        </View>
+
+                        {/* Check */}
+                        {selected && (
+                          <Feather
+                            name="check-circle"
+                            size={20}
+                            color={tokens.colors.primary}
+                          />
+                        )}
+                      </Pressable>
+                    )
+                  })}
+              </View>
+            )}
+
+            {/* ADDRESS */}
+            <View style={styles.section}>
+              <Text style={styles.sectionLabel}>Yetkazib berish manzili</Text>
+              {addresses.map((addr) => (
+                <Pressable
+                  key={addr.id}
+                  onPress={() => setSelectedAddressId(addr.id)}
+                  style={[
+                    styles.addrCard,
+                    selectedAddressId === addr.id && styles.addrCardSelected,
+                  ]}
+                >
+                  <View
+                    style={[
+                      styles.radio,
+                      selectedAddressId === addr.id && styles.radioSelected,
+                    ]}
+                  >
+                    {selectedAddressId === addr.id && <View style={styles.radioDot} />}
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.addrName}>{addr.fullName}</Text>
+                    <Text style={styles.addrDetail}>
+                      {[addr.addressLine1, addr.city, addr.province]
+                        .filter(Boolean)
+                        .join(', ')}
+                    </Text>
+                    <Text style={styles.addrPhone}>{addr.phone}</Text>
+                  </View>
+                  {selectedAddressId === addr.id && (
+                    <Feather name="check-circle" size={20} color={tokens.colors.primary} />
+                  )}
+                </Pressable>
+              ))}
+              <Pressable
+                onPress={() => router.push('/profile/address-form')}
+                style={styles.addAddrBtn}
+              >
+                <Feather name="plus" size={16} color={tokens.colors.primary} />
+                <Text style={styles.addAddrText}>Yangi manzil qo'shish</Text>
+              </Pressable>
+            </View>
+
+            {/* PRICE BREAKDOWN */}
+            <View style={styles.section}>
+              <Text style={styles.sectionLabel}>Hisob-kitob</Text>
+
+              <View style={styles.priceRow}>
+                <Text style={styles.priceLabel}>Mahsulotlar</Text>
+                <Text style={styles.priceVal}>
+                  ₩{cartSubtotal.toLocaleString('ko-KR')}
+                </Text>
+              </View>
+
+              {couponDiscount > 0 && (
+                <View style={styles.priceRow}>
+                  <Text style={[styles.priceLabel, { color: tokens.colors.success }]}>
+                    Kupon ({couponResult?.code})
+                  </Text>
+                  <Text style={[styles.priceVal, { color: tokens.colors.success }]}>
+                    −₩{couponDiscount.toLocaleString('ko-KR')}
+                  </Text>
+                </View>
+              )}
+
+              {region === 'UZB' && boxCost > 0 && (
+                <View style={styles.priceRow}>
+                  <Text style={styles.priceLabel}>Quti ({selectedBox?.name})</Text>
+                  <Text style={styles.priceVal}>
+                    ₩{boxCost.toLocaleString('ko-KR')}
+                  </Text>
+                </View>
+              )}
+
+              <View style={styles.priceRow}>
+                <Text style={styles.priceLabel}>Kargo</Text>
+                <Text style={[styles.priceVal, { color: tokens.colors.textMuted }]}>
+                  Hisoblanmoqda
+                </Text>
+              </View>
+
+              <View style={styles.priceDivider} />
+
+              <View style={styles.priceRow}>
+                <Text style={styles.totalLabel}>Taxminiy jami</Text>
+                <Text style={styles.totalVal}>
+                  ₩{estimatedTotal.toLocaleString('ko-KR')}
+                </Text>
+              </View>
+
+              <Text style={styles.cargoNote}>
+                Kargo narxi buyurtma tasdiqlangandan so'ng aniqlanadi
+              </Text>
+            </View>
+
+            {/* BANK DETAILS — visible before order so user can prepare */}
+            {activePaymentMethod?.bankName && (
+              <View style={styles.section}>
+                <Text style={styles.sectionLabel}>To'lov rekvizitlari</Text>
+                <View style={styles.bankCard}>
+                  <View style={styles.bankRow}>
+                    <Text style={styles.bankLabel}>Bank</Text>
+                    <Text style={styles.bankValue}>{activePaymentMethod.bankName}</Text>
+                  </View>
+                  <View style={styles.bankRow}>
+                    <Text style={styles.bankLabel}>Hisob raqami</Text>
+                    <Text style={styles.bankValue}>
+                      {activePaymentMethod.accountNumber}
+                    </Text>
+                  </View>
+                  <View style={styles.bankRow}>
+                    <Text style={styles.bankLabel}>Egasi</Text>
+                    <Text style={styles.bankValue}>{activePaymentMethod.holderName}</Text>
+                  </View>
+                  <View style={[styles.bankRow, { marginTop: 8 }]}>
+                    <Text style={[styles.bankLabel, { fontWeight: '500' }]}>
+                      To'lov miqdori
+                    </Text>
+                    <Text style={[styles.bankValue, { fontSize: 16, fontWeight: '600' }]}>
+                      ₩{estimatedTotal.toLocaleString('ko-KR')} +kargo
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            )}
+
+            {/* RECEIPT UPLOAD (before order) */}
+            <View style={styles.section}>
+              <Text style={styles.sectionLabel}>Kvitansiya</Text>
+              <Text style={styles.receiptNote}>
+                To'lovni amalga oshirib, kvitansiyani yuklang
+              </Text>
+
+              {receiptUri ? (
+                <View>
+                  <Image
+                    source={{ uri: receiptUri }}
+                    style={styles.receiptPreview}
+                    resizeMode="cover"
+                  />
+                  <Pressable
+                    onPress={() => setReceiptUri(null)}
+                    style={styles.removeReceipt}
+                  >
+                    <Text style={styles.removeReceiptText}>Boshqa rasm tanlash</Text>
+                  </Pressable>
+                </View>
+              ) : (
+                <View style={styles.uploadRow}>
+                  <Pressable onPress={handlePickReceipt} style={styles.uploadBtn}>
+                    <Text style={styles.uploadBtnText}>Galereyadan</Text>
+                  </Pressable>
+                  <Pressable onPress={handleCameraReceipt} style={styles.uploadBtn}>
+                    <Text style={styles.uploadBtnText}>Kameradan</Text>
+                  </Pressable>
+                </View>
+              )}
+            </View>
+          </>
         )}
 
-        {/* SECTION 4: ADDRESS */}
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Yetkazib berish manzili</Text>
-          {addresses.map(addr => (
-            <Pressable
-              key={addr.id}
-              style={[
-                styles.addressCard,
-                selectedAddressId === addr.id && styles.addressCardSelected
-              ]}
-              onPress={() => setSelectedAddressId(addr.id)}>
-              <View style={[styles.radioOuter, selectedAddressId === addr.id && styles.radioOuterSelected, { marginTop: 2 }]}>
-                {selectedAddressId === addr.id && <View style={styles.radioInner} />}
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.addressName}>{addr.fullName}</Text>
-                <Text style={styles.addressDetail}>{addr.addressLine1}, {addr.city}</Text>
-                <Text style={styles.addressDetail}>{addr.phone}</Text>
-              </View>
-            </Pressable>
-          ))}
-          <Pressable style={styles.addAddressRow} onPress={() => router.push('/profile/address-form')}>
-            <Feather name="plus" size={16} color={tokens.colors.primary} />
-            <Text style={styles.addAddressText}>Yangi manzil qo'shish</Text>
-          </Pressable>
-        </View>
-
-        {/* SECTION 5: PAYMENT METHOD */}
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>To'lov usuli</Text>
-          {region === 'UZB' && (
-            <Pressable
-              style={[
-                styles.paymentOption,
-                paymentMethod === 'UZB_BANK' && styles.paymentOptionSelected
-              ]}
-              onPress={() => setPaymentMethod('UZB_BANK')}>
-              <View style={[styles.radioOuter, paymentMethod === 'UZB_BANK' && styles.radioOuterSelected]}>
-                {paymentMethod === 'UZB_BANK' && <View style={styles.radioInner} />}
-              </View>
-              <Text style={styles.paymentLabel}>O'zbekiston bank o'tkazma</Text>
-            </Pressable>
-          )}
-          {region === 'KOR' && (
-            <Pressable
-              style={[
-                styles.paymentOption,
-                paymentMethod === 'KOREAN_BANK' && styles.paymentOptionSelected
-              ]}
-              onPress={() => setPaymentMethod('KOREAN_BANK')}>
-              <View style={[styles.radioOuter, paymentMethod === 'KOREAN_BANK' && styles.radioOuterSelected]}>
-                {paymentMethod === 'KOREAN_BANK' && <View style={styles.radioInner} />}
-              </View>
-              <Text style={styles.paymentLabel}>Koreya bank o'tkazma</Text>
-            </Pressable>
-          )}
-        </View>
-
-        {/* SECTION 6: PRICE BREAKDOWN */}
-        <View style={[styles.section, { borderBottomWidth: 0, paddingBottom: 40 }]}>
-          <Text style={styles.sectionLabel}>Hisob-kitob</Text>
-          
-          <View style={styles.priceRow}>
-            <Text style={styles.priceLabel}>Mahsulotlar jami</Text>
-            <Text style={styles.priceValue}>₩{cartSubtotal.toLocaleString('ko-KR')}</Text>
-          </View>
-          
-          {couponDiscount > 0 && (
-            <View style={styles.priceRow}>
-              <Text style={styles.priceLabel}>Kupon chegirmasi</Text>
-              <Text style={[styles.priceValue, styles.priceDiscount]}>−₩{couponDiscount.toLocaleString('ko-KR')}</Text>
+        {/* ═══════════════════════════ */}
+        {/* STATE 2: ORDER PLACED      */}
+        {/* ═══════════════════════════ */}
+        {orderResult && (
+          <>
+            {/* ORDER CONFIRMED */}
+            <View style={styles.section}>
+              <Text style={styles.orderNumber}>{orderResult.orderNumber}</Text>
+              <Text style={styles.orderStatus}>Buyurtma qabul qilindi</Text>
             </View>
-          )}
-          
-          {region === 'UZB' && boxCost > 0 && (
-            <View style={styles.priceRow}>
-              <Text style={styles.priceLabel}>Quti ({selectedBox?.name})</Text>
-              <Text style={styles.priceValue}>₩{boxCost.toLocaleString('ko-KR')}</Text>
-            </View>
-          )}
-          
-          <View style={styles.priceDivider} />
 
-          <View style={styles.totalRow}>
-            <Text style={styles.totalLabel}>Jami</Text>
-            <Text style={styles.totalValue}>₩{(cartSubtotal - couponDiscount + boxCost).toLocaleString('ko-KR')}</Text>
-          </View>
-          
-          <Text style={styles.cargoNote}>Qo'shimcha kargo narxi buyurtma tasdiqlangandan so'ng qo'shiladi</Text>
-        </View>
+            {/* FINAL PRICE BREAKDOWN */}
+            <View style={styles.section}>
+              <Text style={styles.sectionLabel}>To'lov tafsiloti</Text>
+
+              <View style={styles.priceRow}>
+                <Text style={styles.priceLabel}>Mahsulotlar</Text>
+                <Text style={styles.priceVal}>
+                  ₩{orderResult.subtotal.toLocaleString('ko-KR')}
+                </Text>
+              </View>
+
+              {orderResult.discountAmount > 0 && (
+                <View style={styles.priceRow}>
+                  <Text style={[styles.priceLabel, { color: tokens.colors.success }]}>
+                    Kupon chegirmasi
+                  </Text>
+                  <Text style={[styles.priceVal, { color: tokens.colors.success }]}>
+                    −₩{orderResult.discountAmount.toLocaleString('ko-KR')}
+                  </Text>
+                </View>
+              )}
+
+              {orderResult.boxCostKrw > 0 && (
+                <View style={styles.priceRow}>
+                  <Text style={styles.priceLabel}>Quti</Text>
+                  <Text style={styles.priceVal}>
+                    ₩{orderResult.boxCostKrw.toLocaleString('ko-KR')}
+                  </Text>
+                </View>
+              )}
+
+              <View style={styles.priceRow}>
+                <Text style={styles.priceLabel}>Kargo</Text>
+                <Text style={styles.priceVal}>
+                  ₩{orderResult.cargoFee.toLocaleString('ko-KR')}
+                </Text>
+              </View>
+
+              <View style={styles.priceDivider} />
+
+              <View style={styles.priceRow}>
+                <Text style={styles.totalLabel}>Jami to'lov</Text>
+                <Text style={styles.totalVal}>
+                  ₩{orderResult.totalAmount.toLocaleString('ko-KR')}
+                </Text>
+              </View>
+            </View>
+
+            {/* BANK DETAILS (STATE 2) */}
+            {activePaymentMethod?.bankName && (
+              <View style={styles.section}>
+                <Text style={styles.sectionLabel}>Bank rekvizitlari</Text>
+                <View style={styles.bankCard}>
+                  <View style={styles.bankRow}>
+                    <Text style={styles.bankLabel}>Bank</Text>
+                    <Text style={styles.bankValue}>{activePaymentMethod.bankName}</Text>
+                  </View>
+                  <View style={styles.bankRow}>
+                    <Text style={styles.bankLabel}>Hisob raqami</Text>
+                    <Pressable
+                      onPress={async () => {
+                        await Clipboard.setStringAsync(
+                          activePaymentMethod.accountNumber ?? ''
+                        )
+                        Alert.alert('Nusxalandi')
+                      }}
+                    >
+                      <Text style={[styles.bankValue, { color: tokens.colors.primary }]}>
+                        {activePaymentMethod.accountNumber}
+                      </Text>
+                    </Pressable>
+                  </View>
+                  <View style={styles.bankRow}>
+                    <Text style={styles.bankLabel}>Egasi</Text>
+                    <Text style={styles.bankValue}>{activePaymentMethod.holderName}</Text>
+                  </View>
+                  <View style={[styles.priceDivider, { marginVertical: 12 }]} />
+                  <View style={styles.bankRow}>
+                    <Text style={styles.bankLabel}>To'lov miqdori</Text>
+                    <Text style={[styles.bankValue, { fontSize: 17, fontWeight: '600' }]}>
+                      ₩{orderResult.totalAmount.toLocaleString('ko-KR')}
+                    </Text>
+                  </View>
+                  <View style={[styles.bankRow, { marginTop: 4 }]}>
+                    <Text style={styles.bankLabel}>Izoh (to'lovda)</Text>
+                    <Pressable
+                      onPress={async () => {
+                        await Clipboard.setStringAsync(orderResult.orderNumber)
+                        Alert.alert('Nusxalandi')
+                      }}
+                    >
+                      <Text
+                        style={[
+                          styles.bankValue,
+                          { color: tokens.colors.primary, fontWeight: '500' },
+                        ]}
+                      >
+                        {orderResult.orderNumber}
+                      </Text>
+                    </Pressable>
+                  </View>
+                </View>
+              </View>
+            )}
+
+            {/* RECEIPT UPLOAD (STATE 2) */}
+            <View style={styles.section}>
+              <Text style={styles.sectionLabel}>Kvitansiya yuklash</Text>
+
+              {receiptUploaded ? (
+                <View style={styles.uploadedBadge}>
+                  <Feather name="check-circle" size={18} color={tokens.colors.success} />
+                  <Text style={styles.uploadedText}>
+                    Kvitansiya yuborildi. Admin tekshiradi.
+                  </Text>
+                </View>
+              ) : (
+                <>
+                  {receiptUri ? (
+                    <View>
+                      <Image
+                        source={{ uri: receiptUri }}
+                        style={styles.receiptPreview}
+                        resizeMode="cover"
+                      />
+                      <Pressable
+                        onPress={handleUploadReceipt}
+                        disabled={receiptUploading}
+                        style={[
+                          styles.uploadSubmitBtn,
+                          receiptUploading && styles.btnDisabled,
+                        ]}
+                      >
+                        {receiptUploading ? (
+                          <ActivityIndicator color="#fff" />
+                        ) : (
+                          <Text style={styles.uploadSubmitText}>Yuborish</Text>
+                        )}
+                      </Pressable>
+                      <Pressable
+                        onPress={() => setReceiptUri(null)}
+                        style={{ marginTop: 8, alignItems: 'center' }}
+                      >
+                        <Text style={styles.couponLink}>Boshqa rasm tanlash</Text>
+                      </Pressable>
+                    </View>
+                  ) : (
+                    <View style={styles.uploadRow}>
+                      <Pressable onPress={handlePickReceipt} style={styles.uploadBtn}>
+                        <Text style={styles.uploadBtnText}>Galereyadan</Text>
+                      </Pressable>
+                      <Pressable onPress={handleCameraReceipt} style={styles.uploadBtn}>
+                        <Text style={styles.uploadBtnText}>Kameradan</Text>
+                      </Pressable>
+                    </View>
+                  )}
+                </>
+              )}
+            </View>
+          </>
+        )}
       </ScrollView>
 
-      {/* STICKY BOTTOM BUTTON */}
+      {/* STICKY BOTTOM */}
       <View style={[styles.bottomBar, { paddingBottom: insets.bottom + 16 }]}>
-        <Pressable
-          style={[
-            styles.confirmButton,
-            (!selectedAddressId || (region === 'UZB' && !selectedBoxId) || submitting) && styles.confirmButtonDisabled
-          ]}
-          disabled={!selectedAddressId || (region === 'UZB' && !selectedBoxId) || submitting}
-          onPress={handleCreateOrder}>
-          {submitting ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.confirmButtonText}>Buyurtmani tasdiqlash</Text>
-          )}
-        </Pressable>
+        {!orderResult ? (
+          // STATE 1 button
+          <Pressable
+            onPress={handleSubmit}
+            disabled={
+              submitting ||
+              !selectedAddressId ||
+              (region === 'UZB' && !selectedBoxId)
+            }
+            style={[
+              styles.primaryBtn,
+              (submitting ||
+                !selectedAddressId ||
+                (region === 'UZB' && !selectedBoxId)) &&
+                styles.btnDisabled,
+            ]}
+          >
+            {submitting ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.primaryBtnText}>Buyurtmani tasdiqlash</Text>
+            )}
+          </Pressable>
+        ) : (
+          // STATE 2 button
+          <Pressable
+            onPress={() => router.replace('/(tabs)/orders')}
+            style={styles.secondaryBtn}
+          >
+            <Text style={styles.secondaryBtnText}>Buyurtmalarni ko'rish</Text>
+          </Pressable>
+        )}
       </View>
     </SafeAreaView>
   )
@@ -536,9 +839,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: tokens.colors.text,
   },
-  scroll: {
-    flex: 1,
-  },
+  scroll: { flex: 1 },
   section: {
     paddingHorizontal: 24,
     paddingVertical: 20,
@@ -546,53 +847,49 @@ const styles = StyleSheet.create({
     borderBottomColor: tokens.colors.border,
   },
   sectionLabel: {
-    fontSize: 12,
+    fontSize: 11,
     color: tokens.colors.textMuted,
-    letterSpacing: 0.5,
+    letterSpacing: 0.8,
     textTransform: 'uppercase',
     marginBottom: 16,
   },
-  // Order items
-  orderItem: {
+  // Products
+  productRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    paddingVertical: 10,
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 12,
   },
-  orderItemName: {
+  productRowBorder: {
+    borderBottomWidth: 0.5,
+    borderBottomColor: tokens.colors.border,
+  },
+  productImage: {
+    width: 48,
+    height: 48,
+    borderRadius: 8,
+  },
+  productImagePlaceholder: {
+    backgroundColor: tokens.colors.surface,
+  },
+  productInfo: {
     flex: 1,
+    gap: 4,
+  },
+  productName: {
     fontSize: 14,
     color: tokens.colors.text,
-    marginRight: 12,
+    lineHeight: 20,
   },
-  orderItemQty: {
-    fontSize: 13,
-    color: tokens.colors.textMuted,
-    marginRight: 16,
-    minWidth: 30,
-    textAlign: 'right',
-  },
-  orderItemPrice: {
-    fontSize: 14,
-    color: tokens.colors.text,
-    minWidth: 70,
-    textAlign: 'right',
-  },
-  subtotalRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingTop: 12,
-    marginTop: 4,
-    borderTopWidth: 0.5,
-    borderTopColor: tokens.colors.border,
-  },
-  subtotalLabel: {
+  productQty: {
     fontSize: 13,
     color: tokens.colors.textMuted,
   },
-  subtotalValue: {
+  productPrice: {
     fontSize: 14,
     color: tokens.colors.text,
+    minWidth: 72,
+    textAlign: 'right',
   },
   // Coupon
   couponRow: {
@@ -601,24 +898,25 @@ const styles = StyleSheet.create({
   },
   couponInput: {
     flex: 1,
-    height: 44,
+    height: 46,
     borderWidth: 1,
     borderColor: tokens.colors.border,
-    borderRadius: 8,
+    borderRadius: 10,
     paddingHorizontal: 14,
     fontSize: 14,
     color: tokens.colors.text,
     backgroundColor: tokens.colors.surface,
   },
-  couponButton: {
-    height: 44,
+  couponBtn: {
+    height: 46,
     paddingHorizontal: 18,
     backgroundColor: tokens.colors.primary,
-    borderRadius: 8,
+    borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  couponButtonText: {
+  couponBtnDisabled: { opacity: 0.5 },
+  couponBtnText: {
     fontSize: 14,
     color: '#fff',
     fontWeight: '500',
@@ -629,23 +927,27 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 14,
     backgroundColor: (tokens.colors as any).successLight ?? '#f0fdf4',
-    borderRadius: 8,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: tokens.colors.success,
   },
-  couponAppliedText: {
+  couponCode: {
     fontSize: 14,
+    fontWeight: '500',
+    color: tokens.colors.success,
+    marginBottom: 2,
+  },
+  couponDiscount: {
+    fontSize: 13,
     color: tokens.colors.success,
   },
-  viewCouponsLink: {
-    marginTop: 10,
-  },
-  viewCouponsText: {
+  couponLink: {
     fontSize: 13,
     color: tokens.colors.primary,
+    marginTop: 10,
   },
-  // Box selection
-  weightText: {
+  // Box
+  weightNote: {
     fontSize: 13,
     color: tokens.colors.textMuted,
     marginBottom: 14,
@@ -653,191 +955,141 @@ const styles = StyleSheet.create({
   boxOption: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: tokens.colors.border,
-    marginBottom: 8,
-  },
-  boxOptionSelected: {
-    borderColor: tokens.colors.primary,
-    backgroundColor: tokens.colors.primaryLight ?? '#f5f3ff',
-  },
-  boxOptionDisabled: {
-    opacity: 0.4,
-  },
-  boxName: {
-    fontSize: 14,
-    color: tokens.colors.text,
-    flex: 1,
-  },
-  boxDetail: {
-    fontSize: 13,
-    color: tokens.colors.textMuted,
-  },
-  boxRecommendedBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    backgroundColor: tokens.colors.primary,
-    borderRadius: 4,
-    marginLeft: 8,
-  },
-  boxRecommendedText: {
-    fontSize: 11,
-    color: '#fff',
-  },
-  boxDisabledText: {
-    fontSize: 11,
-    color: tokens.colors.error,
-    marginTop: 2,
-  },
-  // Address
-  addressCard: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: tokens.colors.border,
-    marginBottom: 8,
     gap: 12,
+    padding: 14,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: tokens.colors.border,
+    marginBottom: 8,
   },
-  addressCardSelected: {
+  boxSelected: {
     borderColor: tokens.colors.primary,
-    backgroundColor: tokens.colors.primaryLight ?? '#f5f3ff',
+    backgroundColor: '#f5f3ff',
   },
-  addressName: {
+  boxDisabled: { opacity: 0.4 },
+  boxName: {
     fontSize: 14,
     color: tokens.colors.text,
     marginBottom: 2,
   },
-  addressDetail: {
+  boxMeta: {
+    fontSize: 13,
+    color: tokens.colors.textMuted,
+  },
+  boxError: {
+    fontSize: 12,
+    color: tokens.colors.error,
+    marginTop: 2,
+  },
+  badge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    backgroundColor: tokens.colors.primary,
+    borderRadius: 4,
+  },
+  badgeText: {
+    fontSize: 11,
+    color: '#fff',
+  },
+  // Radio
+  radio: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: tokens.colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  radioSelected: {
+    borderColor: tokens.colors.primary,
+  },
+  radioDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: tokens.colors.primary,
+  },
+  // Address
+  addrCard: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    padding: 14,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: tokens.colors.border,
+    marginBottom: 8,
+  },
+  addrCardSelected: {
+    borderColor: tokens.colors.primary,
+    backgroundColor: '#f5f3ff',
+  },
+  addrName: {
+    fontSize: 14,
+    color: tokens.colors.text,
+    marginBottom: 2,
+  },
+  addrDetail: {
     fontSize: 13,
     color: tokens.colors.textMuted,
     marginBottom: 1,
   },
-  addAddressRow: {
+  addrPhone: {
+    fontSize: 13,
+    color: tokens.colors.textMuted,
+  },
+  addAddrBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
     paddingVertical: 12,
   },
-  addAddressText: {
+  addAddrText: {
     fontSize: 14,
     color: tokens.colors.primary,
   },
-  // Payment method
-  paymentOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: tokens.colors.border,
-    marginBottom: 8,
-    gap: 12,
-  },
-  paymentOptionSelected: {
-    borderColor: tokens.colors.primary,
-    backgroundColor: tokens.colors.primaryLight ?? '#f5f3ff',
-  },
-  paymentLabel: {
-    fontSize: 14,
-    color: tokens.colors.text,
-  },
-  // Price breakdown
+  // Price
   priceRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingVertical: 7,
+    paddingVertical: 6,
   },
   priceLabel: {
     fontSize: 14,
     color: tokens.colors.textMuted,
   },
-  priceValue: {
+  priceVal: {
     fontSize: 14,
     color: tokens.colors.text,
-  },
-  priceDiscount: {
-    color: tokens.colors.success,
   },
   priceDivider: {
     height: 0.5,
     backgroundColor: tokens.colors.border,
     marginVertical: 10,
   },
-  totalRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingTop: 4,
-  },
   totalLabel: {
-    fontSize: 16,
+    fontSize: 15,
     color: tokens.colors.text,
   },
-  totalValue: {
-    fontSize: 18,
+  totalVal: {
+    fontSize: 17,
     fontWeight: '600',
     color: tokens.colors.text,
   },
   cargoNote: {
     fontSize: 12,
     color: tokens.colors.textMuted,
-    marginTop: 12,
+    marginTop: 10,
     lineHeight: 18,
   },
-  // Bottom button
-  bottomBar: {
-    paddingHorizontal: 24,
-    paddingTop: 12,
-    borderTopWidth: 0.5,
-    borderTopColor: tokens.colors.border,
-    backgroundColor: tokens.colors.background,
-  },
-  confirmButton: {
-    backgroundColor: tokens.colors.primary,
-    borderRadius: 12,
-    paddingVertical: 16,
-    alignItems: 'center',
-  },
-  confirmButtonDisabled: {
-    opacity: 0.5,
-  },
-  confirmButtonText: {
-    fontSize: 15,
-    fontWeight: '500',
-    color: '#fff',
-  },
-  // STATE 2: Payment styles
-  orderConfirmed: {
-    alignItems: 'center',
-    paddingVertical: 8,
-  },
-  orderNumber: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: tokens.colors.text,
-    marginBottom: 4,
-  },
-  orderTotal: {
-    fontSize: 15,
-    color: tokens.colors.textMuted,
-  },
-  orderNote: {
-    fontSize: 13,
-    color: tokens.colors.textMuted,
-    marginTop: 8,
-    textAlign: 'center',
-  },
+  // Bank
   bankCard: {
     backgroundColor: tokens.colors.surface,
     borderRadius: 12,
     padding: 16,
-    gap: 12,
+    gap: 10,
   },
   bankRow: {
     flexDirection: 'row',
@@ -851,72 +1103,116 @@ const styles = StyleSheet.create({
   bankValue: {
     fontSize: 14,
     color: tokens.colors.text,
+    textAlign: 'right',
+    flex: 1,
+    marginLeft: 16,
   },
-  bankAmount: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: tokens.colors.text,
+  // Receipt
+  receiptNote: {
+    fontSize: 13,
+    color: tokens.colors.textMuted,
+    marginBottom: 14,
+    lineHeight: 20,
   },
-  referenceCode: {
-    fontSize: 14,
-    color: tokens.colors.primary,
-    fontWeight: '500',
+  uploadRow: {
+    flexDirection: 'row',
+    gap: 10,
   },
-  uploadButton: {
-    borderRadius: 12,
+  uploadBtn: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: tokens.colors.border,
     borderStyle: 'dashed',
-    paddingVertical: 18,
     alignItems: 'center',
-    marginBottom: 10,
   },
-  uploadButtonText: {
+  uploadBtnText: {
     fontSize: 14,
     color: tokens.colors.primary,
+  },
+  receiptPreview: {
+    width: '100%',
+    height: 180,
+    borderRadius: 10,
+    marginBottom: 12,
+  },
+  removeReceipt: {
+    alignItems: 'center',
+    padding: 8,
+  },
+  removeReceiptText: {
+    color: tokens.colors.primary,
+    fontSize: 14,
+  },
+  uploadSubmitBtn: {
+    backgroundColor: tokens.colors.primary,
+    borderRadius: 10,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  uploadSubmitText: {
+    fontSize: 15,
+    color: '#fff',
+    fontWeight: '500',
   },
   uploadedBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 10,
     padding: 14,
     backgroundColor: (tokens.colors as any).successLight ?? '#f0fdf4',
     borderRadius: 10,
-    marginBottom: 10,
   },
   uploadedText: {
     fontSize: 14,
     color: tokens.colors.success,
+    flex: 1,
+    lineHeight: 20,
   },
-  viewOrdersButton: {
+  // Order confirmed
+  orderNumber: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: tokens.colors.text,
+    marginBottom: 4,
+  },
+  orderStatus: {
+    fontSize: 14,
+    color: tokens.colors.textMuted,
+  },
+  // Bottom bar
+  bottomBar: {
+    paddingHorizontal: 24,
+    paddingTop: 12,
+    borderTopWidth: 0.5,
+    borderTopColor: tokens.colors.border,
+    backgroundColor: tokens.colors.background,
+  },
+  primaryBtn: {
+    backgroundColor: tokens.colors.primary,
+    borderRadius: 12,
+    paddingVertical: 16,
+    alignItems: 'center',
+  },
+  primaryBtnText: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: '#fff',
+  },
+  secondaryBtn: {
     borderRadius: 12,
     borderWidth: 1,
     borderColor: tokens.colors.primary,
-    paddingVertical: 14,
+    paddingVertical: 16,
     alignItems: 'center',
   },
-  viewOrdersText: {
+  secondaryBtnText: {
     fontSize: 15,
     color: tokens.colors.primary,
   },
-  // Shared
-  radioOuter: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    borderWidth: 2,
-    borderColor: tokens.colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
-  radioOuterSelected: {
-    borderColor: tokens.colors.primary,
-  },
-  radioInner: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: tokens.colors.primary,
+  btnDisabled: { opacity: 0.5 },
+  textMuted: {
+    color: tokens.colors.textMuted,
   },
 })

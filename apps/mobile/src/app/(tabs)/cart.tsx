@@ -396,58 +396,6 @@ const styles = StyleSheet.create({
     color: tokens.colors.error,
     marginTop: 4,
   },
-  couponSection: {
-    paddingHorizontal: 24,
-    paddingTop: 16,
-    paddingBottom: 8,
-  },
-  couponLabel: {
-    fontSize: 13,
-    color: tokens.colors.textMuted,
-    marginBottom: 8,
-  },
-  couponInputRow: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  couponInput: {
-    flex: 1,
-    height: 44,
-    borderRadius: 12,
-    borderWidth: 0.5,
-    borderColor: tokens.colors.border,
-    paddingHorizontal: 12,
-    fontSize: 14,
-    color: tokens.colors.text,
-    backgroundColor: tokens.colors.surface,
-  },
-  couponApplyBtn: {
-    height: 44,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  couponApplyText: {
-    fontSize: 13,
-    color: tokens.colors.white,
-    fontFamily: 'Inter_400Regular',
-  },
-  couponErrorText: {
-    fontSize: 12,
-    color: tokens.colors.error,
-    marginTop: 6,
-  },
-  couponSuccessRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 6,
-  },
-  couponSuccessText: {
-    fontSize: 12,
-    color: tokens.colors.success,
-    marginLeft: 4,
-  },
   bottomSummary: {
     position: 'absolute',
     bottom: 0,
