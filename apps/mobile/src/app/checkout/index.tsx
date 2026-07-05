@@ -9,12 +9,12 @@ import {
   ActivityIndicator,
   StyleSheet,
   Image,
+  Share,
 } from 'react-native'
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Feather } from '@expo/vector-icons'
 import { useRouter } from 'expo-router'
 import * as ImagePicker from 'expo-image-picker'
-import * as Clipboard from 'expo-clipboard'
 
 import { useAuthStore } from '../../lib/auth-store'
 import { useCartStore } from '../../lib/cart-store'
@@ -36,7 +36,7 @@ interface OrderResult {
   boxCostKrw: number
 }
 
-export default function CheckoutScreen() {
+function CheckoutScreen() {
   const router = useRouter()
   const insets = useSafeAreaInsets()
   const customer = useAuthStore((s) => s.customer)
@@ -679,10 +679,9 @@ export default function CheckoutScreen() {
                     <Text style={styles.bankLabel}>Hisob raqami</Text>
                     <Pressable
                       onPress={async () => {
-                        await Clipboard.setStringAsync(
-                          activePaymentMethod.accountNumber ?? ''
-                        )
-                        Alert.alert('Nusxalandi')
+                        await Share.share({
+                          message: activePaymentMethod.accountNumber ?? ''
+                        })
                       }}
                     >
                       <Text style={[styles.bankValue, { color: tokens.colors.primary }]}>
@@ -705,8 +704,9 @@ export default function CheckoutScreen() {
                     <Text style={styles.bankLabel}>Izoh (to'lovda)</Text>
                     <Pressable
                       onPress={async () => {
-                        await Clipboard.setStringAsync(orderResult.orderNumber)
-                        Alert.alert('Nusxalandi')
+                        await Share.share({
+                          message: orderResult.orderNumber
+                        })
                       }}
                     >
                       <Text
@@ -1216,3 +1216,5 @@ const styles = StyleSheet.create({
     color: tokens.colors.textMuted,
   },
 })
+
+export default CheckoutScreen
