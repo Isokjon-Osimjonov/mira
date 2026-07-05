@@ -222,7 +222,14 @@ export default function CartScreen() {
 
         {/* COUPON SECTION */}
         <View style={styles.couponSection}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+          <View
+            style={{
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: 8,
+            }}
+          >
             <Text style={[styles.couponLabel, { marginBottom: 0 }]}>Kupon kodi</Text>
             {customer && (
               <TouchableOpacity onPress={() => router.push('/profile/coupons')}>
@@ -313,14 +320,17 @@ export default function CartScreen() {
           <Text style={styles.totalUzs}>≈ {formatUZS(krwToUzs(finalTotal, exchangeRate))}</Text>
         )}
 
-        <View style={{ marginTop: 0 }}>
+        <View style={{ position: 'absolute', bottom: insets.bottom, left: 24, right: 24 }}>
           <PrimaryButton
             label="Buyurtma berish"
             disabled={items.length === 0 || items.some((i) => !i.inStock)}
             onPress={() => {
-              if (!requireAuth(useAuthStore.getState().isAuthenticated, router, '/checkout/address')) return
+              if (
+                !requireAuth(useAuthStore.getState().isAuthenticated, router, '/checkout')
+              )
+                return
               router.push({
-                pathname: '/checkout/address',
+                pathname: '/checkout',
                 params: {
                   couponCode: couponResult?.coupon.code ?? '',
                 },
