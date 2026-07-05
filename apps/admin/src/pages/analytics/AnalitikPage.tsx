@@ -114,11 +114,7 @@ export function AnalitikPage() {
     enabled,
   })
 
-  const { data: couponStats } = useQuery({
-    queryKey: ['analytics', 'coupons', dateFrom, dateTo],
-    queryFn: () => analyticsApi.getCouponStats(dateParams),
-    enabled,
-  })
+
 
   const { data: couponPerformance } = useQuery({
     queryKey: ['analytics', 'coupon-performance', dateFrom, dateTo],
@@ -567,43 +563,7 @@ export function AnalitikPage() {
         </div>
       </div>
 
-      {/* Coupon statistics section */}
-      <div className="bg-white rounded-xl border-[0.5px] border-border overflow-hidden">
-        <div className="px-5 py-4 border-b border-border/50">
-          <h2 className="text-sm font-semibold text-gray-900">Kuponlar statistikasi</h2>
-          <p className="text-[11px] text-muted-foreground">
-            Ushbu davrda ishlatilgan kuponlar va ular keltirgan daromad
-          </p>
-        </div>
 
-        {/* Coupon KPIs */}
-        {enabled && couponStats && (
-          <div className="grid grid-cols-3 gap-px bg-border/30 border-b border-border/30">
-            {[
-              {
-                label: 'Ishlatilgan kuponlar',
-                value: `${couponStats.totalUsed ?? 0} ta`,
-                color: 'text-blue-700',
-              },
-              {
-                label: 'Jami chegirma',
-                value: formatKRW(couponStats.totalDiscount ?? 0),
-                color: 'text-red-600',
-              },
-              {
-                label: 'Kuponli buyurtmalar',
-                value: `${couponStats.couponOrderPct?.toFixed(1) ?? 0}%`,
-                color: 'text-purple-700',
-              },
-            ].map((kpi, i) => (
-              <div key={i} className="bg-white px-4 py-3">
-                <p className="text-[11px] text-muted-foreground mb-1">{kpi.label}</p>
-                <p className={cn('text-base font-bold', kpi.color)}>{kpi.value}</p>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
 
       {/* 2-column: Customers */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
