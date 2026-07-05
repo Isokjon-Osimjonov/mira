@@ -58,8 +58,10 @@ export function generateInvoiceHtml(
 
   const wholesaleSavings =
     retailSum - BigInt(Math.round(Number(data.subtotal)))
-  const couponSavings =
-    BigInt(Math.round(Number(data.discountAmount || 0)))
+  const couponDiscountRaw = Number(data.discountAmount ?? 0)
+  const couponSavings = BigInt(
+    Math.round(isNaN(couponDiscountRaw) ? 0 : couponDiscountRaw)
+  )
   const totalSavings = wholesaleSavings + couponSavings
 
   const itemsHtml = data.items.map(item => {

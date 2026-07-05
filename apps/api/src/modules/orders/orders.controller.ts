@@ -254,7 +254,7 @@ export async function downloadInvoice(req: Request, res: Response) {
       cargoFee: order.cargoFee ?? 0,
       boxCostKrw: order.boxCostKrw ?? 0,
       totalAmount: order.totalAmount,
-      discountAmount: order.discountAmount ?? 0,
+      discountAmount: Number(order.discountAmount ?? 0),
       couponCode: order.couponCode ?? null,
       items: invoiceItems.map(item => ({
         name: item.productName,

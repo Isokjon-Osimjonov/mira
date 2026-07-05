@@ -23,6 +23,7 @@ import {
   Clock,
   DollarSign,
   ClipboardCheck,
+  Tag,
 } from 'lucide-react'
 import { analyticsApi, type DashboardPeriod } from '../../api/analytics.api'
 import { ordersApi } from '../../api/orders.api'
@@ -285,6 +286,19 @@ export function DashboardPage() {
           iconColor="bg-green-50 text-green-600"
           loading={overviewLoading}
         />
+
+        {/* 2.5 Kupon chegirmalari */}
+        {overview?.hasDiscounts && (
+          <KpiCard
+            title="Kupon chegirmalari"
+            value={`-${formatKRW(overview.periodDiscounts ?? 0)}`}
+            sub="Chegirma sifatida berilgan"
+            change={undefined}
+            icon={Tag}
+            iconColor="bg-green-50 text-green-600"
+            loading={overviewLoading}
+          />
+        )}
 
         {/* 3. To'lov kutilmoqda */}
         <KpiCard
