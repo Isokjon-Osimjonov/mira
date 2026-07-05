@@ -13,6 +13,7 @@ import {
   ScanBarcode,
   Camera,
   X,
+  Tag,
 } from 'lucide-react'
 import { BrowserMultiFormatReader } from '@zxing/browser'
 import { toast } from 'sonner'
@@ -509,31 +510,72 @@ export function OrderDetailPage({ id }: Props) {
 
               {/* Totals row */}
               <div className="px-4 py-3 border-t border-border/50 bg-gray-50/50 space-y-1.5">
-                <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>Mahsulotlar jami</span>
-                  <span>{formatKRW(order.subtotal)}</span>
-                </div>
-                {(order.discountAmount ?? 0) > 0 && (
-                  <div className="flex justify-between text-xs text-green-600">
-                    <span>Kupon {order.couponCode ? `(${order.couponCode})` : ''}</span>
-                    <span>-{formatKRW(order.discountAmount)}</span>
+                {/* PLACE 1 — Kupon near top of totals if no payment info card exists, or just inside totals */}
+                {order.couponCode && (
+                  <div className="flex justify-between items-center py-1">
+                    <span className="text-sm text-muted-foreground flex items-center gap-1">
+                      <Tag size={14} />
+                      Kupon
+                    </span>
+                    <span className="text-sm font-mono bg-green-50 text-green-700 px-2 py-0.5 rounded border border-green-200">
+                      {order.couponCode}
+                    </span>
                   </div>
                 )}
-                <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>Kargo</span>
-                  <span>{(order.cargoFee ?? 0) > 0 ? formatKRW(order.cargoFee) : '0 ₩'}</span>
+                
+                {/* Subtotal */}
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Mahsulotlar jami</span>
+                  <span>{formatKRW(order.subtotal)}</span>
                 </div>
-                <div className="flex justify-between font-bold text-sm text-gray-900 pt-1.5 border-t border-border/50">
-                  <span>JAMI</span>
+
+                {/* Coupon discount — show only if applied */}
+                {order.couponCode && Number(order.discountAmount) > 0 && (
+                  <div className="flex justify-between text-sm text-green-600">
+                    <span className="flex items-center gap-1">
+                      <Tag size={12} />
+                      Kupon chegirmasi ({order.couponCode})
+                    </span>
+                    <span>−{formatKRW(order.discountAmount)}</span>
+                  </div>
+                )}
+
+                {/* Cargo fee */}
+                {Number(order.cargoFee) > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Yetkazib berish</span>
+                    <span>{formatKRW(order.cargoFee)}</span>
+                  </div>
+                )}
+
+                {/* Box cost */}
+                {Number(order.boxCostKrw) > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Quti narxi</span>
+                    <span>{formatKRW(order.boxCostKrw)}</span>
+                  </div>
+                )}
+
+                {/* Total */}
+                <div className="flex justify-between font-semibold text-base border-t pt-2 mt-1">
+                  <span>Jami to'lov</span>
                   <div className="text-right">
-                    <p>{formatKRW(order.totalAmount)}</p>
+                    <span>{formatKRW(order.totalAmount)}</span>
                     {isUZB && order.krwToUzsRate && (
-                      <p className="text-[11px] font-normal text-muted-foreground">
+                      <p className="text-[11px] font-normal text-muted-foreground mt-0.5">
                         ≈ {formatUZS(Math.round(order.totalAmount * order.krwToUzsRate))}
                       </p>
                     )}
                   </div>
                 </div>
+
+                {/* Savings summary */}
+                {Number(order.discountAmount) > 0 && (
+                  <div className="flex justify-between text-xs text-green-600 mt-1">
+                    <span>✨ Tejaldi</span>
+                    <span>{formatKRW(order.discountAmount)}</span>
+                  </div>
+                )}
 
                 {isUZB && order.krwToUzsRate && (
                   <div className="flex justify-between text-[11px] text-muted-foreground pt-1 border-t border-dashed border-border/50">

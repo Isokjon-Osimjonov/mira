@@ -221,13 +221,7 @@ export async function downloadInvoice(req: Request, res: Response) {
       .where(eq(exchangeRateSnapshots.id, order.rateSnapshotId!))
       .limit(1)
 
-    // Get coupon code if used
-    const [redemption] = await db
-      .select({ code: coupons.code })
-      .from(couponRedemptions)
-      .innerJoin(coupons, eq(coupons.id, couponRedemptions.couponId))
-      .where(eq(couponRedemptions.orderId, order.id))
-      .limit(1)
+    // Coupon code is stored directly on the order
 
     const invoiceItems = items.map((item) => ({
       productName: item.product.name,
@@ -261,7 +255,7 @@ export async function downloadInvoice(req: Request, res: Response) {
       boxCostKrw: order.boxCostKrw ?? 0,
       totalAmount: order.totalAmount,
       discountAmount: order.discountAmount ?? 0,
-      couponCode: redemption?.code ?? null,
+      couponCode: order.couponCode ?? null,
       items: invoiceItems.map(item => ({
         name: item.productName,
         brandName: item.brandName,

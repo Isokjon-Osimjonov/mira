@@ -13,6 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Image } from 'expo-image'
 import { Ionicons, Feather } from '@expo/vector-icons'
+
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { router, useLocalSearchParams } from 'expo-router'
 import * as ImagePicker from 'expo-image-picker'
@@ -58,6 +59,13 @@ export default function OrderDetailScreen() {
   const isUZB = customer?.phoneRegion === 'UZB'
   const showUzs = isUZB
   const queryClient = useQueryClient()
+
+  const formatPrice = (amount: number, region?: 'UZB' | 'KOR') => {
+    if (region === 'UZB') {
+      return `₩${Math.round(amount).toLocaleString('ko-KR')}` 
+    }
+    return `₩${Math.round(amount).toLocaleString('ko-KR')}`
+  }
 
   const {
     data: order,
@@ -341,19 +349,48 @@ export default function OrderDetailScreen() {
           {summaryRow('Mahsulotlar:', formatKRW(Number(order.subtotal ?? 0)))}
           {Number(order.cargoFee) > 0 &&
             summaryRow('Yetkazib berish:', formatKRW(Number(order.cargoFee)))}
-          {Number(order.discountAmount) > 0 &&
-            summaryRow(
-              'Chegirma:',
-              '- ' + formatKRW(Number(order.discountAmount)),
-              false,
-              '#16A34A'
-            )}
+          {/* After subtotal row, before cargo: */}
+          {order.couponCode && Number(order.discountAmount) > 0 && (
+            <View style={styles.priceRow}>
+              <View style={styles.priceRowLeft}>
+                <Feather name="tag" size={12} color={tokens.colors.success} />
+                <Text style={[styles.priceLabel, { color: tokens.colors.success }]}>
+                  Kupon ({order.couponCode})
+                </Text>
+              </View>
+              <Text style={[styles.priceValue, { color: tokens.colors.success }]}>
+                −{formatPrice(order.discountAmount, order.deliveryRegion as any)}
+              </Text>
+            </View>
+          )}
           <View style={styles.priceDivider} />
           {summaryRow('Jami:', formatKRW(Number(order.totalAmount)), true)}
           {showUzs && (
             <Text style={styles.totalUzs}>
               ≈ {formatUZS(krwToUzs(Number(order.totalAmount), exchangeRate))}
             </Text>
+          )}
+          {/* After total row, savings summary: */}
+          {Number(order.discountAmount) > 0 && (
+            <View
+              style={[
+                styles.priceRow,
+                {
+                  borderTopWidth: 0.5,
+                  borderTopColor: tokens.colors.success,
+                  borderStyle: 'dashed',
+                  marginTop: 4,
+                  paddingTop: 6,
+                },
+              ]}
+            >
+              <Text style={[styles.priceLabel, { color: tokens.colors.success, fontWeight: '500' }]}>
+                ✨ Tejadingiz
+              </Text>
+              <Text style={[styles.priceValue, { color: tokens.colors.success, fontWeight: '500' }]}>
+                {formatPrice(order.discountAmount, order.deliveryRegion as any)}
+              </Text>
+            </View>
           )}
         </View>
 
@@ -878,5 +915,24 @@ const styles = StyleSheet.create({
   modalImage: {
     width: '100%',
     height: '80%',
+  },
+  priceRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 2,
+  },
+  priceRowLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  priceLabel: {
+    fontSize: 14,
+    color: tokens.colors.textMuted,
+  },
+  priceValue: {
+    fontSize: 14,
+    color: tokens.colors.text,
   },
 })
