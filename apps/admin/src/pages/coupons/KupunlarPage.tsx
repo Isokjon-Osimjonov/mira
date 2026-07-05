@@ -305,9 +305,16 @@ export function KupunlarPage() {
   }
 
   const handleEdit = async (coupon: any) => {
+    if (!coupon.id) {
+      toast.error('Kupon ID topilmadi')
+      return
+    }
+    
     setEditLoadingId(coupon.id)
     try {
-      const full = await couponsApi.getById(coupon.id)
+      const response = await couponsApi.getById(coupon.id)
+      const full = response.data ? response.data : response
+      
       setEditTarget(full)
       reset({
         code: full.code,
