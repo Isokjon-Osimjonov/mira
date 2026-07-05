@@ -48,16 +48,27 @@ const couponSchema = z.object({
   categoryId: z.string().uuid().optional().nullable(),
   customerId: z.string().uuid().optional().nullable(),
   regionCode: z.string().optional().nullable(),
-  minOrderAmount: z.coerce.number().int().min(0).default(0),
-  maxUsesTotal: z.coerce.number().int().min(0).optional().nullable(),
-  maxUsesPerCustomer: z.coerce.number().int().min(1).default(1),
+  minOrderAmount: z.preprocess(
+    (val) => (val === '' || val === undefined || val === null ? null : Number(val)),
+    z.number().min(0).nullable().optional()
+  ),
+  maxUsesTotal: z.preprocess(
+    (val) => (val === '' || val === undefined || val === null ? null : Number(val)),
+    z.number().min(0).nullable().optional()
+  ),
+  maxUsesPerCustomer: z.preprocess(
+    (val) => (val === '' || val === undefined || val === null ? 1 : Number(val)),
+    z.number().min(1).default(1)
+  ),
   startsAt: z.string().optional().nullable(),
-
   expiresAt: z.string().optional().nullable(),
   description: z.string().optional().nullable(),
   onePerCustomer: z.boolean().default(false),
   firstOrderOnly: z.boolean().default(false),
-  maxDiscountCap: z.coerce.number().min(0).optional().nullable(),
+  maxDiscountCap: z.preprocess(
+    (val) => (val === '' || val === undefined || val === null ? null : Number(val)),
+    z.number().min(0).nullable().optional()
+  ),
   excludeWholesale: z.boolean().default(false),
   isPromotional: z.boolean().default(false),
   isActive: z.boolean().default(true),
@@ -114,6 +125,7 @@ export function KupunlarPage() {
   const [page, setPage] = useState(1)
   const [sheet, setSheet] = useState(false)
   const [editTarget, setEditTarget] = useState<any>(null)
+  const [editLoadingId, setEditLoadingId] = useState<string | null>(null)
   const [viewTarget, setViewTarget] = useState<any>(null)
   const [deleteTarget, setDeleteTarget] = useState<any>(null)
   const [generatingCode, setGeneratingCode] = useState(false)
@@ -292,34 +304,42 @@ export function KupunlarPage() {
     setSheet(false)
   }
 
-  const handleEdit = (coupon: any) => {
-    setEditTarget(coupon)
-    reset({
-      code: coupon.code,
-      name: coupon.name,
-      type: coupon.type,
-      value: coupon.value,
-      scope: coupon.scope,
-      productId: coupon.productId,
-      categoryId: coupon.categoryId,
-      customerId: coupon.customerId,
-      regionCode: coupon.regionCode,
-      minOrderAmount: coupon.minOrderAmount,
-      maxUsesTotal: coupon.maxUsesTotal,
-      maxUsesPerCustomer: coupon.maxUsesPerCustomer,
-      startsAt: coupon.startsAt ? new Date(coupon.startsAt).toISOString().split('T')[0] : null,
-      expiresAt: coupon.expiresAt ? new Date(coupon.expiresAt).toISOString().split('T')[0] : null,
-      description: coupon.description,
-      isActive: coupon.status === 'ACTIVE',
-      onePerCustomer: coupon.onePerCustomer ?? false,
-      firstOrderOnly: coupon.firstOrderOnly ?? false,
-      maxDiscountCap: coupon.maxDiscountCap ?? null,
-      excludeWholesale: coupon.excludeWholesale ?? false,
-      isPromotional: coupon.isPromotional ?? false,
-    })
-    setProductSearch(coupon.productName || '')
-    setCustomerSearch(coupon.customerName || '')
-    setSheet(true)
+  const handleEdit = async (coupon: any) => {
+    setEditLoadingId(coupon.id)
+    try {
+      const full = await couponsApi.getById(coupon.id)
+      setEditTarget(full)
+      reset({
+        code: full.code,
+        name: full.name,
+        type: full.type,
+        value: full.value,
+        scope: full.scope,
+        productId: full.productId,
+        categoryId: full.categoryId,
+        customerId: full.customerId,
+        regionCode: full.regionCode,
+        minOrderAmount: full.minOrderAmount,
+        maxUsesTotal: full.maxUsesTotal,
+        maxUsesPerCustomer: full.maxUsesPerCustomer ?? 1,
+        startsAt: full.startsAt ? new Date(full.startsAt).toISOString().split('T')[0] : null,
+        expiresAt: full.expiresAt ? new Date(full.expiresAt).toISOString().split('T')[0] : null,
+        description: full.description,
+        isActive: full.status === 'ACTIVE',
+        onePerCustomer: full.onePerCustomer ?? false,
+        firstOrderOnly: full.firstOrderOnly ?? false,
+        maxDiscountCap: full.maxDiscountCap ?? null,
+        excludeWholesale: full.excludeWholesale ?? false,
+        isPromotional: full.isPromotional ?? false,
+      })
+      setProductSearch(full.productName || coupon.productName || '')
+      setCustomerSearch(full.customerName || coupon.customerName || '')
+      setSheet(true)
+    } catch (err) {
+      toast.error("Kupon ma'lumotlari yuklanmadi")
+    } finally {
+      setEditLoadingId(null)
+    }
   }
 
   const coupons = data?.data ?? []
@@ -571,9 +591,14 @@ export function KupunlarPage() {
                             </button>
                             <button
                               onClick={() => handleEdit(c)}
+                              disabled={editLoadingId === c.id}
                               className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-gray-100 text-gray-500 transition-colors"
                             >
-                              <Tag className="h-3.5 w-3.5" strokeWidth={1.5} />
+                              {editLoadingId === c.id ? (
+                                <RefreshCw className="h-3.5 w-3.5 animate-spin" strokeWidth={1.5} />
+                              ) : (
+                                <Tag className="h-3.5 w-3.5" strokeWidth={1.5} />
+                              )}
                             </button>
                             <button
                               onClick={() => setDeleteTarget(c)}
@@ -877,6 +902,9 @@ export function KupunlarPage() {
                   min="0"
                   className="h-9 text-sm rounded-lg border-[0.5px]"
                 />
+                {errors.minOrderAmount && (
+                  <p className="text-xs text-red-500 mt-1">{errors.minOrderAmount.message as string}</p>
+                )}
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -889,6 +917,9 @@ export function KupunlarPage() {
                   placeholder="Cheksiz"
                   className="h-9 text-sm rounded-lg border-[0.5px]"
                 />
+                {errors.maxUsesTotal && (
+                  <p className="text-xs text-red-500 mt-1">{errors.maxUsesTotal.message as string}</p>
+                )}
               </div>
               <div>
                 <Label className="text-xs mb-1.5 block">Mijoz limiti (ta)</Label>
@@ -898,6 +929,10 @@ export function KupunlarPage() {
                   min="1"
                   className="h-9 text-sm rounded-lg border-[0.5px]"
                 />
+                <p className="text-[10px] text-muted-foreground mt-0.5">1 = faqat bir marta ishlatish mumkin</p>
+                {errors.maxUsesPerCustomer && (
+                  <p className="text-xs text-red-500 mt-1">{errors.maxUsesPerCustomer.message as string}</p>
+                )}
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -946,17 +981,6 @@ export function KupunlarPage() {
                 </div>
 
                 <div className="flex items-center justify-between">
-                  <Label className="text-xs">Har bir mijoz faqat 1 marta ishlatishi mumkin</Label>
-                  <Controller
-                    name="onePerCustomer"
-                    control={control}
-                    render={({ field }) => (
-                      <ToggleSwitch checked={field.value} onChange={field.onChange} size="sm" />
-                    )}
-                  />
-                </div>
-
-                <div className="flex items-center justify-between">
                   <Label className="text-xs">Faqat birinchi buyurtma uchun</Label>
                   <Controller
                     name="firstOrderOnly"
@@ -988,6 +1012,9 @@ export function KupunlarPage() {
                       placeholder="Cheklov yo'q"
                       className="h-9 text-sm rounded-lg border-[0.5px]"
                     />
+                    {errors.maxDiscountCap && (
+                      <p className="text-xs text-red-500 mt-1">{errors.maxDiscountCap.message as string}</p>
+                    )}
                   </div>
                 )}
               </div>
