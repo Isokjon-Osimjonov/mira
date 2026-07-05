@@ -1,11 +1,15 @@
 import { db } from '../../config/db'
-import { coupons, couponRedemptions, userCoupons, customers, orders } from '@mira/db'
+import { coupons, couponRedemptions, userCoupons, customers, orders, products, categories } from '@mira/db'
 import { eq, and, isNull, sql, ilike, or, desc } from 'drizzle-orm'
 import { escapeLikeQuery } from '../../lib/sanitize'
 import { format } from 'date-fns'
 import type { CreateCouponDto, UpdateCouponDto, UpdateCouponStatusDto } from './coupons.schema'
 
 type CouponRow = typeof coupons.$inferSelect
+
+function formatKRW(amount: bigint | number): string {
+  return `₩${Number(amount).toLocaleString('ko-KR')}`
+}
 
 export async function validateCoupon(params: {
   code: string
@@ -28,13 +32,29 @@ export async function validateCoupon(params: {
   eligibleSubtotal: bigint
 }> {
   // 1. Find coupon
-  const [coupon] = await db
-    .select()
+  const [result] = await db
+    .select({
+      coupon: coupons,
+      productName: products.name,
+      categoryName: categories.name,
+    })
     .from(coupons)
+    .leftJoin(products, eq(products.id, coupons.productId))
+    .leftJoin(categories, eq(categories.id, coupons.categoryId))
     .where(and(eq(coupons.code, params.code), isNull(coupons.deletedAt)))
     .limit(1)
 
-  if (!coupon) throw { status: 404, code: 'COUPON_NOT_FOUND', message: 'Bunday kupon kodi mavjud emas' }
+  if (!result) {
+    throw {
+      status: 404,
+      code: 'COUPON_NOT_FOUND',
+      message: 'Bunday kupon kodi mavjud emas'
+    }
+  }
+
+  const coupon = result.coupon
+  const productName = result.productName
+  const categoryName = result.categoryName
 
   // 2. Status
   if (coupon.status !== 'ACTIVE') {
@@ -151,8 +171,8 @@ export async function validateCoupon(params: {
     if (eligibleItems.length === 0) {
       throw {
         status: 400,
-        code: 'NO_ELIGIBLE_ITEMS',
-        message: "Bu kupon ulgurji narxdagi mahsulotlarga qo'llanilmaydi — savatdagi barcha mahsulotlar ulgurji narxda sotib olinmoqda",
+        code: 'COUPON_NO_ELIGIBLE_ITEMS',
+        message: `Bu kupon ulgurji narxdagi mahsulotlarga qo'llanilmaydi. Savatdagi barcha mahsulotlar ulgurji narxda sotib olinmoqda.`,
       }
     }
   }
@@ -184,33 +204,56 @@ export async function validateCoupon(params: {
     }
   }
 
-  if (eligibleSubtotal === 0n) {
-    // If the cart has no eligible items based on scope
-    let errorCode = 'COUPON_MIN_ORDER_NOT_MET'
-    let message = "Savatda bu kupon uchun mos mahsulot topilmadi"
-
-    if (coupon.scope === 'PRODUCT') {
-      errorCode = 'COUPON_WRONG_PRODUCT'
-      message = "Bu kupon faqat ma'lum mahsulotlar uchun — savatda mos mahsulot topilmadi"
-    } else if (coupon.scope === 'CATEGORY') {
-      errorCode = 'COUPON_WRONG_CATEGORY'
-      message = "Bu kupon faqat ma'lum kategoriyalar uchun — savatda mos kategoriya topilmadi"
-    }
-
-    throw {
-      status: 400,
-      code: errorCode,
-      message,
-    }
-  }
-
-  // 11. Min Order Amount / KRW
   const minRequiredKrw = coupon.minOrderKrw ?? coupon.minOrderAmount
-  if (minRequiredKrw && eligibleSubtotal < minRequiredKrw) {
-    throw {
-      status: 400,
-      code: 'COUPON_MIN_ORDER_NOT_MET',
-      message: `Minimal buyurtma summasi: ₩${Number(coupon.minOrderAmount).toLocaleString('ko-KR')} (hozirgi: ₩${Number(eligibleSubtotal).toLocaleString('ko-KR')})`,
+
+  if (eligibleSubtotal === 0n) {
+    if (coupon.scope === 'PRODUCT') {
+      throw {
+        status: 400,
+        code: 'COUPON_NO_ELIGIBLE_ITEMS',
+        message: productName
+          ? `Bu kupon faqat "${productName}" uchun. Savatga ushbu mahsulotni qo'shing va qayta urining.`
+          : `Bu kupon faqat ma'lum mahsulot uchun. Savatda mos mahsulot topilmadi.`
+      }
+    } else if (coupon.scope === 'CATEGORY') {
+      throw {
+        status: 400,
+        code: 'COUPON_NO_ELIGIBLE_ITEMS',
+        message: categoryName
+          ? `Bu kupon faqat "${categoryName}" kategoriyasi uchun. Savatga ushbu kategoriyadan mahsulot qo'shing.`
+          : `Bu kupon faqat ma'lum kategoriya uchun. Savatda mos mahsulot topilmadi.`
+      }
+    } else {
+      throw {
+        status: 400,
+        code: 'COUPON_MIN_ORDER_NOT_MET',
+        message: "Savatda bu kupon uchun mos mahsulot topilmadi"
+      }
+    }
+  } else if (minRequiredKrw && eligibleSubtotal < minRequiredKrw) {
+    const shortfall = minRequiredKrw - eligibleSubtotal
+    if (coupon.scope === 'PRODUCT') {
+      throw {
+        status: 400,
+        code: 'COUPON_MIN_ORDER_NOT_MET',
+        message: productName
+          ? `Bu kupon uchun "${productName}"dan kamida ${formatKRW(minRequiredKrw)} lik xarid kerak. Hozir: ${formatKRW(eligibleSubtotal)}. Yana ${formatKRW(shortfall)} qo'shing.`
+          : `Minimal buyurtma: ${formatKRW(minRequiredKrw)}. Hozir: ${formatKRW(eligibleSubtotal)}. Yana ${formatKRW(shortfall)} qo'shing.`
+      }
+    } else if (coupon.scope === 'CATEGORY') {
+      throw {
+        status: 400,
+        code: 'COUPON_MIN_ORDER_NOT_MET',
+        message: categoryName
+          ? `Bu kupon uchun "${categoryName}" kategoriyasidan kamida ${formatKRW(minRequiredKrw)} lik xarid kerak. Hozir: ${formatKRW(eligibleSubtotal)}. Yana ${formatKRW(shortfall)} qo'shing.`
+          : `Minimal buyurtma: ${formatKRW(minRequiredKrw)}. Hozir: ${formatKRW(eligibleSubtotal)}.`
+      }
+    } else {
+      throw {
+        status: 400,
+        code: 'COUPON_MIN_ORDER_NOT_MET',
+        message: `Minimal buyurtma summasi ${formatKRW(minRequiredKrw)}. Hozirgi savat: ${formatKRW(eligibleSubtotal)}. Yana ${formatKRW(shortfall)} lik mahsulot qo'shing.`
+      }
     }
   }
 
