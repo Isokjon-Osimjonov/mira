@@ -394,7 +394,6 @@ export default function AddressFormScreen() {
                 label="Saqlash"
                 onPress={handleSubmit}
                 loading={isSubmitting}
-                disabled={!isFormValid()}
               />
             </View>
           </View>
