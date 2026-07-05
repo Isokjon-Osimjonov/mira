@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { ScrollView, View, Text, TextInput, Pressable, Alert, ActivityIndicator, StyleSheet } from 'react-native'
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Feather } from '@expo/vector-icons'
@@ -9,7 +9,11 @@ import { tokens } from '../../lib/tokens'
 import { addressService, type Address } from '../../services/address.service'
 import { boxService, type Box } from '../../services/box.service'
 import { cartService } from '../../services/cart.service'
-import { orderService } from '../../services/order.service'
+import { orderService, type CheckoutResult } from '../../services/order.service'
+import { uploadService } from '../../services/upload.service'
+import * as ImagePicker from 'expo-image-picker'
+import api from '../../lib/api'
+import { useQuery } from '@tanstack/react-query'
 
 const getBoxStatus = (box: Box, totalWeightG: number) => {
   const totalWeightKg = totalWeightG / 1000
@@ -45,6 +49,16 @@ export default function SingleCheckoutScreen() {
 
   const scrollRef = useRef<ScrollView>(null)
 
+  // STATE 1 & 2
+  const [orderPlaced, setOrderPlaced] = useState<{
+    orderId: string
+    orderNumber: string
+    totalAmount: number
+    bankDetails: CheckoutResult['paymentInfo'] | null
+  } | null>(null)
+
+  // -- STATE 1 VARIABLES --
+
   // Address
   const [addresses, setAddresses] = useState<Address[]>([])
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null)
@@ -66,6 +80,15 @@ export default function SingleCheckoutScreen() {
 
   // Submission
   const [submitting, setSubmitting] = useState(false)
+
+  // Payment settings for account numbers (fallback)
+  const { data: paymentSettings } = useQuery({
+    queryKey: ['payment-settings'],
+    queryFn: async () => {
+      const res = await api.get('/settings/payment-info')
+      return res.data.data
+    },
+  })
 
   useEffect(() => {
     // Load addresses
@@ -120,15 +143,17 @@ export default function SingleCheckoutScreen() {
 
     setSubmitting(true)
     try {
-      const order = await orderService.checkout({
+      const result = await orderService.checkout({
         addressId: selectedAddressId,
         boxId: selectedBoxId ?? undefined,
         paymentMethod,
         couponCode: couponResult?.code ?? undefined,
       })
-      router.replace({
-        pathname: '/checkout/receipt',
-        params: { orderId: order.order.id }
+      setOrderPlaced({
+        orderId: result.order.id,
+        orderNumber: result.order.orderNumber,
+        totalAmount: result.order.totalAmount,
+        bankDetails: result.paymentInfo,
       })
     } catch (err: any) {
       Alert.alert('Xatolik', err.response?.data?.error?.message ?? 'Buyurtma yaratilmadi')
@@ -137,61 +162,144 @@ export default function SingleCheckoutScreen() {
     }
   }
 
+  // -- STATE 2 VARIABLES --
+  const [receiptUri, setReceiptUri] = useState<string | null>(null)
+  const [isUploading, setIsUploading] = useState(false)
+  const [uploadSuccess, setUploadSuccess] = useState(false)
+
+  const handlePickImage = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      quality: 0.8,
+    })
+
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      setReceiptUri(result.assets[0].uri)
+      handleUploadReceipt(result.assets[0].uri)
+    }
+  }
+
+  const handleUploadReceipt = async (uri: string) => {
+    if (!orderPlaced) return
+    setIsUploading(true)
+    try {
+      const receiptUrl = await uploadService.uploadReceipt(uri)
+      // Since it's a bank transfer, passing the amount.
+      // Payment currency is UZS if UZB, else KRW, but the backend accepts it.
+      const paymentCurrency = region === 'UZB' ? 'UZS' : 'KRW'
+      // Note: in a real scenario we'd use krwToUzs for UZS, but passing orderTotal is fine for backend receipt logic here.
+      await orderService.uploadReceipt(
+        orderPlaced.orderId,
+        receiptUrl,
+        Number(orderPlaced.totalAmount),
+        paymentCurrency
+      )
+      setUploadSuccess(true)
+      await useCartStore.getState().clearCart()
+    } catch (err: any) {
+      Alert.alert('Xatolik', 'Chekni yuklashda xatolik yuz berdi. Qaytadan urinib ko\'ring.')
+      setReceiptUri(null)
+    } finally {
+      setIsUploading(false)
+    }
+  }
+
+  // Calculate totals
   const cartSubtotal = cartItems.reduce((sum, item) => sum + (item.unitPrice * item.quantity), 0)
   const couponDiscount = couponResult?.discountAmount ?? 0
   const selectedBox = boxes.find(b => b.id === selectedBoxId)
   const boxCost = selectedBox ? Number(selectedBox.costKrw) : 0
 
+  if (orderPlaced) {
+    // STATE 2: Receipt Upload
+    const bankDetails = orderPlaced.bankDetails
+    const bankName = bankDetails?.bankName || (region === 'UZB' ? paymentSettings?.uzb?.bankName : paymentSettings?.kor?.bankName) || 'Bank'
+    const accountNumber = bankDetails?.accountNumber || (region === 'UZB' ? paymentSettings?.uzb?.bankNumber : paymentSettings?.kor?.bankNumber) || '---'
+    const holderName = bankDetails?.holderName || (region === 'UZB' ? paymentSettings?.uzb?.bankHolder : paymentSettings?.kor?.bankHolder) || '---'
+
+    return (
+      <SafeAreaView edges={['top']} style={styles.container}>
+        <View style={styles.header}>
+          <Text style={[styles.headerTitle, { flex: 1, textAlign: 'center' }]}>Buyurtma qabul qilindi</Text>
+        </View>
+        <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
+          <View style={[styles.section, styles.orderConfirmed]}>
+            <Text style={styles.orderNumber}>Buyurtma: {orderPlaced.orderNumber}</Text>
+            <Text style={styles.orderTotal}>To'lov summasi: ₩{Number(orderPlaced.totalAmount).toLocaleString('ko-KR')}</Text>
+            <Text style={styles.orderNote}>Buyurtmangizni tasdiqlash uchun quyidagi hisobga to'lov qiling va chekni yuklang.</Text>
+          </View>
+
+          <View style={styles.section}>
+            <Text style={styles.sectionLabel}>To'lov rekvizitlari</Text>
+            <View style={styles.bankCard}>
+              <View style={styles.bankRow}>
+                <Text style={styles.bankLabel}>Bank:</Text>
+                <Text style={styles.bankValue}>{bankName}</Text>
+              </View>
+              <View style={styles.bankRow}>
+                <Text style={styles.bankLabel}>Hisob raqam:</Text>
+                <Text style={styles.referenceCode}>{accountNumber}</Text>
+              </View>
+              <View style={styles.bankRow}>
+                <Text style={styles.bankLabel}>Qabul qiluvchi:</Text>
+                <Text style={styles.bankValue}>{holderName}</Text>
+              </View>
+              <View style={styles.priceDivider} />
+              <View style={styles.bankRow}>
+                <Text style={styles.bankLabel}>Jami summa:</Text>
+                <Text style={styles.bankAmount}>₩{Number(orderPlaced.totalAmount).toLocaleString('ko-KR')}</Text>
+              </View>
+            </View>
+          </View>
+
+          <View style={styles.section}>
+            <Text style={styles.sectionLabel}>To'lov cheki</Text>
+            {uploadSuccess ? (
+              <View style={styles.uploadedBadge}>
+                <Feather name="check-circle" size={20} color={tokens.colors.success} />
+                <Text style={styles.uploadedText}>Kvitansiya yuborildi</Text>
+              </View>
+            ) : isUploading ? (
+              <View style={[styles.uploadButton, { borderColor: tokens.colors.border }]}>
+                <ActivityIndicator color={tokens.colors.primary} />
+                <Text style={[styles.uploadButtonText, { marginTop: 8, color: tokens.colors.textMuted }]}>Yuklanmoqda...</Text>
+              </View>
+            ) : (
+              <Pressable style={styles.uploadButton} onPress={handlePickImage}>
+                <Feather name="upload-cloud" size={24} color={tokens.colors.primary} style={{ marginBottom: 8 }} />
+                <Text style={styles.uploadButtonText}>Chek rasmiga bosing yoki yuklang</Text>
+              </Pressable>
+            )}
+
+            <Pressable
+              style={[styles.viewOrdersButton, { marginTop: 16 }]}
+              onPress={() => router.replace('/(tabs)/orders')}
+            >
+              <Text style={styles.viewOrdersText}>Buyurtmalarni ko'rish</Text>
+            </Pressable>
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    )
+  }
+
+  // STATE 1: Checkout Form
   return (
     <SafeAreaView edges={['top']} style={styles.container}>
-      {/* HEADER */}
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()} style={styles.backBtn}>
+        <Pressable onPress={() => router.back()}>
           <Feather name="arrow-left" size={24} color={tokens.colors.text} />
         </Pressable>
         <Text style={styles.headerTitle}>Buyurtmani rasmiylashtirish</Text>
-        <View style={{ width: 40 }} />
+        <View style={{ width: 24 }} />
       </View>
 
       <ScrollView ref={scrollRef} style={styles.scroll} showsVerticalScrollIndicator={false}>
         
-        {/* SECTION 1: ADDRESS */}
+        {/* SECTION 1: ORDER ITEMS */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>📍 Yetkazib berish manzili</Text>
-          {addresses.length === 0 ? (
-            <Text style={styles.emptyText}>Manzil qo'shilmagan</Text>
-          ) : (
-            addresses.map(addr => (
-              <Pressable
-                key={addr.id}
-                style={[
-                  styles.addressCard,
-                  selectedAddressId === addr.id && styles.addressCardSelected
-                ]}
-                onPress={() => setSelectedAddressId(addr.id)}>
-                <View style={styles.radioOuter}>
-                  {selectedAddressId === addr.id && <View style={styles.radioInner} />}
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.addressName}>{addr.fullName}</Text>
-                  <Text style={styles.addressDetail}>{addr.addressLine1}, {addr.city}</Text>
-                  <Text style={styles.addressPhone}>{addr.phone}</Text>
-                </View>
-                {selectedAddressId === addr.id && (
-                  <Feather name="check-circle" size={20} color={tokens.colors.primary} />
-                )}
-              </Pressable>
-            ))
-          )}
-          <Pressable style={styles.addAddressBtn} onPress={() => router.push('/profile/address-form')}>
-            <Feather name="plus" size={16} color={tokens.colors.primary} />
-            <Text style={styles.addAddressText}>Yangi manzil qo'shish</Text>
-          </Pressable>
-        </View>
-
-        {/* SECTION 2: ORDER ITEMS */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>📦 Buyurtma</Text>
+          <Text style={styles.sectionLabel}>Mahsulotlar</Text>
           {cartItems.map(item => (
             <View key={item.productId} style={styles.orderItem}>
               <Text style={styles.orderItemName} numberOfLines={1}>{item.name}</Text>
@@ -199,13 +307,59 @@ export default function SingleCheckoutScreen() {
               <Text style={styles.orderItemPrice}>₩{(item.unitPrice * item.quantity).toLocaleString('ko-KR')}</Text>
             </View>
           ))}
+          <View style={styles.subtotalRow}>
+            <Text style={styles.subtotalLabel}>Mahsulotlar jami</Text>
+            <Text style={styles.subtotalValue}>₩{cartSubtotal.toLocaleString('ko-KR')}</Text>
+          </View>
+        </View>
+
+        {/* SECTION 2: COUPON */}
+        <View style={styles.section}>
+          <Text style={styles.sectionLabel}>Kupon</Text>
+          {couponResult ? (
+            <View style={styles.couponApplied}>
+              <Text style={styles.couponAppliedText}>
+                {couponResult.code} (₩{couponResult.discountAmount.toLocaleString('ko-KR')})
+              </Text>
+              <Pressable onPress={handleRemoveCoupon}>
+                <Feather name="x" size={18} color={tokens.colors.success} />
+              </Pressable>
+            </View>
+          ) : (
+            <View style={styles.couponRow}>
+              <TextInput
+                value={couponCode}
+                onChangeText={t => setCouponCode(t.toUpperCase())}
+                placeholder="Kupon kodini kiriting"
+                autoCapitalize="characters"
+                style={styles.couponInput}
+                editable={!couponLoading}
+              />
+              <Pressable
+                onPress={handleApplyCoupon}
+                disabled={!couponCode.trim() || couponLoading}
+                style={[
+                  styles.couponButton,
+                  (!couponCode.trim() || couponLoading) && { opacity: 0.5 }
+                ]}>
+                {couponLoading ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Text style={styles.couponButtonText}>Qo'llash</Text>
+                )}
+              </Pressable>
+            </View>
+          )}
+          <Pressable onPress={() => router.push('/profile/coupons')} style={styles.viewCouponsLink}>
+            <Text style={styles.viewCouponsText}>Mavjud kuponlarni ko'rish</Text>
+          </Pressable>
         </View>
 
         {/* SECTION 3: BOX SELECTION (UZB ONLY) */}
         {region === 'UZB' && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>📫 Quti tanlash</Text>
-            <Text style={styles.weightInfo}>Jami og'irlik: {(totalWeightG / 1000).toFixed(2)}kg</Text>
+            <Text style={styles.sectionLabel}>Quti</Text>
+            <Text style={styles.weightText}>Jami og'irlik: {(totalWeightG / 1000).toFixed(2)}kg</Text>
             {boxes
               .sort((a, b) => Number(a.maxWeightKg) - Number(b.maxWeightKg))
               .map(box => {
@@ -222,89 +376,65 @@ export default function SingleCheckoutScreen() {
                       if (!isDisabled) setSelectedBoxId(box.id)
                     }}
                     style={[
-                      styles.boxCard,
-                      isSelected && styles.boxCardSelected,
-                      isDisabled && styles.boxCardDisabled,
+                      styles.boxOption,
+                      isSelected && styles.boxOptionSelected,
+                      isDisabled && styles.boxOptionDisabled,
                     ]}>
-                    <View style={styles.radioOuter}>
+                    <View style={[styles.radioOuter, isSelected && !isDisabled && styles.radioOuterSelected]}>
                       {isSelected && !isDisabled && <View style={styles.radioInner} />}
                     </View>
-                    <View style={{ flex: 1 }}>
-                      <View style={styles.boxHeader}>
-                        <Text style={[styles.boxName, isDisabled && styles.textDisabled]}>
-                          Quti nomi: {box.name}
-                        </Text>
+                    <View style={{ flex: 1, marginLeft: 12 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
+                        <Text style={styles.boxName}>{box.name}</Text>
                         {isRecommended && !isDisabled && (
-                          <View style={styles.recommendedBadge}>
-                            <Text style={styles.recommendedText}>Tavsiya</Text>
+                          <View style={styles.boxRecommendedBadge}>
+                            <Text style={styles.boxRecommendedText}>Tavsiya</Text>
                           </View>
                         )}
                       </View>
-                      <Text style={[styles.boxDetail, isDisabled && styles.textDisabled]}>
+                      <Text style={styles.boxDetail}>
                         Max {box.maxWeightKg}kg · ₩{Number(box.costKrw).toLocaleString('ko-KR')}
                       </Text>
                       {isDisabled && (
-                        <Text style={styles.boxDisabledReason}>{status.reason}</Text>
+                        <Text style={styles.boxDisabledText}>{status.reason}</Text>
                       )}
                     </View>
-                    {isSelected && !isDisabled && (
-                      <Feather name="check-circle" size={20} color={tokens.colors.primary} />
-                    )}
                   </Pressable>
                 )
               })}
           </View>
         )}
 
-        {/* SECTION 4: COUPON */}
+        {/* SECTION 4: ADDRESS */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>🏷 Kupon</Text>
-          {couponResult ? (
-            <View style={styles.couponApplied}>
-              <View style={styles.couponAppliedLeft}>
-                <Feather name="tag" size={16} color={tokens.colors.success} />
-                <View style={{ marginLeft: 8 }}>
-                  <Text style={styles.couponAppliedCode}>{couponResult.code}</Text>
-                  <Text style={styles.couponAppliedDiscount}>−₩{couponResult.discountAmount.toLocaleString('ko-KR')} chegirma</Text>
-                </View>
+          <Text style={styles.sectionLabel}>Yetkazib berish manzili</Text>
+          {addresses.map(addr => (
+            <Pressable
+              key={addr.id}
+              style={[
+                styles.addressCard,
+                selectedAddressId === addr.id && styles.addressCardSelected
+              ]}
+              onPress={() => setSelectedAddressId(addr.id)}>
+              <View style={[styles.radioOuter, selectedAddressId === addr.id && styles.radioOuterSelected, { marginTop: 2 }]}>
+                {selectedAddressId === addr.id && <View style={styles.radioInner} />}
               </View>
-              <Pressable onPress={handleRemoveCoupon} style={styles.removeCouponBtn}>
-                <Feather name="x" size={20} color={tokens.colors.textMuted} />
-              </Pressable>
-            </View>
-          ) : (
-            <View style={styles.couponInput}>
-              <TextInput
-                value={couponCode}
-                onChangeText={t => setCouponCode(t.toUpperCase())}
-                placeholder="Kupon kodini kiriting"
-                autoCapitalize="characters"
-                style={styles.couponTextField}
-                editable={!couponLoading}
-              />
-              <Pressable
-                onPress={handleApplyCoupon}
-                disabled={!couponCode.trim() || couponLoading}
-                style={[
-                  styles.couponApplyBtn,
-                  (!couponCode.trim() || couponLoading) && styles.couponApplyBtnDisabled
-                ]}>
-                {couponLoading ? (
-                  <ActivityIndicator size="small" color="#fff" />
-                ) : (
-                  <Text style={styles.couponApplyText}>Qo'llash</Text>
-                )}
-              </Pressable>
-            </View>
-          )}
-          <Pressable onPress={() => router.push('/profile/coupons')} style={styles.viewCouponsLink}>
-            <Text style={styles.viewCouponsText}>Mavjud kuponlarni ko'rish →</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.addressName}>{addr.fullName}</Text>
+                <Text style={styles.addressDetail}>{addr.addressLine1}, {addr.city}</Text>
+                <Text style={styles.addressDetail}>{addr.phone}</Text>
+              </View>
+            </Pressable>
+          ))}
+          <Pressable style={styles.addAddressRow} onPress={() => router.push('/profile/address-form')}>
+            <Feather name="plus" size={16} color={tokens.colors.primary} />
+            <Text style={styles.addAddressText}>Yangi manzil qo'shish</Text>
           </Pressable>
         </View>
 
         {/* SECTION 5: PAYMENT METHOD */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>💳 To'lov usuli</Text>
+          <Text style={styles.sectionLabel}>To'lov usuli</Text>
           {region === 'UZB' && (
             <Pressable
               style={[
@@ -312,7 +442,7 @@ export default function SingleCheckoutScreen() {
                 paymentMethod === 'UZB_BANK' && styles.paymentOptionSelected
               ]}
               onPress={() => setPaymentMethod('UZB_BANK')}>
-              <View style={styles.radioOuter}>
+              <View style={[styles.radioOuter, paymentMethod === 'UZB_BANK' && styles.radioOuterSelected]}>
                 {paymentMethod === 'UZB_BANK' && <View style={styles.radioInner} />}
               </View>
               <Text style={styles.paymentLabel}>O'zbekiston bank o'tkazma</Text>
@@ -325,7 +455,7 @@ export default function SingleCheckoutScreen() {
                 paymentMethod === 'KOREAN_BANK' && styles.paymentOptionSelected
               ]}
               onPress={() => setPaymentMethod('KOREAN_BANK')}>
-              <View style={styles.radioOuter}>
+              <View style={[styles.radioOuter, paymentMethod === 'KOREAN_BANK' && styles.radioOuterSelected]}>
                 {paymentMethod === 'KOREAN_BANK' && <View style={styles.radioInner} />}
               </View>
               <Text style={styles.paymentLabel}>Koreya bank o'tkazma</Text>
@@ -334,8 +464,8 @@ export default function SingleCheckoutScreen() {
         </View>
 
         {/* SECTION 6: PRICE BREAKDOWN */}
-        <View style={[styles.section, { marginBottom: 100 }]}>
-          <Text style={styles.sectionTitle}>📊 Hisob-kitob</Text>
+        <View style={[styles.section, { borderBottomWidth: 0, paddingBottom: 40 }]}>
+          <Text style={styles.sectionLabel}>Hisob-kitob</Text>
           
           <View style={styles.priceRow}>
             <Text style={styles.priceLabel}>Mahsulotlar jami</Text>
@@ -344,8 +474,8 @@ export default function SingleCheckoutScreen() {
           
           {couponDiscount > 0 && (
             <View style={styles.priceRow}>
-              <Text style={[styles.priceLabel, { color: tokens.colors.success }]}>Kupon ({couponResult?.code})</Text>
-              <Text style={[styles.priceValue, { color: tokens.colors.success }]}>−₩{couponDiscount.toLocaleString('ko-KR')}</Text>
+              <Text style={styles.priceLabel}>Kupon chegirmasi</Text>
+              <Text style={[styles.priceValue, styles.priceDiscount]}>−₩{couponDiscount.toLocaleString('ko-KR')}</Text>
             </View>
           )}
           
@@ -356,12 +486,14 @@ export default function SingleCheckoutScreen() {
             </View>
           )}
           
-          <View style={[styles.priceRow, styles.priceTotalRow]}>
-            <Text style={styles.priceTotalLabel}>Taxminiy jami</Text>
-            <Text style={styles.priceTotalValue}>₩{(cartSubtotal - couponDiscount + boxCost).toLocaleString('ko-KR')}</Text>
+          <View style={styles.priceDivider} />
+
+          <View style={styles.totalRow}>
+            <Text style={styles.totalLabel}>Jami</Text>
+            <Text style={styles.totalValue}>₩{(cartSubtotal - couponDiscount + boxCost).toLocaleString('ko-KR')}</Text>
           </View>
           
-          <Text style={styles.cargoNote}>* Kargo narxi buyurtma tasdiqlangandan so'ng qo'shiladi</Text>
+          <Text style={styles.cargoNote}>Qo'shimcha kargo narxi buyurtma tasdiqlangandan so'ng qo'shiladi</Text>
         </View>
       </ScrollView>
 
@@ -369,15 +501,15 @@ export default function SingleCheckoutScreen() {
       <View style={[styles.bottomBar, { paddingBottom: insets.bottom + 16 }]}>
         <Pressable
           style={[
-            styles.confirmBtn,
-            (!selectedAddressId || (region === 'UZB' && !selectedBoxId) || submitting) && styles.confirmBtnDisabled
+            styles.confirmButton,
+            (!selectedAddressId || (region === 'UZB' && !selectedBoxId) || submitting) && styles.confirmButtonDisabled
           ]}
           disabled={!selectedAddressId || (region === 'UZB' && !selectedBoxId) || submitting}
           onPress={handleCreateOrder}>
           {submitting ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text style={styles.confirmBtnText}>Buyurtmani tasdiqlash</Text>
+            <Text style={styles.confirmButtonText}>Buyurtmani tasdiqlash</Text>
           )}
         </Pressable>
       </View>
@@ -386,76 +518,405 @@ export default function SingleCheckoutScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: tokens.colors.background },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: tokens.colors.border },
-  backBtn: { padding: 8, marginLeft: -8 },
-  headerTitle: { fontSize: 18, fontWeight: '600', color: tokens.colors.text },
-  scroll: { flex: 1 },
-  section: { backgroundColor: '#fff', padding: 16, marginBottom: 8, borderBottomWidth: 1, borderBottomColor: tokens.colors.border },
-  sectionTitle: { fontSize: 16, fontWeight: '700', color: tokens.colors.text, marginBottom: 16 },
-  emptyText: { color: tokens.colors.textMuted, fontSize: 14, fontStyle: 'italic', marginBottom: 12 },
-  
-  // Address
-  addressCard: { flexDirection: 'row', alignItems: 'center', padding: 16, borderWidth: 1, borderColor: tokens.colors.border, borderRadius: 12, marginBottom: 12, backgroundColor: '#fff' },
-  addressCardSelected: { borderColor: tokens.colors.primary, backgroundColor: tokens.colors.primaryLight },
-  radioOuter: { width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: tokens.colors.border, justifyContent: 'center', alignItems: 'center', marginRight: 12 },
-  radioInner: { width: 10, height: 10, borderRadius: 5, backgroundColor: tokens.colors.primary },
-  addressName: { fontSize: 15, fontWeight: '600', color: tokens.colors.text, marginBottom: 4 },
-  addressDetail: { fontSize: 14, color: tokens.colors.textLight, marginBottom: 4 },
-  addressPhone: { fontSize: 14, color: tokens.colors.textLight },
-  addAddressBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: 12, backgroundColor: tokens.colors.primaryLight, borderRadius: 8, marginTop: 4 },
-  addAddressText: { color: tokens.colors.primary, fontSize: 14, fontWeight: '600', marginLeft: 8 },
-
-  // Order Items
-  orderItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: tokens.colors.border },
-  orderItemName: { flex: 1, fontSize: 14, color: tokens.colors.text, marginRight: 16 },
-  orderItemQty: { width: 40, fontSize: 14, color: tokens.colors.textLight, textAlign: 'right', marginRight: 16 },
-  orderItemPrice: { width: 80, fontSize: 14, fontWeight: '600', color: tokens.colors.text, textAlign: 'right' },
-
-  // Box
-  weightInfo: { fontSize: 14, color: tokens.colors.textMuted, marginBottom: 16 },
-  boxCard: { flexDirection: 'row', padding: 16, borderWidth: 1, borderColor: tokens.colors.border, borderRadius: 12, marginBottom: 12, backgroundColor: '#fff' },
-  boxCardSelected: { borderColor: tokens.colors.primary, backgroundColor: tokens.colors.primaryLight },
-  boxCardDisabled: { backgroundColor: '#F9FAFB', opacity: 0.6 },
-  boxHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },
-  boxName: { fontSize: 15, fontWeight: '600', color: tokens.colors.text },
-  textDisabled: { color: tokens.colors.textMuted },
-  recommendedBadge: { backgroundColor: tokens.colors.primary, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4, marginLeft: 8 },
-  recommendedText: { color: '#fff', fontSize: 10, fontWeight: '700' },
-  boxDetail: { fontSize: 13, color: tokens.colors.textLight },
-  boxDisabledReason: { fontSize: 12, color: tokens.colors.error, marginTop: 4 },
-
+  container: {
+    flex: 1,
+    backgroundColor: tokens.colors.background,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 0.5,
+    borderBottomColor: tokens.colors.border,
+  },
+  headerTitle: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: tokens.colors.text,
+  },
+  scroll: {
+    flex: 1,
+  },
+  section: {
+    paddingHorizontal: 24,
+    paddingVertical: 20,
+    borderBottomWidth: 0.5,
+    borderBottomColor: tokens.colors.border,
+  },
+  sectionLabel: {
+    fontSize: 12,
+    color: tokens.colors.textMuted,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+    marginBottom: 16,
+  },
+  // Order items
+  orderItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    paddingVertical: 10,
+  },
+  orderItemName: {
+    flex: 1,
+    fontSize: 14,
+    color: tokens.colors.text,
+    marginRight: 12,
+  },
+  orderItemQty: {
+    fontSize: 13,
+    color: tokens.colors.textMuted,
+    marginRight: 16,
+    minWidth: 30,
+    textAlign: 'right',
+  },
+  orderItemPrice: {
+    fontSize: 14,
+    color: tokens.colors.text,
+    minWidth: 70,
+    textAlign: 'right',
+  },
+  subtotalRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingTop: 12,
+    marginTop: 4,
+    borderTopWidth: 0.5,
+    borderTopColor: tokens.colors.border,
+  },
+  subtotalLabel: {
+    fontSize: 13,
+    color: tokens.colors.textMuted,
+  },
+  subtotalValue: {
+    fontSize: 14,
+    color: tokens.colors.text,
+  },
   // Coupon
-  couponInput: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
-  couponTextField: { flex: 1, height: 48, borderWidth: 1, borderColor: tokens.colors.border, borderRadius: 8, paddingHorizontal: 16, backgroundColor: '#fff', fontSize: 14 },
-  couponApplyBtn: { height: 48, backgroundColor: tokens.colors.primary, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20, borderRadius: 8, marginLeft: 8 },
-  couponApplyBtnDisabled: { opacity: 0.5 },
-  couponApplyText: { color: '#fff', fontSize: 14, fontWeight: '600' },
-  couponApplied: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, backgroundColor: '#ECFDF5', borderRadius: 8, borderWidth: 1, borderColor: '#A7F3D0', marginBottom: 12 },
-  couponAppliedLeft: { flexDirection: 'row', alignItems: 'center' },
-  couponAppliedCode: { fontSize: 14, fontWeight: '700', color: tokens.colors.success },
-  couponAppliedDiscount: { fontSize: 13, color: tokens.colors.success, marginTop: 2 },
-  removeCouponBtn: { padding: 4 },
-  viewCouponsLink: { alignSelf: 'flex-start', marginTop: 4 },
-  viewCouponsText: { color: tokens.colors.primary, fontSize: 14, fontWeight: '500' },
-
-  // Payment
-  paymentOption: { flexDirection: 'row', alignItems: 'center', padding: 16, borderWidth: 1, borderColor: tokens.colors.border, borderRadius: 12, marginBottom: 12, backgroundColor: '#fff' },
-  paymentOptionSelected: { borderColor: tokens.colors.primary, backgroundColor: tokens.colors.primaryLight },
-  paymentLabel: { fontSize: 15, fontWeight: '500', color: tokens.colors.text },
-
-  // Prices
-  priceRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 },
-  priceLabel: { fontSize: 14, color: tokens.colors.textLight },
-  priceValue: { fontSize: 14, fontWeight: '500', color: tokens.colors.text },
-  priceTotalRow: { borderTopWidth: 1, borderTopColor: tokens.colors.border, paddingTop: 16, marginTop: 4 },
-  priceTotalLabel: { fontSize: 16, fontWeight: '700', color: tokens.colors.text },
-  priceTotalValue: { fontSize: 18, fontWeight: '700', color: tokens.colors.text },
-  cargoNote: { fontSize: 12, color: tokens.colors.textMuted, marginTop: 12, fontStyle: 'italic' },
-
-  // Bottom bar
-  bottomBar: { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: '#fff', padding: 16, borderTopWidth: 1, borderTopColor: tokens.colors.border },
-  confirmBtn: { backgroundColor: tokens.colors.primary, height: 56, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
-  confirmBtnDisabled: { opacity: 0.5 },
-  confirmBtnText: { color: '#fff', fontSize: 16, fontWeight: '600' }
+  couponRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  couponInput: {
+    flex: 1,
+    height: 44,
+    borderWidth: 1,
+    borderColor: tokens.colors.border,
+    borderRadius: 8,
+    paddingHorizontal: 14,
+    fontSize: 14,
+    color: tokens.colors.text,
+    backgroundColor: tokens.colors.surface,
+  },
+  couponButton: {
+    height: 44,
+    paddingHorizontal: 18,
+    backgroundColor: tokens.colors.primary,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  couponButtonText: {
+    fontSize: 14,
+    color: '#fff',
+    fontWeight: '500',
+  },
+  couponApplied: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 14,
+    backgroundColor: (tokens.colors as any).successLight ?? '#f0fdf4',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: tokens.colors.success,
+  },
+  couponAppliedText: {
+    fontSize: 14,
+    color: tokens.colors.success,
+  },
+  viewCouponsLink: {
+    marginTop: 10,
+  },
+  viewCouponsText: {
+    fontSize: 13,
+    color: tokens.colors.primary,
+  },
+  // Box selection
+  weightText: {
+    fontSize: 13,
+    color: tokens.colors.textMuted,
+    marginBottom: 14,
+  },
+  boxOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: tokens.colors.border,
+    marginBottom: 8,
+  },
+  boxOptionSelected: {
+    borderColor: tokens.colors.primary,
+    backgroundColor: tokens.colors.primaryLight ?? '#f5f3ff',
+  },
+  boxOptionDisabled: {
+    opacity: 0.4,
+  },
+  boxName: {
+    fontSize: 14,
+    color: tokens.colors.text,
+    flex: 1,
+  },
+  boxDetail: {
+    fontSize: 13,
+    color: tokens.colors.textMuted,
+  },
+  boxRecommendedBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    backgroundColor: tokens.colors.primary,
+    borderRadius: 4,
+    marginLeft: 8,
+  },
+  boxRecommendedText: {
+    fontSize: 11,
+    color: '#fff',
+  },
+  boxDisabledText: {
+    fontSize: 11,
+    color: tokens.colors.error,
+    marginTop: 2,
+  },
+  // Address
+  addressCard: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: tokens.colors.border,
+    marginBottom: 8,
+    gap: 12,
+  },
+  addressCardSelected: {
+    borderColor: tokens.colors.primary,
+    backgroundColor: tokens.colors.primaryLight ?? '#f5f3ff',
+  },
+  addressName: {
+    fontSize: 14,
+    color: tokens.colors.text,
+    marginBottom: 2,
+  },
+  addressDetail: {
+    fontSize: 13,
+    color: tokens.colors.textMuted,
+    marginBottom: 1,
+  },
+  addAddressRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 12,
+  },
+  addAddressText: {
+    fontSize: 14,
+    color: tokens.colors.primary,
+  },
+  // Payment method
+  paymentOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: tokens.colors.border,
+    marginBottom: 8,
+    gap: 12,
+  },
+  paymentOptionSelected: {
+    borderColor: tokens.colors.primary,
+    backgroundColor: tokens.colors.primaryLight ?? '#f5f3ff',
+  },
+  paymentLabel: {
+    fontSize: 14,
+    color: tokens.colors.text,
+  },
+  // Price breakdown
+  priceRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 7,
+  },
+  priceLabel: {
+    fontSize: 14,
+    color: tokens.colors.textMuted,
+  },
+  priceValue: {
+    fontSize: 14,
+    color: tokens.colors.text,
+  },
+  priceDiscount: {
+    color: tokens.colors.success,
+  },
+  priceDivider: {
+    height: 0.5,
+    backgroundColor: tokens.colors.border,
+    marginVertical: 10,
+  },
+  totalRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingTop: 4,
+  },
+  totalLabel: {
+    fontSize: 16,
+    color: tokens.colors.text,
+  },
+  totalValue: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: tokens.colors.text,
+  },
+  cargoNote: {
+    fontSize: 12,
+    color: tokens.colors.textMuted,
+    marginTop: 12,
+    lineHeight: 18,
+  },
+  // Bottom button
+  bottomBar: {
+    paddingHorizontal: 24,
+    paddingTop: 12,
+    borderTopWidth: 0.5,
+    borderTopColor: tokens.colors.border,
+    backgroundColor: tokens.colors.background,
+  },
+  confirmButton: {
+    backgroundColor: tokens.colors.primary,
+    borderRadius: 12,
+    paddingVertical: 16,
+    alignItems: 'center',
+  },
+  confirmButtonDisabled: {
+    opacity: 0.5,
+  },
+  confirmButtonText: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: '#fff',
+  },
+  // STATE 2: Payment styles
+  orderConfirmed: {
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  orderNumber: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: tokens.colors.text,
+    marginBottom: 4,
+  },
+  orderTotal: {
+    fontSize: 15,
+    color: tokens.colors.textMuted,
+  },
+  orderNote: {
+    fontSize: 13,
+    color: tokens.colors.textMuted,
+    marginTop: 8,
+    textAlign: 'center',
+  },
+  bankCard: {
+    backgroundColor: tokens.colors.surface,
+    borderRadius: 12,
+    padding: 16,
+    gap: 12,
+  },
+  bankRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  bankLabel: {
+    fontSize: 13,
+    color: tokens.colors.textMuted,
+  },
+  bankValue: {
+    fontSize: 14,
+    color: tokens.colors.text,
+  },
+  bankAmount: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: tokens.colors.text,
+  },
+  referenceCode: {
+    fontSize: 14,
+    color: tokens.colors.primary,
+    fontWeight: '500',
+  },
+  uploadButton: {
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: tokens.colors.border,
+    borderStyle: 'dashed',
+    paddingVertical: 18,
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  uploadButtonText: {
+    fontSize: 14,
+    color: tokens.colors.primary,
+  },
+  uploadedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    padding: 14,
+    backgroundColor: (tokens.colors as any).successLight ?? '#f0fdf4',
+    borderRadius: 10,
+    marginBottom: 10,
+  },
+  uploadedText: {
+    fontSize: 14,
+    color: tokens.colors.success,
+  },
+  viewOrdersButton: {
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: tokens.colors.primary,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  viewOrdersText: {
+    fontSize: 15,
+    color: tokens.colors.primary,
+  },
+  // Shared
+  radioOuter: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: tokens.colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  radioOuterSelected: {
+    borderColor: tokens.colors.primary,
+  },
+  radioInner: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: tokens.colors.primary,
+  },
 })

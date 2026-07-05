@@ -35,22 +35,6 @@ export default function CartScreen() {
   const showUzs = customer?.phoneRegion === 'UZB'
   const isKOR = customer?.phoneRegion === 'KOR'
 
-  const [couponCode, setCouponCode] = useState('')
-  const [couponResult, setCouponResult] = useState<{
-    discountAmount: number
-    coupon: { id: string; code: string; type: string }
-  } | null>(null)
-  const [couponError, setCouponError] = useState('')
-  const [validatingCoupon, setValidatingCoupon] = useState(false)
-
-  const { couponCode: incomingCode } = useLocalSearchParams<{ couponCode?: string }>()
-
-  React.useEffect(() => {
-    if (incomingCode) {
-      setCouponCode(incomingCode)
-    }
-  }, [incomingCode])
-
   const { data: tiers } = useQuery({
     queryKey: ['kor-shipping-tiers'],
     queryFn: productService.getKorShippingTiers,
@@ -92,29 +76,12 @@ export default function CartScreen() {
     ])
   }
 
-  const handleValidateCoupon = async () => {
-    if (couponCode.length < 2) return
-    setValidatingCoupon(true)
-    setCouponError('')
-    setCouponResult(null)
-    try {
-      const result = await cartService.validateCoupon(couponCode)
-      setCouponResult(result)
-    } catch (err: any) {
-      setCouponError(err?.response?.data?.error?.message ?? 'Kupon topilmadi yoki muddati tugagan')
-    } finally {
-      setValidatingCoupon(false)
-    }
-  }
-
   const items = cart?.items ?? []
   const summary = cart?.summary ?? { itemCount: 0, subtotal: 0, currency: 'KRW' }
 
   const korCargo = isKOR && tiers ? calculateKorCargo(summary.subtotal, tiers) : null
 
-  const finalTotal = couponResult
-    ? summary.subtotal - couponResult.discountAmount + (korCargo ?? 0)
-    : summary.subtotal + (korCargo ?? 0)
+  const finalTotal = summary.subtotal + (korCargo ?? 0)
 
   if (isLoading && !cart) {
     return (
@@ -220,60 +187,7 @@ export default function CartScreen() {
           </View>
         ))}
 
-        {/* COUPON SECTION */}
-        <View style={styles.couponSection}>
-          <View
-            style={{
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: 8,
-            }}
-          >
-            <Text style={[styles.couponLabel, { marginBottom: 0 }]}>Kupon kodi</Text>
-            {customer && (
-              <TouchableOpacity onPress={() => router.push('/profile/coupons')}>
-                <Text style={{ color: tokens.colors.primary, fontSize: 13 }}>
-                  Mavjud kuponlar →
-                </Text>
-              </TouchableOpacity>
-            )}
-          </View>
-          <View style={styles.couponInputRow}>
-            <TextInput
-              style={styles.couponInput}
-              placeholder="Kupon kodini kiriting"
-              value={couponCode}
-              onChangeText={setCouponCode}
-              autoCapitalize="characters"
-            />
-            <TouchableOpacity
-              style={[
-                styles.couponApplyBtn,
-                couponCode.length > 2
-                  ? { backgroundColor: tokens.colors.primary }
-                  : { backgroundColor: tokens.colors.skeleton },
-              ]}
-              onPress={handleValidateCoupon}
-              disabled={couponCode.length < 2 || validatingCoupon}
-            >
-              {validatingCoupon ? (
-                <ActivityIndicator size="small" color={tokens.colors.white} />
-              ) : (
-                <Text style={styles.couponApplyText}>Qo'llash</Text>
-              )}
-            </TouchableOpacity>
-          </View>
-          {couponError ? <Text style={styles.couponErrorText}>{couponError}</Text> : null}
-          {couponResult ? (
-            <View style={styles.couponSuccessRow}>
-              <Feather name="check-circle" size={14} color={tokens.colors.success} />
-              <Text style={styles.couponSuccessText}>
-                Kupon qo'llanildi — {formatKRW(couponResult.discountAmount)} chegirma
-              </Text>
-            </View>
-          ) : null}
-        </View>
+        {/* END COUPON SECTION */}
       </ScrollView>
 
       <View style={[styles.bottomSummary, { paddingBottom: insets.bottom + 60 }]}>
@@ -298,16 +212,7 @@ export default function CartScreen() {
           </View>
         )}
 
-        {couponResult && (
-          <View style={styles.summaryRow}>
-            <Text style={[styles.summaryLabel, { color: tokens.colors.success }]}>
-              Kupon chegirmasi:
-            </Text>
-            <Text style={[styles.summaryValue, { color: tokens.colors.success }]}>
-              - {formatKRW(couponResult.discountAmount)}
-            </Text>
-          </View>
-        )}
+        {/* END COUPON SUMMARY ROW */}
 
         <View style={styles.divider} />
 
@@ -331,9 +236,6 @@ export default function CartScreen() {
                 return
               router.push({
                 pathname: '/checkout',
-                params: {
-                  couponCode: couponResult?.coupon.code ?? '',
-                },
               })
             }}
           />
