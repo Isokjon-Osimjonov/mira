@@ -14,7 +14,7 @@ export const baseAddressSchema = z.object({
   isDefault: z.boolean().default(false),
   province: z.string().max(100).optional(),
   city: z.string().max(100).optional(),
-  addressLine1: z.string().min(5).max(300),
+  addressLine1: z.string().min(5, { message: "Iltimos batafsil yozing" }).max(300),
   addressLine2: z.string().max(200).optional(),
 })
 
