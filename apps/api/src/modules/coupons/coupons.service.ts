@@ -2,6 +2,7 @@ import { db } from '../../config/db'
 import { coupons, couponRedemptions, userCoupons, customers, orders } from '@mira/db'
 import { eq, and, isNull, sql, ilike, or, desc } from 'drizzle-orm'
 import { escapeLikeQuery } from '../../lib/sanitize'
+import { format } from 'date-fns'
 import type { CreateCouponDto, UpdateCouponDto, UpdateCouponStatusDto } from './coupons.schema'
 
 type CouponRow = typeof coupons.$inferSelect
@@ -33,23 +34,23 @@ export async function validateCoupon(params: {
     .where(and(eq(coupons.code, params.code), isNull(coupons.deletedAt)))
     .limit(1)
 
-  if (!coupon) throw { status: 404, code: 'COUPON_NOT_FOUND', message: 'Kupon topilmadi' }
+  if (!coupon) throw { status: 404, code: 'COUPON_NOT_FOUND', message: 'Bunday kupon kodi mavjud emas' }
 
   // 2. Status
   if (coupon.status !== 'ACTIVE') {
-    throw { status: 400, code: 'COUPON_INACTIVE', message: 'Kupon faol emas' }
+    throw { status: 400, code: 'COUPON_INACTIVE', message: 'Bu kupon hozirda faol emas' }
   }
 
   const now = new Date()
 
   // 3. Starts At
   if (coupon.startsAt && now < coupon.startsAt) {
-    throw { status: 400, code: 'COUPON_NOT_STARTED', message: 'Kupon muddati hali boshlanmagan' }
+    throw { status: 400, code: 'COUPON_NOT_STARTED', message: `Bu kupon hali boshlanmagan (${format(coupon.startsAt, 'dd.MM.yyyy')} dan boshlab faol bo'ladi)` }
   }
 
   // 4. Expires At
   if (coupon.expiresAt && now > coupon.expiresAt) {
-    throw { status: 400, code: 'COUPON_EXPIRED', message: 'Kupon muddati tugagan' }
+    throw { status: 400, code: 'COUPON_EXPIRED', message: `Bu kupon muddati tugagan (${format(coupon.expiresAt, 'dd.MM.yyyy')})` }
   }
 
   // 5. Region Mismatch
@@ -57,7 +58,9 @@ export async function validateCoupon(params: {
     throw {
       status: 400,
       code: 'COUPON_REGION_MISMATCH',
-      message: 'Kupon ushbu hududda amal qilmaydi',
+      message: coupon.regionCode === 'KOR'
+        ? "Bu kupon faqat Koreya buyurtmalari uchun"
+        : "Bu kupon faqat O'zbekiston buyurtmalari uchun",
     }
   }
 
@@ -66,7 +69,7 @@ export async function validateCoupon(params: {
     throw {
       status: 400,
       code: 'COUPON_MAX_USES_REACHED',
-      message: 'Kupondan foydalanish limiti tugagan',
+      message: `Bu kupon ${coupon.maxUsesTotal} marta ishlatilgan va endi mavjud emas`,
     }
   }
 
@@ -76,7 +79,7 @@ export async function validateCoupon(params: {
       throw {
         status: 400,
         code: 'COUPON_WRONG_CUSTOMER',
-        message: 'Bu kupon siz uchun emas',
+        message: "Bu kupon sizning akkauntingiz uchun mo'ljallanmagan",
       }
     }
   } else if (coupon.targetCustomerIds && coupon.targetCustomerIds.length > 0) {
@@ -84,7 +87,7 @@ export async function validateCoupon(params: {
       throw {
         status: 400,
         code: 'COUPON_WRONG_CUSTOMER',
-        message: 'Siz ushbu kupondan foydalana olmaysiz',
+        message: "Bu kupon sizning akkauntingiz uchun mo'ljallanmagan",
       }
     }
   }
@@ -123,7 +126,9 @@ export async function validateCoupon(params: {
       throw {
         status: 400,
         code: 'COUPON_USAGE_LIMIT',
-        message: `Bu kupondan faqat ${effectiveMaxPerCustomer} marta foydalanish mumkin`,
+        message: effectiveMaxPerCustomer === 1
+          ? "Bu kupondan siz allaqachon foydalangansiz"
+          : `Bu kupondan faqat ${effectiveMaxPerCustomer} marta foydalanish mumkin (limit to'lgan)`,
       }
     }
   }
@@ -134,17 +139,28 @@ export async function validateCoupon(params: {
     throw {
       status: 400,
       code: 'COUPON_FIRST_ORDER_ONLY',
-      message: 'Ushbu kupon faqat birinchi buyurtma uchun',
+      message: "Bu kupon faqat birinchi buyurtma uchun mo'ljallangan",
     }
   }
 
   // 10. Calculate Eligible Subtotal & totalQty
+  let eligibleItems = params.cartItems
+
+  if (coupon.excludeWholesale) {
+    eligibleItems = params.cartItems.filter((item) => !item.isWholesale)
+    if (eligibleItems.length === 0) {
+      throw {
+        status: 400,
+        code: 'NO_ELIGIBLE_ITEMS',
+        message: "Bu kupon ulgurji narxdagi mahsulotlarga qo'llanilmaydi — savatdagi barcha mahsulotlar ulgurji narxda sotib olinmoqda",
+      }
+    }
+  }
+
   let eligibleSubtotal = 0n
   let totalQty = 0
 
-  for (const item of params.cartItems) {
-    if (coupon.excludeWholesale && item.isWholesale) continue
-
+  for (const item of eligibleItems) {
     let isEligible = false
     switch (coupon.scope) {
       case 'ALL':
@@ -171,14 +187,14 @@ export async function validateCoupon(params: {
   if (eligibleSubtotal === 0n) {
     // If the cart has no eligible items based on scope
     let errorCode = 'COUPON_MIN_ORDER_NOT_MET'
-    let message = "Savatda ushbu kupon uchun mos mahsulotlar yo'q"
+    let message = "Savatda bu kupon uchun mos mahsulot topilmadi"
 
     if (coupon.scope === 'PRODUCT') {
       errorCode = 'COUPON_WRONG_PRODUCT'
-      message = 'Bu kupon tanlangan mahsulotga emas'
+      message = "Bu kupon faqat ma'lum mahsulotlar uchun — savatda mos mahsulot topilmadi"
     } else if (coupon.scope === 'CATEGORY') {
       errorCode = 'COUPON_WRONG_CATEGORY'
-      message = 'Bu kupon bu kategoriya uchun emas'
+      message = "Bu kupon faqat ma'lum kategoriyalar uchun — savatda mos kategoriya topilmadi"
     }
 
     throw {
@@ -194,7 +210,7 @@ export async function validateCoupon(params: {
     throw {
       status: 400,
       code: 'COUPON_MIN_ORDER_NOT_MET',
-      message: 'Buyurtma summasi kupon uchun yetarli emas',
+      message: `Minimal buyurtma summasi: ₩${Number(coupon.minOrderAmount).toLocaleString('ko-KR')} (hozirgi: ₩${Number(eligibleSubtotal).toLocaleString('ko-KR')})`,
     }
   }
 

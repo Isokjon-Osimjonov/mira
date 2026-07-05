@@ -186,7 +186,7 @@ export async function generateCode(_req: Request, res: Response) {
 export async function getAvailableCoupons(req: Request, res: Response) {
   try {
     const customerId = (req.user as any).sub
-    const regionCode = req.query.regionCode as string | undefined || null
+    const regionCode = (req.user as any).region || null
     const data = await service.getAvailableCoupons(customerId, regionCode)
     return res.json({ data, error: null })
   } catch (e: any) {
