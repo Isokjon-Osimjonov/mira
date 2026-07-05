@@ -162,17 +162,12 @@ export default function AddressFormScreen() {
     }
 
     // Postal code — region specific
-    if (regionCode === 'KOR') {
-      if (!form.postalCode.trim()) {
-        newErrors.postalCode = "Pochta kodini kiriting (5 raqam)"
-      } else if (!/^[0-9]{5}$/.test(form.postalCode)) {
-        newErrors.postalCode = "Koreya pochta kodi aniq 5 ta raqamdan iborat"
+    if (form.postalCode.trim()) {
+      if (regionCode === 'KOR' && !/^[0-9]{5}$/.test(form.postalCode)) {
+        newErrors.postalCode = "Koreya pochta kodi aniq 5 ta raqam bo'lishi kerak"
       }
-    } else {
-      if (!form.postalCode.trim()) {
-        newErrors.postalCode = "Pochta kodini kiriting (6 raqam)"
-      } else if (!/^[0-9]{6}$/.test(form.postalCode)) {
-        newErrors.postalCode = "O'zbekiston pochta kodi aniq 6 ta raqamdan iborat"
+      if (regionCode === 'UZB' && !/^[0-9]{6}$/.test(form.postalCode)) {
+        newErrors.postalCode = "O'zbekiston pochta kodi aniq 6 ta raqam bo'lishi kerak"
       }
     }
 
@@ -232,13 +227,13 @@ export default function AddressFormScreen() {
     }
 
     if (field === 'postalCode') {
-      const korValid = /^[0-9]{5}$/.test(value)
-      const uzbValid = /^[0-9]{6}$/.test(value)
-      if (regionCode === 'KOR' && !korValid && value.length > 0) {
-        tempErrors.postalCode = "Koreya pochta kodi 5 ta raqam"
-      }
-      if (regionCode === 'UZB' && !uzbValid && value.length > 0) {
-        tempErrors.postalCode = "O'zbekiston pochta kodi 6 ta raqam"
+      if (value.trim()) {
+        if (regionCode === 'KOR' && !/^[0-9]{5}$/.test(value)) {
+          tempErrors.postalCode = "Koreya pochta kodi aniq 5 ta raqam bo'lishi kerak"
+        }
+        if (regionCode === 'UZB' && !/^[0-9]{6}$/.test(value)) {
+          tempErrors.postalCode = "O'zbekiston pochta kodi aniq 6 ta raqam bo'lishi kerak"
+        }
       }
     }
 
@@ -340,7 +335,7 @@ export default function AddressFormScreen() {
                 styles.input,
                 errors.label ? styles.inputError : null
               ]}
-              placeholder="Uy, Ish va h.k."
+              placeholder="Ixtiyoriy (Uy, Ish, ...)"
               value={form.label}
               onChangeText={(t) => {
                 setForm((p) => ({ ...p, label: t }))

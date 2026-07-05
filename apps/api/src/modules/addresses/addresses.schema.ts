@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
 export const baseAddressSchema = z.object({
-  label: z.string().max(50).optional(),
+  label: z.string().max(50).optional().nullable().default('Manzil'),
   regionCode: z.enum(['UZB', 'KOR']),
   fullName: z.string()
     .min(2)
@@ -10,7 +10,7 @@ export const baseAddressSchema = z.object({
       message: "Ism faqat harflardan iborat bo'lishi kerak",
     }),
   phone: z.string().min(7).max(20),
-  postalCode: z.string().max(10),
+  postalCode: z.string().max(10).optional().nullable(),
   isDefault: z.boolean().default(false),
   province: z.string().max(100).optional(),
   city: z.string().max(100).optional(),
@@ -53,7 +53,7 @@ export const createAddressSchema = baseAddressSchema.superRefine((data, ctx) => 
         message: "Koreya raqami +82 bilan boshlanishi va 12-13 belgidan iborat bo'lishi kerak"
       })
     }
-    if (data.postalCode?.length !== 5) {
+    if (data.postalCode && data.postalCode.length !== 5) {
       ctx.addIssue({
         code: 'custom',
         message: 'KOR pochta indeksi 5 ta raqam',
