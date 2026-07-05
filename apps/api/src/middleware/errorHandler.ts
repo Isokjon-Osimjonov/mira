@@ -17,8 +17,18 @@ export function errorHandler(err: any, req: Request, res: Response, _next: NextF
   const code = err.code ?? (err.name === 'ZodError' ? 'VALIDATION_ERROR' : 'INTERNAL_ERROR')
   const message =
     err.name === 'ZodError'
-      ? `Invalid input: ${err.errors?.[0]?.message}`
+      ? `Invalid input: ${err.issues?.[0]?.message ?? err.errors?.[0]?.message ?? 'Validation failed'}`
       : (err.message ?? 'Ichki xatolik')
+
+  let fields: Record<string, string> | undefined
+  if (err.name === 'ZodError') {
+    const issues = err.issues || err.errors || []
+    fields = issues.reduce((acc: any, e: any) => {
+      const field = e.path.join('.')
+      acc[field] = e.message
+      return acc
+    }, {})
+  }
 
   // Structured logging
   if (status >= 500) {
@@ -62,6 +72,10 @@ export function errorHandler(err: any, req: Request, res: Response, _next: NextF
 
   return res.status(status).json({
     data: null,
-    error: { message: clientMsg, code },
+    error: {
+      message: clientMsg,
+      code,
+      ...(fields ? { fields } : {}),
+    },
   })
 }

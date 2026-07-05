@@ -118,6 +118,9 @@ export default function AddressFormScreen() {
     if (!nameRegex.test(form.fullName)) {
       newErrors.fullName = "Ism faqat harflardan iborat bo'lishi kerak"
     }
+    if (form.addressLine1.length < 5) {
+      newErrors.addressLine1 = "Manzil kamida 5 ta belgidan iborat bo'lishi kerak"
+    }
 
     if (regionCode === 'KOR') {
       if (!/^\+82[0-9]{9,10}$/.test(form.phone)) {
@@ -165,14 +168,27 @@ export default function AddressFormScreen() {
       queryClient.invalidateQueries({ queryKey: ['addresses'] })
       router.back()
     } catch (err: any) {
-      Alert.alert('Xatolik', err?.response?.data?.error?.message ?? "Saqlab bo'lmadi")
+      const apiError = err.response?.data?.error
+      if (apiError?.fields) {
+        const backendErrors: Record<string, string> = {}
+        Object.entries(apiError.fields).forEach(([field, msg]) => {
+          backendErrors[field] = msg as string
+        })
+        setErrors(prev => ({
+          ...prev,
+          ...backendErrors
+        }))
+        Alert.alert('Xatolik', "Iltimos, qizil rang bilan belgilangan maydonlardagi xatolarni to'g'rilang")
+      } else {
+        Alert.alert('Xatolik', apiError?.message ?? "Saqlab bo'lmadi")
+      }
     } finally {
       setIsSubmitting(false)
     }
   }
 
   const isFormValid = () => {
-    if (!form.fullName || !form.phone || !form.addressLine1) return false
+    if (!form.fullName || !form.phone || !form.addressLine1 || form.addressLine1.length < 5) return false
     if (regionCode === 'KOR' && !form.addressLine2) return false
     if (regionCode === 'UZB' && (!form.province || !form.city)) return false
     return true
