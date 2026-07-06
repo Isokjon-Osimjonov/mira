@@ -178,13 +178,13 @@ export default function ProfileScreen() {
                 style={{ paddingVertical: 8, paddingHorizontal: 16, borderRadius: 20, backgroundColor: guestRegion === 'KOR' ? tokens.colors.primary : tokens.colors.surface, borderWidth: 1, borderColor: guestRegion === 'KOR' ? tokens.colors.primary : tokens.colors.border }}
                 onPress={() => setGuestRegion('KOR')}
               >
-                <Text style={{ color: guestRegion === 'KOR' ? tokens.colors.white : tokens.colors.text }}>🇰🇷 Korea (KRW)</Text>
+                <Text style={{ color: guestRegion === 'KOR' ? tokens.colors.white : tokens.colors.text }}>Korea (KRW)</Text>
               </TouchableOpacity>
               <TouchableOpacity 
                 style={{ paddingVertical: 8, paddingHorizontal: 16, borderRadius: 20, backgroundColor: guestRegion === 'UZB' ? tokens.colors.primary : tokens.colors.surface, borderWidth: 1, borderColor: guestRegion === 'UZB' ? tokens.colors.primary : tokens.colors.border }}
                 onPress={() => setGuestRegion('UZB')}
               >
-                <Text style={{ color: guestRegion === 'UZB' ? tokens.colors.white : tokens.colors.text }}>🇺🇿 O'zbekiston (UZS)</Text>
+                <Text style={{ color: guestRegion === 'UZB' ? tokens.colors.white : tokens.colors.text }}>O'zbekiston (UZS)</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -224,7 +224,7 @@ export default function ProfileScreen() {
                   ]}
                 >
                   <Text style={styles.regionBadgeText}>
-                    {customer.phoneRegion === 'KOR' ? '🇰🇷 Korea' : "🇺🇿 O'zbekiston"}
+                    {customer.phoneRegion === 'KOR' ? 'Korea' : "O'zbekiston"}
                   </Text>
                 </View>
               </View>

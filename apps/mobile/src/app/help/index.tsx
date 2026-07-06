@@ -24,7 +24,7 @@ const FAQS = [
   },
   {
     q: 'Buyurtmani qanday bekor qilaman?',
-    a: "To'lov kutilayotgan holda Buyurtmalarim → Buyurtma → 'Buyurtmani bekor qilish' tugmasini bosing.",
+    a: "To'lov kutilayotgan holda Buyurtmalarim > Buyurtma > 'Buyurtmani bekor qilish' tugmasini bosing.",
   },
   {
     q: 'Tovar qaytarish mumkinmi?',

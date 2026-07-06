@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react'
+import React, { useCallback, useState, useEffect } from 'react'
 import {
   ScrollView,
   View,
@@ -25,6 +25,7 @@ import { productService, calculateKorCargo } from '../../services/product.servic
 import { useQuery } from '@tanstack/react-query'
 import PrimaryButton from '../../components/ui/PrimaryButton'
 import EmptyState from '../../components/ui/EmptyState'
+import api from '../../lib/api'
 
 export default function CartScreen() {
   const insets = useSafeAreaInsets()
@@ -34,6 +35,19 @@ export default function CartScreen() {
   const exchangeRate = useExchangeStore((s) => s.rate)
   const showUzs = customer?.phoneRegion === 'UZB'
   const isKOR = customer?.phoneRegion === 'KOR'
+  const region = customer?.phoneRegion ?? 'KOR'
+
+  const [minOrderConfig, setMinOrderConfig] = useState<{
+    minOrderKorKrw: number
+    minOrderUzbUzs: number
+    krwToUzs: number
+  } | null>(null)
+
+  useEffect(() => {
+    api.get('/settings/public-config')
+      .then((res: any) => setMinOrderConfig(res.data.data))
+      .catch(() => {})
+  }, [])
 
   const { data: tiers } = useQuery({
     queryKey: ['kor-shipping-tiers'],
@@ -82,6 +96,34 @@ export default function CartScreen() {
   const korCargo = isKOR && tiers ? calculateKorCargo(summary.subtotal, tiers) : null
 
   const finalTotal = summary.subtotal + (korCargo ?? 0)
+
+  const minOrderKrw = region === 'KOR'
+    ? (minOrderConfig?.minOrderKorKrw ?? 0)
+    : 0
+
+  const minOrderUzbKrw = region === 'UZB'
+    && minOrderConfig?.minOrderUzbUzs
+    && minOrderConfig?.krwToUzs
+    ? Math.round(
+        minOrderConfig.minOrderUzbUzs
+          / minOrderConfig.krwToUzs)
+    : 0
+
+  const effectiveMinKrw =
+    region === 'KOR' ? minOrderKrw
+    : region === 'UZB' ? minOrderUzbKrw
+    : 0
+
+  const cartSubtotal = items.reduce(
+    (sum, item) =>
+      sum + (item.unitPrice * item.quantity),
+    0)
+
+  const isBelowMin = effectiveMinKrw > 0
+    && cartSubtotal < effectiveMinKrw
+
+  const shortfall = isBelowMin
+    ? effectiveMinKrw - cartSubtotal : 0
 
   if (isLoading && !cart) {
     return (
@@ -226,9 +268,20 @@ export default function CartScreen() {
         )}
 
         <View style={{ position: 'absolute', bottom: insets.bottom, left: 24, right: 24 }}>
+          {/* MIN ORDER WARNING */}
+          {isBelowMin && items.length > 0 && (
+            <View style={styles.minOrderWarning}>
+              <Text style={styles.minOrderText}>
+                {region === 'KOR'
+                  ? `Minimal buyurtma ₩${effectiveMinKrw.toLocaleString('ko-KR')}. Yana ₩${shortfall.toLocaleString('ko-KR')} qo'shing.`
+                  : `Minimal buyurtma ${(minOrderConfig?.minOrderUzbUzs ?? 0).toLocaleString()} so'm.`}
+              </Text>
+            </View>
+          )}
+
           <PrimaryButton
             label="Buyurtma berish"
-            disabled={items.length === 0 || items.some((i) => !i.inStock)}
+            disabled={items.length === 0 || items.some((i) => !i.inStock) || isBelowMin}
             onPress={() => {
               if (
                 !requireAuth(useAuthStore.getState().isAuthenticated, router, '/checkout')
@@ -441,5 +494,19 @@ const styles = StyleSheet.create({
     color: tokens.colors.textMuted,
     textAlign: 'right',
     marginBottom: 10,
+  },
+  minOrderWarning: {
+    backgroundColor: '#FFF7ED',
+    borderRadius: 8,
+    padding: 10,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#F97316',
+  },
+  minOrderText: {
+    fontSize: 12,
+    color: '#C2410C',
+    textAlign: 'center',
+    lineHeight: 18,
   },
 })

@@ -260,7 +260,7 @@ export default function OrderDetailScreen() {
         {order.status === 'PAYMENT_REJECTED' && (
           <View style={styles.rejectBox}>
             <Text style={styles.rejectText}>
-              ❌ {order.paymentRejectedReason ?? "To'lov rad etildi"}
+              {order.paymentRejectedReason ?? "To'lov rad etildi"}
             </Text>
           </View>
         )}
@@ -385,7 +385,7 @@ export default function OrderDetailScreen() {
               ]}
             >
               <Text style={[styles.priceLabel, { color: tokens.colors.success, fontWeight: '500' }]}>
-                ✨ Tejadingiz
+                Tejadingiz
               </Text>
               <Text style={[styles.priceValue, { color: tokens.colors.success, fontWeight: '500' }]}>
                 {formatPrice(order.discountAmount, order.deliveryRegion as any)}

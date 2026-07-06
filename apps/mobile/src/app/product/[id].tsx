@@ -35,7 +35,7 @@ const WaitlistButton = ({ productId, showToast }: { productId: string; showToast
 
   useEffect(() => {
     if (!useAuthStore.getState().isAuthenticated) return
-    
+
     waitlistService
       .getWaitlist()
       .then((items) => {
@@ -46,7 +46,8 @@ const WaitlistButton = ({ productId, showToast }: { productId: string; showToast
 
   const handlePress = async () => {
     if (isOnWaitlist) return
-    if (!requireAuth(useAuthStore.getState().isAuthenticated, router, `/product/${productId}`)) return
+    if (!requireAuth(useAuthStore.getState().isAuthenticated, router, `/product/${productId}`))
+      return
 
     setIsLoading(true)
     try {
@@ -145,7 +146,8 @@ export default function ProductDetailScreen() {
 
   const handleWishlistToggle = () => {
     if (!product) return
-    if (!requireAuth(useAuthStore.getState().isAuthenticated, router, `/product/${product.id}`)) return
+    if (!requireAuth(useAuthStore.getState().isAuthenticated, router, `/product/${product.id}`))
+      return
     toggleWishlist(product.id)
   }
 
@@ -195,7 +197,7 @@ export default function ProductDetailScreen() {
           <Image
             source={product.imageUrls[activeImageIndex]}
             style={styles.mainImage}
-            contentFit="contain"
+            contentFit="cover"
           />
           <TouchableOpacity
             style={[styles.backBtn, { top: insets.top + 12 }]}

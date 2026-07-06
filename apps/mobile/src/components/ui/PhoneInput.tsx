@@ -44,7 +44,7 @@ const PhoneInput: React.FC<PhoneInputProps> = ({
     <View>
       <View style={containerStyle}>
         <TouchableOpacity activeOpacity={0.7} onPress={toggleRegion} style={styles.regionSelector}>
-          <Text style={styles.regionText}>{region === 'UZB' ? '🇺🇿  +998' : '🇰🇷  +82'}</Text>
+          <Text style={styles.regionText}>{region === 'UZB' ? '+998' : '+82'}</Text>
         </TouchableOpacity>
 
         <View style={styles.inputContainer}>

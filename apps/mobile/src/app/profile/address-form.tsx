@@ -315,7 +315,7 @@ export default function AddressFormScreen() {
               style={[styles.regionPill, regionCode === 'UZB' && styles.regionPillActive]}
             >
               <Text style={[styles.regionText, regionCode === 'UZB' && styles.regionTextActive]}>
-                🇺🇿 O'zbekiston
+                O'zbekiston
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -323,7 +323,7 @@ export default function AddressFormScreen() {
               style={[styles.regionPill, regionCode === 'KOR' && styles.regionPillActive]}
             >
               <Text style={[styles.regionText, regionCode === 'KOR' && styles.regionTextActive]}>
-                🇰🇷 Korea
+                Korea
               </Text>
             </TouchableOpacity>
           </View>

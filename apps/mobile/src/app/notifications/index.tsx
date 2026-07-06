@@ -141,7 +141,7 @@ export default function NotificationsScreen() {
         <Text style={styles.headerTitle}>Bildirishnomalar</Text>
         {unreadCount > 0 ? (
           <TouchableOpacity onPress={() => markAllRead.mutate()}>
-            <Text style={styles.markAllText}>Barchasi o'qildi</Text>
+            <Feather name="check-circle" size={22} color={tokens.colors.primary} />
           </TouchableOpacity>
         ) : (
           <View style={{ width: 60 }} />

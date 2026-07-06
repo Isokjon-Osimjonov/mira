@@ -62,7 +62,7 @@ export default function AddressesScreen() {
         <View style={styles.cardHeader}>
           <View style={styles.cardHeaderLeft}>
             <View style={styles.flagBadge}>
-              <Text style={{ fontSize: 14 }}>{item.regionCode === 'KOR' ? '🇰🇷' : '🇺🇿'}</Text>
+              <Text style={{ fontSize: 14 }}>{item.regionCode === 'KOR' ? 'KOR' : 'UZB'}</Text>
             </View>
             <Text style={styles.addressLabel}>{item.label || item.fullName}</Text>
           </View>
