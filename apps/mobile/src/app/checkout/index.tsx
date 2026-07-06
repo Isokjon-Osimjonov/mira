@@ -23,8 +23,8 @@ import { addressService, type Address } from '../../services/address.service'
 import { boxService, type Box } from '../../services/box.service'
 import { cartService } from '../../services/cart.service'
 import { orderService } from '../../services/order.service'
-import { paymentService, type PaymentMethod } from '../../services/payment.service'
 import { uploadService } from '../../services/upload.service'
+import api from '../../lib/api'
 
 interface OrderResult {
   id: string
@@ -59,17 +59,18 @@ function CheckoutScreen() {
     discountAmount: number
   } | null>(null)
   const [couponLoading, setCouponLoading] = useState(false)
-  const [paymentMethod, setPaymentMethod] = useState<string>(
-    region === 'UZB' ? 'UZB_BANK' : 'KOREAN_BANK'
-  )
 
   // RECEIPT state (STATE 2 only):
   const [receiptUri, setReceiptUri] = useState<string | null>(null)
   const [receiptUploading, setReceiptUploading] = useState(false)
   const [receiptUploaded, setReceiptUploaded] = useState(false)
 
-  // PAYMENT METHODS:
-  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([])
+  // BANK INFO:
+  const [bankInfo, setBankInfo] = useState<{
+    bankName: string
+    accountNumber: string
+    holderName: string
+  } | null>(null)
 
   // SUBMISSION:
   const [submitting, setSubmitting] = useState(false)
@@ -85,9 +86,19 @@ function CheckoutScreen() {
       if (def) setSelectedAddressId(def.id)
       else if (addrs.length > 0) setSelectedAddressId(addrs[0].id)
 
-      // Load payment methods
-      const methods = await paymentService.getPaymentMethods()
-      setPaymentMethods(methods.filter((m) => m.isEnabled))
+      // Load payment info
+      try {
+        const res = await api.get('/settings/payment-info')
+        const info = res.data.data
+        const regionData = region === 'UZB' ? info.uzb : info.kor
+        if (regionData?.bankName) {
+          setBankInfo({
+            bankName: regionData.bankName,
+            accountNumber: regionData.bankNumber || regionData.accountNumber,
+            holderName: regionData.bankHolder || regionData.holderName,
+          })
+        }
+      } catch (err) {}
 
       // Load boxes + calculate weight (UZB)
       if (region === 'UZB') {
@@ -128,9 +139,7 @@ function CheckoutScreen() {
   const estimatedTotal = cartSubtotal - couponDiscount + boxCost
 
   // Active payment method to display
-  // Use a fallback to KOREAN_BANK for KOR regions if they chose KOR_BANK in frontend earlier
-  const searchMethod = paymentMethod === 'KOR_BANK' ? 'KOREAN_BANK' : paymentMethod
-  const activePaymentMethod = paymentMethods.find((m) => m.type === searchMethod)
+  // Derived directly from bankInfo state
 
   const handleApplyCoupon = async () => {
     if (!couponCode.trim()) return
@@ -198,7 +207,7 @@ function CheckoutScreen() {
       const res = await orderService.checkout({
         addressId: selectedAddressId,
         boxId: selectedBoxId ?? undefined,
-        paymentMethod: searchMethod as any,
+        paymentMethod: region === 'UZB' ? 'UZB_BANK' : 'KOREAN_BANK',
         couponCode: couponResult?.code ?? undefined,
       })
 
@@ -224,10 +233,10 @@ function CheckoutScreen() {
         id: order.id,
         orderNumber: order.orderNumber,
         totalAmount: Number(order.totalAmount),
-        cargoFee: 0, // Backend determines this later
-        subtotal: cartSubtotal,
-        discountAmount: couponDiscount,
-        boxCostKrw: boxCost,
+        cargoFee: Number(order.cargoFee ?? 0),
+        subtotal: Number(order.subtotal ?? cartSubtotal),
+        discountAmount: Number(order.discountAmount ?? couponDiscount),
+        boxCostKrw: Number(order.boxCostKrw ?? boxCost),
       })
       setReceiptUploaded(uploaded)
 
@@ -542,23 +551,23 @@ function CheckoutScreen() {
             </View>
 
             {/* BANK DETAILS — visible before order so user can prepare */}
-            {activePaymentMethod?.bankName && (
+            {bankInfo?.bankName && (
               <View style={styles.section}>
                 <Text style={styles.sectionLabel}>To'lov rekvizitlari</Text>
                 <View style={styles.bankCard}>
                   <View style={styles.bankRow}>
                     <Text style={styles.bankLabel}>Bank</Text>
-                    <Text style={styles.bankValue}>{activePaymentMethod.bankName}</Text>
+                    <Text style={styles.bankValue}>{bankInfo.bankName}</Text>
                   </View>
                   <View style={styles.bankRow}>
                     <Text style={styles.bankLabel}>Hisob raqami</Text>
                     <Text style={styles.bankValue}>
-                      {activePaymentMethod.accountNumber}
+                      {bankInfo.accountNumber}
                     </Text>
                   </View>
                   <View style={styles.bankRow}>
                     <Text style={styles.bankLabel}>Egasi</Text>
-                    <Text style={styles.bankValue}>{activePaymentMethod.holderName}</Text>
+                    <Text style={styles.bankValue}>{bankInfo.holderName}</Text>
                   </View>
                   <View style={[styles.bankRow, { marginTop: 8 }]}>
                     <Text style={[styles.bankLabel, { fontWeight: '500' }]}>
@@ -667,31 +676,31 @@ function CheckoutScreen() {
             </View>
 
             {/* BANK DETAILS (STATE 2) */}
-            {activePaymentMethod?.bankName && (
+            {bankInfo?.bankName && (
               <View style={styles.section}>
                 <Text style={styles.sectionLabel}>Bank rekvizitlari</Text>
                 <View style={styles.bankCard}>
                   <View style={styles.bankRow}>
                     <Text style={styles.bankLabel}>Bank</Text>
-                    <Text style={styles.bankValue}>{activePaymentMethod.bankName}</Text>
+                    <Text style={styles.bankValue}>{bankInfo.bankName}</Text>
                   </View>
                   <View style={styles.bankRow}>
                     <Text style={styles.bankLabel}>Hisob raqami</Text>
                     <Pressable
                       onPress={async () => {
                         await Share.share({
-                          message: activePaymentMethod.accountNumber ?? ''
+                          message: bankInfo.accountNumber ?? ''
                         })
                       }}
                     >
                       <Text style={[styles.bankValue, { color: tokens.colors.primary }]}>
-                        {activePaymentMethod.accountNumber}
+                        {bankInfo.accountNumber}
                       </Text>
                     </Pressable>
                   </View>
                   <View style={styles.bankRow}>
                     <Text style={styles.bankLabel}>Egasi</Text>
-                    <Text style={styles.bankValue}>{activePaymentMethod.holderName}</Text>
+                    <Text style={styles.bankValue}>{bankInfo.holderName}</Text>
                   </View>
                   <View style={[styles.priceDivider, { marginVertical: 12 }]} />
                   <View style={styles.bankRow}>

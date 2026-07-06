@@ -29,6 +29,10 @@ export interface CheckoutResult {
     status: string
     totalAmount: number
     paymentDeadline: string | null
+    cargoFee: number
+    subtotal: number
+    discountAmount: number
+    boxCostKrw: number
   }
   paymentInfo: {
     method: string
