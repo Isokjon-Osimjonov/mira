@@ -154,7 +154,7 @@ export async function verifyOtp(dto: VerifyOtpDto, deviceInfo?: string, ipAddres
     .from(authTokens)
     .where(
       and(
-        eq(authTokens.token, token),
+        eq(authTokens.token, token ?? ''),
         eq(authTokens.used, false),
         gt(authTokens.expiresAt, new Date())
       )

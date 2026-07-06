@@ -15,7 +15,8 @@ export const RequestOtpSchema = z.object({
 })
 
 export const VerifyOtpSchema = z.object({
-  token: z.string().length(64, "Token noto'g'ri"),
+  token: z.string().optional(),
+  phone: z.string().optional(),
   otp: z
     .string()
     .length(6, "Kod 6 raqamdan iborat bo'lishi kerak")
