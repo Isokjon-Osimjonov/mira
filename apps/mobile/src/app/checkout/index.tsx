@@ -13,7 +13,7 @@ import {
 } from 'react-native'
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Feather } from '@expo/vector-icons'
-import { useRouter } from 'expo-router'
+import { useRouter, useLocalSearchParams } from 'expo-router'
 import * as ImagePicker from 'expo-image-picker'
 
 import { useAuthStore } from '../../lib/auth-store'
@@ -38,6 +38,9 @@ interface OrderResult {
 
 function CheckoutScreen() {
   const router = useRouter()
+  const { couponCode: incomingCouponCode } = useLocalSearchParams<{
+    couponCode?: string
+  }>()
   const insets = useSafeAreaInsets()
   const customer = useAuthStore((s) => s.customer)
   const { cart } = useCartStore()
@@ -112,6 +115,22 @@ function CheckoutScreen() {
   }
 
   const scrollRef = useRef<ScrollView>(null)
+
+  useEffect(() => {
+    if (incomingCouponCode) {
+      setCouponCode(incomingCouponCode)
+      cartService.validateCoupon(incomingCouponCode)
+        .then(res => {
+          setCouponResult({
+            code: incomingCouponCode,
+            discountAmount: Number(res.discountAmount)
+          })
+        })
+        .catch(() => {
+          setCouponCode(incomingCouponCode)
+        })
+    }
+  }, [incomingCouponCode])
 
   useEffect(() => {
     const load = async () => {

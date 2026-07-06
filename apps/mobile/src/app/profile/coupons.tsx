@@ -95,7 +95,7 @@ export default function CouponsScreen() {
             </View>
           ) : (
             <TouchableOpacity
-              onPress={() => router.push({ pathname: '/(tabs)/cart', params: { couponCode: item.code } })}
+              onPress={() => router.push({ pathname: '/checkout', params: { couponCode: item.code } })}
               style={styles.cartBtn}
             >
               <Text style={styles.cartBtnText}>Savatchaga o'tish →</Text>
