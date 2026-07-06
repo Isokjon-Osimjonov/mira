@@ -50,7 +50,14 @@ export async function registerForPushNotifications(): Promise<string | null> {
   // Get Expo push token
   try {
     const projectId =
-      Constants.expoConfig?.extra?.eas?.projectId ?? 'a97bda7b-3df6-485f-b128-305279ae4a20'
+      Constants.expoConfig?.extra?.eas?.projectId ?? '95de2ad4-6355-4322-af4e-a56b3629a2be'
+
+    if (!projectId) {
+      console.error('Push: projectId missing — token will not be registered')
+      return null
+    }
+
+    console.log('Push: using projectId', projectId)
 
     const token = await Notifications.getExpoPushTokenAsync({
       projectId,
