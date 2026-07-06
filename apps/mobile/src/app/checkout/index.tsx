@@ -835,58 +835,126 @@ function CheckoutScreen() {
               </View>
             )}
 
-            {/* RECEIPT UPLOAD (STATE 2) */}
+            {/* RECEIPT UPLOAD — STATE 2 */}
             <View style={styles.section}>
-              <Text style={styles.sectionLabel}>Kvitansiya yuklash</Text>
+              <Text style={styles.sectionLabel}>
+                Kvitansiya yuklash
+              </Text>
+              <Text style={styles.receiptNote}>
+                To'lovni amalga oshirib, kvitansiyani
+                yuklang. Admin tekshirib,
+                buyurtmangizni tasdiqlaydi.
+              </Text>
 
               {receiptUploaded ? (
+                // STATE D: Success
                 <View style={styles.uploadedBadge}>
-                  <Feather name="check-circle" size={18} color={tokens.colors.success} />
-                  <Text style={styles.uploadedText}>
-                    Kvitansiya yuborildi. Admin tekshiradi.
-                  </Text>
+                  <Feather
+                    name="check-circle"
+                    size={20}
+                    color={tokens.colors.success}
+                  />
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.uploadedTitle}>
+                      Kvitansiya yuborildi
+                    </Text>
+                    <Text style={styles.uploadedSub}>
+                      Admin tekshirib tasdiqlaydi
+                    </Text>
+                  </View>
                 </View>
-              ) : (
-                <>
-                  {receiptUri ? (
-                    <View>
-                      <Image
-                        source={{ uri: receiptUri }}
-                        style={styles.receiptPreview}
-                        resizeMode="cover"
-                      />
+              ) : receiptUri ? (
+                // STATE B & C: Image selected
+                <View>
+                  <View style={styles.receiptPreviewWrap}>
+                    <Image
+                      source={{ uri: receiptUri }}
+                      style={[
+                        styles.receiptPreview,
+                        receiptUploading && { opacity: 0.5 }
+                      ]}
+                      resizeMode="cover"
+                    />
+                    {receiptUploading && (
+                      <View style={styles.receiptOverlay}>
+                        <ActivityIndicator
+                          size="large"
+                          color={tokens.colors.primary}
+                        />
+                        <Text style={
+                          styles.receiptOverlayText}>
+                          Yuklanmoqda...
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+
+                  {!receiptUploading && (
+                    <>
                       <Pressable
                         onPress={handleUploadReceipt}
-                        disabled={receiptUploading}
-                        style={[
-                          styles.uploadSubmitBtn,
-                          receiptUploading && styles.btnDisabled,
-                        ]}
-                      >
-                        {receiptUploading ? (
-                          <ActivityIndicator color="#fff" />
-                        ) : (
-                          <Text style={styles.uploadSubmitText}>Yuborish</Text>
-                        )}
+                        style={styles.uploadSubmitBtn}>
+                        <Text style={
+                          styles.uploadSubmitText}>
+                          Yuborish
+                        </Text>
                       </Pressable>
                       <Pressable
-                        onPress={() => setReceiptUri(null)}
-                        style={{ marginTop: 8, alignItems: 'center' }}
-                      >
-                        <Text style={styles.couponLink}>Boshqa rasm tanlash</Text>
+                        onPress={() =>
+                          setReceiptUri(null)}
+                        style={styles.changeReceiptBtn}>
+                        <Text style={
+                          styles.changeReceiptText}>
+                          Boshqa rasm tanlash
+                        </Text>
                       </Pressable>
-                    </View>
-                  ) : (
-                    <View style={styles.uploadRow}>
-                      <Pressable onPress={handlePickReceipt} style={styles.uploadBtn}>
-                        <Text style={styles.uploadBtnText}>Galereyadan</Text>
-                      </Pressable>
-                      <Pressable onPress={handleCameraReceipt} style={styles.uploadBtn}>
-                        <Text style={styles.uploadBtnText}>Kameradan</Text>
-                      </Pressable>
-                    </View>
+                    </>
                   )}
-                </>
+                </View>
+              ) : (
+                // STATE A: No image yet
+                <View>
+                  {/* Skeleton placeholder */}
+                  <View style={styles.receiptSkeleton}>
+                    <Feather
+                      name="image"
+                      size={32}
+                      color={tokens.colors.border}
+                    />
+                    <Text style={
+                      styles.receiptSkeletonText}>
+                      Kvitansiya rasmi shu yerga
+                      yuklanadi
+                    </Text>
+                  </View>
+
+                  <View style={styles.uploadRow}>
+                    <Pressable
+                      onPress={handlePickReceipt}
+                      style={styles.uploadBtn}>
+                      <Feather
+                        name="image"
+                        size={16}
+                        color={tokens.colors.primary}
+                      />
+                      <Text style={styles.uploadBtnText}>
+                        Galereya
+                      </Text>
+                    </Pressable>
+                    <Pressable
+                      onPress={handleCameraReceipt}
+                      style={styles.uploadBtn}>
+                      <Feather
+                        name="camera"
+                        size={16}
+                        color={tokens.colors.primary}
+                      />
+                      <Text style={styles.uploadBtnText}>
+                        Kamera
+                      </Text>
+                    </Pressable>
+                  </View>
+                </View>
               )}
             </View>
           </>
@@ -921,7 +989,7 @@ function CheckoutScreen() {
         ) : (
           // STATE 2 button
           <Pressable
-            onPress={() => router.replace('/(tabs)/orders')}
+            onPress={() => router.replace('/orders')}
             style={styles.secondaryBtn}
           >
             <Text style={styles.secondaryBtnText}>Buyurtmalarni ko'rish</Text>
@@ -1325,6 +1393,61 @@ const styles = StyleSheet.create({
   },
   btnDisabled: { opacity: 0.5 },
   textMuted: {
+    color: tokens.colors.textMuted,
+  },
+  receiptPreviewWrap: {
+    position: 'relative',
+    marginBottom: 12,
+  },
+  receiptOverlay: {
+    position: 'absolute',
+    top: 0, left: 0, right: 0, bottom: 0,
+    borderRadius: 10,
+    backgroundColor: 'rgba(255,255,255,0.7)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  receiptOverlayText: {
+    fontSize: 14,
+    color: tokens.colors.primary,
+    fontWeight: '500',
+  },
+  receiptSkeleton: {
+    height: 140,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: tokens.colors.border,
+    borderStyle: 'dashed',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    marginBottom: 14,
+    backgroundColor: tokens.colors.surface,
+  },
+  receiptSkeletonText: {
+    fontSize: 13,
+    color: tokens.colors.textMuted,
+    textAlign: 'center',
+    paddingHorizontal: 20,
+  },
+  uploadedTitle: {
+    fontSize: 14,
+    color: tokens.colors.success,
+    fontWeight: '500',
+    marginBottom: 2,
+  },
+  uploadedSub: {
+    fontSize: 12,
+    color: tokens.colors.success,
+  },
+  changeReceiptBtn: {
+    alignItems: 'center',
+    paddingVertical: 10,
+    marginTop: 4,
+  },
+  changeReceiptText: {
+    fontSize: 13,
     color: tokens.colors.textMuted,
   },
 })
