@@ -33,8 +33,24 @@ function buildDeepLink(token: string): string {
 }
 
 // ─── Request OTP ──────────────────────────────────────────────
+const DEMO_PHONES = [
+  process.env.DEMO_PHONE_KOR ?? '+821000000000',
+  process.env.DEMO_PHONE_UZB ?? '+998000000000',
+]
+const DEMO_OTP = process.env.DEMO_OTP ?? '000000'
+
 export async function requestOtp(dto: RequestOtpDto, deviceInfo?: string, ipAddress?: string) {
   const { phone } = dto
+
+  if (DEMO_PHONES.includes(phone)) {
+    return {
+      success: true,
+      demo: true,
+      message: 'Demo account',
+      deepLink: 'https://t.me/demo',
+      expiresIn: 300,
+    }
+  }
 
   // Per-phone rate limit (max 3 per 10 min)
   if (!checkPhoneRateLimit(phone)) {
@@ -82,6 +98,55 @@ export async function requestOtp(dto: RequestOtpDto, deviceInfo?: string, ipAddr
 // ─── Verify OTP ───────────────────────────────────────────────
 export async function verifyOtp(dto: VerifyOtpDto, deviceInfo?: string, ipAddress?: string) {
   const { token, otp } = dto
+  const phone = (dto as any).phone
+
+  if (phone && DEMO_PHONES.includes(phone) && otp === DEMO_OTP) {
+    const [demoCustomer] = await db
+      .select()
+      .from(customers)
+      .where(eq(customers.phone, phone))
+      .limit(1)
+
+    if (!demoCustomer) {
+      throw { status: 404, code: 'DEMO_NOT_FOUND', message: 'Demo account not found' }
+    }
+
+    const accessToken = signAccess({
+      sub: demoCustomer.id,
+      type: 'customer',
+      phone: demoCustomer.phone,
+      region: demoCustomer.phoneRegion as 'UZB' | 'KOR',
+    })
+    
+    const refreshTokenValue = signRefresh({ sub: demoCustomer.id, type: 'customer' })
+    const refreshTokenHash = hashToken(refreshTokenValue)
+    const familyId = generateToken().slice(0, 32)
+
+    await db.insert(refreshTokens).values({
+      customerId: demoCustomer.id,
+      token: refreshTokenHash,
+      familyId,
+      deviceInfo: deviceInfo ?? null,
+      ipAddress: ipAddress ?? null,
+      expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+    })
+
+    return {
+      accessToken,
+      refreshToken: refreshTokenValue,
+      isNewCustomer: false,
+      customer: {
+        id: demoCustomer.id,
+        phone: demoCustomer.phone,
+        phoneRegion: demoCustomer.phoneRegion,
+        firstName: demoCustomer.firstName,
+        lastName: demoCustomer.lastName,
+        telegramId: demoCustomer.telegramId?.toString() ?? null,
+        profileImageUrl: demoCustomer.profileImageUrl,
+        referralCode: demoCustomer.referralCode,
+      },
+    }
+  }
 
   // Find valid token
   const [authToken] = await db

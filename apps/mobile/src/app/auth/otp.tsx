@@ -62,6 +62,12 @@ export default function OtpScreen() {
   }, [])
 
   const openTelegramUrl = async (url: string) => {
+    const DEMO_PHONES = ['+821000000000', '+998000000000']
+    if (DEMO_PHONES.includes(phone ?? '')) {
+      Alert.alert('Demo kirish', 'Tasdiqlash kodi: 000000', [{ text: 'OK' }])
+      return
+    }
+
     if (!url) return
     try {
       const canOpenTg = await Linking.canOpenURL('tg://')
