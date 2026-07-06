@@ -75,6 +75,11 @@ function CheckoutScreen() {
   // SUBMISSION:
   const [submitting, setSubmitting] = useState(false)
 
+  const [publicConfig, setPublicConfig] = useState<{
+    uzbCargoUsdPerKg: number
+    usdToKrw: number
+  } | null>(null)
+
   // Add state for shipping tiers (KOR only)
   const [korShippingTiers, setKorShippingTiers] = useState<Array<{
     maxOrderKrw: number | null
@@ -92,6 +97,18 @@ function CheckoutScreen() {
     const matched = sorted.find(t => t.maxOrderKrw === null || subtotal <= t.maxOrderKrw)
     const tier = matched ?? sorted[sorted.length - 1]
     return tier?.cargoFeeKrw ?? 0
+  }
+
+  const getUzbCargoFee = (
+    productWeightG: number,
+    boxWeightKg: number,
+    uzbCargoUsdPerKg: number,
+    usdToKrw: number
+  ): number => {
+    const totalWeightKg = (productWeightG / 1000) + boxWeightKg
+    const cargoUsd = totalWeightKg * uzbCargoUsdPerKg
+    const cargoKrw = Math.round(cargoUsd * usdToKrw)
+    return Math.round(cargoKrw / 100) * 100
   }
 
   const scrollRef = useRef<ScrollView>(null)
@@ -130,6 +147,17 @@ function CheckoutScreen() {
         setTotalWeightG(wg)
         const rec = getRecommendedBoxId(bxs, wg)
         if (rec) setSelectedBoxId(rec)
+
+        api.get('/settings/public-config')
+          .then(res => {
+            setPublicConfig(res.data.data)
+          })
+          .catch(() => {
+            setPublicConfig({
+              uzbCargoUsdPerKg: 10,
+              usdToKrw: 1350,
+            })
+          })
       } else if (region === 'KOR') {
         api.get('/kor-shipping-tiers')
           .then(res => {
@@ -165,12 +193,19 @@ function CheckoutScreen() {
 
   const selectedBox = boxes.find((b) => b.id === selectedBoxId)
   const boxCost = selectedBox ? Number(selectedBox.costKrw) : 0
+  const boxWeightKg = selectedBox ? Number(selectedBox.boxWeightKg) : 0
+
+  const uzbCargoFee = region === 'UZB' && publicConfig && selectedBoxId
+    ? getUzbCargoFee(totalWeightG, boxWeightKg, publicConfig.uzbCargoUsdPerKg, publicConfig.usdToKrw)
+    : null
 
   const korCargoFee = region === 'KOR'
     ? getKorCargoFee(cartSubtotal - couponDiscount, korShippingTiers)
     : 0
 
-  const estimatedTotal = cartSubtotal - couponDiscount + boxCost + (region === 'KOR' ? korCargoFee : 0)
+  const cargoFeeDisplay = region === 'KOR' ? korCargoFee : uzbCargoFee
+
+  const estimatedTotal = cartSubtotal - couponDiscount + boxCost + (cargoFeeDisplay ?? 0)
 
   // Active payment method to display
   // Derived directly from bankInfo state
@@ -569,15 +604,13 @@ function CheckoutScreen() {
                 </Text>
                 <Text style={[
                   styles.priceVal,
-                  region === 'UZB' && !korCargoFee
-                    ? { color: tokens.colors.textMuted }
-                    : null
+                  cargoFeeDisplay === null && { color: tokens.colors.textMuted }
                 ]}>
-                  {region === 'KOR' && korCargoFee > 0
-                    ? `₩${korCargoFee.toLocaleString('ko-KR')}`
-                    : region === 'KOR' && !korShippingTiers.length
-                      ? 'Yuklanmoqda...'
-                      : 'Buyurtmadan keyin aniqlanadi'}
+                  {cargoFeeDisplay !== null
+                    ? `₩${cargoFeeDisplay.toLocaleString('ko-KR')}`
+                    : selectedBoxId
+                      ? 'Hisoblanmoqda...'
+                      : 'Quti tanlang'}
                 </Text>
               </View>
 
@@ -585,7 +618,7 @@ function CheckoutScreen() {
 
               <View style={styles.priceRow}>
                 <Text style={styles.totalLabel}>
-                  {region === 'KOR' ? 'Jami to\'lov' : 'Taxminiy jami (kargosiz)'}
+                  {cargoFeeDisplay !== null ? 'Jami to\'lov' : 'Taxminiy jami'}
                 </Text>
                 <Text style={styles.totalVal}>
                   ₩{estimatedTotal.toLocaleString('ko-KR')}
@@ -622,10 +655,10 @@ function CheckoutScreen() {
                     <Text style={[styles.bankLabel, { fontWeight: '500' }]}>
                       To'lov miqdori
                     </Text>
-                    <Text style={[styles.bankValue, { fontSize: 16, fontWeight: '600' }]}>
-                      {region === 'KOR'
+                    <Text style={[styles.bankValue, { fontSize: 17, fontWeight: '600' }]}>
+                      {region === 'KOR' || cargoFeeDisplay !== null
                         ? `₩${estimatedTotal.toLocaleString('ko-KR')}`
-                        : `₩${estimatedTotal.toLocaleString('ko-KR')} + kargo`}
+                        : `₩${(cartSubtotal - couponDiscount + boxCost).toLocaleString('ko-KR')} + kargo`}
                     </Text>
                   </View>
                 </View>

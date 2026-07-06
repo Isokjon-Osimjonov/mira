@@ -3,7 +3,7 @@ import * as service from './settings.service'
 import { updateSettingsSchema } from './settings.schema'
 import { emit } from '../../config/socket'
 import { db } from '../../config/db'
-import { exchangeRateSnapshots, paymentMethods } from '@mira/db'
+import { exchangeRateSnapshots, paymentMethods, settings } from '@mira/db'
 import { desc } from 'drizzle-orm'
 
 export async function getPaymentMethods(_req: Request, res: Response) {
@@ -150,5 +150,36 @@ export async function updateOrderSettings(req: Request, res: Response, next: any
     res.json({ data, error: null })
   } catch (err) {
     next(err)
+  }
+}
+
+export async function getPublicConfig(req: Request, res: Response) {
+  try {
+    const [appSettings] = await db
+      .select()
+      .from(settings)
+      .limit(1)
+
+    const [rate] = await db
+      .select()
+      .from(exchangeRateSnapshots)
+      .orderBy(desc(exchangeRateSnapshots.createdAt))
+      .limit(1)
+
+    return res.json({
+      data: {
+        uzbCargoUsdPerKg: Number(appSettings?.uzbCargoUsdPerKg ?? 10),
+        usdToKrw: Number(rate?.usdToKrw ?? 1350),
+      },
+      error: null,
+    })
+  } catch {
+    return res.json({
+      data: {
+        uzbCargoUsdPerKg: 10,
+        usdToKrw: 1350,
+      },
+      error: null,
+    })
   }
 }

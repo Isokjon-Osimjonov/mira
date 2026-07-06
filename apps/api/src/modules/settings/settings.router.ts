@@ -8,6 +8,7 @@ const adminRouter = Router()
 // Public
 publicRouter.get('/payment-methods', ctrl.getPaymentMethods)
 publicRouter.get('/payment-info', ctrl.getPaymentInfo)
+publicRouter.get('/public-config', ctrl.getPublicConfig)
 
 // Admin
 adminRouter.get('/', requirePermission('settings', 'read'), ctrl.getAdminSettings)
