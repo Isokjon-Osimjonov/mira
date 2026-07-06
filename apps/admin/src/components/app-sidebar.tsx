@@ -109,13 +109,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             <SidebarMenuButton size="lg" asChild>
               <Link to="/dashboard">
                 <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                  <ShoppingBag className="size-4" strokeWidth={2.5} />
+                  <img src="/icon.png" alt="Mira Market" />
                 </div>
                 <div className="grid flex-1 text-left leading-tight">
-                  <span className="truncate font-bold">Mira Admin</span>
-                  <span className="truncate text-[10px] text-muted-foreground uppercase tracking-wider">
-                    Cosmetics
-                  </span>
+                  <span className="truncate font-bold uppercase tracking-widest">Mira Market</span>
                 </div>
               </Link>
             </SidebarMenuButton>

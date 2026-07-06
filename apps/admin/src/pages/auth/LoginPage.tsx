@@ -122,9 +122,11 @@ export function LoginPage() {
                           w-12 h-12 rounded-xl bg-primary
                           text-white text-xl mb-3"
           >
-            🌸
+            <img src="/icon.png" alt="" />
           </div>
-          <h1 className="text-xl font-semibold text-gray-900">Mira Admin</h1>
+          <h1 className="text-xl font-semibold text-gray-900 uppercase tracking-wide">
+            Mira Market
+          </h1>
           <p className="text-sm text-gray-500 mt-1">Boshqaruv paneliga kirish</p>
         </div>
 
