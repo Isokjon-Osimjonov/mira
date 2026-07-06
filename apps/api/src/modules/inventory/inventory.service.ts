@@ -106,7 +106,7 @@ export async function getStockSummary(
       productName: products.name,
       barcode: products.barcode,
       brandName: products.brandName,
-      imageUrl: sql<string>`(${products.imageUrls})[1]`,
+      imageUrl: sql<string>`${products.imageUrls}->>0`,
       availableStock: sql<number>`COALESCE(${statsSq.totalQty}, 0)`,
       reservedStock: sql<number>`COALESCE(${reserveSq.reservedQty}, 0)`,
       nearestExpiry: statsSq.nearestExpiry,
