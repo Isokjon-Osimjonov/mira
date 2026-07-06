@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
@@ -137,11 +137,17 @@ export function OrderDetailPage({ id }: Props) {
     },
   })
 
-  const handleScan = (overrideBarcode?: string) => {
-    const code = overrideBarcode ?? barcodeInput.trim()
+  const handleScan = useCallback((overrideBarcode?: string) => {
+    const code = overrideBarcode ?? inputRef.current?.value.trim() ?? barcodeInput.trim()
     if (!code || scanMutation.isPending) return
+    
     scanMutation.mutate(code)
-  }
+    setBarcodeInput('')
+    if (inputRef.current) {
+      inputRef.current.value = ''
+      inputRef.current.focus()
+    }
+  }, [barcodeInput, scanMutation])
 
   const handleCameraOpen = async () => {
     setShowCamera(true)
@@ -385,7 +391,47 @@ export function OrderDetailPage({ id }: Props) {
                       ref={inputRef}
                       placeholder="Barkodni skanerlang yoki kiriting"
                       value={barcodeInput}
-                      onChange={(e) => setBarcodeInput(e.target.value)}
+                      onChange={(e) => {
+                        const val = e.target.value
+                        setBarcodeInput(val)
+
+                        const isExactMatch = orderItems?.some(
+                          (item: any) => item.barcode === val.trim() || item.product?.barcode === val.trim()
+                        )
+
+                        if (isExactMatch && val.trim()) {
+                          setTimeout(() => {
+                            scanMutation.mutate(val.trim())
+                            setBarcodeInput('')
+                            if (inputRef.current) {
+                              inputRef.current.value = ''
+                              inputRef.current.focus()
+                            }
+                          }, 50)
+                        }
+                      }}
+                      onPaste={(e) => {
+                        const pasted = e.clipboardData.getData('text').trim()
+                        if (!pasted) return
+
+                        setBarcodeInput(pasted)
+
+                        const isExactMatch = orderItems?.some(
+                          (item: any) => item.barcode === pasted || item.product?.barcode === pasted
+                        )
+
+                        if (isExactMatch) {
+                          e.preventDefault()
+                          setTimeout(() => {
+                            scanMutation.mutate(pasted)
+                            setBarcodeInput('')
+                            if (inputRef.current) {
+                              inputRef.current.value = ''
+                              inputRef.current.focus()
+                            }
+                          }, 0)
+                        }
+                      }}
                       onKeyDown={(e) => e.key === 'Enter' && handleScan()}
                       className="h-9 text-sm pr-10 rounded-lg border-border/50 focus:ring-primary"
                       disabled={scanMutation.isPending}
