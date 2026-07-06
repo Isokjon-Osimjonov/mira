@@ -90,33 +90,34 @@ export function KorBulkDeliveryPanel() {
     <div className="bg-white border rounded-xl p-5 shadow-sm mt-4">
       <h3 className="text-sm font-semibold mb-4">KOR Yetkazib berishni belgilash</h3>
 
-      <div className="flex items-end gap-4 mb-6">
-        <div>
+      <div className="flex flex-col sm:flex-row sm:items-end gap-4 mb-6">
+        <div className="w-full sm:w-auto">
           <label className="block text-[11px] font-medium text-muted-foreground uppercase mb-1.5">
             Jo'natilgan sana
           </label>
           <Input
             type="date"
-            className="w-40 text-sm h-9"
+            className="w-full sm:w-40 text-sm h-9"
             value={shipDate}
             onChange={(e) => handleShipDateChange(e.target.value)}
           />
         </div>
 
-        <div>
+        <div className="w-full sm:w-auto">
           <label className="block text-[11px] font-medium text-muted-foreground uppercase mb-1.5">
             Yetkazilgan sana
           </label>
           <Input
             type="date"
-            className="w-40 text-sm h-9"
+            className="w-full sm:w-40 text-sm h-9"
             value={deliveryDate}
             onChange={(e) => setDeliveryDate(e.target.value)}
           />
         </div>
 
-        <Button onClick={handleSearch} disabled={isLoading} className="h-9">
-          {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Qidirish'}
+        <Button onClick={handleSearch} disabled={isLoading} className="w-full sm:w-auto h-9">
+          {isLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+          Qidirish
         </Button>
       </div>
 
@@ -151,14 +152,15 @@ export function KorBulkDeliveryPanel() {
           </div>
 
           {orders.length > 0 && (
-            <div className="p-3 border-t bg-white flex justify-between items-center">
-              <span className="text-sm font-medium">
+            <div className="p-3 border-t bg-white flex flex-col sm:flex-row justify-between items-center gap-3">
+              <span className="text-sm font-medium w-full sm:w-auto text-center sm:text-left">
                 {selectedIds.size} / {orders.length} tanlandi
               </span>
               <Button
                 onClick={handleBulkDeliver}
                 disabled={selectedIds.size === 0 || bulkStatusMutation.isPending}
                 size="sm"
+                className="w-full sm:w-auto"
               >
                 {bulkStatusMutation.isPending ? (
                   <Loader2 className="h-4 w-4 animate-spin mr-2" />

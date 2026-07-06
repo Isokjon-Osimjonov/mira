@@ -428,9 +428,9 @@ export function InventoryPage() {
                     >
                       {/* Image */}
                       <td className="px-4 py-3">
-                        {item.imageUrl ? (
+                        {item.imageUrls?.[0] || item.imageUrl ? (
                           <img
-                            src={item.imageUrl}
+                            src={item.imageUrls?.[0] || item.imageUrl}
                             alt={item.productName}
                             className="w-10 h-10 min-w-[2.5rem] shrink-0 rounded-lg object-cover border-[0.5px] border-border"
                           />
