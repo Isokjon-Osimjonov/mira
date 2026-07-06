@@ -81,6 +81,9 @@ function CheckoutScreen() {
   const [publicConfig, setPublicConfig] = useState<{
     uzbCargoUsdPerKg: number
     usdToKrw: number
+    minOrderKorKrw: number
+    minOrderUzbUzs: number
+    krwToUzs: number
   } | null>(null)
 
   // Add state for shipping tiers (KOR only)
@@ -175,6 +178,9 @@ function CheckoutScreen() {
             setPublicConfig({
               uzbCargoUsdPerKg: 10,
               usdToKrw: 1350,
+              minOrderKorKrw: 0,
+              minOrderUzbUzs: 0,
+              krwToUzs: 7.74,
             })
           })
       } else if (region === 'KOR') {
@@ -225,6 +231,16 @@ function CheckoutScreen() {
   const cargoFeeDisplay = region === 'KOR' ? korCargoFee : uzbCargoFee
 
   const estimatedTotal = cartSubtotal - couponDiscount + boxCost + (cargoFeeDisplay ?? 0)
+
+  // MIN ORDER WARNING COMPUTATION
+  const minOrderKrw = region === 'KOR' ? (publicConfig?.minOrderKorKrw ?? 0) : 0
+  const minOrderUzbKrw = region === 'UZB' && publicConfig?.minOrderUzbUzs && publicConfig?.krwToUzs
+    ? Math.round(publicConfig.minOrderUzbUzs / publicConfig.krwToUzs)
+    : 0
+
+  const effectiveMinKrw = region === 'KOR' ? minOrderKrw : region === 'UZB' ? minOrderUzbKrw : 0
+  const isBelowMinOrder = effectiveMinKrw > 0 && cartSubtotal < effectiveMinKrw
+  const shortfallKrw = isBelowMinOrder ? effectiveMinKrw - cartSubtotal : 0
 
   // Active payment method to display
   // Derived directly from bankInfo state
@@ -633,6 +649,16 @@ function CheckoutScreen() {
                 </Text>
               </View>
 
+              {isBelowMinOrder && (
+                <View style={styles.minOrderWarning}>
+                  <Text style={styles.minOrderText}>
+                    {region === 'KOR'
+                      ? `Minimal buyurtma: ₩${effectiveMinKrw.toLocaleString('ko-KR')}. Yana ₩${shortfallKrw.toLocaleString('ko-KR')} qo'shing.`
+                      : `Minimal buyurtma: ${(publicConfig?.minOrderUzbUzs ?? 0).toLocaleString()} so'm. Savatingizni to'ldiring.`}
+                  </Text>
+                </View>
+              )}
+
               <View style={styles.priceDivider} />
 
               <View style={styles.priceRow}>
@@ -970,13 +996,15 @@ function CheckoutScreen() {
             disabled={
               submitting ||
               !selectedAddressId ||
-              (region === 'UZB' && !selectedBoxId)
+              (region === 'UZB' && !selectedBoxId) ||
+              isBelowMinOrder
             }
             style={[
               styles.primaryBtn,
               (submitting ||
                 !selectedAddressId ||
-                (region === 'UZB' && !selectedBoxId)) &&
+                (region === 'UZB' && !selectedBoxId) ||
+                isBelowMinOrder) &&
                 styles.btnDisabled,
             ]}
           >
@@ -1394,6 +1422,19 @@ const styles = StyleSheet.create({
   btnDisabled: { opacity: 0.5 },
   textMuted: {
     color: tokens.colors.textMuted,
+  },
+  minOrderWarning: {
+    backgroundColor: '#FFF7ED',
+    borderRadius: 8,
+    padding: 12,
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: '#F97316',
+  },
+  minOrderText: {
+    fontSize: 13,
+    color: '#C2410C',
+    lineHeight: 18,
   },
   receiptPreviewWrap: {
     position: 'relative',

@@ -170,6 +170,9 @@ export async function getPublicConfig(req: Request, res: Response) {
       data: {
         uzbCargoUsdPerKg: Number(appSettings?.uzbCargoUsdPerKg ?? 10),
         usdToKrw: Number(rate?.usdToKrw ?? 1350),
+        minOrderKorKrw: Number(appSettings?.minOrderKorKrw ?? 0),
+        minOrderUzbUzs: Number(appSettings?.minOrderUzbUzs ?? 0),
+        krwToUzs: Number(rate?.krwToUzs ?? 7.74),
       },
       error: null,
     })
@@ -178,6 +181,9 @@ export async function getPublicConfig(req: Request, res: Response) {
       data: {
         uzbCargoUsdPerKg: 10,
         usdToKrw: 1350,
+        minOrderKorKrw: 0,
+        minOrderUzbUzs: 0,
+        krwToUzs: 7.74,
       },
       error: null,
     })

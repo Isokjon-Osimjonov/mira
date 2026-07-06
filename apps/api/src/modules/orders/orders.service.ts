@@ -364,6 +364,36 @@ export async function createOrder(params: {
     // 6. Totals
     const subtotal = itemsData.reduce((acc, item) => acc + item.subtotal, 0n)
 
+    // MIN ORDER VALIDATION
+    const minOrderKorKrw = Number(appSettings.minOrderKorKrw ?? 0)
+    const minOrderUzbUzs = Number(appSettings.minOrderUzbUzs ?? 0)
+    const subtotalNum = Number(subtotal)
+
+    if (deliveryRegion === 'KOR' && minOrderKorKrw > 0 && subtotalNum < minOrderKorKrw) {
+      throw {
+        status: 400,
+        code: 'MIN_ORDER_NOT_MET',
+        message:
+          `Minimal buyurtma summasi ₩${minOrderKorKrw.toLocaleString('ko-KR')}. ` +
+          `Hozirgi savat: ₩${subtotalNum.toLocaleString('ko-KR')}. ` +
+          `Yana ₩${(minOrderKorKrw - subtotalNum).toLocaleString('ko-KR')} qo'shing.`,
+      }
+    }
+
+    if (deliveryRegion === 'UZB' && minOrderUzbUzs > 0) {
+      const krwToUzs = Number(rate?.krwToUzs ?? 7.74)
+      const minKrwEquivalent = Math.round(minOrderUzbUzs / krwToUzs)
+      if (subtotalNum < minKrwEquivalent) {
+        throw {
+          status: 400,
+          code: 'MIN_ORDER_NOT_MET',
+          message:
+            `Minimal buyurtma summasi ${minOrderUzbUzs.toLocaleString()} so'm. ` +
+            `Savatingizni to'ldiring.`,
+        }
+      }
+    }
+
     let orderLevelDiscount = 0n
     if (params.orderDiscountPct && params.orderDiscountPct > 0) {
       orderLevelDiscount = (subtotal * BigInt(params.orderDiscountPct)) / 100n
