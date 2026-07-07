@@ -23,6 +23,30 @@ import {
 } from '@/components/ui/select'
 import { cn } from '@/lib/utils'
 
+const SKIN_TYPES = [
+  { value: 'yog\'li', label: 'Yog\'li teri' },
+  { value: 'quruq', label: 'Quruq teri' },
+  { value: 'aralash', label: 'Aralash teri' },
+  { value: 'sezgir', label: 'Sezgir teri' },
+  { value: 'normal', label: 'Normal teri' },
+  { value: 'barchasi', label: 'Barcha teri turlari' },
+]
+
+const SKIN_TYPE_MAP: Record<string, string> = {
+  'oily': 'yog\'li',
+  'dry': 'quruq',
+  'combination': 'aralash',
+  'sensitive': 'sezgir',
+  'normal': 'normal',
+  'all': 'barchasi',
+  // Already Uzbek — pass through
+  'yog\'li': 'yog\'li',
+  'quruq': 'quruq',
+  'aralash': 'aralash',
+  'sezgir': 'sezgir',
+  'barchasi': 'barchasi',
+}
+
 // Zod schema matching real DB fields
 const productSchema = z.object({
   name: z.string().min(1, 'Mahsulot nomi talab qilinadi'),
@@ -34,7 +58,7 @@ const productSchema = z.object({
   descriptionUz: z.string().optional(),
   howToUseUz: z.string().optional(),
   ingredients: z.string().optional(),
-  skinTypes: z.string().optional(),
+  skinTypes: z.array(z.string()).default([]),
   benefits: z.string().optional(),
   weightGrams: z.coerce.number().min(0).default(0),
   volumeMl: z.coerce.number().min(0).optional(),
@@ -84,6 +108,7 @@ export function ProductSheet({ open, onClose, product, categories, onSuccess }: 
       isNew: false,
       isFeatured: false,
       imageUrls: [],
+      skinTypes: [],
       minOrderQty: 1,
       minWholesaleQty: 5,
     },
@@ -117,7 +142,11 @@ export function ProductSheet({ open, onClose, product, categories, onSuccess }: 
         descriptionUz: product.descriptionUz ?? '',
         howToUseUz: product.howToUseUz ?? '',
         ingredients: Array.isArray(product.ingredients) ? product.ingredients.join(', ') : '',
-        skinTypes: Array.isArray(product.skinTypes) ? product.skinTypes.join(', ') : '',
+        skinTypes: Array.isArray(product.skinTypes)
+          ? product.skinTypes
+              .map((t: string) => SKIN_TYPE_MAP[t.toLowerCase().trim()] || t)
+              .filter(Boolean)
+          : [],
         benefits: Array.isArray(product.benefits) ? product.benefits.join(', ') : '',
         weightGrams: product.weightGrams ?? 0,
         volumeMl: product.volumeMl ?? undefined,
@@ -142,6 +171,7 @@ export function ProductSheet({ open, onClose, product, categories, onSuccess }: 
         isNew: false,
         isFeatured: false,
         imageUrls: [],
+        skinTypes: [],
         minOrderQty: 1,
         minWholesaleQty: 5,
       })
@@ -165,12 +195,7 @@ export function ProductSheet({ open, onClose, product, categories, onSuccess }: 
               .map((s) => s.trim())
               .filter(Boolean)
           : [],
-        skinTypes: data.skinTypes
-          ? data.skinTypes
-              .split(',')
-              .map((s) => s.trim())
-              .filter(Boolean)
-          : [],
+        skinTypes: data.skinTypes || [],
         benefits: data.benefits
           ? data.benefits
               .split(',')
@@ -225,7 +250,11 @@ export function ProductSheet({ open, onClose, product, categories, onSuccess }: 
         setValue('ingredients', filled.ingredients.join(', '))
       }
       if (Array.isArray(filled.skinTypes)) {
-        setValue('skinTypes', filled.skinTypes.join(', '))
+        const mapped = filled.skinTypes
+          .map((t: string) => SKIN_TYPE_MAP[t.toLowerCase().trim()])
+          .filter(Boolean)
+          .filter((v: string, i: number, arr: string[]) => arr.indexOf(v) === i) // dedupe
+        setValue('skinTypes', mapped)
       }
       if (Array.isArray(filled.benefits)) {
         setValue('benefits', filled.benefits.join(', '))
@@ -421,14 +450,64 @@ export function ProductSheet({ open, onClose, product, categories, onSuccess }: 
                 />
               </div>
 
-              <div className="sm:col-span-2">
-                <Label className="text-xs mb-1.5 block">Teri turlari (vergul bilan)</Label>
-                <textarea
-                  {...register('skinTypes')}
-                  rows={1}
-                  placeholder="oily, dry, combination..."
-                  className="w-full rounded-lg border-[0.5px] border-border p-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                />
+              <div className="sm:col-span-2 space-y-2">
+                <Label className="text-xs mb-1.5 block">Teri turlari</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  {SKIN_TYPES.map(type => {
+                    const current = watch('skinTypes') ?? []
+                    const isSelected = current.includes(type.value)
+                    return (
+                      <button
+                        key={type.value}
+                        type="button"
+                        onClick={() => {
+                          if (isSelected) {
+                            setValue('skinTypes',
+                              current.filter((v: string) => v !== type.value),
+                              { shouldValidate: true, shouldDirty: true })
+                          } else {
+                            setValue('skinTypes',
+                              [...current, type.value],
+                              { shouldValidate: true, shouldDirty: true })
+                          }
+                        }}
+                        className={cn(
+                          "flex items-center gap-2",
+                          "px-3 py-2 rounded-lg border",
+                          "text-sm text-left",
+                          "transition-all duration-150",
+                          isSelected
+                            ? "border-violet-500 bg-violet-50 text-violet-700 font-medium"
+                            : "border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50"
+                        )}>
+                        <div className={cn(
+                          "w-4 h-4 rounded border-2",
+                          "flex items-center justify-center",
+                          "flex-shrink-0 transition-colors",
+                          isSelected
+                            ? "border-violet-500 bg-violet-500"
+                            : "border-gray-300"
+                        )}>
+                          {isSelected && (
+                            <svg
+                              width="10" height="10"
+                              viewBox="0 0 10 10"
+                              fill="none">
+                              <path
+                                d="M2 5l2.5 2.5L8 3"
+                                stroke="white"
+                                strokeWidth="1.5"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              />
+                            </svg>
+                          )}
+                        </div>
+                        {type.label}
+                      </button>
+                    )
+                  })}
+                </div>
               </div>
 
               <div className="sm:col-span-2">
