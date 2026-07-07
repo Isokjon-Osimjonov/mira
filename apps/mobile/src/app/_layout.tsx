@@ -2,7 +2,7 @@ import { Stack } from 'expo-router'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { StatusBar } from 'expo-status-bar'
 import { useFonts, Inter_400Regular, Inter_600SemiBold } from '@expo-google-fonts/inter'
-import { View, Platform } from 'react-native'
+import { View, Platform, ActivityIndicator, Text } from 'react-native'
 import { QueryClientProvider, useQueryClient } from '@tanstack/react-query'
 import { queryClient } from '../lib/query-client'
 import { ErrorBoundary } from '../components/ui/ErrorBoundary'
@@ -66,7 +66,39 @@ export default function RootLayout() {
     Inter_600SemiBold,
   })
 
-  if (!fontsLoaded) return <View style={{ flex: 1 }} />
+  const initialize = useAuthStore((s) => s.initialize)
+  const authLoading = useAuthStore((s) => s.isLoading)
+
+  useEffect(() => {
+    initialize()
+  }, [])
+
+  if (!fontsLoaded || authLoading) {
+    return (
+      <SafeAreaProvider>
+        <View style={{
+          flex: 1,
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: '#ffffff'
+        }}>
+          <Text style={{
+            fontSize: 24,
+            fontWeight: '700',
+            color: '#7C3AED',
+            marginBottom: 24,
+            letterSpacing: -0.5,
+          }}>
+            Mira Market
+          </Text>
+          <ActivityIndicator
+            size="small"
+            color="#7C3AED"
+          />
+        </View>
+      </SafeAreaProvider>
+    )
+  }
 
   return (
     <ErrorBoundary>
