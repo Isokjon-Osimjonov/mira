@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
+  RefreshControl,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Feather } from '@expo/vector-icons'
@@ -47,11 +48,19 @@ function formatDateUzbek(isoString: string) {
 }
 
 export default function CargoScheduleScreen() {
-  const { data: dates = [], isLoading } = useQuery({
+  const { data: dates = [], isLoading, refetch } = useQuery({
     queryKey: ['cargo-dates'],
     queryFn: cargoDateService.getUpcoming,
     staleTime: 5 * 60 * 1000,
   })
+
+  const [isRefreshing, setIsRefreshing] = useState(false)
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true)
+    await refetch()
+    setIsRefreshing(false)
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -62,7 +71,17 @@ export default function CargoScheduleScreen() {
         <Text style={styles.headerTitle}>Yuk jadvali</Text>
       </View>
 
-      <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
+      <ScrollView
+        contentContainerStyle={{ paddingBottom: 40 }}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={handleRefresh}
+            tintColor={tokens.colors.primary}
+            colors={[tokens.colors.primary]}
+          />
+        }
+      >
         <View style={styles.subtitleContainer}>
           <Text style={styles.subtitle}>Koreadan O'zbekistonga yuk shu sanalarda jo'natiladi</Text>
         </View>
