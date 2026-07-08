@@ -13,7 +13,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   splash: {
     image: './assets/splash.png',
     resizeMode: 'contain',
-    backgroundColor: '#FFF5F9',
+    backgroundColor: '#FFFFFF',
   },
   notification: {
     icon: './assets/notification-icon.png',
@@ -30,6 +30,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       NSPhotoLibraryUsageDescription: 'Galereyadagi rasmni tanlash uchun',
       NSUserNotificationsUsageDescription: 'Buyurtma holati haqida xabar olish uchun',
       LSApplicationQueriesSchemes: ['tg', 'telegram'],
+      ITSAppUsesNonExemptEncryption: false,
     },
   },
   android: {
@@ -38,7 +39,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     versionCode: 1,
     adaptiveIcon: {
       foregroundImage: './assets/icon.png',
-      backgroundColor: '#FFF5F9',
+      backgroundColor: '#FFFFFF',
     },
     permissions: ['CAMERA', 'READ_EXTERNAL_STORAGE', 'RECEIVE_BOOT_COMPLETED', 'VIBRATE'],
   },
@@ -51,8 +52,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       {
         image: './assets/splash.png',
         imageWidth: 400,
-        resizeMode: 'contain',
-        backgroundColor: '#FFF5F9',
+        resizeMode: 'cover',
+        backgroundColor: '#FFFFFF',
       },
     ],
     [
