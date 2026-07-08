@@ -158,8 +158,24 @@ export async function getProducts(query: {
   }
 
   if (query.q) {
-    const pattern = `%${escapeLikeQuery(query.q)}%`
-    where = and(where, or(ilike(products.name, pattern), ilike(products.barcode, pattern)))
+    if (query.q.trim().length < 2) {
+      return {
+        items: [],
+        meta: { total: 0, page, limit, totalPages: 0, hasNext: false, hasPrev: false },
+      }
+    }
+    const qTrim = query.q.trim()
+    const pattern = `%${escapeLikeQuery(qTrim)}%`
+    where = and(
+      where,
+      or(
+        ilike(products.name, pattern),
+        ilike(products.brandName, pattern),
+        ilike(categories.name, pattern),
+        ilike(products.barcode, pattern),
+        ilike(products.descriptionUz, pattern)
+      )
+    )
   }
 
   const sortField = validateSort('products', query.sort || 'createdAt')
@@ -175,6 +191,16 @@ export async function getProducts(query: {
            FROM inventory_batches ib
            WHERE ib.product_id = ${products.id})`
     )
+  }
+
+  if (query.q) {
+    const qTrim = query.q.trim()
+    orderBy = sql`CASE
+      WHEN LOWER(${products.name}) = LOWER(${qTrim}) THEN 1
+      WHEN LOWER(${products.brandName}) = LOWER(${qTrim}) THEN 2
+      WHEN LOWER(${products.name}) LIKE LOWER(${`${qTrim}%`}) THEN 3
+      ELSE 4
+    END ASC, ${products.createdAt} DESC`
   }
 
   const items = await db
@@ -212,6 +238,7 @@ export async function getProducts(query: {
   const [countRes] = await db
     .select({ count: sql<number>`count(*)` })
     .from(products)
+    .leftJoin(categories, eq(products.categoryId, categories.id))
     .where(where)
   const total = Number(countRes?.count || 0)
 

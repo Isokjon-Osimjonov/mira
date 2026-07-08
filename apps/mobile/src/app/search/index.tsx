@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import {
   View,
   Text,
@@ -7,12 +7,10 @@ import {
   FlatList,
   StyleSheet,
   Dimensions,
-  ActivityIndicator,
   Keyboard,
-  Alert,
+  Pressable,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { Image } from 'expo-image'
 import { Feather } from '@expo/vector-icons'
 import { useQuery } from '@tanstack/react-query'
 import { router } from 'expo-router'
@@ -28,61 +26,41 @@ import { tokens } from '../../lib/tokens'
 
 const SCREEN_WIDTH = Dimensions.get('window').width
 const CARD_WIDTH = (SCREEN_WIDTH - 48 - 12) / 2
-const RECENT_KEY = 'mira_recent_searches'
-const MAX_RECENT = 8
+const HISTORY_KEY = 'mira_search_history'
+const MAX_HISTORY = 8
 
 export default function SearchScreen() {
-  const [query, setQuery] = useState('')
+  const [searchQuery, setSearchQuery] = useState('')
   const [debouncedQuery, setDebouncedQuery] = useState('')
-  const [recentSearches, setRecentSearches] = useState<string[]>([])
+  const [history, setHistory] = useState<string[]>([])
   const inputRef = useRef<TextInput>(null)
 
   const customer = useAuthStore((s) => s.customer)
-  const exchangeRate = useExchangeStore((s) => s.rate)
   const addItem = useCartStore((s) => s.addItem)
 
-  // Debounce
+  // Debounce 300ms
   useEffect(() => {
     const timer = setTimeout(() => {
-      setDebouncedQuery(query.trim())
-    }, 500)
+      setDebouncedQuery(searchQuery)
+    }, 300)
     return () => clearTimeout(timer)
-  }, [query])
+  }, [searchQuery])
 
-  // Load recents + focus
+  // Load history on mount
   useEffect(() => {
-    SecureStore.getItemAsync(RECENT_KEY)
-      .then((val) => {
-        if (val) setRecentSearches(JSON.parse(val))
+    SecureStore.getItemAsync(HISTORY_KEY)
+      .then((data) => {
+        if (data) setHistory(JSON.parse(data))
       })
       .catch(() => {})
     setTimeout(() => inputRef.current?.focus(), 150)
   }, [])
 
-  const saveSearch = async (q: string) => {
-    if (!q.trim()) return
-    const updated = [q.trim(), ...recentSearches.filter((s) => s !== q.trim())].slice(0, MAX_RECENT)
-    setRecentSearches(updated)
-    await SecureStore.setItemAsync(RECENT_KEY, JSON.stringify(updated))
-  }
-
-  const clearRecent = async () => {
-    setRecentSearches([])
-    await SecureStore.deleteItemAsync(RECENT_KEY)
-  }
-
-  const handleRecentTap = (q: string) => {
-    setQuery(q)
-    setDebouncedQuery(q)
-    saveSearch(q)
-  }
-
-  const handleSubmit = () => {
-    if (query.trim()) {
-      saveSearch(query.trim())
-      setDebouncedQuery(query.trim())
-      Keyboard.dismiss()
-    }
+  const saveToHistory = async (q: string) => {
+    if (!q.trim() || q.trim().length < 2) return
+    const updated = [q.trim(), ...history.filter((h) => h !== q.trim())].slice(0, MAX_HISTORY)
+    setHistory(updated)
+    await SecureStore.setItemAsync(HISTORY_KEY, JSON.stringify(updated))
   }
 
   const { data, isLoading } = useQuery({
@@ -92,12 +70,12 @@ export default function SearchScreen() {
         q: debouncedQuery,
         limit: 40,
       }),
-    enabled: debouncedQuery.length >= 2,
+    enabled: debouncedQuery.trim().length >= 2,
     staleTime: 30_000,
   })
 
   const results = data?.data ?? []
-  const showResults = debouncedQuery.length >= 2
+  const showResults = debouncedQuery.trim().length >= 2
   const showEmpty = showResults && !isLoading && results.length === 0
 
   const handleAddToCart = async (productId: string) => {
@@ -118,19 +96,19 @@ export default function SearchScreen() {
           <TextInput
             ref={inputRef}
             style={styles.input}
-            value={query}
-            onChangeText={setQuery}
-            onSubmitEditing={handleSubmit}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            onSubmitEditing={() => saveToHistory(searchQuery)}
             placeholder="Mahsulot qidiring..."
             placeholderTextColor={tokens.colors.textMuted}
             returnKeyType="search"
             autoCorrect={false}
             autoCapitalize="none"
           />
-          {query.length > 0 && (
+          {searchQuery.length > 0 && (
             <TouchableOpacity
               onPress={() => {
-                setQuery('')
+                setSearchQuery('')
                 setDebouncedQuery('')
                 inputRef.current?.focus()
               }}
@@ -141,35 +119,49 @@ export default function SearchScreen() {
         </View>
       </View>
 
-      {/* NO QUERY — show recents */}
-      {!showResults && (
-        <View style={styles.recentsContainer}>
-          {recentSearches.length > 0 ? (
-            <>
-              <View style={styles.recentsHeader}>
-                <Text style={styles.recentsTitle}>So'nggi qidiruvlar</Text>
-                <TouchableOpacity onPress={clearRecent}>
-                  <Text style={styles.clearText}>Tozalash</Text>
-                </TouchableOpacity>
-              </View>
-              {recentSearches.map((item, idx) => (
-                <TouchableOpacity
-                  key={idx}
-                  style={styles.recentItem}
-                  onPress={() => handleRecentTap(item)}
+      {/* HINT */}
+      {searchQuery.length === 1 && (
+        <Text style={styles.hint}>Kamida 2 ta belgi kiriting</Text>
+      )}
+
+      {/* HISTORY / NO QUERY */}
+      {!showResults && searchQuery.length !== 1 && (
+        <View style={{ flex: 1 }}>
+          {history.length > 0 ? (
+            <View style={styles.historyContainer}>
+              <View style={styles.historyHeader}>
+                <Text style={styles.historyTitle}>Oxirgi qidiruvlar</Text>
+                <Pressable
+                  onPress={async () => {
+                    setHistory([])
+                    await SecureStore.deleteItemAsync(HISTORY_KEY)
+                  }}
                 >
-                  <Feather name="clock" size={15} color={tokens.colors.textMuted} />
-                  <Text style={styles.recentText}>{item}</Text>
-                  <Feather name="arrow-up-left" size={14} color={tokens.colors.textLight} />
-                </TouchableOpacity>
+                  <Text style={styles.clearHistory}>Tozalash</Text>
+                </Pressable>
+              </View>
+              {history.map((item, i) => (
+                <Pressable
+                  key={i}
+                  style={styles.historyItem}
+                  onPress={() => {
+                    setSearchQuery(item)
+                    setDebouncedQuery(item)
+                    saveToHistory(item)
+                  }}
+                >
+                  <Feather name="clock" size={14} color={tokens.colors.textMuted} />
+                  <Text style={styles.historyText}>{item}</Text>
+                  <Feather name="arrow-up-left" size={14} color={tokens.colors.textLight} style={{ marginLeft: 'auto' }} />
+                </Pressable>
               ))}
-            </>
+            </View>
           ) : (
             <View style={{ flex: 1, justifyContent: 'center' }}>
               <EmptyState
                 icon="search"
                 heading="Qidiruv"
-                subtitle="Mahsulot nomi yoki brendini kiriting"
+                subtitle="Mahsulot nomi, barkodi yoki brendini kiriting"
               />
             </View>
           )}
@@ -187,12 +179,19 @@ export default function SearchScreen() {
 
       {/* EMPTY RESULTS */}
       {showEmpty && (
-        <View style={{ flex: 1, justifyContent: 'center' }}>
-          <EmptyState
-            icon="search"
-            heading="Natija topilmadi"
-            subtitle={`"${debouncedQuery}" bo'yicha hech narsa yo'q. Boshqa so'z bilan qidiring`}
-          />
+        <View style={styles.emptyState}>
+          <Feather name="search" size={48} color={tokens.colors.border} />
+          <Text style={styles.emptyTitle}>
+            {`"${debouncedQuery}" bo'yicha`} natija topilmadi
+          </Text>
+          <Text style={styles.emptySubtitle}>
+            Boshqa kalit so'z yoki brend nomi kiriting
+          </Text>
+          {history.length > 0 && (
+            <Text style={styles.emptyHint}>
+              Oldingi qidiruvlarni ko'rish uchun maydonni bo'shating
+            </Text>
+          )}
         </View>
       )}
 
@@ -209,12 +208,14 @@ export default function SearchScreen() {
             contentContainerStyle={styles.grid}
             columnWrapperStyle={styles.row}
             showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            onScroll={() => Keyboard.dismiss()}
             renderItem={({ item }) => (
               <ProductCard
                 product={item}
                 showUzs={customer?.phoneRegion === 'UZB'}
                 onPress={() => {
-                  saveSearch(debouncedQuery)
+                  saveToHistory(debouncedQuery)
                   router.push('/product/' + item.id)
                 }}
                 onAddToCart={() => handleAddToCart(item.id)}
@@ -238,7 +239,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     backgroundColor: tokens.colors.surface,
-
     gap: 10,
   },
   backBtn: {
@@ -265,54 +265,67 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter_400Regular',
     color: tokens.colors.text,
   },
-  recentsContainer: {
-    flex: 1,
-    paddingHorizontal: 24,
-    paddingTop: 20,
+  hint: {
+    fontSize: 12,
+    color: tokens.colors.textMuted,
+    textAlign: 'center',
+    marginTop: 8,
   },
-  recentsHeader: {
+  historyContainer: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+  },
+  historyHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 12,
   },
-  recentsTitle: {
-    fontSize: 14,
-    fontFamily: 'Inter_400Regular',
-    fontWeight: '500',
-    color: tokens.colors.text,
-  },
-  clearText: {
+  historyTitle: {
     fontSize: 13,
-    fontFamily: 'Inter_400Regular',
+    color: tokens.colors.textMuted,
+    fontWeight: '500',
+  },
+  clearHistory: {
+    fontSize: 13,
     color: tokens.colors.primary,
   },
-  recentItem: {
+  historyItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 14,
+    gap: 10,
+    paddingVertical: 12,
     borderBottomWidth: 0.5,
     borderBottomColor: tokens.colors.border,
-    gap: 10,
   },
-  recentText: {
-    flex: 1,
+  historyText: {
     fontSize: 14,
-    fontFamily: 'Inter_400Regular',
     color: tokens.colors.text,
   },
-  emptyHint: {
+  emptyState: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingBottom: 80,
+    paddingHorizontal: 32,
     gap: 12,
   },
-  emptyHintText: {
-    fontSize: 13,
-    fontFamily: 'Inter_400Regular',
+  emptyTitle: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: tokens.colors.text,
+    textAlign: 'center',
+  },
+  emptySubtitle: {
+    fontSize: 14,
     color: tokens.colors.textMuted,
     textAlign: 'center',
+    lineHeight: 20,
+  },
+  emptyHint: {
+    fontSize: 12,
+    color: tokens.colors.textMuted,
+    textAlign: 'center',
+    marginTop: 8,
   },
   skeletonGrid: {
     flexDirection: 'row',
@@ -320,32 +333,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: 16,
     gap: 12,
-  },
-  emptyResults: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingBottom: 80,
-    gap: 8,
-  },
-  emptyTitle: {
-    fontSize: 16,
-    fontFamily: 'Inter_400Regular',
-    fontWeight: '500',
-    color: tokens.colors.textSecondary,
-    marginTop: 8,
-  },
-  emptySubtitle: {
-    fontSize: 13,
-    fontFamily: 'Inter_400Regular',
-    color: tokens.colors.textMuted,
-    textAlign: 'center',
-    paddingHorizontal: 32,
-  },
-  emptyHint2: {
-    fontSize: 13,
-    fontFamily: 'Inter_400Regular',
-    color: tokens.colors.textMuted,
   },
   resultCount: {
     paddingHorizontal: 24,
