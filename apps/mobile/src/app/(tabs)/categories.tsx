@@ -360,7 +360,7 @@ export default function CategoriesScreen() {
         {popularProducts.length > 0 || popularLoading ? (
           <View style={styles.section}>
             <View style={styles.paddingX}>
-              <SectionHeader title="Mashhur kolleksiya" onSeeAll={() => {}} />
+              <SectionHeader title="Mashhur kolleksiya" />
             </View>
 
             {popularLoading ? (
@@ -400,7 +400,7 @@ export default function CategoriesScreen() {
         {newProducts.length > 0 || newLoading ? (
           <View style={[styles.section, { marginBottom: 100 }]}>
             <View style={styles.paddingX}>
-              <SectionHeader title="Yangi kelishlar" onSeeAll={() => {}} />
+              <SectionHeader title="Yangi kelishlar" />
             </View>
 
             {newLoading ? (

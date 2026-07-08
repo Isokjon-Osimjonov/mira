@@ -304,7 +304,7 @@ export function generateInvoiceHtml(
         <div class="detail">${data.customerPhone}</div>
         <div class="detail">
           ${region === 'KOR'
-            ? '🇰🇷 Koreya' : "🇺🇿 O'zbekiston"}
+            ? '🇰 Koreya' : "🇺 O'zbekiston"}
         </div>
       </div>
       <div>
@@ -389,7 +389,7 @@ export function generateInvoiceHtml(
         font-weight:500;
         border-top:0.5px dashed #16a34a;
         padding-top:5px;margin-top:2px;">
-        <span>✨ Tejadingiz</span>
+        <span>Tejadingiz</span>
         <span>${formatPrice(
           totalSavings, region)}</span>
       </div>` : ''}

@@ -4,7 +4,9 @@
   "main": "expo-router/entry",
   "private": true,
   "scripts": {
-    "eas-build-post-install": "cd ../../ && node tools/scripts/eas-build-post-install.mjs . apps/mobile"
+    "eas-build-post-install": "cd ../../ && node tools/scripts/eas-build-post-install.mjs . apps/mobile",
+    "android": "expo run:android",
+    "ios": "expo run:ios"
   },
   "nx": {
     "tags": [
@@ -25,7 +27,6 @@
     "clsx": "^2.1.1",
     "date-fns": "^4.4.0",
     "expo": "~54.0.35",
-    "expo-clipboard": "~8.0.8",
     "expo-constants": "~18.0.13",
     "expo-dev-client": "~6.0.21",
     "expo-device": "~8.0.10",
