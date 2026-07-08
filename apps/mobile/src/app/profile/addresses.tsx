@@ -229,7 +229,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   flagBadge: {
-    width: 24,
+    width: 40,
     height: 24,
     borderRadius: 12,
     alignItems: 'center',

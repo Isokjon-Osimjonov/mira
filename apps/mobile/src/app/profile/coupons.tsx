@@ -55,8 +55,10 @@ export default function CouponsScreen() {
       ? `${item.value}% chegirma`
       : `₩${item.value.toLocaleString()} chegirma`
 
-    const capText = item.maxDiscountCap ? ` (maksimum ₩${item.maxDiscountCap.toLocaleString()})` : ''
-    
+    const capText = item.maxDiscountCap
+      ? ` (maksimum ₩${item.maxDiscountCap.toLocaleString()})`
+      : ''
+
     let minOrderText = null
     if (item.minOrderAmount > 0) {
       minOrderText = `₩${item.minOrderAmount.toLocaleString()} dan yuqori buyurtmada`
@@ -80,7 +82,10 @@ export default function CouponsScreen() {
           <Text style={styles.cardName}>{item.name}</Text>
         </View>
         <View style={styles.cardBody}>
-          <Text style={styles.discountText}>{discountText}{capText}</Text>
+          <Text style={styles.discountText}>
+            {discountText}
+            {capText}
+          </Text>
           {minOrderText && <Text style={styles.detailText}>{minOrderText}</Text>}
           {expiryText && <Text style={styles.detailText}>{expiryText}</Text>}
         </View>
@@ -95,10 +100,12 @@ export default function CouponsScreen() {
             </View>
           ) : (
             <TouchableOpacity
-              onPress={() => router.push({ pathname: '/checkout', params: { couponCode: item.code } })}
+              onPress={() =>
+                router.push({ pathname: '/checkout', params: { couponCode: item.code } })
+              }
               style={styles.cartBtn}
             >
-              <Text style={styles.cartBtnText}>Savatchaga o'tish →</Text>
+              <Text style={styles.cartBtnText}>Qo'llash →</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -117,7 +124,8 @@ export default function CouponsScreen() {
       <View style={styles.card}>
         <View style={styles.redemptionHeader}>
           <Text style={styles.redemptionTitle}>
-            <Text style={{ fontWeight: '600' }}>{item.couponName}</Text> · <Text style={{ color: tokens.colors.textMuted }}>{item.couponCode}</Text>
+            <Text style={{ fontWeight: '600' }}>{item.couponName}</Text> ·{' '}
+            <Text style={{ color: tokens.colors.textMuted }}>{item.couponCode}</Text>
           </Text>
           <Text style={styles.redemptionAmount}>-₩{item.discountAmount.toLocaleString()}</Text>
         </View>

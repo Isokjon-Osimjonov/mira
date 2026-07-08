@@ -66,6 +66,7 @@ export interface ShippingTier {
 export const productService = {
   getProducts: async (params?: {
     featured?: boolean
+    isNew?: boolean
     sort?: 'newest' | 'bestselling'
     limit?: number
     page?: number

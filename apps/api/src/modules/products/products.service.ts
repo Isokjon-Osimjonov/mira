@@ -115,6 +115,7 @@ export async function getProducts(query: {
   region?: 'UZB' | 'KOR'
   sort?: string
   featured?: boolean
+  isNew?: boolean
   q?: string
   isActive?: string
   showDeleted?: boolean
@@ -142,8 +143,12 @@ export async function getProducts(query: {
     where = and(where, eq(products.brandName, query.brand))
   }
 
-  if (query.featured === true) {
+  if (query.featured === true || (query as any).featured === 'true') {
     where = and(where, eq(products.isFeatured, true))
+  }
+
+  if (query.isNew === true || (query as any).isNew === 'true') {
+    where = and(where, eq(products.isNew, true))
   }
 
   if (!query.isAdmin) {

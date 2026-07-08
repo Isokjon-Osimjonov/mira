@@ -8,7 +8,7 @@ import type { Product } from '../../services/product.service'
 import { useWishlistStore } from '../../lib/wishlist-store'
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
-const CARD_WIDTH = (SCREEN_WIDTH - 48) / 2
+const CARD_WIDTH = (SCREEN_WIDTH - 44) / 2
 
 interface ProductCardProps {
   product: Product
@@ -45,15 +45,14 @@ export const ProductCard = ({
   const uzsPrice = showUzs ? krwToUzs(product.retailPrice, 12) : 0 // Fallback rate 12, will be handled by store in screens
 
   const getBadge = () => {
-    if (!product.isAvailable) {
-      return { label: 'TUGAGAN', color: tokens.colors.textLight }
+    if (!product.isAvailable || product.totalStock === 0) {
+      return { label: 'MAVJUD EMAS', color: '#EF4444' }
+    }
+    if (product.totalStock > 0 && product.totalStock <= 5) {
+      return { label: 'OZ QOLDI', color: tokens.colors.warning }
     }
     if (product.isNew) {
       return { label: 'YANGI', color: tokens.colors.success }
-    }
-
-    if (product.totalStock <= 5) {
-      return { label: 'OZ QOLDI', color: tokens.colors.warning }
     }
     return null
   }
@@ -117,13 +116,13 @@ export const ProductCard = ({
         <TouchableOpacity
           style={[
             styles.cartBtn,
-            !product.isAvailable && { backgroundColor: tokens.colors.skeleton },
+            (!product.isAvailable || product.totalStock === 0) && { backgroundColor: tokens.colors.skeleton },
           ]}
           onPress={onAddToCart}
-          disabled={!product.isAvailable}
+          disabled={!product.isAvailable || product.totalStock === 0}
         >
           <Text
-            style={[styles.cartBtnText, !product.isAvailable && { color: tokens.colors.textLight }]}
+            style={[styles.cartBtnText, (!product.isAvailable || product.totalStock === 0) && { color: tokens.colors.textLight }]}
           >
             Savatga +
           </Text>

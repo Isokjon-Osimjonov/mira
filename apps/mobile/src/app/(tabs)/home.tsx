@@ -80,7 +80,7 @@ export default function HomeScreen() {
     refetch: refetchNew,
   } = useQuery({
     queryKey: ['products', 'newest', activeRegion],
-    queryFn: () => productService.getProducts({ sort: 'newest', limit: 10, region: activeRegion } as any),
+    queryFn: () => productService.getProducts({ sort: 'newest', limit: 10, region: activeRegion, isNew: true } as any),
     staleTime: 2 * 60 * 1000,
   })
 
@@ -90,7 +90,7 @@ export default function HomeScreen() {
     refetch: refetchBest,
   } = useQuery({
     queryKey: ['products', 'bestselling', activeRegion],
-    queryFn: () => productService.getProducts({ sort: 'bestselling', limit: 10, region: activeRegion } as any),
+    queryFn: () => productService.getProducts({ sort: 'bestselling', limit: 10, region: activeRegion, featured: true } as any),
     staleTime: 2 * 60 * 1000,
   })
 
@@ -399,12 +399,12 @@ export default function HomeScreen() {
             />
           ) : (
             <FlatList
-              horizontal
-              showsHorizontalScrollIndicator={false}
               data={newProducts}
               keyExtractor={(item) => item.id}
-              contentContainerStyle={styles.paddingX}
-              ItemSeparatorComponent={() => <View style={{ width: 12 }} />}
+              numColumns={2}
+              columnWrapperStyle={{ gap: 12, paddingHorizontal: 16 }}
+              scrollEnabled={false}
+              contentContainerStyle={{ gap: 12 }}
               renderItem={({ item }) => (
                 <ProductCard
                   product={item}
@@ -455,12 +455,12 @@ export default function HomeScreen() {
             />
           ) : (
             <FlatList
-              horizontal
-              showsHorizontalScrollIndicator={false}
               data={bestsellerProducts}
               keyExtractor={(item) => item.id}
-              contentContainerStyle={styles.paddingX}
-              ItemSeparatorComponent={() => <View style={{ width: 12 }} />}
+              numColumns={2}
+              columnWrapperStyle={{ gap: 12, paddingHorizontal: 16 }}
+              scrollEnabled={false}
+              contentContainerStyle={{ gap: 12 }}
               renderItem={({ item }) => (
                 <ProductCard
                   product={item}
