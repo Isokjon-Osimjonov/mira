@@ -399,6 +399,7 @@ export default function HomeScreen() {
             />
           ) : (
             <FlatList
+              key="new-products-2col"
               data={newProducts}
               keyExtractor={(item) => item.id}
               numColumns={2}
@@ -455,6 +456,7 @@ export default function HomeScreen() {
             />
           ) : (
             <FlatList
+              key="featured-products-2col"
               data={bestsellerProducts}
               keyExtractor={(item) => item.id}
               numColumns={2}
