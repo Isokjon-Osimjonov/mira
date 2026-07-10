@@ -19,7 +19,7 @@ RUN pnpm install --frozen-lockfile --filter @mira/api --prod
 
 FROM node:20-alpine AS runner
 
-RUN apk add --no-cache dumb-init wget
+RUN apk add --no-cache dumb-init wget postgresql-client
 
 WORKDIR /app
 

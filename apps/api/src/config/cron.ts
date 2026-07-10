@@ -101,18 +101,22 @@ export function initCronJobs(): void {
     { timezone: 'Asia/Seoul' }
   )
 
-  // 7. DB Backup — daily 03:00 KST (Disabled - moved to host-level bash script)
-  // cron.schedule(
-  //   '0 3 * * *',
-  //   async () => {
-  //     try {
-  //       await backupDatabase()
-  //     } catch (err: any) {
-  //       logger.error({ err: err.message }, 'Backup cron error')
-  //     }
-  //   },
-  //   { timezone: 'Asia/Seoul' }
-  // )
+  // 7. DB Backup — daily 03:00 KST
+  cron.schedule(
+    '0 3 * * *',
+    async () => {
+      try {
+        await backupDatabase()
+        logger.info('Backup muvaffaqiyatli')
+      } catch (err: any) {
+        logger.error(
+          { err: err.message },
+          'Backup cron error'
+        )
+      }
+    },
+    { timezone: 'Asia/Seoul' }
+  )
 
   logger.info('Cron jobs initialized')
 }
@@ -123,8 +127,13 @@ export async function backupDatabase(): Promise<void> {
   const filepath = `/tmp/${filename}`
 
   try {
-    // Run pg_dump via docker
-    execSync(`docker exec mira_postgres_prod pg_dump ${env.DATABASE_URL} --no-owner --clean > ${filepath}`, { timeout: 60000 })
+    // Run pg_dump directly
+    execSync(
+      `pg_dump "${env.DATABASE_URL}"` +
+      ` -f "${filepath}"` +
+      ` --no-owner --clean`,
+      { timeout: 60000 }
+    )
 
     // Gzip
     execSync(`gzip ${filepath}`)
