@@ -1,0 +1,467 @@
+<!doctype html>
+<html lang="uz">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Akkauntni o'chirish — Mira Market</title>
+    <meta
+      name="description"
+      content="Mira Market ilovasidagi akkauntingizni o'chirish bo'yicha yo'riqnoma."
+    />
+    <meta property="og:title" content="Akkauntni o'chirish — Mira Market" />
+    <meta
+      property="og:description"
+      content="Mira Market ilovasidagi akkauntingizni o'chirish bo'yicha yo'riqnoma."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://miramarket.uz/delete-account" />
+    <meta property="og:image" content="https://miramarket.uz/og-image.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="canonical" href="https://miramarket.uz/delete-account" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="icon" type="image/png" href="./favicon.png" />
+
+    <style>
+      :root {
+        --primary: #3a0211;
+        --background: #fefefe;
+        --surface: #ffffff;
+        --text: #1a1a1a;
+        --text-secondary: #3d3d3d;
+        --text-muted: #8a8a8a;
+        --border: #f0f0f0;
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: 'Inter', sans-serif;
+        font-weight: 400;
+      }
+
+      body {
+        background-color: var(--background);
+        color: var(--text-secondary);
+        line-height: 1.6;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      a {
+        text-decoration: none;
+        color: inherit;
+      }
+
+      /* HEADER */
+      header {
+        position: sticky;
+        top: 0;
+        background: rgba(254, 254, 254, 0.9);
+        backdrop-filter: blur(10px);
+        border-bottom: 1px solid var(--border);
+        z-index: 100;
+      }
+      .header-content {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        height: 72px;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 24px;
+      }
+      .logo {
+        font-size: 20px;
+        font-weight: 500;
+        color: var(--text);
+      }
+      .nav-links {
+        display: flex;
+        gap: 32px;
+        height: 100%;
+        align-items: center;
+      }
+      .nav-links a {
+        color: var(--text-muted);
+        font-size: 14px;
+        transition: color 0.2s;
+        height: 100%;
+        display: flex;
+        align-items: center;
+      }
+      .nav-links a:hover {
+        color: var(--text);
+      }
+      .nav-links a.active {
+        color: var(--primary);
+        font-weight: 500;
+      }
+
+      .header-right {
+        display: flex;
+        align-items: center;
+        gap: 24px;
+      }
+      .header-right .btn-text {
+        color: var(--text-muted);
+        font-size: 14px;
+      }
+
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 10px 24px;
+        border-radius: 9999px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+        border: 1px solid transparent;
+      }
+      .btn-primary {
+        background-color: var(--primary);
+        color: white;
+      }
+      .btn-primary:hover {
+        opacity: 0.9;
+      }
+
+      /* FOOTER */
+      footer {
+        background: var(--background);
+        padding: 64px 0 32px;
+        border-top: 1px solid var(--border);
+      }
+      .footer-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 24px;
+      }
+      .footer-top {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 64px;
+      }
+      .footer-brand {
+        max-width: 250px;
+      }
+      .footer-logo {
+        font-size: 18px;
+        font-weight: 500;
+        color: var(--text);
+        margin-bottom: 16px;
+      }
+      .footer-brand p {
+        font-size: 13px;
+        color: var(--text-muted);
+        line-height: 1.5;
+      }
+      .footer-links-grid {
+        display: flex;
+        gap: 80px;
+      }
+      .footer-col {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+      .footer-col a {
+        font-size: 13px;
+        color: var(--text-secondary);
+        transition: color 0.2s;
+      }
+      .footer-col a:hover {
+        color: var(--text);
+      }
+      .footer-bottom {
+        border-top: 1px solid var(--border);
+        padding-top: 32px;
+        font-size: 12px;
+        color: var(--text-muted);
+        text-align: center;
+      }
+
+      @media (max-width: 768px) {
+        .nav-links,
+        .header-right {
+          display: none;
+        }
+        .mobile-menu-btn {
+          display: block !important;
+        }
+        .footer-top {
+          flex-direction: column;
+          gap: 40px;
+        }
+        .footer-links-grid {
+          flex-direction: column;
+          gap: 32px;
+        }
+      }
+
+      /* PAGE CONTENT STYLES */
+      .content-container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 64px 24px;
+      }
+      .content-container h1 {
+        font-size: 32px;
+        font-weight: 500;
+        color: var(--text);
+        margin-bottom: 32px;
+      }
+      .content-container h2 {
+        font-size: 20px;
+        font-weight: 500;
+        color: var(--text);
+        margin: 32px 0 16px;
+      }
+      .content-container p {
+        color: var(--text-secondary);
+        margin-bottom: 16px;
+      }
+      .content-container ul {
+        margin-bottom: 16px;
+        padding-left: 24px;
+        color: var(--text-secondary);
+      }
+      .content-container li {
+        margin-bottom: 8px;
+      }
+      .alert {
+        background: #fff7ed;
+        border-left: 4px solid #d97706;
+        padding: 16px;
+        margin: 24px 0;
+        border-radius: 0 8px 8px 0;
+      }
+      .content-container a {
+        color: var(--primary);
+        text-decoration: none;
+      }
+      .content-container a:hover {
+        text-decoration: underline;
+      }
+      .lang-toggle button {
+        color: var(--text-muted);
+      }
+      .lang-toggle button.active {
+        color: var(--primary);
+        font-weight: 500;
+      }
+    </style>
+  </head>
+  <body>
+    <header style="position: sticky; top: 0; background: var(--surface); z-index: 100">
+      <div class="container header-content">
+        <div style="display: flex; align-items: center; gap: 16px">
+          <div class="logo">Mira Market</div>
+          <div class="lang-toggle" style="display: flex; gap: 8px; font-size: 13px">
+            <button
+              type="button"
+              data-lang="uz"
+              class="active"
+              style="background: none; border: none; cursor: pointer; font-family: Inter"
+            >
+              UZ
+            </button>
+            <span style="color: var(--border)">|</span>
+            <button
+              type="button"
+              data-lang="ru"
+              style="background: none; border: none; cursor: pointer; font-family: Inter"
+            >
+              RU
+            </button>
+          </div>
+        </div>
+        <nav class="nav-links">
+          <a href="/#features">Xususiyatlar</a>
+          <a href="/#how-it-works">Qanday ishlaydi</a>
+          <a href="/#contact">Aloqa</a>
+        </nav>
+        <div class="header-right">
+          <a href="/#how-it-works" class="btn-text">Qanday ishlaydi</a>
+          <a href="/#download" class="btn btn-primary">Yuklab olish</a>
+        </div>
+        <button
+          type="button"
+          class="mobile-menu-btn"
+          style="
+            display: none;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 8px;
+            color: var(--text);
+          "
+        >
+          <svg
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <div
+        class="mobile-menu"
+        style="
+          display: none;
+          padding: 24px;
+          background: #fff;
+          border-top: 1px solid var(--border);
+          flex-direction: column;
+          gap: 16px;
+          position: absolute;
+          width: 100%;
+          box-sizing: border-box;
+          box-shadow: 0 12px 24px rgba(0, 0, 0, 0.05);
+        "
+      >
+        <a
+          href="/#features"
+          class="mobile-nav-link"
+          style="color: var(--text); font-weight: 500; text-decoration: none"
+          >Xususiyatlar</a
+        >
+        <a
+          href="/#how-it-works"
+          class="mobile-nav-link"
+          style="color: var(--text); font-weight: 500; text-decoration: none"
+          >Qanday ishlaydi</a
+        >
+        <a
+          href="/#contact"
+          class="mobile-nav-link"
+          style="color: var(--text); font-weight: 500; text-decoration: none"
+          >Aloqa</a
+        >
+        <hr style="border: none; border-top: 1px solid var(--border); margin: 8px 0" />
+        <a
+          href="/#download"
+          class="btn btn-primary mobile-nav-link"
+          style="text-align: center"
+          >Yuklab olish</a
+        >
+      </div>
+    </header>
+
+    <div class="content-container">
+      <div id="content-uz">
+        <h1>Akkauntni o'chirish</h1>
+
+        <p>Akkauntingizni o'chirish uchun quyidagi email ga yozing:</p>
+        
+        <div class="alert" style="background: #f0fdf4; border-left: 4px solid #16a34a">
+          <a href="mailto:support@miramarket.uz">support@miramarket.uz</a>
+        </div>
+
+        <p>
+          <strong>Mavzu:</strong> Akkauntni o'chirish so'rovi<br/>
+          <strong>Xabarda:</strong> Telefon raqamingizni ko'rsating
+        </p>
+
+        <h2>Biz 3 ish kuni ichida:</h2>
+        <ul>
+          <li>Akkauntingizni o'chiramiz</li>
+          <li>Barcha shaxsiy ma'lumotlaringizni o'chiramiz</li>
+          <li>Buyurtma tarixingiz 90 kun saqlanadi</li>
+        </ul>
+      </div>
+
+      <div id="content-ru" style="display: none">
+        <h1>Удаление аккаунта</h1>
+
+        <p>Чтобы удалить аккаунт, напишите на следующий email:</p>
+        
+        <div class="alert" style="background: #f0fdf4; border-left: 4px solid #16a34a">
+          <a href="mailto:support@miramarket.uz">support@miramarket.uz</a>
+        </div>
+
+        <p>
+          <strong>Тема:</strong> Запрос на удаление аккаунта<br/>
+          <strong>В сообщении:</strong> Укажите ваш номер телефона
+        </p>
+
+        <h2>В течение 3 рабочих дней мы:</h2>
+        <ul>
+          <li>Удалим ваш аккаунт</li>
+          <li>Удалим все ваши личные данные</li>
+          <li>История ваших заказов будет храниться 90 дней</li>
+        </ul>
+      </div>
+    </div>
+
+    <footer>
+      <div class="footer-container">
+        <div class="footer-top">
+          <div class="footer-brand">
+            <div class="footer-logo">Mira Market</div>
+            <p>Sizni eng yaxshi original Koreya kosmetikasi bilan bog'laymiz.</p>
+          </div>
+          <div class="footer-links-grid">
+            <div class="footer-col">
+              <a href="/#features">Xususiyatlar</a>
+              <a href="/#how-it-works">Qanday ishlaydi</a>
+            </div>
+            <div class="footer-col">
+              <a href="/#contact">Aloqa</a>
+              <a href="/privacy">Maxfiylik siyosati</a>
+              <a href="/terms">Foydalanish shartlari</a>
+              <a href="/sale-terms">Sotish shartlari</a>
+            </div>
+          </div>
+        </div>
+        <div class="footer-bottom">&copy; 2026 Mira Market. Barcha huquqlar himoyalangan.</div>
+      </div>
+    </footer>
+
+    <script>
+      document.addEventListener('DOMContentLoaded', () => {
+        document.querySelectorAll('.lang-toggle button').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            const lang = btn.dataset.lang
+            document.getElementById('content-uz').style.display = lang === 'uz' ? 'block' : 'none'
+            document.getElementById('content-ru').style.display = lang === 'ru' ? 'block' : 'none'
+            document
+              .querySelectorAll('.lang-toggle button')
+              .forEach((b) => b.classList.toggle('active', b === btn))
+          })
+        })
+
+        const menuBtn = document.querySelector('.mobile-menu-btn')
+        const mobileMenu = document.querySelector('.mobile-menu')
+        if (menuBtn && mobileMenu) {
+          menuBtn.addEventListener('click', () => {
+            if (mobileMenu.style.display === 'none' || mobileMenu.style.display === '') {
+              mobileMenu.style.display = 'flex'
+            } else {
+              mobileMenu.style.display = 'none'
+            }
+          })
+
+          document.querySelectorAll('.mobile-nav-link').forEach((link) => {
+            link.addEventListener('click', () => {
+              mobileMenu.style.display = 'none'
+            })
+          })
+        }
+      })
+    </script>
+  </body>
+</html>
