@@ -66,7 +66,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     ],
   ],
   extra: {
-    apiUrl: process.env.EXPO_PUBLIC_API_URL,
+    apiUrl: process.env.EXPO_PUBLIC_API_URL ?? 'https://api.miramarket.uz/api/v1',
     botUsername: process.env.EXPO_PUBLIC_BOT_USERNAME,
     eas: { projectId: '95de2ad4-6355-4322-af4e-a56b3629a2be' },
   },
