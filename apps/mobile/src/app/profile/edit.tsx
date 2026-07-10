@@ -59,7 +59,7 @@ export default function EditProfileScreen() {
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {}
-    const nameRegex = /^[\p{L}\s'\-]+$/u
+    const nameRegex = /^[\p{L}\s'-]+$/u
     if (firstName.trim() && !nameRegex.test(firstName.trim())) {
       newErrors.firstName = "Ism faqat harflardan iborat bo'lishi kerak"
     }
@@ -71,7 +71,7 @@ export default function EditProfileScreen() {
   }
 
   const validateField = (field: string, value: string) => {
-    const nameRegex = /^[\p{L}\s'\-]+$/u
+    const nameRegex = /^[\p{L}\s'-]+$/u
     if (!value.trim()) {
       setErrors(p => ({ ...p, [field]: '' }))
       return

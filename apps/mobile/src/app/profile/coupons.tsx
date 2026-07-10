@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   RefreshControl,
   Share,
+  ScrollView,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Feather } from '@expo/vector-icons'
@@ -177,7 +178,17 @@ export default function CouponsScreen() {
 
       {/* List */}
       {!isLoading && data?.length === 0 ? (
-        <View style={{ flex: 1, justifyContent: 'center' }}>
+        <ScrollView 
+          contentContainerStyle={{ flex: 1, justifyContent: 'center' }}
+          refreshControl={
+            <RefreshControl
+              refreshing={isRefetching}
+              onRefresh={handleRefresh}
+              tintColor={tokens.colors.primary}
+              colors={[tokens.colors.primary]}
+            />
+          }
+        >
           {activeTab === 'available' ? (
             <EmptyState
               icon="tag"
@@ -191,7 +202,7 @@ export default function CouponsScreen() {
               subtitle="Ishlatilgan kuponlar tarixi shu yerda ko'rinadi"
             />
           )}
-        </View>
+        </ScrollView>
       ) : (
         <FlatList
           data={data}

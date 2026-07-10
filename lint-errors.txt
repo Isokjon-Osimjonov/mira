@@ -1,0 +1,1230 @@
+
+ NX   Running target lint for 3 projects:
+
+- mobile
+- admin
+- api
+
+
+
+> nx run api:lint
+
+
+Linting "api"...
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/api/src/app.ts[24m[0m
+[0m  [2m116:25[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m161:65[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m247:17[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/api/src/bot/handlers/auth.ts[24m[0m
+[0m  [2m43:24[22m  [33mwarning[39m  Forbidden non-null assertion  [2m@typescript-eslint/no-non-null-assertion[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/api/src/bot/helpers/notify.ts[24m[0m
+[0m  [2m128:19[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m146:21[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m155:17[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/api/src/config/cron.ts[24m[0m
+[0m   [2m41:21[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m56:21[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m70:21[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m83:21[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m97:21[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m111:21[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m155:17[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/api/src/config/queues.ts[24m[0m
+[0m   [2m72:15[22m  [33mwarning[39m  'sendDeadlineReminders' is assigned a value but never used  [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m  [2m132:17[22m  [33mwarning[39m  Unexpected any. Specify a different type                    [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m137:39[22m  [33mwarning[39m  Unexpected any. Specify a different type                    [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/api/src/config/redis.ts[24m[0m
+[0m  [2m29:17[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/api/src/config/socket.ts[24m[0m
+[0m  [2m13:58[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m15:17[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m49:37[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m50:36[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m53:32[22m  [33mwarning[39m  '_data' is defined but never used         [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m  [2m53:39[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m85:27[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/api/src/lib/audit.ts[24m[0m
+[0m  [2m11:14[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m12:14[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/api/src/lib/cookie.ts[24m[0m
+[0m  [2m29:39[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/api/src/lib/invoice.ts[24m[0m
+[0m   [2m34:3[22m   [33mwarning[39m  'region' is defined but never used  [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m  [2m118:29[22m  [33mwarning[39m  Forbidden non-null assertion        [2m@typescript-eslint/no-non-null-assertion[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/api/src/lib/jwt.ts[24m[0m
+[0m  [2m24:42[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m30:43[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m35:55[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/api/src/lib/push.ts[24m[0m
+[0m  [2m32:17[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/api/src/middleware/auth.ts[24m[0m
+[0m   [2m60:17[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m187:42[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m193:43[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m198:55[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/api/src/middleware/errorHandler.ts[24m[0m
+[0m   [2m5:35[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m5:69[22m  [33mwarning[39m  '_next' is defined but never used         [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m   [2m9:21[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m9:47[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m26:34[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m26:42[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m47:27[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m62:25[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/api/src/modules/addresses/addresses.controller.ts[24m[0m
+[0m   [2m4:35[22m  [33mwarning[39m  'AdminJwtPayload' is defined but never used  [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m  [2m22:75[22m  [33mwarning[39m  Unexpected any. Specify a different type     [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m34:79[22m  [33mwarning[39m  Unexpected any. Specify a different type     [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m89:73[22m  [33mwarning[39m  Unexpected any. Specify a different type     [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/api/src/modules/addresses/addresses.schema.ts[24m[0m
+[0m  [2m9:23[22m  [31merror[39m  Unnecessary escape character: \-  [2mno-useless-escape[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/api/src/modules/addresses/addresses.service.ts[24m[0m
+[0m    [2m3:14[22m  [33mwarning[39m  'and' is defined but never used           [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m   [2m47:12[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m71:50[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m128:31[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/api/src/modules/admin-notifications/admin-notifications.controller.ts[24m[0m
+[0m  [2m13:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m22:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m31:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m40:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/api/src/modules/admin-notifications/admin-notifications.service.ts[24m[0m
+[0m  [2m11:10[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m15:23[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/api/src/modules/admin-users/admin-users.controller.ts[24m[0m
+[0m  [2m11:15[22m  [33mwarning[39m  Unexpected any. Specify a different type           [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m22:15[22m  [33mwarning[39m  Unexpected any. Specify a different type           [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m34:13[22m  [33mwarning[39m  'passwordHash' is assigned a value but never used  [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m  [2m34:51[22m  [33mwarning[39m  Unexpected any. Specify a different type           [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m36:15[22m  [33mwarning[39m  Unexpected any. Specify a different type           [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m51:34[22m  [33mwarning[39m  Unexpected any. Specify a different type           [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m53:13[22m  [33mwarning[39m  'passwordHash' is assigned a value but never used  [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m  [2m53:51[22m  [33mwarning[39m  Unexpected any. Specify a different type           [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m55:15[22m  [33mwarning[39m  Unexpected any. Specify a different type           [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m71:15[22m  [33mwarning[39m  Unexpected any. Specify a different type           [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m80:34[22m  [33mwarning[39m  Unexpected any. Specify a different type           [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m83:15[22m  [33mwarning[39m  Unexpected any. Specify a different type           [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/api/src/modules/admin-users/admin-users.service.ts[24m[0m
+[0m    [2m5:19[22m  [33mwarning[39m  'sql' is defined but never used           [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m    [2m5:45[22m  [33mwarning[39m  'or' is defined but never used            [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m    [2m5:49[22m  [33mwarning[39m  'ilike' is defined but never used         [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m  [2m138:18[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/api/src/modules/admin/admin.router.ts[24m[0m
+[0m   [2m6:32[22m  [33mwarning[39m  'eq' is defined but never used            [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m  [2m86:17[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m95:17[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/api/src/modules/admin/auth/admin-auth.controller.ts[24m[0m
+[0m   [2m28:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m44:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m67:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m77:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m88:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m102:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/api/src/modules/admin/auth/admin-auth.service.ts[24m[0m
+[0m    [2m3:54[22m  [33mwarning[39m  'roles' is defined but never used         [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m  [2m154:16[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m311:14[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/api/src/modules/ai/ai.controller.ts[24m[0m
+[0m  [2m12:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m29:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m46:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m70:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/api/src/modules/ai/ai.service.ts[24m[0m
+[0m  [2m113:21[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m149:17[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m166:3[22m   [33mwarning[39m  'productId' is defined but never used     [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m  [2m167:3[22m   [33mwarning[39m  'customNote' is defined but never used    [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m  [2m263:17[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m358:17[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/api/src/modules/analytics/analytics.service.ts[24m[0m
+[0m   [2m18:86[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m29:44[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m48:34[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m126:54[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m194:34[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m197:17[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m214:31[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m227:34[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m275:34[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m366:34[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m410:34[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m477:34[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m569:29[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m580:26[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m602:23[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m611:22[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m630:23[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m651:23[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m676:23[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/api/src/modules/auth/auth.controller.ts[24m[0m
+[0m   [2m32:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m55:25[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m66:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m84:25[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m94:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m119:42[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m148:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m164:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m175:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m186:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m197:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m212:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/api/src/modules/auth/auth.schema.ts[24m[0m
+[0m  [2m30:23[22m  [31merror[39m  Unnecessary escape character: \-  [2mno-useless-escape[22m[0m
+[0m  [2m37:23[22m  [31merror[39m  Unnecessary escape character: \-  [2mno-useless-escape[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/api/src/modules/auth/auth.service.ts[24m[0m
+[0m   [2m15:25[22m  [33mwarning[39m  'generateOtp' is defined but never used   [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m  [2m101:25[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m242:19[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m328:16[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m483:76[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m484:18[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/api/src/modules/banners/banners.controller.ts[24m[0m
+[0m   [2m6:28[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m9:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m21:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m34:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m46:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m58:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/api/src/modules/banners/banners.service.ts[24m[0m
+[0m  [2m42:10[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m50:48[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/api/src/modules/boxes/boxes.controller.ts[24m[0m
+[0m   [2m5:25[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m21:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m32:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m44:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m61:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m77:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m89:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/api/src/modules/boxes/boxes.service.ts[24m[0m
+[0m  [2m25:21[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m34:48[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/api/src/modules/cargo-dates/cargo-dates.controller.ts[24m[0m
+[0m   [2m8:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m17:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m33:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m45:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m57:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/api/src/modules/cargo-dates/cargo-dates.service.ts[24m[0m
+[0m   [2m3:14[22m  [33mwarning[39m  'gte' is defined but never used             [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m   [2m6:9[22m   [33mwarning[39m  'today' is assigned a value but never used  [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m  [2m58:10[22m  [33mwarning[39m  'next' is assigned a value but never used   [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/api/src/modules/cart/cart.controller.ts[24m[0m
+[0m    [2m7:37[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m    [2m8:37[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m26:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m35:37[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m36:37[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m39:54[22m  [33mwarning[39m  'item' is defined but never used          [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m   [2m52:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m63:37[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m64:37[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m83:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m100:37[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m101:37[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m120:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m136:37[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m137:37[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m156:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m165:37[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m166:37[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m181:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m191:37[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m192:37[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m197:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/api/src/modules/cart/cart.service.ts[24m[0m
+[0m  [2m3:24[22m  [33mwarning[39m  'isNull' is defined but never used             [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m  [2m4:31[22m  [33mwarning[39m  'UpdateCartItemDto' is defined but never used  [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/api/src/modules/categories/categories.controller.ts[24m[0m
+[0m  [2m12:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m21:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m39:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m58:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m68:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/api/src/modules/categories/categories.service.ts[24m[0m
+[0m  [2m11:33[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m20:55[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/api/src/modules/coupons/coupons.controller.ts[24m[0m
+[0m   [2m20:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m46:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m56:34[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m71:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m101:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m131:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m148:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m168:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m179:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m188:37[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m189:37[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m192:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m201:37[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m204:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/api/src/modules/coupons/coupons.service.ts[24m[0m
+[0m    [2m6:49[22m  [33mwarning[39m  'UpdateCouponStatusDto' is defined but never used  [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m  [2m310:59[22m  [33mwarning[39m  Unexpected any. Specify a different type           [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m310:68[22m  [33mwarning[39m  Unexpected any. Specify a different type           [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m319:10[22m  [33mwarning[39m  Unexpected any. Specify a different type           [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m392:20[22m  [33mwarning[39m  Unexpected any. Specify a different type           [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m426:20[22m  [33mwarning[39m  Unexpected any. Specify a different type           [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m494:18[22m  [33mwarning[39m  Forbidden non-null assertion                       [2m@typescript-eslint/no-non-null-assertion[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/api/src/modules/customers/customers.controller.ts[24m[0m
+[0m   [2m39:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m50:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m65:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m76:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m88:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m104:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m119:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m130:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m142:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m159:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/api/src/modules/customers/customers.schema.ts[24m[0m
+[0m  [2m19:23[22m  [31merror[39m  Unnecessary escape character: \-  [2mno-useless-escape[22m[0m
+[0m  [2m25:23[22m  [31merror[39m  Unnecessary escape character: \-  [2mno-useless-escape[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/api/src/modules/customers/customers.service.ts[24m[0m
+[0m  [2m17:37[22m  [33mwarning[39m  'sum' is defined but never used                      [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m  [2m17:71[22m  [33mwarning[39m  'avg' is defined but never used                      [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m  [2m21:3[22m   [33mwarning[39m  'UpdateCustomerNotesDto' is defined but never used   [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m  [2m22:3[22m   [33mwarning[39m  'BlockCustomerDto' is defined but never used         [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m  [2m23:3[22m   [33mwarning[39m  'AssignCouponDto' is defined but never used          [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m  [2m24:3[22m   [33mwarning[39m  'CreateWalkInCustomerDto' is defined but never used  [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m  [2m43:14[22m  [33mwarning[39m  Unexpected any. Specify a different type             [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m65:16[22m  [33mwarning[39m  Unexpected any. Specify a different type             [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/api/src/modules/dashboard/dashboard.controller.ts[24m[0m
+[0m    [2m6:41[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m    [2m9:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m18:41[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m21:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m30:41[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m33:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m42:41[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m45:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m77:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m112:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m133:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m144:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m166:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m193:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m222:37[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m231:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m252:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/api/src/modules/dashboard/dashboard.service.ts[24m[0m
+[0m   [2m515:22[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m516:24[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m758:60[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m803:36[22m  [33mwarning[39m  Forbidden non-null assertion              [2m@typescript-eslint/no-non-null-assertion[22m[0m
+[0m   [2m852:56[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m1028:20[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m1028:39[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/api/src/modules/exchange-rates/exchange-rates.controller.ts[24m[0m
+[0m  [2m16:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m27:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m38:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m48:34[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m60:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m86:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/api/src/modules/exchange-rates/exchange-rates.service.ts[24m[0m
+[0m    [2m2:33[22m  [33mwarning[39m  'settings' is defined but never used                [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m    [2m2:43[22m  [33mwarning[39m  'exchangeRateSourceEnum' is defined but never used  [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m   [2m13:33[22m  [33mwarning[39m  Unexpected any. Specify a different type            [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m136:19[22m  [33mwarning[39m  Unexpected any. Specify a different type            [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/api/src/modules/expenses/expenses.controller.ts[24m[0m
+[0m   [2m16:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m28:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m45:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m61:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m80:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m94:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m105:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m115:34[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m119:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m137:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m153:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/api/src/modules/expenses/expenses.service.ts[24m[0m
+[0m    [2m2:10[22m  [33mwarning[39m  'logger' is defined but never used        [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m   [2m53:18[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m117:14[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m168:14[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m251:18[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/api/src/modules/inventory/inventory.controller.ts[24m[0m
+[0m   [2m8:70[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m67:53[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m98:64[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/api/src/modules/inventory/inventory.service.ts[24m[0m
+[0m   [2m12:3[22m   [33mwarning[39m  'waitlists' is defined but never used           [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m   [2m13:3[22m   [33mwarning[39m  'customers' is defined but never used           [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m   [2m32:42[22m  [33mwarning[39m  'notifyCustomerFull' is defined but never used  [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m   [2m83:84[22m  [33mwarning[39m  Unexpected any. Specify a different type        [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m87:70[22m  [33mwarning[39m  Unexpected any. Specify a different type        [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m91:82[22m  [33mwarning[39m  Unexpected any. Specify a different type        [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m93:86[22m  [33mwarning[39m  Unexpected any. Specify a different type        [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m100:10[22m  [33mwarning[39m  Unexpected any. Specify a different type        [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m147:41[22m  [33mwarning[39m  Unexpected any. Specify a different type        [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m244:20[22m  [33mwarning[39m  Unexpected any. Specify a different type        [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m365:38[22m  [33mwarning[39m  Unexpected any. Specify a different type        [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m459:8[22m   [33mwarning[39m  Unexpected any. Specify a different type        [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m461:95[22m  [33mwarning[39m  Unexpected any. Specify a different type        [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m462:86[22m  [33mwarning[39m  Unexpected any. Specify a different type        [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m462:95[22m  [33mwarning[39m  Unexpected any. Specify a different type        [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m464:85[22m  [33mwarning[39m  Unexpected any. Specify a different type        [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m466:83[22m  [33mwarning[39m  Unexpected any. Specify a different type        [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m518:86[22m  [33mwarning[39m  Unexpected any. Specify a different type        [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m518:95[22m  [33mwarning[39m  Unexpected any. Specify a different type        [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m520:85[22m  [33mwarning[39m  Unexpected any. Specify a different type        [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m522:83[22m  [33mwarning[39m  Unexpected any. Specify a different type        [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m562:52[22m  [33mwarning[39m  'adminId' is defined but never used             [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m  [2m651:38[22m  [33mwarning[39m  Forbidden non-null assertion                    [2m@typescript-eslint/no-non-null-assertion[22m[0m
+[0m  [2m655:38[22m  [33mwarning[39m  Forbidden non-null assertion                    [2m@typescript-eslint/no-non-null-assertion[22m[0m
+[0m  [2m665:40[22m  [33mwarning[39m  Forbidden non-null assertion                    [2m@typescript-eslint/no-non-null-assertion[22m[0m
+[0m  [2m674:40[22m  [33mwarning[39m  Forbidden non-null assertion                    [2m@typescript-eslint/no-non-null-assertion[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/api/src/modules/kor-shipping/kor-shipping.controller.ts[24m[0m
+[0m   [2m8:36[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m14:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m24:36[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m30:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m47:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m69:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m85:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/api/src/modules/kor-shipping/kor-shipping.service.ts[24m[0m
+[0m  [2m10:33[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m51:10[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m75:18[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/api/src/modules/notifications/notifications.controller.ts[24m[0m
+[0m   [2m7:37[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m19:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m28:37[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m31:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m40:37[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m44:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m53:37[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m56:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m75:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/api/src/modules/notifications/notifications.service.ts[24m[0m
+[0m   [2m3:38[22m  [33mwarning[39m  'inArray' is defined but never used       [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m  [2m16:60[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m42:43[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m42:72[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/api/src/modules/orders/orders-admin.router.ts[24m[0m
+[0m   [2m5:10[22m  [33mwarning[39m  'db' is defined but never used            [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m   [2m6:10[22m  [33mwarning[39m  'orders' is defined but never used        [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m   [2m7:10[22m  [33mwarning[39m  'inArray' is defined but never used       [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m  [2m14:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/api/src/modules/orders/orders.controller.ts[24m[0m
+[0m    [2m1:34[22m  [33mwarning[39m  'NextFunction' is defined but never used        [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m   [2m10:3[22m   [33mwarning[39m  'couponRedemptions' is defined but never used   [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m   [2m11:3[22m   [33mwarning[39m  'coupons' is defined but never used             [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m   [2m27:15[22m  [33mwarning[39m  'CustomerJwtPayload' is defined but never used  [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m   [2m27:35[22m  [33mwarning[39m  'AdminJwtPayload' is defined but never used     [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m   [2m34:37[22m  [33mwarning[39m  Unexpected any. Specify a different type        [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m35:33[22m  [33mwarning[39m  Unexpected any. Specify a different type        [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m48:15[22m  [33mwarning[39m  Unexpected any. Specify a different type        [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m63:37[22m  [33mwarning[39m  Unexpected any. Specify a different type        [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m72:15[22m  [33mwarning[39m  Unexpected any. Specify a different type        [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m83:15[22m  [33mwarning[39m  Unexpected any. Specify a different type        [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m92:37[22m  [33mwarning[39m  Unexpected any. Specify a different type        [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m115:15[22m  [33mwarning[39m  Unexpected any. Specify a different type        [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m125:37[22m  [33mwarning[39m  Unexpected any. Specify a different type        [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m129:15[22m  [33mwarning[39m  Unexpected any. Specify a different type        [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m144:37[22m  [33mwarning[39m  Unexpected any. Specify a different type        [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m149:15[22m  [33mwarning[39m  Unexpected any. Specify a different type        [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m158:37[22m  [33mwarning[39m  Unexpected any. Specify a different type        [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m163:15[22m  [33mwarning[39m  Unexpected any. Specify a different type        [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m179:34[22m  [33mwarning[39m  Unexpected any. Specify a different type        [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m180:33[22m  [33mwarning[39m  Unexpected any. Specify a different type        [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m211:73[22m  [33mwarning[39m  Unexpected any. Specify a different type        [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m218:12[22m  [33mwarning[39m  'rate' is assigned a value but never used       [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m  [2m221:43[22m  [33mwarning[39m  Forbidden non-null assertion                    [2m@typescript-eslint/no-non-null-assertion[22m[0m
+[0m  [2m276:15[22m  [33mwarning[39m  Unexpected any. Specify a different type        [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m306:15[22m  [33mwarning[39m  Unexpected any. Specify a different type        [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m317:15[22m  [33mwarning[39m  Unexpected any. Specify a different type        [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m327:31[22m  [33mwarning[39m  Unexpected any. Specify a different type        [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m331:15[22m  [33mwarning[39m  Unexpected any. Specify a different type        [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m341:34[22m  [33mwarning[39m  Unexpected any. Specify a different type        [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m354:15[22m  [33mwarning[39m  Unexpected any. Specify a different type        [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m370:31[22m  [33mwarning[39m  Unexpected any. Specify a different type        [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m373:15[22m  [33mwarning[39m  Unexpected any. Specify a different type        [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m388:31[22m  [33mwarning[39m  Unexpected any. Specify a different type        [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m391:15[22m  [33mwarning[39m  Unexpected any. Specify a different type        [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m405:31[22m  [33mwarning[39m  Unexpected any. Specify a different type        [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m408:15[22m  [33mwarning[39m  Unexpected any. Specify a different type        [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m418:31[22m  [33mwarning[39m  Unexpected any. Specify a different type        [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m421:15[22m  [33mwarning[39m  Unexpected any. Specify a different type        [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m435:34[22m  [33mwarning[39m  Unexpected any. Specify a different type        [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m438:15[22m  [33mwarning[39m  Unexpected any. Specify a different type        [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m448:34[22m  [33mwarning[39m  Unexpected any. Specify a different type        [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m451:15[22m  [33mwarning[39m  Unexpected any. Specify a different type        [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m466:34[22m  [33mwarning[39m  Unexpected any. Specify a different type        [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m469:15[22m  [33mwarning[39m  Unexpected any. Specify a different type        [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m491:15[22m  [33mwarning[39m  Unexpected any. Specify a different type        [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m501:34[22m  [33mwarning[39m  Unexpected any. Specify a different type        [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m506:15[22m  [33mwarning[39m  Unexpected any. Specify a different type        [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m530:15[22m  [33mwarning[39m  Unexpected any. Specify a different type        [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m557:15[22m  [33mwarning[39m  Unexpected any. Specify a different type        [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/api/src/modules/orders/orders.service.ts[24m[0m
+[0m    [2m24:3[22m   [33mwarning[39m  'settings' is defined but never used        [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m    [2m28:35[22m  [33mwarning[39m  'isNull' is defined but never used          [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m    [2m47:3[22m   [33mwarning[39m  'CancelOrderDto' is defined but never used  [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m    [2m81:34[22m  [33mwarning[39m  Unexpected any. Specify a different type    [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m    [2m91:37[22m  [33mwarning[39m  Unexpected any. Specify a different type    [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m112:7[22m   [33mwarning[39m  Unexpected any. Specify a different type    [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m116:25[22m  [33mwarning[39m  Unexpected any. Specify a different type    [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m206:15[22m  [33mwarning[39m  Unexpected any. Specify a different type    [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m244:18[22m  [33mwarning[39m  Unexpected any. Specify a different type    [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m328:24[22m  [33mwarning[39m  Unexpected any. Specify a different type    [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m560:24[22m  [33mwarning[39m  Forbidden non-null assertion                [2m@typescript-eslint/no-non-null-assertion[22m[0m
+[0m   [2m658:71[22m  [33mwarning[39m  Unexpected any. Specify a different type    [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m670:42[22m  [33mwarning[39m  Unexpected any. Specify a different type    [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m803:20[22m  [33mwarning[39m  Unexpected any. Specify a different type    [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m816:45[22m  [33mwarning[39m  Forbidden non-null assertion                [2m@typescript-eslint/no-non-null-assertion[22m[0m
+[0m   [2m883:74[22m  [33mwarning[39m  Unexpected any. Specify a different type    [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m883:83[22m  [33mwarning[39m  Unexpected any. Specify a different type    [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m885:92[22m  [33mwarning[39m  Unexpected any. Specify a different type    [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m1108:14[22m  [33mwarning[39m  Unexpected any. Specify a different type    [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m1109:74[22m  [33mwarning[39m  Unexpected any. Specify a different type    [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m1204:20[22m  [33mwarning[39m  Unexpected any. Specify a different type    [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m1210:41[22m  [33mwarning[39m  Unexpected any. Specify a different type    [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m1211:32[22m  [33mwarning[39m  Unexpected any. Specify a different type    [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m1215:39[22m  [33mwarning[39m  Unexpected any. Specify a different type    [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m1216:32[22m  [33mwarning[39m  Unexpected any. Specify a different type    [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m1225:35[22m  [33mwarning[39m  Unexpected any. Specify a different type    [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m1244:35[22m  [33mwarning[39m  Unexpected any. Specify a different type    [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m1259:22[22m  [33mwarning[39m  Unexpected any. Specify a different type    [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m1261:62[22m  [33mwarning[39m  Unexpected any. Specify a different type    [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m1283:19[22m  [33mwarning[39m  Unexpected any. Specify a different type    [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m1485:69[22m  [33mwarning[39m  Unexpected any. Specify a different type    [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m1928:27[22m  [33mwarning[39m  Forbidden non-null assertion                [2m@typescript-eslint/no-non-null-assertion[22m[0m
+[0m  [2m2108:71[22m  [33mwarning[39m  Unexpected any. Specify a different type    [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m2209:71[22m  [33mwarning[39m  Unexpected any. Specify a different type    [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m2219:41[22m  [33mwarning[39m  Forbidden non-null assertion                [2m@typescript-eslint/no-non-null-assertion[22m[0m
+[0m  [2m2290:17[22m  [33mwarning[39m  Unexpected any. Specify a different type    [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m2331:17[22m  [33mwarning[39m  Unexpected any. Specify a different type    [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m2382:69[22m  [33mwarning[39m  Unexpected any. Specify a different type    [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/api/src/modules/pick-pack/pick-pack.controller.ts[24m[0m
+[0m   [2m9:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m19:34[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m22:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m37:34[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m45:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m61:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/api/src/modules/pick-pack/pick-pack.service.ts[24m[0m
+[0m    [2m3:19[22m  [33mwarning[39m  'sql' is defined but never used           [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m    [2m3:24[22m  [33mwarning[39m  'isNull' is defined but never used        [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m   [2m29:41[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m63:21[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m277:38[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m297:41[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/api/src/modules/products/products.controller.ts[24m[0m
+[0m  [2m108:31[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m120:31[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m142:31[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/api/src/modules/products/products.service.ts[24m[0m
+[0m    [2m8:10[22m  [33mwarning[39m  'cacheGet' is defined but never used      [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m    [2m8:20[22m  [33mwarning[39m  'cacheSet' is defined but never used      [2m@typescript-eslint/no-unused-vars[22m[0
+> nx run mobile:lint
+
+
+Linting "mobile"...
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/mobile/src/app/(tabs)/_layout.tsx[24m[0m
+[0m   [2m6:10[22m  [33mwarning[39m  'useAuthStore' is defined but never used        [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m  [2m12:9[22m   [33mwarning[39m  'itemCount' is assigned a value but never used  [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/mobile/src/app/(tabs)/cart.tsx[24m[0m
+[0m  [2m10:3[22m   [33mwarning[39m  'TextInput' is defined but never used             [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m  [2m16:34[22m  [33mwarning[39m  'useLocalSearchParams' is defined but never used  [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m  [2m23:10[22m  [33mwarning[39m  'cartService' is defined but never used           [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m  [2m48:19[22m  [33mwarning[39m  Unexpected any. Specify a different type          [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/mobile/src/app/(tabs)/categories.tsx[24m[0m
+[0m   [2m14:10[22m  [33mwarning[39m  'Image' is defined but never used                  [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m   [2m46:9[22m   [33mwarning[39m  'params' is assigned a value but never used        [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m   [2m66:9[22m   [33mwarning[39m  'exchangeRate' is assigned a value but never used  [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m   [2m93:33[22m  [33mwarning[39m  Unexpected any. Specify a different type           [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m110:33[22m  [33mwarning[39m  Unexpected any. Specify a different type           [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m130:19[22m  [33mwarning[39m  Unexpected any. Specify a different type           [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/mobile/src/app/(tabs)/home.tsx[24m[0m
+[0m   [2m10:3[22m    [33mwarning[39m  'Pressable' is defined but never used     [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m   [2m12:3[22m    [33mwarning[39m  'Animated' is defined but never used      [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m   [2m30:10[22m   [33mwarning[39m  'formatKRW' is defined but never used     [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m   [2m30:21[22m   [33mwarning[39m  'formatUZS' is defined but never used     [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m   [2m83:115[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m93:123[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m154:19[22m   [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m191:49[22m   [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/mobile/src/app/(tabs)/profile.tsx[24m[0m
+[0m  [2m254:49[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m259:32[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m259:69[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/mobile/src/app/_layout.tsx[24m[0m
+[0m  [2m39:66[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/mobile/src/app/auth/login.tsx[24m[0m
+[0m  [2m35:19[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/mobile/src/app/auth/otp.tsx[24m[0m
+[0m  [2m120:69[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m125:25[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m149:19[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m187:19[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/mobile/src/app/auth/profile-setup.tsx[24m[0m
+[0m   [2m2:40[22m  [33mwarning[39m  'TouchableOpacity' is defined but never used  [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m  [2m49:34[22m  [31merror[39m    Unnecessary escape character: \-              [2mno-useless-escape[22m[0m
+[0m  [2m86:19[22m  [33mwarning[39m  Unexpected any. Specify a different type      [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/mobile/src/app/checkout/confirmed.tsx[24m[0m
+[0m  [2m39:29[22m  [33mwarning[39m  Forbidden non-null assertion  [2m@typescript-eslint/no-non-null-assertion[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/mobile/src/app/checkout/index.tsx[24m[0m
+[0m   [2m166:31[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m190:47[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m213:25[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m258:19[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m348:19[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m363:19[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m403:37[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m1137:40[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m1372:40[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/mobile/src/app/notifications/index.tsx[24m[0m
+[0m  [2m114:41[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/mobile/src/app/onboarding.tsx[24m[0m
+[0m  [2m15:10[22m  [33mwarning[39m  'tokens' is defined but never used        [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m  [2m25:13[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m78:47[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m88:42[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/mobile/src/app/orders/[id].tsx[24m[0m
+[0m    [2m1:38[22m  [33mwarning[39m  'useCallback' is defined but never used           [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m   [2m10:3[22m   [33mwarning[39m  'Linking' is defined but never used               [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m   [2m15:10[22m  [33mwarning[39m  'Ionicons' is defined but never used              [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m   [2m61:9[22m   [33mwarning[39m  'queryClient' is assigned a value but never used  [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m   [2m87:10[22m  [33mwarning[39m  'timeLeft' is assigned a value but never used     [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m   [2m96:29[22m  [33mwarning[39m  Forbidden non-null assertion                      [2m@typescript-eslint/no-non-null-assertion[22m[0m
+[0m  [2m118:12[22m  [33mwarning[39m  Unexpected any. Specify a different type          [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m135:19[22m  [33mwarning[39m  Unexpected any. Specify a different type          [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m154:25[22m  [33mwarning[39m  Unexpected any. Specify a different type          [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m179:27[22m  [33mwarning[39m  Unexpected any. Specify a different type          [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m333:36[22m  [33mwarning[39m  Unexpected any. Specify a different type          [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m362:77[22m  [33mwarning[39m  Unexpected any. Specify a different type          [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m391:76[22m  [33mwarning[39m  Unexpected any. Specify a different type          [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/mobile/src/app/orders/index.tsx[24m[0m
+[0m   [2m4:10[22m  [33mwarning[39m  'Image' is defined but never used          [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m  [2m13:8[22m   [33mwarning[39m  'PrimaryButton' is defined but never used  [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m  [2m28:10[22m  [33mwarning[39m  'now' is assigned a value but never used   [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m  [2m76:41[22m  [33mwarning[39m  Unexpected any. Specify a different type   [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/mobile/src/app/product/[id].tsx[24m[0m
+[0m   [2m32:83[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m61:19[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m134:19[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m300:20[22m  [33mwarning[39m  Forbidden non-null assertion              [2m@typescript-eslint/no-non-null-assertion[22m[0m
+[0m  [2m314:20[22m  [33mwarning[39m  Forbidden non-null assertion              [2m@typescript-eslint/no-non-null-assertion[22m[0m
+[0m  [2m328:20[22m  [33mwarning[39m  Forbidden non-null assertion              [2m@typescript-eslint/no-non-null-assertion[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/mobile/src/app/profile/address-form.tsx[24m[0m
+[0m  [2m115:34[22m  [31merror[39m    Unnecessary escape character: \-          [2mno-useless-escape[22m[0m
+[0m  [2m180:34[22m  [31merror[39m    Unnecessary escape character: \-          [2mno-useless-escape[22m[0m
+[0m  [2m253:22[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m274:19[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/mobile/src/app/profile/addresses.tsx[24m[0m
+[0m  [2m17:8[22m   [33mwarning[39m  'PrimaryButton' is defined but never used     [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m  [2m25:5[22m   [33mwarning[39m  'refetch' is assigned a value but never used  [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m  [2m35:19[22m  [33mwarning[39m  Unexpected any. Specify a different type      [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m50:25[22m  [33mwarning[39m  Unexpected any. Specify a different type      [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/mobile/src/app/profile/coupons.tsx[24m[0m
+[0m   [2m53:52[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m117:47[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/mobile/src/app/profile/delete-account.tsx[24m[0m
+[0m  [2m57:17[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/mobile/src/app/profile/edit.tsx[24m[0m
+[0m    [2m9:3[22m   [33mwarning[39m  'ActivityIndicator' is defined but never used  [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m   [2m62:34[22m  [31merror[39m    Unnecessary escape character: \-               [2mno-useless-escape[22m[0m
+[0m   [2m74:34[22m  [31merror[39m    Unnecessary escape character: \-               [2mno-useless-escape[22m[0m
+[0m  [2m113:19[22m  [33mwarning[39m  Unexpected any. Specify a different type       [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/mobile/src/app/profile/waitlist.tsx[24m[0m
+[0m  [2m56:25[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/mobile/src/app/profile/wishlist.tsx[24m[0m
+[0m  [2m34:9[22m   [33mwarning[39m  'exchangeRate' is assigned a value but never used  [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m  [2m47:19[22m  [33mwarning[39m  Unexpected any. Specify a different type           [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/mobile/src/app/search/index.tsx[24m[0m
+[0m  [2m19:10[22m  [33mwarning[39m  'useExchangeStore' is defined but never used  [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/mobile/src/components/ui/ErrorBoundary.tsx[24m[0m
+[0m   [2m2:16[22m  [33mwarning[39m  'Text' is defined but never used              [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m   [2m2:22[22m  [33mwarning[39m  'TouchableOpacity' is defined but never used  [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m   [2m3:10[22m  [33mwarning[39m  'Feather' is defined but never used           [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m  [2m18:41[22m  [33mwarning[39m  Unexpected any. Specify a different type      [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m40:7[22m   [33mwarning[39m  'styles' is assigned a value but never used   [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/mobile/src/components/ui/SkeletonLoader.tsx[24m[0m
+[0m  [2m2:10[22m  [33mwarning[39m  'StyleSheet' is defined but never used  [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/mobile/src/components/ui/Toast.tsx[24m[0m
+[0m   [2m2:26[22m  [33mwarning[39m  'View' is defined but never used          [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m   [2m2:44[22m  [33mwarning[39m  'Dimensions' is defined but never used    [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m  [2m62:14[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/mobile/src/lib/api.ts[24m[0m
+[0m  [2m4:26[22m  [33mwarning[39m  'useAuthStore' is defined but never used  [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/mobile/src/lib/query-client.ts[24m[0m
+[0m  [2m10:36[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/mobile/src/services/auth.service.ts[24m[0m
+[0m   [2m2:34[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m8:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m10:10[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m42:12[22m  [33mwarning[39m  Forbidden non-null assertion              [2m@typescript-eslint/no-non-null-assertion[22m[0m
+[0m  [2m47:12[22m  [33mwarning[39m  Forbidden non-null assertion              [2m@typescript-eslint/no-non-null-assertion[22m[0m
+[0m  [2m59:12[22m  [33mwarning[39m  Forbidden non-null assertion              [2m@typescript-eslint/no-non-null-assertion[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/mobile/src/services/cart.service.ts[24m[0m
+[0m  [2m29:21[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/mobile/src/services/customer.service.ts[24m[0m
+[0m   [2m3:34[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m9:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m11:10[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m24:12[22m  [33mwarning[39m  Forbidden non-null assertion              [2m@typescript-eslint/no-non-null-assertion[22m[0m
+[0m  [2m28:32[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m40:12[22m  [33mwarning[39m  Forbidden non-null assertion              [2m@typescript-eslint/no-non-null-assertion[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/mobile/src/services/notification.service.ts[24m[0m
+[0m  [2m23:49[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/mobile/src/services/product.service.ts[24m[0m
+[0m  [2m84:12[22m  [33mwarning[39m  Forbidden non-null assertion              [2m@typescript-eslint/no-non-null-assertion[22m[0m
+[0m  [2m89:12[22m  [33mwarning[39m  Forbidden non-null assertion              [2m@typescript-eslint/no-non-null-assertion[22m[0m
+[0m  [2m92:36[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/mobile/src/services/upload.service.ts[24m[0m
+[0m   [2m2:34[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m8:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m10:10[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m27:10[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m34:12[22m  [33mwarning[39m  Forbidden non-null assertion              [2m@typescript-eslint/no-non-null-assertion[22m[0m
+[0m  [2m47:10[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m54:12[22m  [33mwarning[39m  Forbidden non-null assertion              [2m@typescript-eslint/no-non-null-assertion[22m[0m
+[0m[0m
+[0m[31m[1m✖ 124 problems (5 errors, 119 warnings)[22m[39m[0m
+[0m[31m[1m[22m[39m[0m
+✖ 124 problems (5 errors, 119 warnings)
+
+
+> nx run admin:lint
+
+
+Linting "admin"...
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/admin/src/api/banners.api.ts[24m[0m
+[0m   [2m9:27[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m14:39[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/admin/src/api/boxes.api.ts[24m[0m
+[0m  [2m24:39[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/admin/src/api/orders.api.ts[24m[0m
+[0m   [2m3:10[22m  [33mwarning[39m  'useAuthStore' is defined but never used  [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m  [2m29:32[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/admin/src/api/suppliers.api.ts[24m[0m
+[0m  [2m23:39[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/admin/src/components/GlobalSearch.tsx[24m[0m
+[0m    [2m8:35[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m55:31[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m132:39[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/admin/src/components/NotificationBell.tsx[24m[0m
+[0m    [2m1:20[22m  [33mwarning[39m  'useEffect' is defined but never used     [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m    [2m3:16[22m  [33mwarning[39m  'X' is defined but never used             [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m    [2m3:19[22m  [33mwarning[39m  'Check' is defined but never used         [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m   [2m26:35[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m77:36[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m79:50[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m133:43[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/admin/src/components/app-sidebar.tsx[24m[0m
+[0m  [2m23:3[22m   [33mwarning[39m  'ExternalLink' is defined but never used  [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m  [2m41:46[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/admin/src/components/shared/ConfirmDialog.tsx[24m[0m
+[0m  [2m12:10[22m  [33mwarning[39m  'Button' is defined but never used  [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/admin/src/components/shared/ImageUploadField.tsx[24m[0m
+[0m  [2m23:3[22m   [33mwarning[39m  'label' is assigned a value but never used  [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m  [2m69:19[22m  [33mwarning[39m  Unexpected any. Specify a different type    [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/admin/src/constants/query-keys.ts[24m[0m
+[0m  [2m49:27[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m50:26[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m51:27[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m52:21[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m53:25[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m54:28[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/admin/src/layouts/AppLayout.tsx[24m[0m
+[0m   [2m3:10[22m  [33mwarning[39m  'toast' is defined but never used              [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m  [2m49:9[22m   [33mwarning[39m  'navigate' is assigned a value but never used  [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m  [2m65:15[22m  [33mwarning[39m  '_err' is defined but never used               [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/admin/src/lib/api.ts[24m[0m
+[0m  [2m64:22[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m71:36[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/admin/src/lib/socket.ts[24m[0m
+[0m  [2m24:5[22m  [33mwarning[39m  Forbidden non-null assertion  [2m@typescript-eslint/no-non-null-assertion[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/admin/src/pages/admins/AdminsPage.tsx[24m[0m
+[0m   [2m38:60[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m74:20[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m84:20[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m96:34[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m101:20[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m141:35[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m202:42[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m247:31[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m248:52[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m260:61[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m330:38[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/admin/src/pages/analytics/AnalitikPage.tsx[24m[0m
+[0m  [2m440:36[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m440:47[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m490:47[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m540:36[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m598:38[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m627:38[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m656:70[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m696:42[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m723:61[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/admin/src/pages/audit/AuditLogPage.tsx[24m[0m
+[0m    [2m3:10[22m  [33mwarning[39m  'Search' is defined but never used        [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m    [2m3:18[22m  [33mwarning[39m  'Filter' is defined but never used        [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m    [2m3:26[22m  [33mwarning[39m  'CalendarDays' is defined but never used  [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m    [2m9:10[22m  [33mwarning[39m  'Input' is defined but never used         [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m   [2m32:36[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m45:21[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m138:35[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/admin/src/pages/auth/LoginPage.tsx[24m[0m
+[0m  [2m90:19[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/admin/src/pages/banners/BannerSheet.tsx[24m[0m
+[0m   [2m39:12[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m44:9[22m   [33mwarning[39m  'qc' is assigned a value but never used   [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m   [2m56:44[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m88:56[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m134:20[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m143:34[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m145:18[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m280:43[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/admin/src/pages/banners/BannersPage.tsx[24m[0m
+[0m   [2m19:48[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m20:52[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m34:20[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m105:34[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/admin/src/pages/boxes/QutularPage.tsx[24m[0m
+[0m   [2m58:48[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m60:52[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m61:52[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m77:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m90:20[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m103:44[22m  [33mwarning[39m  Forbidden non-null assertion              [2m@typescript-eslint/no-non-null-assertion[22m[0m
+[0m  [2m110:20[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m131:28[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m149:42[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m219:34[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/admin/src/pages/categories/CategoriesPage.tsx[24m[0m
+[0m   [2m39:48[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m40:52[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m52:46[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m76:20[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m88:20[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m99:28[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m115:27[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/admin/src/pages/coupons/KupunlarPage.tsx[24m[0m
+[0m   [2m127:48[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m129:48[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m130:52[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m134:56[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m136:58[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m194:41[22m  [33mwarning[39m  Forbidden non-null assertion              [2m@typescript-eslint/no-non-null-assertion[22m[0m
+[0m   [2m207:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m239:12[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m247:20[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m251:34[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m255:20[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m265:20[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m308:37[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m357:25[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m366:37[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m372:38[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m379:27[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m414:46[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m504:36[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m768:47[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m805:45[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m832:48[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m1073:30[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/admin/src/pages/customers/CustomerDetailPage.tsx[24m[0m
+[0m   [2m53:9[22m   [33mwarning[39m  'orders' is assigned a value but never used  [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m   [2m62:20[22m  [33mwarning[39m  Unexpected any. Specify a different type     [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m72:20[22m  [33mwarning[39m  Unexpected any. Specify a different type     [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m102:59[22m  [33mwarning[39m  Unexpected any. Specify a different type     [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m258:39[22m  [33mwarning[39m  Unexpected any. Specify a different type     [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m329:22[22m  [33mwarning[39m  Unexpected any. Specify a different type     [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m345:43[22m  [33mwarning[39m  Unexpected any. Specify a different type     [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m352:28[22m  [33mwarning[39m  Unexpected any. Specify a different type     [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/admin/src/pages/customers/CustomersPage.tsx[24m[0m
+[0m    [2m3:20[22m  [33mwarning[39m  'useQueryClient' is defined but never used  [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m   [2m78:67[22m  [33mwarning[39m  Unexpected any. Specify a different type    [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m159:36[22m  [33mwarning[39m  Unexpected any. Specify a different type    [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m166:28[22m  [33mwarning[39m  Unexpected any. Specify a different type    [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m283:31[22m  [33mwarning[39m  Unexpected any. Specify a different type    [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m290:24[22m  [33mwarning[39m  Unexpected any. Specify a different type    [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/admin/src/pages/customers/WalkInPage.tsx[24m[0m
+[0m   [2m58:12[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m60:20[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m71:59[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m138:61[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/admin/src/pages/dashboard/DashboardPage.tsx[24m[0m
+[0m   [2m31:21[22m  [33mwarning[39m  'formatUZS' is defined but never used      [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m  [2m122:11[22m  [33mwarning[39m  'rate' is assigned a value but never used  [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m  [2m417:38[22m  [33mwarning[39m  Unexpected any. Specify a different type   [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m418:43[22m  [33mwarning[39m  Unexpected any. Specify a different type   [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m462:47[22m  [33mwarning[39m  Unexpected any. Specify a different type   [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m467:34[22m  [33mwarning[39m  Unexpected any. Specify a different type   [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m467:45[22m  [33mwarning[39m  Unexpected any. Specify a different type   [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m475:38[22m  [33mwarning[39m  Unexpected any. Specify a different type   [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m509:67[22m  [33mwarning[39m  Unexpected any. Specify a different type   [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m550:54[22m  [33mwarning[39m  Unexpected any. Specify a different type   [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m607:68[22m  [33mwarning[39m  Unexpected any. Specify a different type   [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m676:75[22m  [33mwarning[39m  Unexpected any. Specify a different type   [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/admin/src/pages/expenses/ExpensesPage.tsx[24m[0m
+[0m   [2m33:7[22m   [33mwarning[39m  'CATEGORY_LABELS' is assigned a value but never used  [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m   [2m60:9[22m   [33mwarning[39m  'qc' is assigned a value but never used               [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m   [2m64:52[22m  [33mwarning[39m  Unexpected any. Specify a different type              [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m142:24[22m  [33mwarning[39m  Unexpected any. Specify a different type              [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m163:20[22m  [33mwarning[39m  Unexpected any. Specify a different type              [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m174:20[22m  [33mwarning[39m  Unexpected any. Specify a different type              [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m241:65[22m  [33mwarning[39m  Unexpected any. Specify a different type              [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m262:59[22m  [33mwarning[39m  Unexpected any. Specify a different type              [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m282:37[22m  [33mwarning[39m  Unexpected any. Specify a different type              [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m344:39[22m  [33mwarning[39m  Unexpected any. Specify a different type              [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m437:47[22m  [33mwarning[39m  Unexpected any. Specify a different type              [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m545:9[22m   [33mwarning[39m  'qc' is assigned a value but never used               [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m  [2m546:48[22m  [33mwarning[39m  Unexpected any. Specify a different type              [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m548:52[22m  [33mwarning[39m  Unexpected any. Specify a different type              [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m589:24[22m  [33mwarning[39m  Unexpected any. Specify a different type              [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m599:20[22m  [33mwarning[39m  Unexpected any. Specify a different type              [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m610:20[22m  [33mwarning[39m  Unexpected any. Specify a different type              [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m619:28[22m  [33mwarning[39m  Unexpected any. Specify a different type              [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m660:35[22m  [33mwarning[39m  Unexpected any. Specify a different type              [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/admin/src/pages/inventory/InventoryPage.tsx[24m[0m
+[0m   [2m148:58[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m149:62[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m171:59[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m186:51[22m  [33mwarning[39m  Forbidden non-null assertion              [2m@typescript-eslint/no-non-null-assertion[22m[0m
+[0m   [2m192:46[22m  [33mwarning[39m  Forbidden non-null assertion              [2m@typescript-eslint/no-non-null-assertion[22m[0m
+[0m   [2m193:20[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m211:20[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m235:24[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m236:29[22m  [33mwarning[39m  Forbidden non-null assertion              [2m@typescript-eslint/no-non-null-assertion[22m[0m
+[0m   [2m247:20[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m252:24[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m254:20[22m  [33mwarning[39m  Forbidden non-null assertion              [2m@typescript-eslint/no-non-null-assertion[22m[0m
+[0m   [2m271:20[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m277:30[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m283:31[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m289:34[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m295:33[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m300:42[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m423:37[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m632:43[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m796:49[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m933:35[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m1055:58[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m1088:44[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m1152:39[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m1191:42[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m1217:39[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/admin/src/pages/orders/KorBulkDeliveryPanel.tsx[24m[0m
+[0m  [2m52:78[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m66:20[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/admin/src/pages/orders/ManualOrderPage.tsx[24m[0m
+[0m    [2m7:53[22m  [33mwarning[39m  'MapPin' is defined but never used        [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m   [2m77:58[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m80:56[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m90:49[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m106:41[22m  [33mwarning[39m  Forbidden non-null assertion              [2m@typescript-eslint/no-non-null-assertion[22m[0m
+[0m  [2m131:30[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m135:17[22m  [33mwarning[39m  'res' is defined but never used           [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m  [2m155:20[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m161:60[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m212:37[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m214:20[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m225:56[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m461:41[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m829:58[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/admin/src/pages/orders/OrderDetailPage.tsx[24m[0m
+[0m  [2m130:20[22m  [33mwarning[39m  Unexpected any. Specify a different type                [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m201:26[22m  [33mwarning[39m  'setInvoiceLoading' is assigned a value but never used  [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m  [2m222:21[22m  [33mwarning[39m  Unexpected any. Specify a different type                [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m236:21[22m  [33mwarning[39m  Unexpected any. Specify a different type                [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m275:49[22m  [33mwarning[39m  Unexpected any. Specify a different type                [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m277:64[22m  [33mwarning[39m  Unexpected any. Specify a different type                [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m352:51[22m  [33mwarning[39m  Unexpected any. Specify a different type                [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m399:34[22m  [33mwarning[39m  Unexpected any. Specify a different type                [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m420:34[22m  [33mwarning[39m  Unexpected any. Specify a different type                [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m517:53[22m  [33mwarning[39m  Unexpected any. Specify a different type                [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/admin/src/pages/orders/OrdersPage.tsx[24m[0m
+[0m   [2m73:49[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m222:44[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m239:20[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m256:19[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m270:19[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m281:19[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m301:19[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m319:19[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m325:19[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m340:19[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m380:62[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m394:75[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m557:37[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/admin/src/pages/products/ProductSheet.tsx[24m[0m
+[0m    [2m9:10[22m  [33mwarning[39m  'categoriesApi' is defined but never used       [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m   [2m84:13[22m  [33mwarning[39m  Unexpected any. Specify a different type        [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m85:15[22m  [33mwarning[39m  Unexpected any. Specify a different type        [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m102:45[22m  [33mwarning[39m  Unexpected any. Specify a different type        [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m117:9[22m   [33mwarning[39m  'imageUrls' is assigned a value but never used  [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m  [2m124:45[22m  [33mwarning[39m  Unexpected any. Specify a different type        [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m131:45[22m  [33mwarning[39m  Unexpected any. Specify a different type        [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m212:20[22m  [33mwarning[39m  Unexpected any. Specify a different type        [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m267:19[22m  [33mwarning[39m  Unexpected any. Specify a different type        [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m380:45[22m  [33mwarning[39m  Unexpected any. Specify a different type        [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/admin/src/pages/products/ProductsPage.tsx[24m[0m
+[0m   [2m27:10[22m  [33mwarning[39m  'Package' is defined but never used       [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m   [2m45:50[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m46:52[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m69:10[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m79:12[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m96:20[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m108:20[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m123:20[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m129:32[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m144:25[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m145:26[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m187:54[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m341:37[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/admin/src/pages/profile/ProfilePage.tsx[24m[0m
+[0m    [2m2:10[22m  [33mwarning[39m  'useQuery' is defined but never used        [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m    [2m6:16[22m  [33mwarning[39m  'Mail' is defined but never used            [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m    [2m6:22[22m  [33mwarning[39m  'Shield' is defined but never used          [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m   [2m10:10[22m  [33mwarning[39m  'formatDateTime' is defined but never used  [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m   [2m12:10[22m  [33mwarning[39m  'cn' is defined but never used              [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m   [2m59:24[22m  [33mwarning[39m  Unexpected any. Specify a different type    [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m64:45[22m  [33mwarning[39m  Unexpected any. Specify a different type    [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m67:20[22m  [33mwarning[39m  Unexpected any. Specify a different type    [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m71:24[22m  [33mwarning[39m  Unexpected any. Specify a different type    [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m85:20[22m  [33mwarning[39m  Unexpected any. Specify a different type    [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m114:23[22m  [33mwarning[39m  Unexpected any. Specify a different type    [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m117:42[22m  [33mwarning[39m  Unexpected any. Specify a different type    [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/admin/src/pages/purchase-orders/BuyurtmaBerish.tsx[24m[0m
+[0m   [2m43:33[22m  [33mwarning[39m  Unexpected any. Specify a different type       [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m51:38[22m  [33mwarning[39m  Unexpected any. Specify a different type       [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m94:48[22m  [33mwarning[39m  Unexpected any. Specify a different type       [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m100:56[22m  [33mwarning[39m  Unexpected any. Specify a different type       [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m118:39[22m  [33mwarning[39m  Unexpected any. Specify a different type       [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m122:46[22m  [33mwarning[39m  Forbidden non-null assertion                   [2m@typescript-eslint/no-non-null-assertion[22m[0m
+[0m  [2m131:5[22m   [33mwarning[39m  'setValue' is assigned a value but never used  [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m  [2m134:40[22m  [33mwarning[39m  Unexpected any. Specify a different type       [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m188:20[22m  [33mwarning[39m  Unexpected any. Specify a different type       [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m192:34[22m  [33mwarning[39m  Unexpected any. Specify a different type       [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m200:27[22m  [33mwarning[39m  Unexpected any. Specify a different type       [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m200:66[22m  [33mwarning[39m  Forbidden non-null assertion                   [2m@typescript-eslint/no-non-null-assertion[22m[0m
+[0m  [2m207:20[22m  [33mwarning[39m  Unexpected any. Specify a different type       [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m211:55[22m  [33mwarning[39m  Forbidden non-null assertion                   [2m@typescript-eslint/no-non-null-assertion[22m[0m
+[0m  [2m218:20[22m  [33mwarning[39m  Unexpected any. Specify a different type       [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m259:33[22m  [33mwarning[39m  Unexpected any. Specify a different type       [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m316:31[22m  [33mwarning[39m  Unexpected any. Specify a different type       [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m434:42[22m  [33mwarning[39m  Unexpected any. Specify a different type       [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m671:56[22m  [33mwarning[39m  Unexpected any. Specify a different type       [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/admin/src/pages/reports/HisobotlarPage.tsx[24m[0m
+[0m  [2m37:45[22m  [33mwarning[39m  'format' is defined but never used        [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m  [2m46:23[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/admin/src/pages/roles/RollarPage.tsx[24m[0m
+[0m   [2m12:3[22m   [33mwarning[39m  'X' is defined but never used             [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m  [2m100:20[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m104:55[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m109:20[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m119:20[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/admin/src/pages/settings/SettingsPage.tsx[24m[0m
+[0m   [2m91:39[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m96:20[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m99:40[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m138:41[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m314:20[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m438:25[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m438:33[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m442:31[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m494:21[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m494:29[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m498:27[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m559:20[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m569:19[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m691:28[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m752:20[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/admin/src/pages/suppliers/YetkazuvchilarPage.tsx[24m[0m
+[0m    [2m6:46[22m  [33mwarning[39m  'Mail' is defined but never used          [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m   [2m49:48[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m51:52[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m58:39[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m62:44[22m  [33mwarning[39m  Forbidden non-null assertion              [2m@typescript-eslint/no-non-null-assertion[22m[0m
+[0m   [2m72:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m85:20[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m112:26[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m172:34[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m234:64[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/admin/src/pages/system/SystemHealthPage.tsx[24m[0m
+[0m  [2m232:32[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/isokjon/mira/apps/admin/src/pages/telegram/TelegramPage.tsx[24m[0m
+[0m    [2m1:31[22m  [33mwarning[39m  'useRef' is defined but never used        [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m   [2m27:21[22m  [33mwarning[39m  'formatUZS' is defined but never used     [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m   [2m46:42[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m70:56[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m71:58[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m73:52[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m101:15[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m135:32[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m149:24[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m191:20[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m200:20[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m258:19[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m307:20[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m317:20[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m372:46[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m394:30[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m450:45[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m617:37[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m618:34[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m856:42[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m887:34[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[33m[1m✖ 336 problems (0 errors, 336 warnings)[22m[39m[0m
+[0m[33m[1m[22m[39m[0m
+✖ 336 problems (0 errors, 336 warnings)
+
+
+
+
+ NX   Running target lint for 3 projects failed
+
+Failed tasks:
+
+- api:lint
+- mobile:lint
+

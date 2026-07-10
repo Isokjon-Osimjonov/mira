@@ -291,7 +291,7 @@ export function SystemHealthPage() {
             </p>
             <code className="text-[10px] bg-gray-900 text-green-400 px-3 py-2 rounded-lg block font-mono overflow-x-auto whitespace-pre">
               {`ADMIN_KEY=$(grep ADMIN_QUEUE_KEY .env | cut -d= -f2)
-curl -H "x-admin-key: $ADMIN_KEY" ${import.meta.env.VITE_API_URL?.replace('/api/v1', '') ?? 'http://localhost:4000'}/admin/queues`}
+curl -H "x-admin-key: $ADMIN_KEY" ${import.meta.env.VITE_API_URL?.replace('/api/v1', '') ?? ''}/admin/queues`}
             </code>
           </div>
         </div>

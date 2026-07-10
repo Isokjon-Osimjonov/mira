@@ -112,7 +112,7 @@ export default function AddressFormScreen() {
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {}
-    const nameRegex = /^[\p{L}\s'\-]+$/u
+    const nameRegex = /^[\p{L}\s'-]+$/u
     const korPhoneRegex = /^\+82[0-9]{9,10}$/
     const uzbPhoneRegex = /^\+998[0-9]{9}$/
 
@@ -177,7 +177,7 @@ export default function AddressFormScreen() {
 
   const validateField = (field: string, value: string) => {
     const tempErrors: Record<string, string> = {}
-    const nameRegex = /^[\p{L}\s'\-]+$/u
+    const nameRegex = /^[\p{L}\s'-]+$/u
 
     if (field === 'fullName') {
       if (!value.trim()) {

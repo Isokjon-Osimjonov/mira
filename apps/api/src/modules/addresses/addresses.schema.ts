@@ -6,7 +6,7 @@ export const baseAddressSchema = z.object({
   fullName: z.string()
     .min(2)
     .max(100)
-    .regex(/^[\p{L}\s'\-]+$/u, {
+    .regex(/^[\p{L}\s'-]+$/u, {
       message: "Ism faqat harflardan iborat bo'lishi kerak",
     }),
   phone: z.string().min(7).max(20),

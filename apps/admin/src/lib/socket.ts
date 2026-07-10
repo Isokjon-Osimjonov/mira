@@ -22,11 +22,11 @@ export function connectSocket(): Socket {
 
   socket.on('connect', () => {
     socket!.emit('join-admin-room')
-    console.log('Socket connected')
+
   })
 
   socket.on('disconnect', () => {
-    console.log('Socket disconnected')
+
   })
 
   // ── Admin events ───────────────────────

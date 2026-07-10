@@ -1,3 +1,5 @@
+import { logger } from '../config/logger'
+
 interface AuditEvent {
   type:
     | 'LOGIN_SUCCESS'
@@ -19,5 +21,5 @@ export function logSecurityEvent(event: AuditEvent): void {
     ...event,
   }
   // Console log for now (replace with file/monitoring later)
-  console.log('[SECURITY]', JSON.stringify(entry))
+  logger.info(`[SECURITY] ${JSON.stringify(entry)}`)
 }

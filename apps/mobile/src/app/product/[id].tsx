@@ -121,8 +121,7 @@ export default function ProductDetailScreen() {
 
   const showUzs = customer?.phoneRegion === 'UZB'
 
-  console.log('product.totalStock:', product?.totalStock)
-  console.log('isOutOfStock:', product?.totalStock === 0)
+
 
   const totalStock = Number(product?.totalStock ?? 0)
   const isOutOfStock = totalStock === 0
@@ -534,7 +533,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: tokens.colors.border,
     borderRadius: 6,
-    paddingHorizontal: 12,
+    paddingHorizontal: 8,
     paddingVertical: 8,
     flexGrow: 1,
     alignItems: 'center',
@@ -546,6 +545,7 @@ const styles = StyleSheet.create({
     fontWeight: '400',
     color: tokens.colors.textSecondary,
     textAlign: 'center',
+    textTransform: 'capitalize',
   },
   weightText: {
     fontSize: 12,

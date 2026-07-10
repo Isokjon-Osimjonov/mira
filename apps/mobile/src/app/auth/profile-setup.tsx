@@ -46,7 +46,7 @@ export default function ProfileSetupScreen() {
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {}
-    const nameRegex = /^[\p{L}\s'\-]+$/u
+    const nameRegex = /^[\p{L}\s'-]+$/u
     if (name.trim().length < 2) {
       newErrors.name = "Ism kamida 2 ta belgidan iborat bo'lishi kerak"
     } else if (!nameRegex.test(name.trim())) {

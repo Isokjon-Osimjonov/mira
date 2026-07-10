@@ -8,7 +8,7 @@ export const authHandlers = new Composer()
 
 // /start TOKEN — OTP flow
 authHandlers.command('start', async (ctx) => {
-  console.log('🤖 /start received, token:', ctx.match?.slice(0, 20))
+
   const token = ctx.match?.trim()
 
   if (!token) {

@@ -1,6 +1,7 @@
 import { Bot } from 'grammy'
 import { limit } from '@grammyjs/ratelimiter'
 import { env } from '../config/env'
+import { logger } from '../config/logger'
 import { authHandlers } from './handlers/auth'
 
 export const bot = new Bot(env.BOT_TOKEN)
@@ -25,7 +26,7 @@ bot.catch((err) => {
 export async function startBot(): Promise<void> {
   await bot.start({
     onStart: () => {
-      console.log(`🤖 Bot running: @${env.BOT_USERNAME}`)
+      logger.info(`🤖 Bot running: @${env.BOT_USERNAME}`)
     },
   })
 }

@@ -89,10 +89,10 @@ export const useAuthStore = create<AuthState>((set) => ({
           isAuthenticated: true,
           isLoading: false,
         })
-        console.log('Auth restored from SecureStore')
+
       } else {
         set({ isLoading: false })
-        console.log('No saved auth found')
+
       }
     } catch (err) {
       set({ isLoading: false })

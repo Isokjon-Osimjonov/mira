@@ -6,7 +6,7 @@ import { getAccessToken, useAuthStore } from './auth-store'
 const BASE_URL =
   process.env.EXPO_PUBLIC_API_URL ||
   Constants.expoConfig?.extra?.apiUrl ||
-  'http://localhost:4000/api/v1'
+  ''
 
 // ─── Axios instance ───────────────────────────────────────────
 const api = axios.create({

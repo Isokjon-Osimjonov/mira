@@ -16,13 +16,13 @@ export const createWalkInCustomerSchema = z.object({
   firstName: z.string()
     .min(2)
     .max(50)
-    .regex(/^[\p{L}\s'\-]+$/u, {
+    .regex(/^[\p{L}\s'-]+$/u, {
       message: "Ism faqat harflardan iborat bo'lishi kerak"
     }),
   lastName: z.string()
     .min(2)
     .max(50)
-    .regex(/^[\p{L}\s'\-]+$/u, {
+    .regex(/^[\p{L}\s'-]+$/u, {
       message: "Familiya faqat harflardan iborat bo'lishi kerak"
     })
     .nullable()
