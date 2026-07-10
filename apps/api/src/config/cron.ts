@@ -123,8 +123,8 @@ export async function backupDatabase(): Promise<void> {
   const filepath = `/tmp/${filename}`
 
   try {
-    // Run pg_dump
-    execSync(`pg_dump ${env.DATABASE_URL} -f ${filepath} --no-owner --clean`, { timeout: 60000 })
+    // Run pg_dump via docker
+    execSync(`docker exec mira_postgres_prod pg_dump ${env.DATABASE_URL} --no-owner --clean > ${filepath}`, { timeout: 60000 })
 
     // Gzip
     execSync(`gzip ${filepath}`)
