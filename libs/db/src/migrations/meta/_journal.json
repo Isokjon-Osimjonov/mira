@@ -57,6 +57,13 @@
       "when": 1782755883271,
       "tag": "0007_fast_shiver_man",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1783928971530,
+      "tag": "0008_fantastic_skaar",
+      "breakpoints": true
     }
   ]
 }

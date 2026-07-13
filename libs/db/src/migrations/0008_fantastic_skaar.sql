@@ -1,0 +1,1 @@
+ALTER TABLE "banners" ALTER COLUMN "title" DROP NOT NULL;
