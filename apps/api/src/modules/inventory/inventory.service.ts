@@ -1,4 +1,5 @@
 import { db } from '../../config/db'
+import { logger } from '../../config/logger'
 import {
   inventoryBatches,
   stockMovements,
@@ -171,13 +172,26 @@ export async function checkLowStock(tx: any, productId: string) {
         threshold,
         batchCount,
       })
-      await notifyLowStock({
-        productName: product.name,
-        barcode: product.barcode,
-        brandName: product.brandName,
-        currentQty: totalQty,
-        threshold,
-      }).catch(console.error)
+
+      if (totalQty === 0) {
+        // Out of stock — urgent alert
+        await sendAdminAlert(
+          `🔴 <b>Mahsulot tugadi!</b>\n\n` +
+          `📦 ${product.name}\n` +
+          (product.brandName ? `🏷 ${product.brandName}\n` : '') +
+          `\n` +
+          `Zudlik bilan ombor to'ldiring!`
+        )
+      } else if (totalQty <= threshold) {
+        // Low stock warning
+        await sendAdminAlert(
+          `🟡 <b>Kam qoldiq!</b>\n\n` +
+          `📦 ${product.name}\n` +
+          (product.brandName ? `🏷 ${product.brandName}\n` : '') +
+          `📊 Qoldi: ${totalQty} ta\n` +
+          `⚠️ Chegara: ${threshold} ta`
+        )
+      }
     }
   }
 }
@@ -678,4 +692,69 @@ export async function checkExpiringBatches(): Promise<void> {
 
   // Send to admin Telegram group
   await sendAdminAlert(msg)
+}
+
+export async function checkAllProductsStock(): Promise<void> {
+  const [appSettings] = await db.select().from(settings).limit(1)
+  const threshold = appSettings?.lowStockThreshold ?? 10
+
+  // Get all active products with their current stock levels
+  const productsResult = await db
+    .select({
+      id: products.id,
+      name: products.name,
+      brandName: products.brandName,
+      totalStock: sql<number>`
+        COALESCE(SUM(${inventoryBatches.currentQty}), 0)
+      `.as('totalStock'),
+    })
+    .from(products)
+    .leftJoin(
+      inventoryBatches,
+      eq(inventoryBatches.productId, products.id)
+    )
+    .where(
+      and(
+        eq(products.isActive, true),
+        isNull(products.deletedAt)
+      )
+    )
+    .groupBy(products.id, products.name, products.brandName)
+
+  // Separate into out of stock and low stock
+  const outOfStock = productsResult.filter((p) => Number(p.totalStock) === 0)
+  const lowStock = productsResult.filter((p) => Number(p.totalStock) > 0 && Number(p.totalStock) <= threshold)
+
+  // Send out of stock alert
+  if (outOfStock.length > 0) {
+    const lines = outOfStock
+      .map((p) => `• ${p.name}` + (p.brandName ? ` (${p.brandName})` : '') + ` — 0 ta`)
+      .join('\n')
+
+    await sendAdminAlert(
+      `🔴 <b>Tugagan mahsulotlar (${outOfStock.length} ta)</b>\n\n` +
+        `${lines}\n\n` +
+        `⚠️ Zudlik bilan to'ldiring!`
+    )
+  }
+
+  // Send low stock alert
+  if (lowStock.length > 0) {
+    const lines = lowStock
+      .map((p) => `• ${p.name}` + (p.brandName ? ` (${p.brandName})` : '') + ` — ${p.totalStock} ta qoldi`)
+      .join('\n')
+
+    await sendAdminAlert(
+      `🟡 <b>Kam qolgan mahsulotlar (${lowStock.length} ta)</b>\n\n` +
+        `${lines}\n\n` +
+        `Chegara: ${threshold} ta`
+    )
+  }
+
+  // If all good, no message needed
+  logger.info({
+    outOfStock: outOfStock.length,
+    lowStock: lowStock.length,
+    threshold,
+  }, 'Stock check completed')
 }

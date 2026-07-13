@@ -10,7 +10,7 @@ import {
   sendDeadlineReminders,
 } from '../modules/orders/orders.service'
 import { fetchAndSaveExchangeRate } from '../modules/exchange-rates/exchange-rates.service'
-import { checkExpiringBatches } from '../modules/inventory/inventory.service'
+import { checkExpiringBatches, checkAllProductsStock } from '../modules/inventory/inventory.service'
 import { bot } from '../bot/bot'
 import { sendAdminAlert } from '../bot/helpers/notify'
 
@@ -96,6 +96,23 @@ export function initCronJobs(): void {
         logger.info('Muddati tekshirildi')
       } catch (err: any) {
         logger.error({ err: err.message }, 'Expiry check cron error')
+      }
+    },
+    { timezone: 'Asia/Seoul' }
+  )
+
+  // 8. Daily low stock check — 08:05 KST
+  cron.schedule(
+    '5 8 * * *',
+    async () => {
+      try {
+        await checkAllProductsStock()
+        logger.info('Kam qoldiq tekshirildi')
+      } catch (err: any) {
+        logger.error(
+          { err: err.message },
+          'Low stock check cron error'
+        )
       }
     },
     { timezone: 'Asia/Seoul' }

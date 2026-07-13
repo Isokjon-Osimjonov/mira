@@ -722,6 +722,7 @@ function OrderSettingsTab() {
     uzbCargoUsdPerKg: z.coerce.number().min(0),
     cargoTransitDaysMin: z.coerce.number().int().min(1),
     cargoTransitDaysMax: z.coerce.number().int().min(1),
+    lowStockThreshold: z.coerce.number().int().min(1).max(1000).optional(),
   })
 
   const { data, isLoading } = useQuery({
@@ -863,6 +864,23 @@ function OrderSettingsTab() {
             />
             <p className="text-[11px] text-muted-foreground font-medium">0 = cheklov yo'q</p>
           </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label className="text-sm font-bold text-gray-900">
+            Kam qoldiq chegarasi
+          </Label>
+          <Input
+            type="number"
+            min={1}
+            max={1000}
+            {...register('lowStockThreshold', { valueAsNumber: true })}
+            placeholder="10"
+            className="h-11 rounded-xl border-[0.5px] focus:ring-primary/20 w-full sm:max-w-[240px]"
+          />
+          <p className="text-[11px] text-muted-foreground font-medium">
+            Mahsulot qoldig'i shu miqdordan kam bo'lganda ogohlantirish yuboriladi
+          </p>
         </div>
 
         <div className="pt-4">
