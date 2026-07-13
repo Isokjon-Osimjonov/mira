@@ -10,6 +10,7 @@ import { toast } from 'sonner'
 import { ordersApi } from '../../api/orders.api'
 import { customersApi } from '../../api/customers.api'
 import { productsApi } from '../../api/products.api'
+import { boxesApi } from '../../api/boxes.api'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -85,6 +86,8 @@ export function ManualOrderPage() {
     control,
     setValue,
     watch,
+    setError,
+    clearErrors,
     formState: { errors },
   } = useForm<ManualOrderForm>({
     resolver: zodResolver(manualOrderSchema) as any,
@@ -108,6 +111,22 @@ export function ManualOrderPage() {
   })
 
   const addresses = customerData?.data?.addresses || []
+
+  const selectedAddress = addresses.find((a: any) => a.id === addressId)
+  const isUZB = selectedAddress?.regionCode === 'UZB'
+
+  useEffect(() => {
+    if (!isUZB) {
+      clearErrors('boxId')
+      setValue('boxId', undefined)
+    }
+  }, [isUZB, clearErrors, setValue])
+
+  const { data: boxesData } = useQuery({
+    queryKey: ['admin', 'boxes'],
+    queryFn: () => boxesApi.list(),
+  })
+  const boxes = boxesData || []
 
   useEffect(() => {
     if (addresses.length > 0 && !addressId) {
@@ -216,6 +235,14 @@ export function ManualOrderPage() {
     },
   })
 
+  const onSubmit = (data: ManualOrderForm) => {
+    if (isUZB && !data.boxId) {
+      setError('boxId', { type: 'manual', message: 'Quti tanlash majburiy' })
+      return
+    }
+    mutation.mutate(data)
+  }
+
   return (
     <div className="max-w-3xl mx-auto flex flex-col gap-6 pb-20">
       <div className="flex items-center gap-3">
@@ -231,7 +258,7 @@ export function ManualOrderPage() {
       </div>
 
       <form
-        onSubmit={handleSubmit((data) => mutation.mutate(data))}
+        onSubmit={handleSubmit(onSubmit)}
         className="bg-white rounded-xl border-[0.5px] border-border p-6 shadow-sm space-y-8"
       >
         {/* MIJOZ TANLASH */}
@@ -642,6 +669,38 @@ export function ManualOrderPage() {
               <p className="text-xs text-red-500 font-medium">
                 Yetkazib berish uchun manzil tanlanishi shart
               </p>
+            )}
+
+            {isUZB && (
+              <div className="space-y-1.5 pt-2">
+                <Label className="text-xs">
+                  Quti tanlash <span className="text-red-500">*</span>
+                </Label>
+                <Controller
+                  name="boxId"
+                  control={control}
+                  render={({ field }) => (
+                    <Select value={field.value || ''} onValueChange={field.onChange}>
+                      <SelectTrigger className="h-9">
+                        <SelectValue placeholder="Quti tanlang" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {boxes.map((box: any) => (
+                          <SelectItem key={box.id} value={box.id}>
+                            {box.name} — max {box.maxWeightKg}kg
+                            {Number(box.costKrw) > 0
+                              ? ` · ₩${Number(box.costKrw).toLocaleString('ko-KR')}`
+                              : ''}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+                {errors.boxId && (
+                  <p className="text-xs text-red-500">{errors.boxId.message}</p>
+                )}
+              </div>
             )}
           </div>
         </div>
