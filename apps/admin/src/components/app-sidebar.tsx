@@ -59,13 +59,13 @@ const navMain: {
       { title: 'Kategoriyalar', url: '/categories', icon: Layers, resource: 'products' }, // assuming products resource covers categories
       { title: 'Inventar', url: '/inventory', icon: Boxes, resource: 'inventory' },
       { title: 'Qutular', url: '/boxes', icon: Box, resource: 'products' },
-      { title: 'Yetkazuvchilar', url: '/suppliers', icon: Building2, resource: 'products' },
+      { title: 'Yetkazuvchilar', url: '/suppliers', icon: Building2, resource: 'suppliers' },
       { title: 'Yuk sanalari', url: '/cargo-dates', icon: Package, resource: 'products' },
       {
         title: 'Buyurtma berish',
         url: '/purchase-orders',
         icon: ClipboardList,
-        resource: 'inventory',
+        resource: 'purchase_orders',
       },
     ],
   },

@@ -22,6 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { usePermission } from '../../hooks/usePermission'
 
 const COUNTRIES = [
   { value: 'KR', label: '🇰🇷 Janubiy Koreya' },
@@ -45,6 +46,15 @@ type SupplierForm = z.infer<typeof supplierSchema>
 
 export function YetkazuvchilarPage() {
   const qc = useQueryClient()
+  const { hasPermission } = usePermission()
+
+  if (!hasPermission('suppliers', 'read')) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <p className="text-muted-foreground">Bu sahifaga kirish ruxsati yo'q</p>
+      </div>
+    )
+  }
 
   const [editTarget, setEditTarget] = useState<any>(null)
   const [showForm, setShowForm] = useState(false)

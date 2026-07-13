@@ -37,6 +37,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { usePermission } from '../../hooks/usePermission'
 
 const LIMIT = 20
 
@@ -86,6 +87,15 @@ interface POForm {
 
 export function BuyurtmaBerish() {
   const qc = useQueryClient()
+  const { hasPermission } = usePermission()
+
+  if (!hasPermission('purchase_orders', 'read')) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <p className="text-muted-foreground">Bu sahifaga kirish ruxsati yo'q</p>
+      </div>
+    )
+  }
 
   const [tab, setTab] = useState<'all' | 'DRAFT' | 'ORDERED' | 'PARTIAL' | 'RECEIVED'>('all')
   const [page, setPage] = useState(1)
