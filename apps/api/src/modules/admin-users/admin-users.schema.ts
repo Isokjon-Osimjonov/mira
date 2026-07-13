@@ -4,7 +4,7 @@ export const createAdminUserSchema = z
   .object({
     email: z.string().email("Noto'g'ri email formati"),
     fullName: z.string().min(2, "Ism kamida 2 ta belgidan iborat bo'lishi kerak"),
-    password: z.string().min(8, "Parol kamida 8 ta belgidan iborat bo'lishi kerak"),
+    password: z.string().min(8, "Parol kamida 8 ta belgidan iborat bo'lishi kerak").optional(),
     roleId: z.string().uuid().optional().nullable(),
     isSuperAdmin: z.boolean().optional().default(false),
   })

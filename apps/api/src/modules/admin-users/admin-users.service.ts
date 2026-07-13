@@ -97,8 +97,8 @@ export async function createAdminUser(data: CreateAdminUserDto) {
       code: 'ADMIN_USER_DUPLICATE_EMAIL',
       message: 'Bunday email bilan admin mavjud',
     }
-
-  const passwordHash = await bcrypt.hash(data.password, 12)
+  const rawPassword = data.password ?? crypto.randomBytes(16).toString('hex')
+  const passwordHash = await bcrypt.hash(rawPassword, 12)
 
   const [created] = await db
     .insert(adminUsers)

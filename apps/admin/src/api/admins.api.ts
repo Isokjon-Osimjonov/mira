@@ -6,7 +6,7 @@ export const adminsApi = {
     return res.data.data
   },
 
-  invite: async (payload: { email: string; fullName: string; roleId: string }) => {
+  invite: async (payload: { email: string; fullName: string; roleId: string; password?: string }) => {
     const res = await api.post('/admin/users', payload)
     return res.data
   },

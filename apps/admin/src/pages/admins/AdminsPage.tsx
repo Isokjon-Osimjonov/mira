@@ -27,6 +27,7 @@ import {
 const inviteSchema = z.object({
   fullName: z.string().min(2, 'Ism kiriting'),
   email: z.string().email("Email noto'g'ri"),
+  password: z.string().min(8, 'Kamida 8 belgi').optional().or(z.literal('')),
   roleId: z.string().min(1, 'Rol tanlang'),
 })
 
@@ -59,6 +60,7 @@ export function AdminsPage() {
     defaultValues: {
       fullName: '',
       email: '',
+      password: '',
       roleId: '',
     },
   })
@@ -290,7 +292,15 @@ export function AdminsPage() {
           </SheetHeader>
 
           <form
-            onSubmit={handleSubmit((data) => inviteMutation.mutate(data))}
+            onSubmit={handleSubmit((data) => {
+              const payload = {
+                fullName: data.fullName,
+                email: data.email,
+                roleId: data.roleId,
+                ...(data.password ? { password: data.password } : {})
+              }
+              inviteMutation.mutate(payload as any)
+            })}
             className="space-y-4 py-4"
           >
             <div>
@@ -314,6 +324,23 @@ export function AdminsPage() {
                 className="h-9 text-sm rounded-lg border-[0.5px]"
               />
               {errors.email && <p className="text-xs text-red-500 mt-1">{errors.email.message}</p>}
+            </div>
+
+            <div className="space-y-1">
+              <Label className="text-sm font-medium">
+                Parol (ixtiyoriy)
+              </Label>
+              <Input
+                type="password"
+                placeholder="Bo'sh qoldirilsa avtomatik yaratiladi"
+                className="h-9 text-sm rounded-lg border-[0.5px]"
+                {...register('password')}
+              />
+              {errors.password && <p className="text-xs text-red-500 mt-1">{errors.password.message}</p>}
+              <p className="text-[11px] text-muted-foreground mt-1">
+                Bo'sh qoldirsangiz, xavfsiz parol
+                avtomatik yaratiladi
+              </p>
             </div>
 
             <div>
