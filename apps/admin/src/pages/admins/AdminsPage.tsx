@@ -37,6 +37,7 @@ export function AdminsPage() {
 
   const [inviteSheet, setInviteSheet] = useState(false)
   const [deactivateTarget, setDeactivateTarget] = useState<any>(null)
+  const [tempPasswordModal, setTempPasswordModal] = useState<string | null>(null)
 
   const { data: admins = [], isLoading: adminsLoading } = useQuery({
     queryKey: QK.ADMINS,
@@ -71,7 +72,7 @@ export function AdminsPage() {
       qc.removeQueries()
       const tempPassword = res.data?.tempPassword
       if (tempPassword) {
-        window.alert(`Admin yaratildi!\nVaqtinchalik parol:\n${tempPassword}\n\nUshbu parolni saqlang — u qayta ko'rsatilmaydi.`)
+        setTempPasswordModal(tempPassword)
       } else {
         toast.success('Admin yaratildi.')
       }
@@ -415,6 +416,34 @@ export function AdminsPage() {
         loading={deactivateMutation.isPending}
         onConfirm={() => deactivateMutation.mutate(deactivateTarget.id)}
       />
+
+      {tempPasswordModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100]">
+          <div className="bg-white rounded-xl p-6 max-w-sm w-full mx-4 shadow-xl">
+            <h3 className="text-lg font-semibold mb-2">
+              Admin yaratildi
+            </h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Vaqtinchalik parol — uni saqlang, qayta ko'rsatilmaydi:
+            </p>
+            <div className="bg-gray-50 rounded-lg p-3 font-mono text-sm break-all mb-4 select-all border border-gray-200">
+              {tempPasswordModal}
+            </div>
+            <p className="text-xs text-amber-600 mb-4">
+              Bu parolni yangi adminга yuboring. U tizimga kirib parolni o'zgartirishi kerak.
+            </p>
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(tempPasswordModal)
+                setTempPasswordModal(null)
+              }}
+              className="w-full bg-violet-600 text-white rounded-lg py-2.5 text-sm font-medium hover:bg-violet-700"
+            >
+              Nusxalash va yopish
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
