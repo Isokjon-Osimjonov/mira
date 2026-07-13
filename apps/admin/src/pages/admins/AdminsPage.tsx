@@ -67,9 +67,14 @@ export function AdminsPage() {
 
   const inviteMutation = useMutation({
     mutationFn: adminsApi.invite,
-    onSuccess: () => {
+    onSuccess: (res: any) => {
       qc.removeQueries()
-      toast.success('Admin taklif qilindi. Email yuborildi.')
+      const tempPassword = res.data?.tempPassword
+      if (tempPassword) {
+        window.alert(`Admin yaratildi!\nVaqtinchalik parol:\n${tempPassword}\n\nUshbu parolni saqlang — u qayta ko'rsatilmaydi.`)
+      } else {
+        toast.success('Admin yaratildi.')
+      }
       reset()
       setInviteSheet(false)
     },

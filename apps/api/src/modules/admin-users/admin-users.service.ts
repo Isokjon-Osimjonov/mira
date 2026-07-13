@@ -112,7 +112,10 @@ export async function createAdminUser(data: CreateAdminUserDto) {
     })
     .returning()
 
-  return created
+  return {
+    ...created,
+    tempPassword: data.password ? undefined : rawPassword
+  }
 }
 
 export async function updateAdminUser(id: string, targetId: string, data: UpdateAdminUserDto) {
