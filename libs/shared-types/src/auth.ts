@@ -10,6 +10,8 @@ export const ALL_RESOURCES = [
   'settings',
   'users',
   'roles',
+  'suppliers',
+  'purchase_orders',
 ] as const
 
 export type AppResource = (typeof ALL_RESOURCES)[number]

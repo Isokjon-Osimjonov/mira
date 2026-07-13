@@ -37,6 +37,8 @@ const PERMISSION_MODULES = [
   { module: 'settings', label: 'Sozlamalar', icon: '⚙️' },
   { module: 'admin-users', label: 'Adminlar', icon: '👤', resource: 'users' },
   { module: 'roles', label: 'Rollar', icon: '🔐' },
+  { module: 'suppliers', label: "Ta'minotchilar", icon: '🚚' },
+  { module: 'purchase_orders', label: 'Xarid buyurtmalari', icon: '🛒' },
 ]
 
 const roleSchema = z.object({
