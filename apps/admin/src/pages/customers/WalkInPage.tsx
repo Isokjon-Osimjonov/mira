@@ -77,7 +77,15 @@ export function WalkInPage() {
       </div>
 
       <form
-        onSubmit={handleSubmit((data) => mutation.mutate(data))}
+        onSubmit={handleSubmit((data) => {
+          const payload = {
+            ...data,
+            lastName: data.lastName?.trim() || undefined,
+            phone: data.phone?.trim() || undefined,
+            note: data.note?.trim() || undefined,
+          }
+          mutation.mutate(payload as any)
+        })}
         className="bg-white rounded-xl border-[0.5px] border-border p-6 shadow-sm space-y-6"
       >
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

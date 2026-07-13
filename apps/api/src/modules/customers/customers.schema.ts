@@ -20,13 +20,13 @@ export const createWalkInCustomerSchema = z.object({
       message: "Ism faqat harflardan iborat bo'lishi kerak"
     }),
   lastName: z.string()
-    .min(2)
     .max(50)
     .regex(/^[\p{L}\s'-]+$/u, {
       message: "Familiya faqat harflardan iborat bo'lishi kerak"
     })
     .nullable()
-    .optional(),
+    .optional()
+    .transform(val => val?.trim() === '' ? undefined : val),
   phone: z.string().optional(),
   region: z.enum(['UZB', 'KOR']),
   note: z.string().max(500).optional(),
