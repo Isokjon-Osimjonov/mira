@@ -36,7 +36,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   android: {
     googleServicesFile: process.env.GOOGLE_SERVICES_JSON ?? './google-services.json',
     package: 'uz.miramarket.app',
-    versionCode: 1,
     adaptiveIcon: {
       foregroundImage: './assets/icon.png',
       backgroundColor: '#FFFFFF',
