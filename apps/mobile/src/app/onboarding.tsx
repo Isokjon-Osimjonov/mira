@@ -69,7 +69,7 @@ export default function OnboardingScreen() {
       setCurrentIndex(currentIndex + 1)
     } else {
       await ExpoStorage.setItemAsync('onboarding_complete', 'true')
-      router.replace('/auth/login')
+      router.replace('/(tabs)/home')
     }
   }
 
