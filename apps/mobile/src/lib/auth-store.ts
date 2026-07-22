@@ -93,10 +93,14 @@ export const useAuthStore = create<AuthState>((set) => ({
           isAuthenticated: true,
           isLoading: false,
         })
-
+        try {
+          const apiModule = await import('./api')
+          apiModule.default.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`
+        } catch (e) {
+          console.error(e)
+        }
       } else {
         set({ isLoading: false })
-
       }
     } catch (err) {
       set({ isLoading: false })
