@@ -16,7 +16,7 @@ import { Ionicons, Feather } from '@expo/vector-icons'
 
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { router, useLocalSearchParams } from 'expo-router'
-import * as ImagePicker from 'expo-image-picker'
+import { pickAndProcessImage, uploadImageToApi } from '../../utils/image.utils'
 import { orderService } from '../../services/order.service'
 import { uploadService } from '../../services/upload.service'
 import { tokens } from '../../lib/tokens'
@@ -103,19 +103,13 @@ export default function OrderDetailScreen() {
   }, [order?.paymentDeadline])
 
   const handleUploadReceipt = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: false,
-      quality: 0.8,
-      exif: false,
-      base64: false,
-    })
-    if (result.canceled) return
-    setIsUploading(true)
     try {
-      const receiptUrl = await uploadService.uploadReceipt(result.assets[0].uri)
-
-      // Step 2: Link to order
+      const image = await pickAndProcessImage({ source: 'library' })
+      if (!image) return
+      setIsUploading(true)
+      const res = await uploadImageToApi(image, '/upload/receipt', 'receipt')
+      const receiptUrl = res.data.url
+      
       const totalKrw = Number(order?.totalAmount ?? 0)
       await orderService.uploadReceipt(
         id as string,
@@ -126,7 +120,7 @@ export default function OrderDetailScreen() {
       await refetch()
       Alert.alert('✓', 'Chek muvaffaqiyatli yuklandi')
     } catch (err: any) {
-      Alert.alert('Xatolik', err?.response?.data?.error?.message ?? 'Xatolik')
+      Alert.alert('Xatolik', err?.message ?? 'Xatolik')
     } finally {
       setIsUploading(false)
     }

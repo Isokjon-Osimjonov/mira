@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { View, Text, TextInput, Image, TouchableOpacity, StyleSheet, Pressable } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router, useLocalSearchParams } from 'expo-router'
-import * as ImagePicker from 'expo-image-picker'
+import { pickAndProcessImage, uploadImageToApi } from '../../utils/image.utils'
 import { tokens } from '../../lib/tokens'
 import PrimaryButton from '../../components/ui/PrimaryButton'
 import { Feather } from '@expo/vector-icons'
@@ -26,24 +26,16 @@ const FieldError = ({ message }: { message?: string }) =>
 export default function ProfileSetupScreen() {
   const { returnTo } = useLocalSearchParams()
   const [name, setName] = useState('')
-  const [photo, setPhoto] = useState<string | null>(null)
+  const [photo, setPhoto] = useState<{ uri: string; type: string; name: string } | null>(null)
   const [focused, setFocused] = useState(false)
   const [loading, setLoading] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
 
   const pickImage = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.8,
-      exif: false,
-      base64: false,
-    })
-
-    if (!result.canceled) {
-      setPhoto(result.assets[0].uri)
-    }
+    try {
+      const image = await pickAndProcessImage({ source: 'library', allowsEditing: true })
+      if (image) setPhoto(image)
+    } catch (e: any) { console.error(e) }
   }
 
   const validateForm = () => {
@@ -70,7 +62,7 @@ export default function ProfileSetupScreen() {
       let profileImageUrl: string | null = null
       if (photo) {
         try {
-          profileImageUrl = await uploadService.uploadAvatar(photo)
+          profileImageUrl = await uploadImageToApi(photo, '/upload/avatar', 'file').then(res => res.data.url)
         } catch (err) {
           console.error('Avatar upload failed:', err)
           // Photo upload failed — continue without it
@@ -108,7 +100,7 @@ export default function ProfileSetupScreen() {
       <View style={styles.avatarContainer}>
         <Pressable onPress={pickImage} style={styles.avatarPicker}>
           {photo ? (
-            <Image source={{ uri: photo }} style={styles.avatarImage} />
+            <Image source={{ uri: photo?.uri }} style={styles.avatarImage} />
           ) : (
             <View style={styles.avatarPlaceholder}>
               <Text style={styles.avatarInitials}>{getInitials()}</Text>

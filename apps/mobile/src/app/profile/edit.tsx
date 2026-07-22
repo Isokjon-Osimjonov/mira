@@ -13,7 +13,7 @@ import {
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Image } from 'expo-image'
-import * as ImagePicker from 'expo-image-picker'
+import { pickAndProcessImage, uploadImageToApi } from '../../utils/image.utils'
 import { Feather } from '@expo/vector-icons'
 import { router } from 'expo-router'
 import { useAuthStore } from '../../lib/auth-store'
@@ -41,22 +41,15 @@ export default function EditProfileScreen() {
 
   const [firstName, setFirstName] = useState(customer?.firstName ?? '')
   const [lastName, setLastName] = useState(customer?.lastName ?? '')
-  const [avatarUri, setAvatarUri] = useState<string | null>(null)
+  const [avatarUri, setAvatarUri] = useState<{ uri: string; type: string; name: string } | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
 
   const pickAvatar = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.8,
-      exif: false,
-      base64: false,
-    })
-    if (!result.canceled) {
-      setAvatarUri(result.assets[0].uri)
-    }
+    try {
+      const image = await pickAndProcessImage({ source: 'library', allowsEditing: true })
+      if (image) setAvatarUri(image)
+    } catch (e: any) { console.error(e) }
   }
 
   const validateForm = () => {
@@ -99,7 +92,7 @@ export default function EditProfileScreen() {
       let profileImageUrl = customer?.profileImageUrl ?? null
 
       if (avatarUri) {
-        profileImageUrl = await uploadService.uploadAvatar(avatarUri)
+        profileImageUrl = await uploadImageToApi(avatarUri, '/upload/avatar', 'file').then(res => res.data.url)
       }
 
       const res = await api.patch('/auth/profile', {

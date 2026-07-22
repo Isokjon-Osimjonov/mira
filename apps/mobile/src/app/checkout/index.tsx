@@ -23,7 +23,7 @@ import { addressService, type Address } from '../../services/address.service'
 import { boxService, type Box } from '../../services/box.service'
 import { cartService } from '../../services/cart.service'
 import { orderService } from '../../services/order.service'
-import { uploadService } from '../../services/upload.service'
+import { pickAndProcessImage, uploadImageToApi } from '../../utils/image.utils'
 import api from '../../lib/api'
 
 interface OrderResult {
@@ -45,14 +45,19 @@ function CheckoutScreen() {
   const customer = useAuthStore((s) => s.customer)
   const { cart } = useCartStore()
   const cartItems = cart?.items || []
-  const region = customer?.phoneRegion ?? 'KOR'
-
+  const customerRegion = customer?.phoneRegion ?? 'KOR'
   // Main state variables:
   const [orderResult, setOrderResult] = useState<OrderResult | null>(null)
 
   // CONFIG state (STATE 1 only):
   const [addresses, setAddresses] = useState<Address[]>([])
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null)
+
+  const selectedAddress = addresses.find((a) => a.id === selectedAddressId)
+  const deliveryRegion = selectedAddress?.regionCode ?? customerRegion
+  const requiresBox = deliveryRegion === 'UZB'
+  const region = deliveryRegion
+
   const [boxes, setBoxes] = useState<Box[]>([])
   const [selectedBoxId, setSelectedBoxId] = useState<string | null>(null)
   const [totalWeightG, setTotalWeightG] = useState(0)
@@ -64,16 +69,12 @@ function CheckoutScreen() {
   const [couponLoading, setCouponLoading] = useState(false)
 
   // RECEIPT state (STATE 2 only):
-  const [receiptUri, setReceiptUri] = useState<string | null>(null)
+  const [receiptImage, setReceiptImage] = useState<{ uri: string; type: string; name: string } | null>(null)
   const [receiptUploading, setReceiptUploading] = useState(false)
   const [receiptUploaded, setReceiptUploaded] = useState(false)
 
   // BANK INFO:
-  const [bankInfo, setBankInfo] = useState<{
-    bankName: string
-    accountNumber: string
-    holderName: string
-  } | null>(null)
+  const [paymentInfoData, setPaymentInfoData] = useState<any>(null)
 
   // SUBMISSION:
   const [submitting, setSubmitting] = useState(false)
@@ -148,18 +149,11 @@ function CheckoutScreen() {
       try {
         const res = await api.get('/settings/payment-info')
         const info = res.data.data
-        const regionData = region === 'UZB' ? info.uzb : info.kor
-        if (regionData?.bankName) {
-          setBankInfo({
-            bankName: regionData.bankName,
-            accountNumber: regionData.bankNumber || regionData.accountNumber,
-            holderName: regionData.bankHolder || regionData.holderName,
-          })
-        }
+        setPaymentInfoData(info)
       } catch (err) {}
 
-      // Load boxes + calculate weight (UZB)
-      if (region === 'UZB') {
+      // Load boxes, configs, and tiers unconditionally
+      try {
         const bxs = await boxService.getBoxes()
         setBoxes(bxs)
         const wg = cartItems.reduce(
@@ -171,19 +165,22 @@ function CheckoutScreen() {
         if (rec) setSelectedBoxId(rec)
 
         api.get('/settings/public-config')
+          .then(res => setPublicConfig(res.data.data))
+          .catch(() => setPublicConfig({ uzbCargoUsdPerKg: 10, usdToKrw: 1350, minOrderKorKrw: 0, minOrderUzbUzs: 0, krwToUzs: 7.74 }))
+
+        api.get('/kor-shipping-tiers')
           .then(res => {
-            setPublicConfig(res.data.data)
+            const tiers = res.data.data ?? []
+            setKorShippingTiers(tiers.map((t: any) => ({
+              maxOrderKrw: t.maxOrderKrw ? Number(t.maxOrderKrw) : null,
+              cargoFeeKrw: Number(t.cargoFeeKrw),
+              sortOrder: Number(t.sortOrder),
+            })))
           })
-          .catch(() => {
-            setPublicConfig({
-              uzbCargoUsdPerKg: 10,
-              usdToKrw: 1350,
-              minOrderKorKrw: 0,
-              minOrderUzbUzs: 0,
-              krwToUzs: 7.74,
-            })
-          })
-      } else if (region === 'KOR') {
+          .catch(() => {})
+      } catch (e) {
+      }
+      if (false) {
         api.get('/kor-shipping-tiers')
           .then(res => {
             const tiers = res.data.data ?? []
@@ -243,7 +240,12 @@ function CheckoutScreen() {
   const shortfallKrw = isBelowMinOrder ? effectiveMinKrw - cartSubtotal : 0
 
   // Active payment method to display
-  // Derived directly from bankInfo state
+  const rawRegionData = region === 'UZB' ? paymentInfoData?.uzb : paymentInfoData?.kor
+  const bankInfo = rawRegionData?.bankName ? {
+    bankName: rawRegionData.bankName,
+    accountNumber: rawRegionData.bankNumber || rawRegionData.accountNumber,
+    holderName: rawRegionData.bankHolder || rawRegionData.holderName,
+  } : null
 
   const handleApplyCoupon = async () => {
     if (!couponCode.trim()) return
@@ -271,34 +273,17 @@ function CheckoutScreen() {
   }
 
   const handlePickReceipt = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: false,
-      quality: 0.8,
-      exif: false,
-      base64: false,
-    })
-    if (!result.canceled && result.assets[0]) {
-      setReceiptUri(result.assets[0].uri)
-    }
+    try {
+      const image = await pickAndProcessImage({ source: 'library' })
+      if (image) setReceiptImage(image)
+    } catch (e: any) { Alert.alert('Xatolik', e.message) }
   }
 
   const handleCameraReceipt = async () => {
-    const { status } = await ImagePicker.requestCameraPermissionsAsync()
-    if (status !== 'granted') {
-      Alert.alert('Kamera ruxsati kerak')
-      return
-    }
-    const result = await ImagePicker.launchCameraAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: false,
-      quality: 0.8,
-      exif: false,
-      base64: false,
-    })
-    if (!result.canceled && result.assets[0]) {
-      setReceiptUri(result.assets[0].uri)
-    }
+    try {
+      const image = await pickAndProcessImage({ source: 'camera' })
+      if (image) setReceiptImage(image)
+    } catch (e: any) { Alert.alert('Xatolik', e.message) }
   }
 
   const handleSubmit = async () => {
@@ -307,7 +292,7 @@ function CheckoutScreen() {
       scrollRef.current?.scrollTo({ y: 0, animated: true })
       return
     }
-    if (region === 'UZB' && !selectedBoxId) {
+    if (requiresBox && !selectedBoxId) {
       Alert.alert('Quti tanlang')
       return
     }
@@ -326,9 +311,9 @@ function CheckoutScreen() {
 
       let uploaded = false
       // Step 2: Upload receipt if selected
-      if (receiptUri) {
+      if (receiptImage) {
         try {
-          const receiptUrl = await uploadService.uploadReceipt(receiptUri)
+          const res = await uploadImageToApi(receiptImage!, '/upload/receipt', 'receipt'); const receiptUrl = res.data.url;
           const paymentCurrency = region === 'UZB' ? 'UZS' : 'KRW'
           await orderService.uploadReceipt(order.id, receiptUrl, Number(order.totalAmount), paymentCurrency)
           uploaded = true
@@ -360,10 +345,10 @@ function CheckoutScreen() {
   }
 
   const handleUploadReceipt = async () => {
-    if (!orderResult || !receiptUri) return
+    if (!orderResult || !receiptImage) return
     setReceiptUploading(true)
     try {
-      const receiptUrl = await uploadService.uploadReceipt(receiptUri)
+      const res = await uploadImageToApi(receiptImage!, '/upload/receipt', 'receipt'); const receiptUrl = res.data.url;
       const paymentCurrency = region === 'UZB' ? 'UZS' : 'KRW'
       await orderService.uploadReceipt(orderResult.id, receiptUrl, orderResult.totalAmount, paymentCurrency)
       setReceiptUploaded(true)
@@ -631,7 +616,7 @@ function CheckoutScreen() {
                 </View>
               )}
 
-              {region === 'UZB' && boxCost > 0 && (
+              {requiresBox && boxCost > 0 && (
                 <View style={styles.priceRow}>
                   <Text style={styles.priceLabel}>Quti ({selectedBox?.name})</Text>
                   <Text style={styles.priceVal}>
@@ -677,7 +662,7 @@ function CheckoutScreen() {
                 </Text>
               </View>
 
-              {region === 'UZB' && (
+              {requiresBox && (
                 <Text style={styles.cargoNote}>
                   Kargo narxi quti va og'irlikka qarab aniqlanadi
                 </Text>
@@ -724,15 +709,15 @@ function CheckoutScreen() {
                 To'lovni amalga oshirib, kvitansiyani yuklang
               </Text>
 
-              {receiptUri ? (
+              {receiptImage ? (
                 <View>
                   <Image
-                    source={{ uri: receiptUri }}
+                    source={{ uri: receiptImage?.uri }}
                     style={styles.receiptPreview}
                     resizeMode="cover"
                   />
                   <Pressable
-                    onPress={() => setReceiptUri(null)}
+                    onPress={() => setReceiptImage(null)}
                     style={styles.removeReceipt}
                   >
                     <Text style={styles.removeReceiptText}>Boshqa rasm tanlash</Text>
@@ -896,12 +881,12 @@ function CheckoutScreen() {
                     </Text>
                   </View>
                 </View>
-              ) : receiptUri ? (
+              ) : receiptImage ? (
                 // STATE B & C: Image selected
                 <View>
                   <View style={styles.receiptPreviewWrap}>
                     <Image
-                      source={{ uri: receiptUri }}
+                      source={{ uri: receiptImage.uri }}
                       style={[
                         styles.receiptPreview,
                         receiptUploading && { opacity: 0.5 }
@@ -934,7 +919,7 @@ function CheckoutScreen() {
                       </Pressable>
                       <Pressable
                         onPress={() =>
-                          setReceiptUri(null)}
+                          setReceiptImage(null)}
                         style={styles.changeReceiptBtn}>
                         <Text style={
                           styles.changeReceiptText}>
@@ -1003,7 +988,7 @@ function CheckoutScreen() {
             disabled={
               submitting ||
               !selectedAddressId ||
-              (region === 'UZB' && !selectedBoxId) ||
+              (requiresBox && !selectedBoxId) ||
               isBelowMinOrder
             }
             style={[
