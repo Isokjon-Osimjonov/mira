@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import {
   View,
   Text,
@@ -16,8 +16,20 @@ import { tokens } from '../../lib/tokens'
 import { useQuery } from '@tanstack/react-query'
 import EmptyState from '../../components/ui/EmptyState'
 import api from '../../lib/api'
+import { useAuthStore } from '../../lib/auth-store'
+import { GuestPrompt } from '../../components/ui/GuestPrompt'
 
 export default function CouponsScreen() {
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
+  const hasPrompted = useRef(false)
+
+  useEffect(() => {
+    if (!isAuthenticated && !hasPrompted.current) {
+      hasPrompted.current = true
+      router.push('/auth/login')
+    }
+  }, [isAuthenticated])
+
   const [activeTab, setActiveTab] = useState<'available' | 'history'>('available')
 
   const {
@@ -145,6 +157,14 @@ export default function CouponsScreen() {
   const data = activeTab === 'available' ? availableCoupons : myRedemptions
   const handleRefresh = activeTab === 'available' ? refetchAvailable : refetchRedemptions
 
+  if (!isAuthenticated) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <GuestPrompt />
+      </SafeAreaView>
+    )
+  }
+
   return (
     <SafeAreaView edges={['top']} style={styles.container}>
       {/* Header */}
@@ -178,7 +198,7 @@ export default function CouponsScreen() {
 
       {/* List */}
       {!isLoading && data?.length === 0 ? (
-        <ScrollView 
+        <ScrollView
           contentContainerStyle={{ flex: 1, justifyContent: 'center' }}
           refreshControl={
             <RefreshControl
@@ -260,6 +280,8 @@ const styles = StyleSheet.create({
     backgroundColor: tokens.colors.surface,
     borderWidth: 1,
     borderColor: tokens.colors.border,
+    flex: 1,
+    alignItems: 'center',
   },
   tabActive: {
     backgroundColor: tokens.colors.primary,

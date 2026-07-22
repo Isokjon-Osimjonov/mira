@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react'
+import React, { useState, useCallback, useEffect, useRef } from 'react'
 import { FlatList, View, Text, TouchableOpacity, StyleSheet, RefreshControl } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Feather } from '@expo/vector-icons'
@@ -60,6 +60,14 @@ export default function NotificationsScreen() {
   })
 
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
+  const hasPrompted = useRef(false)
+
+  useEffect(() => {
+    if (!isAuthenticated && !hasPrompted.current) {
+      hasPrompted.current = true
+      router.push('/auth/login')
+    }
+  }, [isAuthenticated])
 
   useFocusEffect(
     useCallback(() => {

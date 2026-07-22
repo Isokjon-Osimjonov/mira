@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect, useRef } from 'react'
 import {
   View,
   Text,
@@ -17,7 +17,20 @@ import { addressService, type Address } from '../../services/address.service'
 import PrimaryButton from '../../components/ui/PrimaryButton'
 import EmptyState from '../../components/ui/EmptyState'
 
+import { useAuthStore } from '../../lib/auth-store'
+import { GuestPrompt } from '../../components/ui/GuestPrompt'
+
 export default function AddressesScreen() {
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
+  const hasPrompted = useRef(false)
+
+  useEffect(() => {
+    if (!isAuthenticated && !hasPrompted.current) {
+      hasPrompted.current = true
+      router.push('/auth/login')
+    }
+  }, [isAuthenticated])
+
   const queryClient = useQueryClient()
   const {
     data: addresses = [],
@@ -109,6 +122,14 @@ export default function AddressesScreen() {
           </TouchableOpacity>
         </View>
       </View>
+    )
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <GuestPrompt />
+      </SafeAreaView>
     )
   }
 

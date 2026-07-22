@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react'
+import React, { useState, useCallback, useEffect, useRef } from 'react'
 import {
   View,
   Text,
@@ -30,8 +30,18 @@ export default function WishlistScreen() {
     await fetchWishlist()
     setIsRefreshing(false)
   }
-  const toggle = useWishlistStore((s) => s.toggle)
+  const [refreshing, setRefreshing] = useState(false)
   const customer = useAuthStore((s) => s.customer)
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
+  const hasPrompted = useRef(false)
+
+  useEffect(() => {
+    if (!isAuthenticated && !hasPrompted.current) {
+      hasPrompted.current = true
+      router.push('/auth/login')
+    }
+  }, [isAuthenticated])
+  const toggle = useWishlistStore((s) => s.toggle)
   const exchangeRate = useExchangeStore((s) => s.rate)
   const addItem = useCartStore((s) => s.addItem)
   const { toast, showToast, hideToast } = useToast()
@@ -62,7 +72,7 @@ export default function WishlistScreen() {
     ])
   }
 
-  if (!customer) {
+  if (!isAuthenticated) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
         <GuestPrompt />
