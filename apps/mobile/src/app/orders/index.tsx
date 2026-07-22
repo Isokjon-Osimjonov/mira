@@ -7,11 +7,11 @@ import { useQuery } from '@tanstack/react-query'
 import { router, useFocusEffect } from 'expo-router'
 import { orderService } from '../../services/order.service'
 import { useAuthStore } from '../../lib/auth-store'
-import { requireAuth } from '../../lib/require-auth'
 import { formatKRW, formatDate, formatCountdown } from '../../lib/price'
 import { tokens } from '../../lib/tokens'
 import PrimaryButton from '../../components/ui/PrimaryButton'
 import EmptyState from '../../components/ui/EmptyState'
+import { GuestPrompt } from '../../components/ui/GuestPrompt'
 
 const STATUS_MAP: Record<string, { label: string; bg: string; color: string }> = {
   PENDING_PAYMENT: { label: "To'lov kutilmoqda", bg: '#FFF7ED', color: '#C2410C' },
@@ -58,11 +58,14 @@ export default function OrdersScreen() {
     staleTime: 0,
   })
 
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
+
   useFocusEffect(
     useCallback(() => {
-      if (!requireAuth(useAuthStore.getState().isAuthenticated, router, '/orders')) return
-      refetch()
-    }, [refetch])
+      if (isAuthenticated) {
+        refetch()
+      }
+    }, [refetch, isAuthenticated])
   )
 
   const orders = data?.items ?? []
@@ -106,6 +109,14 @@ export default function OrdersScreen() {
           <CountdownBadge deadline={item.paymentDeadline} />
         )}
       </TouchableOpacity>
+    )
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <GuestPrompt />
+      </SafeAreaView>
     )
   }
 

@@ -1,30 +1,30 @@
-import { useEffect } from 'react'
-import { View } from 'react-native'
-import { useRouter } from 'expo-router'
-import * as ExpoStorage from 'expo-secure-store'
+import { useEffect, useState } from 'react'
+import { Redirect } from 'expo-router'
+import * as SecureStore from 'expo-secure-store'
 
-export default function IndexScreen() {
-  const router = useRouter()
+export default function Index() {
+  const [checked, setChecked] = useState(false)
+  const [hasSeenOnboarding, setHasSeen] = useState(false)
 
   useEffect(() => {
-    checkOnboarding()
+    const check = async () => {
+      try {
+        const seen = await SecureStore.getItemAsync('onboarding_complete')
+        setHasSeen(seen === 'true')
+      } catch {
+        setHasSeen(false)
+      } finally {
+        setChecked(true)
+      }
+    }
+    check()
   }, [])
 
-  async function checkOnboarding() {
-    const seenOnboarding = await ExpoStorage.getItemAsync('onboarding_complete')
-    if (!seenOnboarding) {
-      router.replace('/onboarding')
-    } else {
-      router.replace('/(tabs)/home')
-    }
+  if (!checked) return null
+
+  if (!hasSeenOnboarding) {
+    return <Redirect href="/onboarding" />
   }
 
-  // Brief transparent screen while
-  // useEffect fires
-  return (
-    <View style={{
-      flex: 1,
-      backgroundColor: '#ffffff'
-    }} />
-  )
+  return <Redirect href="/(tabs)/home" />
 }

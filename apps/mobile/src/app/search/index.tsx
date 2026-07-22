@@ -79,6 +79,10 @@ export default function SearchScreen() {
   const showEmpty = showResults && !isLoading && results.length === 0
 
   const handleAddToCart = async (productId: string) => {
+    if (!useAuthStore.getState().isAuthenticated) {
+      router.push('/auth/login')
+      return
+    }
     try {
       await addItem(productId, 1)
     } catch {}

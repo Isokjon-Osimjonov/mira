@@ -128,6 +128,10 @@ export default function ProductDetailScreen() {
 
   const handleAddToCart = async () => {
     if (isAdding || !id || isOutOfStock) return
+    if (!useAuthStore.getState().isAuthenticated) {
+      router.push('/auth/login')
+      return
+    }
     setIsAdding(true)
     try {
       await addItem(id as string, 1)

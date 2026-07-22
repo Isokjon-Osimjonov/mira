@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { View, Text, Image, StyleSheet } from 'react-native'
+import { View, Text, Image, StyleSheet, TouchableOpacity } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router, useLocalSearchParams } from 'expo-router'
 import { tokens } from '../../lib/tokens'
@@ -77,6 +77,14 @@ export default function LoginScreen() {
 
       <View style={styles.bottom}>
         <Text style={styles.bottomText}>Telegram orqali OTP kodi yuboriladi</Text>
+        <TouchableOpacity
+          onPress={() =>
+            router.canGoBack() ? router.back() : router.replace('/(tabs)/home')
+          }
+          style={styles.skipBtn}
+        >
+          <Text style={styles.skipText}>Mehmon sifatida davom etish →</Text>
+        </TouchableOpacity>
       </View>
     </SafeAreaView>
   )
@@ -125,5 +133,14 @@ const styles = StyleSheet.create({
     fontWeight: '300',
     fontSize: 12,
     color: tokens.colors.textMuted,
+  },
+  skipBtn: {
+    marginTop: 24,
+    padding: 12,
+  },
+  skipText: {
+    fontFamily: 'Inter_500Medium',
+    fontSize: 14,
+    color: tokens.colors.primary,
   },
 })

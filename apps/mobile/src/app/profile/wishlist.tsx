@@ -19,6 +19,7 @@ import { useCartStore } from '../../lib/cart-store'
 import { ProductCard } from '../../components/ui/ProductCard'
 import { Toast, useToast } from '../../components/ui/Toast'
 import EmptyState from '../../components/ui/EmptyState'
+import { GuestPrompt } from '../../components/ui/GuestPrompt'
 
 export default function WishlistScreen() {
   const { items, isLoading, fetchWishlist } = useWishlistStore()
@@ -59,6 +60,14 @@ export default function WishlistScreen() {
         onPress: () => toggle(productId),
       },
     ])
+  }
+
+  if (!customer) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <GuestPrompt />
+      </SafeAreaView>
+    )
   }
 
   return (

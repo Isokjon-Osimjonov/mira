@@ -147,6 +147,10 @@ export default function HomeScreen() {
   }
 
   const handleAddToCart = async (productId: string) => {
+    if (!useAuthStore.getState().isAuthenticated) {
+      router.push('/auth/login')
+      return
+    }
     if (addingId) return
     setAddingId(productId)
     try {

@@ -6,10 +6,10 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { router, useFocusEffect } from 'expo-router'
 import { notificationService, Notification } from '../../services/notification.service'
 import { useAuthStore } from '../../lib/auth-store'
-import { requireAuth } from '../../lib/require-auth'
 import { formatDate } from '../../lib/price'
 import { tokens } from '../../lib/tokens'
 import EmptyState from '../../components/ui/EmptyState'
+import { GuestPrompt } from '../../components/ui/GuestPrompt'
 
 const TYPE_CONFIG: Record<string, { icon: string; color: string; bg: string }> = {
   ORDER_STATUS: {
@@ -59,11 +59,14 @@ export default function NotificationsScreen() {
     staleTime: 30000,
   })
 
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
+
   useFocusEffect(
     useCallback(() => {
-      if (!requireAuth(useAuthStore.getState().isAuthenticated, router, '/notifications')) return
-      refetch()
-    }, [refetch])
+      if (isAuthenticated) {
+        refetch()
+      }
+    }, [refetch, isAuthenticated])
   )
 
   const notifications = data?.items ?? []
@@ -129,6 +132,14 @@ export default function NotificationsScreen() {
 
         {!item.isRead && <View style={styles.unreadDot} />}
       </TouchableOpacity>
+    )
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <GuestPrompt />
+      </SafeAreaView>
     )
   }
 
