@@ -10,7 +10,7 @@ export function setRefreshCookie(res: Response, token: string): void {
     httpOnly: true,
     secure: isProd,
     sameSite: isProd ? 'none' : 'lax',
-    domain: isProd ? '.miracosmetics.uz' : undefined,
+    domain: isProd ? '.miramarket.uz' : undefined,
     maxAge: 7 * 24 * 60 * 60 * 1000,
     path: '/',
   })
@@ -21,7 +21,7 @@ export function clearRefreshCookie(res: Response): void {
     httpOnly: true,
     secure: isProd,
     sameSite: isProd ? 'none' : 'lax',
-    domain: isProd ? '.miracosmetics.uz' : undefined,
+    domain: isProd ? '.miramarket.uz' : undefined,
     path: '/',
   })
 }

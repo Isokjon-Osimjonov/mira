@@ -45,7 +45,7 @@ const envSchema = z.object({
   ESKIZ_PASSWORD: z.string().optional(),
 
   // ─── CORS & Socket ─────────────────────────────────────
-  ADMIN_URL: z.string().default('http://localhost:3000'),
+  ADMIN_URL: z.string().default('https://management.miramarket.uz'),
   CORS_ORIGINS: z.string().default('http://localhost:3000'),
   SOCKET_CORS_ORIGINS: z.string().default('http://localhost:3000'),
 

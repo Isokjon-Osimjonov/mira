@@ -52,7 +52,7 @@ export async function notifyPaymentSubmitted(data: {
     `💳 <b>TO'LOV YUKLANDI!</b>\n` +
       `📦 ${data.orderNumber} — ${escHtml(data.customerName)}\n` +
       `🏦 ${data.paymentMethod}: ${data.paymentAmount}\n` +
-      `✅ Tekshiring: admin.miracosmetics.uz`
+      `✅ <a href="https://management.miramarket.uz/orders/${data.orderNumber}">Buyurtmani ko'rish</a>`
   )
 }
 

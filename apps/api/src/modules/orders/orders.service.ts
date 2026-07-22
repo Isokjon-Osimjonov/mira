@@ -2252,7 +2252,7 @@ export async function getInvoiceData(orderId: string, userId: string, isAdmin: b
     },
     company: {
       name: 'Mira Cosmetics',
-      website: 'miracosmetics.uz',
+      website: 'miramarket.uz',
       telegram: '@mira_cosmetics_bot',
     },
     exchangeRate: rate
