@@ -549,10 +549,18 @@ export default function HomeScreen() {
               />
             )}
           />
-          {loadingMore && (
-            <View style={{ padding: 20, alignItems: 'center' }}>
-              <ActivityIndicator color={tokens.colors.primary} />
-            </View>
+          {allProducts.length > 0 && (
+            loadingMore ? (
+              <View style={{ padding: 20, alignItems: 'center' }}>
+                <ActivityIndicator color={tokens.colors.primary} />
+              </View>
+            ) : hasMore ? (
+              <View style={{ height: 20 }} />
+            ) : (
+              <Text style={styles.endText}>
+                Barcha mahsulotlar ko'rsatildi
+              </Text>
+            )
           )}
         </View>
       </ScrollView>
@@ -567,6 +575,13 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingBottom: 24,
+  },
+  endText: {
+    textAlign: 'center',
+    color: tokens.colors.textMuted,
+    fontSize: 13,
+    paddingVertical: 20,
+    paddingBottom: 40,
   },
   header: {
     flexDirection: 'row',

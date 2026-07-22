@@ -9,6 +9,7 @@ import {
   FlatList,
   ScrollView,
   RefreshControl,
+  ActivityIndicator,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Image } from 'expo-image'
@@ -237,9 +238,15 @@ export default function CategoriesScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <ScrollView
+      <FlatList
+        data={products}
+        numColumns={2}
+        keyExtractor={(item) => item.id}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingHorizontal: 24 }]}
+        columnWrapperStyle={styles.gridRow}
+        onEndReached={loadMore}
+        onEndReachedThreshold={0.3}
         refreshControl={
           <RefreshControl
             refreshing={isRefreshing}
@@ -248,7 +255,8 @@ export default function CategoriesScreen() {
             colors={[tokens.colors.primary]}
           />
         }
-      >
+        ListHeaderComponent={
+          <View style={{ marginHorizontal: -24 }}>
         {/* SEARCH BAR */}
         <View style={styles.searchWrapper}>
           <View
@@ -405,7 +413,7 @@ export default function CategoriesScreen() {
 
         {/* EMPTY STATE */}
         {products.length === 0 && !loadingMore && (
-          <View style={{ flex: 1, justifyContent: 'center' }}>
+          <View style={{ height: 200, justifyContent: 'center' }}>
             <EmptyState
               icon="package"
               heading="Mahsulot topilmadi"
@@ -413,44 +421,33 @@ export default function CategoriesScreen() {
             />
           </View>
         )}
-
-        {/* PRODUCTS GRID */}
-        {products.length > 0 && (
-          <View style={[styles.section, { paddingHorizontal: 24, paddingBottom: 100 }]}>
-            <FlatList
-              data={products}
-              numColumns={2}
-              scrollEnabled={false}
-              columnWrapperStyle={styles.gridRow}
-              keyExtractor={(item) => item.id}
-              renderItem={({ item }) => (
-                <ProductCard
-                  product={item}
-                  showUzs={showUzs}
-                  onPress={() => router.push(`/product/${item.id}`)}
-                  onAddToCart={() => handleAddToCart(item.id)}
-                />
-              )}
-            />
-            {hasMore && (
-              <TouchableOpacity
-                onPress={loadMore}
-                style={{
-                  paddingVertical: 12,
-                  alignItems: 'center',
-                  backgroundColor: tokens.colors.primaryLight,
-                  borderRadius: 12,
-                  marginTop: 16,
-                }}
-              >
-                <Text style={{ color: tokens.colors.primary, fontFamily: 'Inter_500Medium' }}>
-                  {loadingMore ? 'Yuklanmoqda...' : "Ko'proq ko'rish"}
-                </Text>
-              </TouchableOpacity>
-            )}
           </View>
+        }
+        renderItem={({ item }) => (
+          <ProductCard
+            product={item}
+            showUzs={showUzs}
+            onPress={() => router.push(`/product/${item.id}`)}
+            onAddToCart={() => handleAddToCart(item.id)}
+          />
         )}
-      </ScrollView>
+        ListFooterComponent={() =>
+          products.length > 0 ? (
+            loadingMore ? (
+              <ActivityIndicator
+                color={tokens.colors.primary}
+                style={{ padding: 20 }}
+              />
+            ) : hasMore ? (
+              <View style={{ height: 20 }} />
+            ) : (
+              <Text style={styles.endText}>
+                Barcha mahsulotlar ko'rsatildi
+              </Text>
+            )
+          ) : null
+        }
+      />
     </SafeAreaView>
   )
 }
@@ -459,6 +456,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: tokens.colors.background,
+  },
+  endText: {
+    textAlign: 'center',
+    color: tokens.colors.textMuted,
+    fontSize: 13,
+    paddingVertical: 20,
+    paddingBottom: 40,
   },
   scrollContent: {
     marginBottom: 80,
