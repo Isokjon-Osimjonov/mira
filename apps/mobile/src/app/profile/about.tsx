@@ -1,9 +1,22 @@
 import React from 'react'
-import { ScrollView, View, Text, TouchableOpacity, StyleSheet, Linking } from 'react-native'
+import { ScrollView, View, Text, TouchableOpacity, StyleSheet, Linking, Alert } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Feather } from '@expo/vector-icons'
 import { router } from 'expo-router'
 import { tokens } from '../../lib/tokens'
+
+const openURL = async (url: string) => {
+  try {
+    const supported = await Linking.canOpenURL(url)
+    if (supported) {
+      await Linking.openURL(url)
+    } else {
+      Alert.alert('Xatolik', 'Havola ochilmadi. Brauzeringizni tekshiring.', [{ text: 'OK' }])
+    }
+  } catch (err) {
+    Alert.alert('Xatolik', 'Havola ochilmadi.')
+  }
+}
 
 export default function AboutScreen() {
   return (
@@ -38,7 +51,7 @@ export default function AboutScreen() {
         <View style={styles.linksCard}>
           <TouchableOpacity
             style={styles.linkRow}
-            onPress={() => Linking.openURL('https://miramarket.uz/privacy')}
+            onPress={() => openURL('https://miramarket.uz/privacy')}
           >
             <Text style={styles.linkText}>Maxfiylik siyosati</Text>
             <Feather name="chevron-right" size={16} color={tokens.colors.textMuted} />
@@ -48,7 +61,7 @@ export default function AboutScreen() {
           
           <TouchableOpacity
             style={styles.linkRow}
-            onPress={() => Linking.openURL('https://miramarket.uz/terms')}
+            onPress={() => openURL('https://miramarket.uz/terms')}
           >
             <Text style={styles.linkText}>Foydalanish shartlari</Text>
             <Feather name="chevron-right" size={16} color={tokens.colors.textMuted} />
@@ -58,7 +71,7 @@ export default function AboutScreen() {
 
           <TouchableOpacity
             style={styles.linkRow}
-            onPress={() => Linking.openURL('https://miramarket.uz/sale-terms')}
+            onPress={() => openURL('https://miramarket.uz/sale-terms')}
           >
             <Text style={styles.linkText}>Savdo shartlari</Text>
             <Feather name="chevron-right" size={16} color={tokens.colors.textMuted} />
@@ -109,7 +122,7 @@ const styles = StyleSheet.create({
   appName: {
     fontSize: 24,
     fontFamily: 'Inter_600SemiBold',
-    color: tokens.colors.primary,
+    color: tokens.colors.text,
     marginBottom: 8,
   },
   version: {

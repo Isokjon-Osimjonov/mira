@@ -53,6 +53,63 @@ export default function CategoriesScreen() {
   const [selectedL2, setSelectedL2] = useState<Category | null>(null)
   const [selectedL3, setSelectedL3] = useState<Category | null>(null)
 
+  const { data: categoriesData, refetch: refetchCategories } = useQuery({
+    queryKey: ['categories'],
+    queryFn: productService.getCategories,
+    staleTime: 5 * 60 * 1000,
+  })
+
+  const categories = categoriesData ?? []
+
+  React.useEffect(() => {
+    if (params.categoryId && categories.length > 0) {
+      // Find the category in the tree
+      let foundL1 = null
+      let foundL2 = null
+      let foundL3 = null
+
+      for (const l1 of categories as Category[]) {
+        if (l1.id === params.categoryId) {
+          foundL1 = l1
+          break
+        }
+        for (const l2 of l1.children || []) {
+          if (l2.id === params.categoryId) {
+            foundL1 = l1
+            foundL2 = l2
+            break
+          }
+          for (const l3 of l2.children || []) {
+            if (l3.id === params.categoryId) {
+              foundL1 = l1
+              foundL2 = l2
+              foundL3 = l3
+              break
+            }
+          }
+          if (foundL2) break
+        }
+        if (foundL1) break
+      }
+
+      if (foundL1) setSelectedL1(foundL1)
+      if (foundL2) setSelectedL2(foundL2)
+      if (foundL3) setSelectedL3(foundL3)
+    }
+  }, [params.categoryId, categories])
+
+  React.useEffect(() => {
+    if (params.sort === 'newest') {
+      setSelectedL1(null)
+      setSelectedL2(null)
+      setSelectedL3(null)
+    } else if (params.sort === 'bestselling') {
+      setSelectedL1(null)
+      setSelectedL2(null)
+      setSelectedL3(null)
+    }
+  }, [params.sort])
+
   // The actual categoryId to filter products by
   // = deepest selected level
   const activeCategoryId = selectedL3?.id ?? selectedL2?.id ?? selectedL1?.id ?? null
@@ -71,56 +128,60 @@ export default function CategoriesScreen() {
 
   const [isRefreshing, setIsRefreshing] = useState(false)
 
-  const { data: categoriesData, refetch: refetchCategories } = useQuery({
-    queryKey: ['categories'],
-    queryFn: productService.getCategories,
-    staleTime: 5 * 60 * 1000,
-  })
 
-  // We use `category: activeCategoryId` instead of categoryId because our updated backend parameter is `category`
-  const {
-    data: popularData,
-    isLoading: popularLoading,
-    refetch: refetchPopular,
-  } = useQuery({
-    queryKey: ['products', 'bestselling', activeCategoryId, searchQuery, activeRegion],
-    queryFn: () =>
-      productService.getProducts({
-        sort: 'bestselling',
-        limit: 10,
+
+  const [page, setPage] = useState(1)
+  const [products, setProducts] = useState<any[]>([])
+  const [hasMore, setHasMore] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
+
+  // Reset when category or search changes
+  React.useEffect(() => {
+    setProducts([])
+    setPage(1)
+    setHasMore(true)
+  }, [activeCategoryId, searchQuery, activeRegion])
+
+  const loadMore = async () => {
+    if (loadingMore || !hasMore) return
+    setLoadingMore(true)
+    try {
+      const result = await productService.getProducts({
+        sort: params.sort as any,
         category: activeCategoryId ?? undefined,
-        q: searchQuery ? searchQuery : undefined,
-        region: activeRegion as any,
-      }),
-    staleTime: 2 * 60 * 1000,
-  })
-
-  const {
-    data: newArrivalData,
-    isLoading: newLoading,
-    refetch: refetchNewArrivals,
-  } = useQuery({
-    queryKey: ['products', 'newest', activeCategoryId, searchQuery, activeRegion],
-    queryFn: () =>
-      productService.getProducts({
-        sort: 'newest',
+        page,
         limit: 20,
-        category: activeCategoryId ?? undefined,
         q: searchQuery ? searchQuery : undefined,
         region: activeRegion as any,
-      }),
-    staleTime: 2 * 60 * 1000,
-  })
+      })
+      const newItems = result.data ?? []
+      const total = result.meta?.total ?? 0
+      
+      if (products.length + newItems.length >= total || newItems.length === 0) {
+        setHasMore(false)
+      }
+      setProducts(prev => page === 1 ? newItems : [...prev, ...newItems])
+      setPage(p => p + 1)
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setLoadingMore(false)
+    }
+  }
+
+  React.useEffect(() => {
+    loadMore()
+  }, [activeCategoryId, searchQuery, activeRegion, page === 1]) // trigger loadMore when page resets to 1
 
   const handleRefresh = async () => {
     setIsRefreshing(true)
-    await Promise.all([refetchCategories(), refetchPopular(), refetchNewArrivals()])
+    await refetchCategories()
+    setPage(1)
+    setProducts([])
+    setHasMore(true)
+    await loadMore()
     setIsRefreshing(false)
   }
-
-  const categories = categoriesData ?? []
-  const popularProducts = popularData?.data ?? []
-  const newProducts = newArrivalData?.data ?? []
 
   const handleAddToCart = async (productId: string) => {
     if (addingId) return
@@ -343,95 +404,52 @@ export default function CategoriesScreen() {
         </View>
 
         {/* EMPTY STATE */}
-        {!popularLoading &&
-          !newLoading &&
-          popularProducts.length === 0 &&
-          newProducts.length === 0 && (
-            <View style={{ flex: 1, justifyContent: 'center' }}>
-              <EmptyState
-                icon="package"
-                heading="Mahsulot topilmadi"
-                subtitle="Boshqa kategoriyani tanlang"
-              />
-            </View>
-          )}
+        {products.length === 0 && !loadingMore && (
+          <View style={{ flex: 1, justifyContent: 'center' }}>
+            <EmptyState
+              icon="package"
+              heading="Mahsulot topilmadi"
+              subtitle="Boshqa kategoriyani tanlang"
+            />
+          </View>
+        )}
 
-        {/* POPULAR COLLECTION */}
-        {popularProducts.length > 0 || popularLoading ? (
-          <View style={styles.section}>
-            <View style={styles.paddingX}>
-              <SectionHeader title="Mashhur kolleksiya" />
-            </View>
-
-            {popularLoading ? (
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.listContent}
+        {/* PRODUCTS GRID */}
+        {products.length > 0 && (
+          <View style={[styles.section, { paddingHorizontal: 24, paddingBottom: 100 }]}>
+            <FlatList
+              data={products}
+              numColumns={2}
+              scrollEnabled={false}
+              columnWrapperStyle={styles.gridRow}
+              keyExtractor={(item) => item.id}
+              renderItem={({ item }) => (
+                <ProductCard
+                  product={item}
+                  showUzs={showUzs}
+                  onPress={() => router.push(`/product/${item.id}`)}
+                  onAddToCart={() => handleAddToCart(item.id)}
+                />
+              )}
+            />
+            {hasMore && (
+              <TouchableOpacity
+                onPress={loadMore}
+                style={{
+                  paddingVertical: 12,
+                  alignItems: 'center',
+                  backgroundColor: tokens.colors.primaryLight,
+                  borderRadius: 12,
+                  marginTop: 16,
+                }}
               >
-                {[1, 2, 3].map((i) => (
-                  <View key={i} style={{ marginRight: 12 }}>
-                    <SkeletonLoader width={CARD_WIDTH} height={220} borderRadius={16} />
-                  </View>
-                ))}
-              </ScrollView>
-            ) : (
-              <FlatList
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                data={popularProducts}
-                keyExtractor={(item) => item.id}
-                contentContainerStyle={styles.listContent}
-                ItemSeparatorComponent={() => <View style={{ width: 12 }} />}
-                renderItem={({ item }) => (
-                  <ProductCard
-                    product={item}
-                    showUzs={showUzs}
-                    onPress={() => router.push(`/product/${item.id}`)}
-                    onAddToCart={() => handleAddToCart(item.id)}
-                  />
-                )}
-              />
+                <Text style={{ color: tokens.colors.primary, fontFamily: 'Inter_500Medium' }}>
+                  {loadingMore ? 'Yuklanmoqda...' : "Ko'proq ko'rish"}
+                </Text>
+              </TouchableOpacity>
             )}
           </View>
-        ) : null}
-
-        {/* NEW ARRIVALS GRID */}
-        {newProducts.length > 0 || newLoading ? (
-          <View style={[styles.section, { marginBottom: 100 }]}>
-            <View style={styles.paddingX}>
-              <SectionHeader title="Yangi kelishlar" />
-            </View>
-
-            {newLoading ? (
-              <View style={styles.paddingX}>
-                {[0, 1].map((row) => (
-                  <View key={`row-${row}`} style={[styles.gridRow, { marginBottom: 12 }]}>
-                    <SkeletonLoader width={CARD_WIDTH} height={220} borderRadius={16} />
-                    <SkeletonLoader width={CARD_WIDTH} height={220} borderRadius={16} />
-                  </View>
-                ))}
-              </View>
-            ) : (
-              <FlatList
-                data={newProducts}
-                numColumns={2}
-                scrollEnabled={false}
-                columnWrapperStyle={styles.gridRow}
-                keyExtractor={(item) => item.id}
-                contentContainerStyle={styles.paddingX}
-                renderItem={({ item }) => (
-                  <ProductCard
-                    product={item}
-                    showUzs={showUzs}
-                    onPress={() => router.push(`/product/${item.id}`)}
-                    onAddToCart={() => handleAddToCart(item.id)}
-                  />
-                )}
-              />
-            )}
-          </View>
-        ) : null}
+        )}
       </ScrollView>
     </SafeAreaView>
   )

@@ -165,7 +165,6 @@ export default function ProfileScreen() {
   ]
 
   if (!customer) {
-
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
         <ScrollView showsVerticalScrollIndicator={false}>
@@ -178,36 +177,72 @@ export default function ProfileScreen() {
               Buyurtmalar, kuponlar va shaxsiy ma'lumotlarni ko'rish uchun kiring
             </Text>
             <View style={{ marginTop: 24, width: '100%', paddingHorizontal: 24 }}>
-              <PrimaryButton 
-                label="Kirish" 
-                onPress={() => router.push({ pathname: '/auth/login', params: { returnTo: '/(tabs)/profile' } })} 
+              <PrimaryButton
+                label="Kirish"
+                onPress={() =>
+                  router.push({ pathname: '/auth/login', params: { returnTo: '/(tabs)/profile' } })
+                }
               />
               <TouchableOpacity
                 style={{ marginTop: 16, alignItems: 'center' }}
-                onPress={() => router.push({ pathname: '/auth/login', params: { returnTo: '/(tabs)/profile' } })}
-              >
-                <Text style={{ fontFamily: 'Inter_400Regular', color: tokens.colors.primary, fontSize: 16, fontWeight: '500' }}>
-                  Ro'yxatdan o'tish
-                </Text>
-              </TouchableOpacity>
+                onPress={() =>
+                  router.push({ pathname: '/auth/login', params: { returnTo: '/(tabs)/profile' } })
+                }
+              ></TouchableOpacity>
             </View>
 
             <View style={{ marginTop: 40, alignItems: 'center' }}>
-              <Text style={{ fontFamily: 'Inter_400Regular', color: tokens.colors.textMuted, marginBottom: 16 }}>
+              <Text
+                style={{
+                  fontFamily: 'Inter_400Regular',
+                  color: tokens.colors.textMuted,
+                  marginBottom: 16,
+                }}
+              >
                 Narxlarni ko'rish hududi:
               </Text>
               <View style={{ flexDirection: 'row', gap: 12 }}>
-                <TouchableOpacity 
-                  style={{ paddingVertical: 8, paddingHorizontal: 16, borderRadius: 20, backgroundColor: guestRegion === 'KOR' ? tokens.colors.primary : tokens.colors.surface, borderWidth: 1, borderColor: guestRegion === 'KOR' ? tokens.colors.primary : tokens.colors.border }}
+                <TouchableOpacity
+                  style={{
+                    paddingVertical: 8,
+                    paddingHorizontal: 16,
+                    borderRadius: 20,
+                    backgroundColor:
+                      guestRegion === 'KOR' ? tokens.colors.primary : tokens.colors.surface,
+                    borderWidth: 1,
+                    borderColor:
+                      guestRegion === 'KOR' ? tokens.colors.primary : tokens.colors.border,
+                  }}
                   onPress={() => setGuestRegion('KOR')}
                 >
-                  <Text style={{ color: guestRegion === 'KOR' ? tokens.colors.white : tokens.colors.text }}>Korea (KRW)</Text>
+                  <Text
+                    style={{
+                      color: guestRegion === 'KOR' ? tokens.colors.white : tokens.colors.text,
+                    }}
+                  >
+                    Korea (KRW)
+                  </Text>
                 </TouchableOpacity>
-                <TouchableOpacity 
-                  style={{ paddingVertical: 8, paddingHorizontal: 16, borderRadius: 20, backgroundColor: guestRegion === 'UZB' ? tokens.colors.primary : tokens.colors.surface, borderWidth: 1, borderColor: guestRegion === 'UZB' ? tokens.colors.primary : tokens.colors.border }}
+                <TouchableOpacity
+                  style={{
+                    paddingVertical: 8,
+                    paddingHorizontal: 16,
+                    borderRadius: 20,
+                    backgroundColor:
+                      guestRegion === 'UZB' ? tokens.colors.primary : tokens.colors.surface,
+                    borderWidth: 1,
+                    borderColor:
+                      guestRegion === 'UZB' ? tokens.colors.primary : tokens.colors.border,
+                  }}
                   onPress={() => setGuestRegion('UZB')}
                 >
-                  <Text style={{ color: guestRegion === 'UZB' ? tokens.colors.white : tokens.colors.text }}>O'zbekiston (UZS)</Text>
+                  <Text
+                    style={{
+                      color: guestRegion === 'UZB' ? tokens.colors.white : tokens.colors.text,
+                    }}
+                  >
+                    O'zbekiston (UZS)
+                  </Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -216,7 +251,7 @@ export default function ProfileScreen() {
           <View style={styles.menuContainer}>
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Ma'lumot</Text>
-              
+
               <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/help')}>
                 <View style={[styles.menuIconContainer, { backgroundColor: '#F5F5F5' }]}>
                   <Feather name="help-circle" size={18} color="#6B7280" />
@@ -224,16 +259,22 @@ export default function ProfileScreen() {
                 <Text style={styles.menuLabel}>Yordam</Text>
                 <Feather name="chevron-right" size={16} color={tokens.colors.textLight} />
               </TouchableOpacity>
-              
-              <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/profile/privacy')}>
+
+              <TouchableOpacity
+                style={styles.menuItem}
+                onPress={() => router.push('/profile/privacy')}
+              >
                 <View style={[styles.menuIconContainer, { backgroundColor: '#F0FDF4' }]}>
                   <Feather name="shield" size={18} color="#16A34A" />
                 </View>
                 <Text style={styles.menuLabel}>Maxfiylik siyosati</Text>
                 <Feather name="chevron-right" size={16} color={tokens.colors.textLight} />
               </TouchableOpacity>
-              
-              <TouchableOpacity style={[styles.menuItem, styles.lastMenuItem]} onPress={() => router.push('/profile/about')}>
+
+              <TouchableOpacity
+                style={[styles.menuItem, styles.lastMenuItem]}
+                onPress={() => router.push('/profile/about')}
+              >
                 <View style={[styles.menuIconContainer, { backgroundColor: '#EFF6FF' }]}>
                   <Feather name="info" size={18} color="#3B82F6" />
                 </View>
@@ -241,7 +282,7 @@ export default function ProfileScreen() {
                 <Feather name="chevron-right" size={16} color={tokens.colors.textLight} />
               </TouchableOpacity>
             </View>
-            <Text style={{ textAlign: 'center', marginTop: 20, color: tokens.colors.textMuted, fontSize: 12 }}>Versiya 1.0.0</Text>
+
             <View style={{ height: 40 }} />
           </View>
         </ScrollView>

@@ -237,7 +237,7 @@ export default function HomeScreen() {
       onPress={() =>
         router.push({
           pathname: '/(tabs)/categories',
-          params: { categoryId: item.id },
+          params: { categoryId: item.id, categoryName: item.name },
         })
       }
       activeOpacity={0.8}

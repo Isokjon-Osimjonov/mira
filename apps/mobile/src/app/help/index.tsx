@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { ScrollView, View, Text, TouchableOpacity, StyleSheet, Linking } from 'react-native'
+import { ScrollView, View, Text, TouchableOpacity, StyleSheet, Linking, Alert } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Feather } from '@expo/vector-icons'
 import { router } from 'expo-router'
@@ -26,11 +26,20 @@ const FAQS = [
     q: 'Buyurtmani qanday bekor qilaman?',
     a: "To'lov kutilayotgan holda Buyurtmalarim > Buyurtma > 'Buyurtmani bekor qilish' tugmasini bosing.",
   },
-  {
-    q: 'Tovar qaytarish mumkinmi?',
-    a: "Tovar yetkazib berilgandan so'ng 7 kun ichida qaytarish so'rovi yuborishingiz mumkin. Telegram bot orqali biz bilan bog'laning.",
-  },
 ]
+
+const openURL = async (url: string) => {
+  try {
+    const supported = await Linking.canOpenURL(url)
+    if (supported) {
+      await Linking.openURL(url)
+    } else {
+      Alert.alert('Xatolik', 'Havola ochilmadi. Brauzeringizni tekshiring.', [{ text: 'OK' }])
+    }
+  } catch (err) {
+    Alert.alert('Xatolik', 'Havola ochilmadi.')
+  }
+}
 
 export default function HelpScreen() {
   const [openIdx, setOpenIdx] = useState<number | null>(null)
@@ -54,7 +63,7 @@ export default function HelpScreen() {
         <View style={styles.section}>
           <TouchableOpacity
             style={styles.contactCard}
-            onPress={() => Linking.openURL('https://t.me/Jenshenkosmetikakoreaoptim')}
+            onPress={() => openURL('https://t.me/Jenshenkosmetikakoreaoptim')}
           >
             <View style={[styles.iconBox, { backgroundColor: '#E8F4FB' }]}>
               <Feather name="send" size={20} color="#229ED9" />
@@ -68,7 +77,7 @@ export default function HelpScreen() {
 
           <TouchableOpacity
             style={styles.contactCard}
-            onPress={() => Linking.openURL('tel:+821089291996')}
+            onPress={() => openURL('tel:+821089291996')}
           >
             <View style={[styles.iconBox, { backgroundColor: '#F0FDF4' }]}>
               <Feather name="phone" size={20} color="#16A34A" />
@@ -82,7 +91,7 @@ export default function HelpScreen() {
 
           <TouchableOpacity
             style={styles.contactCard}
-            onPress={() => Linking.openURL('https://www.instagram.com/gulmira_koreancosmetics/')}
+            onPress={() => openURL('https://www.instagram.com/gulmira_koreancosmetics/')}
           >
             <View style={[styles.iconBox, { backgroundColor: '#FCE4EC' }]}>
               <Feather name="instagram" size={20} color="#E1306C" />
@@ -120,8 +129,6 @@ export default function HelpScreen() {
             </View>
           ))}
         </View>
-
-        <Text style={styles.versionText}>Mira Market v1.0.0</Text>
       </ScrollView>
     </SafeAreaView>
   )
