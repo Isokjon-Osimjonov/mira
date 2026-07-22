@@ -18,6 +18,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { router, useLocalSearchParams } from 'expo-router'
 import * as ImagePicker from 'expo-image-picker'
 import { orderService } from '../../services/order.service'
+import { uploadService } from '../../services/upload.service'
 import { tokens } from '../../lib/tokens'
 import { formatKRW, formatUZS, formatCountdown, krwToUzs } from '../../lib/price'
 import { useAuthStore } from '../../lib/auth-store'
@@ -103,24 +104,16 @@ export default function OrderDetailScreen() {
 
   const handleUploadReceipt = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: false,
       quality: 0.8,
+      exif: false,
+      base64: false,
     })
     if (result.canceled) return
     setIsUploading(true)
     try {
-      // Step 1: Upload to Cloudinary
-      const formData = new FormData()
-      formData.append('receipt', {
-        uri: result.assets[0].uri,
-        name: 'receipt.jpg',
-        type: 'image/jpeg',
-      } as any)
-
-      const uploadRes = await api.post('/upload/receipt', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      })
-      const receiptUrl = uploadRes.data.data.url
+      const receiptUrl = await uploadService.uploadReceipt(result.assets[0].uri)
 
       // Step 2: Link to order
       const totalKrw = Number(order?.totalAmount ?? 0)

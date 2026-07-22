@@ -273,7 +273,10 @@ function CheckoutScreen() {
   const handlePickReceipt = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: false,
       quality: 0.8,
+      exif: false,
+      base64: false,
     })
     if (!result.canceled && result.assets[0]) {
       setReceiptUri(result.assets[0].uri)
@@ -287,7 +290,11 @@ function CheckoutScreen() {
       return
     }
     const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: false,
       quality: 0.8,
+      exif: false,
+      base64: false,
     })
     if (!result.canceled && result.assets[0]) {
       setReceiptUri(result.assets[0].uri)

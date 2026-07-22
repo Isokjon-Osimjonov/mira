@@ -33,10 +33,12 @@ export default function ProfileSetupScreen() {
 
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: [1, 1],
       quality: 0.8,
+      exif: false,
+      base64: false,
     })
 
     if (!result.canceled) {
