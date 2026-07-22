@@ -41,6 +41,11 @@ api.interceptors.response.use(
     ) {
       original._retry = true
 
+      // If we didn't even send a token, don't trigger the logout/redirect flow
+      if (!original.headers.Authorization) {
+        return Promise.reject(error)
+      }
+
       try {
         const refreshToken = await SecureStore.getItemAsync('refreshToken')
 

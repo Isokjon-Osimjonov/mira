@@ -26,10 +26,11 @@ import SkeletonLoader from '../../components/ui/SkeletonLoader'
 import { Toast, useToast } from '../../components/ui/Toast'
 import CartBadgeIcon from '../../components/ui/CartBadgeIcon'
 import { requireAuth } from '../../lib/require-auth'
+import { AuthBottomSheet } from '../../components/ui/AuthBottomSheet'
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window')
 
-const WaitlistButton = ({ productId, showToast }: { productId: string; showToast: any }) => {
+const WaitlistButton = ({ productId, showToast, onRequireAuth }: { productId: string; showToast: any; onRequireAuth: () => void }) => {
   const [isOnWaitlist, setIsOnWaitlist] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
 
@@ -46,8 +47,10 @@ const WaitlistButton = ({ productId, showToast }: { productId: string; showToast
 
   const handlePress = async () => {
     if (isOnWaitlist) return
-    if (!requireAuth(useAuthStore.getState().isAuthenticated, router, `/product/${productId}`))
+    if (!useAuthStore.getState().isAuthenticated) {
+      onRequireAuth()
       return
+    }
 
     setIsLoading(true)
     try {
@@ -100,6 +103,7 @@ export default function ProductDetailScreen() {
   const customer = useAuthStore((s) => s.customer)
   const exchangeRate = useExchangeStore((s) => s.rate)
   const [activeImageIndex, setActiveImageIndex] = useState(0)
+  const [showAuthSheet, setShowAuthSheet] = useState(false)
 
   const { toast, showToast, hideToast } = useToast()
 
@@ -129,7 +133,7 @@ export default function ProductDetailScreen() {
   const handleAddToCart = async () => {
     if (isAdding || !id || isOutOfStock) return
     if (!useAuthStore.getState().isAuthenticated) {
-      router.push('/auth/login')
+      setShowAuthSheet(true)
       return
     }
     setIsAdding(true)
@@ -149,8 +153,10 @@ export default function ProductDetailScreen() {
 
   const handleWishlistToggle = () => {
     if (!product) return
-    if (!requireAuth(useAuthStore.getState().isAuthenticated, router, `/product/${product.id}`))
+    if (!useAuthStore.getState().isAuthenticated) {
+      setShowAuthSheet(true)
       return
+    }
     toggleWishlist(product.id)
   }
 
@@ -356,7 +362,7 @@ export default function ProductDetailScreen() {
                 <CartBadgeIcon size={22} />
               </View>
               <View style={{ flex: 1 }}>
-                <WaitlistButton productId={product.id} showToast={showToast} />
+                <WaitlistButton productId={product.id} showToast={showToast} onRequireAuth={() => setShowAuthSheet(true)} />
               </View>
             </View>
           </View>
@@ -385,6 +391,11 @@ export default function ProductDetailScreen() {
       </View>
 
       <Toast message={toast.message} type={toast.type} visible={toast.visible} onHide={hideToast} />
+      <AuthBottomSheet
+        visible={showAuthSheet}
+        onClose={() => setShowAuthSheet(false)}
+        message="Mahsulotni xarid qilish va saqlash uchun kiring"
+      />
     </View>
   )
 }

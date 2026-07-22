@@ -23,6 +23,7 @@ import { ProductCard } from '../../components/ui/ProductCard'
 import { SectionHeader } from '../../components/ui/SectionHeader'
 import SkeletonLoader from '../../components/ui/SkeletonLoader'
 import EmptyState from '../../components/ui/EmptyState'
+import { AuthBottomSheet } from '../../components/ui/AuthBottomSheet'
 import { tokens } from '../../lib/tokens'
 
 interface Category {
@@ -68,6 +69,7 @@ export default function CategoriesScreen() {
 
   const addItem = useCartStore((s) => s.addItem)
   const [addingId, setAddingId] = useState<string | null>(null)
+  const [showAuthSheet, setShowAuthSheet] = useState(false)
 
   const [isRefreshing, setIsRefreshing] = useState(false)
 
@@ -124,7 +126,7 @@ export default function CategoriesScreen() {
 
   const handleAddToCart = async (productId: string) => {
     if (!useAuthStore.getState().isAuthenticated) {
-      router.push('/auth/login')
+      setShowAuthSheet(true)
       return
     }
     if (addingId) return
@@ -437,6 +439,11 @@ export default function CategoriesScreen() {
           </View>
         ) : null}
       </ScrollView>
+      <AuthBottomSheet
+        visible={showAuthSheet}
+        onClose={() => setShowAuthSheet(false)}
+        message="Mahsulotni savatga qo'shish uchun kiring"
+      />
     </SafeAreaView>
   )
 }

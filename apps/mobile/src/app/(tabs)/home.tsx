@@ -11,6 +11,7 @@ import {
   Linking,
   Animated,
   RefreshControl,
+  ActivityIndicator,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Image } from 'expo-image'
@@ -26,6 +27,7 @@ import { ProductCard } from '../../components/ui/ProductCard'
 import { SectionHeader } from '../../components/ui/SectionHeader'
 import SkeletonLoader from '../../components/ui/SkeletonLoader'
 import EmptyState from '../../components/ui/EmptyState'
+import { AuthBottomSheet } from '../../components/ui/AuthBottomSheet'
 import { tokens } from '../../lib/tokens'
 import { formatKRW, formatUZS } from '../../lib/price'
 import { notificationService } from '../../services/notification.service'
@@ -45,6 +47,7 @@ export default function HomeScreen() {
   const setRate = useExchangeStore((s) => s.setRate)
   const addItem = useCartStore((s) => s.addItem)
   const [addingId, setAddingId] = useState<string | null>(null)
+  const [showAuthSheet, setShowAuthSheet] = useState(false)
   const [activeBannerIdx, setActiveBannerIdx] = useState(0)
   const bannerScrollRef = useRef<FlatList>(null)
 
@@ -111,6 +114,36 @@ export default function HomeScreen() {
   const newProducts = newProductsData?.data ?? []
   const bestsellerProducts = bestsellerData?.data ?? []
 
+  const [page, setPage] = useState(1)
+  const [allProducts, setAllProducts] = useState<any[]>([])
+  const [hasMore, setHasMore] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
+
+  const loadMore = async () => {
+    if (loadingMore || !hasMore) return
+    setLoadingMore(true)
+    try {
+      const result = await productService.getProducts({
+        page,
+        limit: 20,
+        region: activeRegion
+      } as any)
+      const newProds = result.data ?? []
+      if (newProds.length < 20) {
+        setHasMore(false)
+      }
+      setAllProducts((prev) => [...prev, ...newProds])
+      setPage((p) => p + 1)
+    } catch {
+    } finally {
+      setLoadingMore(false)
+    }
+  }
+
+  useEffect(() => {
+    loadMore()
+  }, [])
+
   useEffect(() => {
     if (banners.length <= 1) return
     const interval = setInterval(() => {
@@ -148,7 +181,7 @@ export default function HomeScreen() {
 
   const handleAddToCart = async (productId: string) => {
     if (!useAuthStore.getState().isAuthenticated) {
-      router.push('/auth/login')
+      setShowAuthSheet(true)
       return
     }
     if (addingId) return
@@ -225,6 +258,15 @@ export default function HomeScreen() {
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
+        onScroll={({ nativeEvent }) => {
+          if (
+            nativeEvent.layoutMeasurement.height + nativeEvent.contentOffset.y >=
+            nativeEvent.contentSize.height - 400
+          ) {
+            loadMore()
+          }
+        }}
+        scrollEventThrottle={400}
         refreshControl={
           <RefreshControl
             refreshing={isRefreshing}
@@ -478,7 +520,41 @@ export default function HomeScreen() {
             />
           )}
         </View>
+
+        {/* ALL PRODUCTS */}
+        <View style={[styles.section, { marginBottom: 40 }]}>
+          <View style={styles.paddingX}>
+            <Text style={{ fontSize: 18, fontFamily: 'Inter_600SemiBold', marginBottom: 16 }}>Barcha mahsulotlar</Text>
+          </View>
+          <FlatList
+            key="all-products-2col"
+            data={allProducts}
+            keyExtractor={(item, index) => item.id + '-' + index}
+            numColumns={2}
+            columnWrapperStyle={{ gap: 12, paddingHorizontal: 16 }}
+            scrollEnabled={false}
+            contentContainerStyle={{ gap: 12 }}
+            renderItem={({ item }) => (
+              <ProductCard
+                product={item}
+                showUzs={showUzs}
+                onPress={() => router.push(`/product/${item.id}`)}
+                onAddToCart={() => handleAddToCart(item.id)}
+              />
+            )}
+          />
+          {loadingMore && (
+            <View style={{ padding: 20, alignItems: 'center' }}>
+              <ActivityIndicator color={tokens.colors.primary} />
+            </View>
+          )}
+        </View>
       </ScrollView>
+      <AuthBottomSheet
+        visible={showAuthSheet}
+        onClose={() => setShowAuthSheet(false)}
+        message="Mahsulotni savatga qo'shish uchun kiring"
+      />
     </SafeAreaView>
   )
 }
