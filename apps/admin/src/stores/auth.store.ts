@@ -13,6 +13,7 @@ export interface AdminUser {
 
 interface AuthState {
   accessToken: string | null
+  refreshToken: string | null
   user: AdminUser | null
   mustChangePassword: boolean
   _hasHydrated: boolean
@@ -20,6 +21,7 @@ interface AuthState {
 
 interface AuthActions {
   setToken: (token: string) => void
+  setTokens: (accessToken: string, refreshToken: string) => void
   setUser: (user: AdminUser) => void
   setMustChangePassword: (val: boolean) => void
   logout: () => void
@@ -37,12 +39,18 @@ export const useAuthStore = create<AuthStore>()(
     (set, get) => ({
       // State
       accessToken: null,
+      refreshToken: null,
       user: null,
       mustChangePassword: false,
       _hasHydrated: false,
 
       // Actions
       setToken: (token) => set({ accessToken: token }),
+
+      setTokens: (accessToken, refreshToken) => {
+        set({ accessToken, refreshToken })
+        localStorage.setItem('mira_refresh_token', refreshToken)
+      },
 
       setUser: (user) =>
         set({
@@ -55,9 +63,11 @@ export const useAuthStore = create<AuthStore>()(
       logout: () => {
         set({
           accessToken: null,
+          refreshToken: null,
           user: null,
           mustChangePassword: false,
         })
+        localStorage.removeItem('mira_refresh_token')
         // Notify other tabs
         authChannel?.postMessage('LOGOUT')
         // Best-effort API logout
@@ -88,6 +98,7 @@ export const useAuthStore = create<AuthStore>()(
       // Only persist these fields (isAuthenticated is DERIVED)
       partialize: (state) => ({
         accessToken: state.accessToken,
+        refreshToken: state.refreshToken,
         user: state.user,
         mustChangePassword: state.mustChangePassword,
       }),
@@ -96,6 +107,10 @@ export const useAuthStore = create<AuthStore>()(
       onRehydrateStorage: () => (state) => {
         if (state) {
           // Data found in localStorage
+          const stored = localStorage.getItem('mira_refresh_token')
+          if (stored) {
+            state.refreshToken = stored
+          }
           state.setHasHydrated(true)
         } else {
           // Empty localStorage — state is undefined
@@ -115,9 +130,11 @@ if (authChannel) {
     if (event.data === 'LOGOUT') {
       useAuthStore.setState({
         accessToken: null,
+        refreshToken: null,
         user: null,
         mustChangePassword: false,
       })
+      localStorage.removeItem('mira_refresh_token')
       window.location.href = '/login'
     }
     if (event.data === 'LOGIN') {

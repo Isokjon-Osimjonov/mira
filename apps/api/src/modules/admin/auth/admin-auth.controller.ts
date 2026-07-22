@@ -22,6 +22,7 @@ export async function login(req: Request, res: Response) {
     setRefreshCookie(res, result.refreshToken)
     return ok(res, {
       accessToken: result.accessToken,
+      refreshToken: result.refreshToken,
       mustChangePassword: result.mustChangePassword,
       user: result.user,
     })
@@ -31,13 +32,14 @@ export async function login(req: Request, res: Response) {
 }
 
 export async function refresh(req: Request, res: Response) {
-  const rawToken = getRefreshCookie(req)
+  const rawToken = req.body.refreshToken || getRefreshCookie(req)
   if (!rawToken) return err(res, 401, 'Refresh token topilmadi', 'NO_REFRESH_TOKEN')
   try {
     const result = await Service.refreshAdminToken(rawToken)
     setRefreshCookie(res, result.refreshToken)
     return ok(res, {
       accessToken: result.accessToken,
+      refreshToken: result.refreshToken,
       mustChangePassword: result.mustChangePassword,
       user: result.user,
     })
@@ -48,7 +50,7 @@ export async function refresh(req: Request, res: Response) {
 }
 
 export async function logout(req: Request, res: Response) {
-  const rawToken = getRefreshCookie(req)
+  const rawToken = req.body.refreshToken || getRefreshCookie(req)
   if (rawToken) await Service.adminLogout(rawToken).catch(() => {})
   clearRefreshCookie(res)
   return ok(res, { message: 'Chiqildi' })

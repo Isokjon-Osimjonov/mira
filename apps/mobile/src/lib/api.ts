@@ -28,84 +28,88 @@ api.interceptors.request.use((config) => {
   return config
 })
 
+let isRefreshing = false
+let failedQueue: Array<{
+  resolve: (token: string) => void
+  reject: (err: any) => void
+}> = []
+
+const processQueue = (error: any, token: string | null = null) => {
+  failedQueue.forEach((prom) => {
+    if (error) {
+      prom.reject(error)
+    } else {
+      prom.resolve(token!)
+    }
+  })
+  failedQueue = []
+}
+
 // ─── Response Interceptor ─────────────────────────────────────
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
-    const original = error.config
+    const originalRequest = error.config
 
-    if (
-      error.response?.status === 401 &&
-      !original._retry &&
-      !original.url?.includes('/auth/refresh')
-    ) {
-      original._retry = true
+    // Skip if no auth header was sent (guest requests should not refresh)
+    if (!originalRequest.headers['Authorization']) {
+      return Promise.reject(error)
+    }
 
-      // If we didn't even send a token, don't trigger the logout/redirect flow
-      if (!original.headers.Authorization) {
-        return Promise.reject(error)
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      if (isRefreshing) {
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject })
+        }).then((token) => {
+          originalRequest.headers['Authorization'] = 'Bearer ' + token
+          return api(originalRequest)
+        })
       }
+
+      originalRequest._retry = true
+      isRefreshing = true
 
       try {
         const refreshToken = await SecureStore.getItemAsync('refreshToken')
 
         if (!refreshToken) {
-          // No refresh token available — go straight to
-          // logout flow instead of throwing
-          await SecureStore.deleteItemAsync('accessToken')
-          await SecureStore.deleteItemAsync('refreshToken')
-          await SecureStore.deleteItemAsync('customer')
-
-          try {
-            const { useAuthStore } = await import('./auth-store')
-            useAuthStore.setState({
-              accessToken: null,
-              refreshToken: null,
-              customer: null,
-              isAuthenticated: false,
-            })
-          } catch {}
-
-          try {
-            const { router } = await import('expo-router')
-            router.replace('/auth/login')
-          } catch {}
-
-          // Return a resolved rejection that won't
-          // surface as "uncaught" — the calling code
-          // already expects requests to fail after logout
-          return Promise.reject(error)
+          throw new Error('No refresh token')
         }
 
         const response = await axios.post(
-          BASE_URL + '/auth/refresh',
+          `${BASE_URL}/auth/refresh`,
           { refreshToken },
           { headers: { 'X-Client-Type': 'mobile' } }
         )
 
         const { accessToken, refreshToken: newRefresh } = response.data.data
 
+        // Save new tokens
         await SecureStore.setItemAsync('accessToken', accessToken)
         await SecureStore.setItemAsync('refreshToken', newRefresh)
 
+        // Update store
         const { useAuthStore } = await import('./auth-store')
         useAuthStore.getState().setTokens?.(accessToken, newRefresh)
 
-        original.headers.Authorization = 'Bearer ' + accessToken
-        return api(original)
+        // Update default header
+        api.defaults.headers.common['Authorization'] = 'Bearer ' + accessToken
+
+        processQueue(null, accessToken)
+
+        originalRequest.headers['Authorization'] = 'Bearer ' + accessToken
+
+        return api(originalRequest)
       } catch (refreshError) {
+        processQueue(refreshError, null)
+        // Clear tokens
         await SecureStore.deleteItemAsync('accessToken')
         await SecureStore.deleteItemAsync('refreshToken')
         await SecureStore.deleteItemAsync('customer')
-
+        
         try {
           const { useAuthStore } = await import('./auth-store')
-          useAuthStore.setState({
-            accessToken: null,
-            refreshToken: null,
-            customer: null,
-            isAuthenticated: false,
-          })
+          useAuthStore.getState().logout()
         } catch {}
 
         try {
@@ -114,6 +118,8 @@ api.interceptors.response.use(
         } catch {}
 
         return Promise.reject(refreshError)
+      } finally {
+        isRefreshing = false
       }
     }
 

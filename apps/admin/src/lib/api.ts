@@ -14,38 +14,86 @@ export const api = axios.create({
   },
 })
 
-// STEP 1: Register refresh interceptor FIRST
-createAuthRefreshInterceptor(
-  api,
-  async (failedRequest) => {
-    try {
-      const res = await axios.post(`${API_BASE}/admin/auth/refresh`, {}, { withCredentials: true })
-      const { accessToken, mustChangePassword } = res.data.data
+let isRefreshing = false
+let failedQueue: Array<{
+  resolve: (token: string) => void
+  reject: (err: any) => void
+}> = []
 
-      const { useAuthStore } = await import('../stores/auth.store')
-      const store = useAuthStore.getState()
-      store.setToken(accessToken)
-      if (mustChangePassword) store.setMustChangePassword(true)
-
-      failedRequest.response.config.headers['Authorization'] = `Bearer ${accessToken}`
-      return Promise.resolve()
-    } catch (err) {
-      // Both tokens expired or refresh failed — only place that calls logout
-      const { useAuthStore } = await import('../stores/auth.store')
-      useAuthStore.getState().logout()
-      window.location.href = '/login'
-      return Promise.reject(err)
+const processQueue = (error: any, token: string | null = null) => {
+  failedQueue.forEach((prom) => {
+    if (error) {
+      prom.reject(error)
+    } else {
+      prom.resolve(token!)
     }
-  },
-  {
-    statusCodes: [401],
+  })
+  failedQueue = []
+}
+
+// STEP 1: Response interceptor for refresh logic & error handling
+api.interceptors.response.use(
+  (response) => response,
+  async (error: AxiosError<any>) => {
+    const originalRequest = error.config as any
+
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      if (isRefreshing) {
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject })
+        })
+          .then((token) => {
+            originalRequest.headers['Authorization'] = 'Bearer ' + token
+            return api(originalRequest)
+          })
+          .catch((err) => Promise.reject(err))
+      }
+
+      originalRequest._retry = true
+      isRefreshing = true
+
+      const { useAuthStore } = await import('../stores/auth.store')
+      const refreshToken = useAuthStore.getState().refreshToken
+
+      if (!refreshToken) {
+        isRefreshing = false
+        useAuthStore.getState().logout()
+        return Promise.reject(error)
+      }
+
+      try {
+        const response = await axios.post(`${API_BASE}/admin/auth/refresh`, { refreshToken }, { withCredentials: true })
+        const { accessToken, refreshToken: newRefreshToken, mustChangePassword } = response.data.data
+
+        const store = useAuthStore.getState()
+        store.setTokens(accessToken, newRefreshToken)
+        if (mustChangePassword) store.setMustChangePassword(true)
+
+        api.defaults.headers.common['Authorization'] = 'Bearer ' + accessToken
+        processQueue(null, accessToken)
+
+        originalRequest.headers['Authorization'] = 'Bearer ' + accessToken
+        return api(originalRequest)
+      } catch (refreshError) {
+        processQueue(refreshError, null)
+        useAuthStore.getState().logout()
+        window.location.href = '/login'
+        return Promise.reject(refreshError)
+      } finally {
+        isRefreshing = false
+      }
+    }
+
+    const code = error.response?.data?.error?.code
+    const enhancedError = error as any
+    enhancedError.errorCode = code ?? 'UNKNOWN'
+    return Promise.reject(enhancedError)
   }
 )
 
 // STEP 2: Request interceptor: attach access token
 api.interceptors.request.use(
   async (config) => {
-    // skip refresh endpoint to avoid loop
     if (config.url?.includes('/admin/auth/refresh')) return config
 
     const { useAuthStore } = await import('../stores/auth.store')
@@ -56,21 +104,4 @@ api.interceptors.request.use(
     return config
   },
   (error) => Promise.reject(error)
-)
-
-// STEP 3: Response interceptor: only for non-auth errors
-api.interceptors.response.use(
-  (res) => res,
-  (error: AxiosError<any>) => {
-    // DO NOT handle 401 here — refresh interceptor does it
-    if (error.response?.status === 401) {
-      return Promise.reject(error)
-    }
-
-    const code = error.response?.data?.error?.code
-    const enhancedError = error as any
-    enhancedError.errorCode = code ?? 'UNKNOWN'
-
-    return Promise.reject(enhancedError)
-  }
 )

@@ -23,7 +23,7 @@ interface AuthState {
 
   // Actions
   setAuth: (accessToken: string, refreshToken: string, customer: Customer) => void
-  setTokens: (accessToken: string, refreshToken: string) => void
+  setTokens: (accessToken: string, refreshToken: string) => Promise<void>
   setCustomer: (customer: Customer) => void
   logout: () => Promise<void>
   initialize: () => Promise<void>
@@ -44,10 +44,14 @@ export const useAuthStore = create<AuthState>((set) => ({
     SecureStore.setItemAsync('customer', JSON.stringify(customer))
   },
 
-  setTokens: (accessToken, refreshToken) => {
-    set({ accessToken, refreshToken })
-    SecureStore.setItemAsync('accessToken', accessToken)
-    SecureStore.setItemAsync('refreshToken', refreshToken)
+  setTokens: async (accessToken, refreshToken) => {
+    await SecureStore.setItemAsync('accessToken', accessToken)
+    await SecureStore.setItemAsync('refreshToken', refreshToken)
+    set({
+      accessToken,
+      refreshToken,
+      isAuthenticated: true
+    })
   },
 
   setCustomer: (customer) => {
