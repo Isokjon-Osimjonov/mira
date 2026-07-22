@@ -132,6 +132,20 @@ export default function ProfileScreen() {
           onPress: () => router.push('/help'),
         },
         {
+          icon: 'shield',
+          iconBg: '#F0FDF4',
+          iconColor: '#16A34A',
+          label: 'Maxfiylik siyosati',
+          onPress: () => router.push('/profile/privacy'),
+        },
+        {
+          icon: 'info',
+          iconBg: '#EFF6FF',
+          iconColor: '#3B82F6',
+          label: 'Ilova haqida',
+          onPress: () => router.push('/profile/about'),
+        },
+        {
           icon: 'log-out',
           iconBg: '#FEF2F2',
           iconColor: '#EF4444',
