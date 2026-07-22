@@ -16,16 +16,13 @@ const FAQS = [
   },
   {
     q: 'Yetkazib berish qancha vaqt oladi?',
-    a: "Korea ichida 1-3 kun. O'zbekistonga kargo orqali 7-14 ish kuni.",
+    a: "Korea ichida 1-2 kun. O'zbekistonga kargo orqali 7-14 ish kuni.",
   },
   {
     q: 'Kargo narxi qanday hisoblanadi?',
     a: "O'zbekistonga yetkazishda mahsulot og'irligi va tanlangan quti asosida hisoblanadi.",
   },
-  {
-    q: 'Buyurtmani qanday bekor qilaman?',
-    a: "To'lov kutilayotgan holda Buyurtmalarim > Buyurtma > 'Buyurtmani bekor qilish' tugmasini bosing.",
-  },
+
 ]
 
 const openURL = async (url: string) => {
