@@ -22,7 +22,6 @@ import { productService } from '../../services/product.service'
 import { ProductCard } from '../../components/ui/ProductCard'
 import SkeletonLoader from '../../components/ui/SkeletonLoader'
 import EmptyState from '../../components/ui/EmptyState'
-import { AuthBottomSheet } from '../../components/ui/AuthBottomSheet'
 import { tokens } from '../../lib/tokens'
 
 const SCREEN_WIDTH = Dimensions.get('window').width
@@ -35,7 +34,6 @@ export default function SearchScreen() {
   const [debouncedQuery, setDebouncedQuery] = useState('')
   const [history, setHistory] = useState<string[]>([])
   const inputRef = useRef<TextInput>(null)
-  const [showAuthSheet, setShowAuthSheet] = useState(false)
 
   const customer = useAuthStore((s) => s.customer)
   const addItem = useCartStore((s) => s.addItem)
@@ -81,10 +79,6 @@ export default function SearchScreen() {
   const showEmpty = showResults && !isLoading && results.length === 0
 
   const handleAddToCart = async (productId: string) => {
-    if (!useAuthStore.getState().isAuthenticated) {
-      setShowAuthSheet(true)
-      return
-    }
     try {
       await addItem(productId, 1)
     } catch {}
@@ -230,11 +224,6 @@ export default function SearchScreen() {
           />
         </>
       )}
-      <AuthBottomSheet
-        visible={showAuthSheet}
-        onClose={() => setShowAuthSheet(false)}
-        message="Mahsulotni savatga qo'shish uchun kiring"
-      />
     </SafeAreaView>
   )
 }

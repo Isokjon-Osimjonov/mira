@@ -27,7 +27,6 @@ import { ProductCard } from '../../components/ui/ProductCard'
 import { SectionHeader } from '../../components/ui/SectionHeader'
 import SkeletonLoader from '../../components/ui/SkeletonLoader'
 import EmptyState from '../../components/ui/EmptyState'
-import { AuthBottomSheet } from '../../components/ui/AuthBottomSheet'
 import { tokens } from '../../lib/tokens'
 import { formatKRW, formatUZS } from '../../lib/price'
 import { notificationService } from '../../services/notification.service'
@@ -47,7 +46,6 @@ export default function HomeScreen() {
   const setRate = useExchangeStore((s) => s.setRate)
   const addItem = useCartStore((s) => s.addItem)
   const [addingId, setAddingId] = useState<string | null>(null)
-  const [showAuthSheet, setShowAuthSheet] = useState(false)
   const [activeBannerIdx, setActiveBannerIdx] = useState(0)
   const bannerScrollRef = useRef<FlatList>(null)
 
@@ -180,10 +178,6 @@ export default function HomeScreen() {
   }
 
   const handleAddToCart = async (productId: string) => {
-    if (!useAuthStore.getState().isAuthenticated) {
-      setShowAuthSheet(true)
-      return
-    }
     if (addingId) return
     setAddingId(productId)
     try {
@@ -550,11 +544,6 @@ export default function HomeScreen() {
           )}
         </View>
       </ScrollView>
-      <AuthBottomSheet
-        visible={showAuthSheet}
-        onClose={() => setShowAuthSheet(false)}
-        message="Mahsulotni savatga qo'shish uchun kiring"
-      />
     </SafeAreaView>
   )
 }

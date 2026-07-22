@@ -12,6 +12,7 @@ import {
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Feather } from '@expo/vector-icons'
+import { Alert } from 'react-native'
 import { router } from 'expo-router'
 import { authService } from '../../services/auth.service'
 import { useAuthStore } from '../../lib/auth-store'
@@ -21,17 +22,15 @@ import { Toast, useToast } from '../../components/ui/Toast'
 import { tokens } from '../../lib/tokens'
 
 export default function DeleteAccountScreen() {
-  const [confirmText, setConfirmText] = useState('')
+  const [isConfirmed, setIsConfirmed] = useState(false)
   const [loading, setLoading] = useState(false)
 
   const logout = useAuthStore((s) => s.logout)
   const clearCart = useCartStore((s) => s.clearCart)
   const { toast, showToast, hideToast } = useToast()
 
-  const isMatched = confirmText === "O'CHIRISH"
-
   const handleDelete = async () => {
-    if (!isMatched) return
+    if (!isConfirmed || loading) return
 
     setLoading(true)
     try {
@@ -55,7 +54,11 @@ export default function DeleteAccountScreen() {
 
       router.replace('/auth/login')
     } catch (e: any) {
-      showToast(e.response?.data?.error?.message || 'Xatolik yuz berdi', 'error')
+      Alert.alert(
+        'Xatolik',
+        e?.response?.data?.error?.message || "Akkauntni o'chirish imkonsiz.",
+        [{ text: 'OK' }]
+      )
     } finally {
       setLoading(false)
     }
@@ -107,22 +110,23 @@ export default function DeleteAccountScreen() {
             </View>
 
             <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>Tasdiqlash uchun "O'CHIRISH" so'zini kiriting</Text>
-              <TextInput
-                style={styles.input}
-                value={confirmText}
-                onChangeText={setConfirmText}
-                placeholder="O'CHIRISH"
-                autoCapitalize="characters"
-                autoCorrect={false}
-              />
+              <TouchableOpacity
+                style={styles.checkboxRow}
+                onPress={() => setIsConfirmed(!isConfirmed)}
+                activeOpacity={0.7}
+              >
+                <View style={[styles.checkbox, isConfirmed && styles.checkboxChecked]}>
+                  {isConfirmed && <Feather name="check" size={14} color="white" />}
+                </View>
+                <Text style={styles.checkboxLabel}>Akkauntimni o'chirishni tasdiqlayman</Text>
+              </TouchableOpacity>
             </View>
           </View>
 
           <View style={styles.footer}>
             <TouchableOpacity
-              style={[styles.deleteBtn, (!isMatched || loading) && styles.deleteBtnDisabled]}
-              disabled={!isMatched || loading}
+              style={[styles.deleteBtn, (!isConfirmed || loading) && styles.deleteBtnDisabled]}
+              disabled={!isConfirmed || loading}
               onPress={handleDelete}
             >
               {loading ? (
@@ -210,19 +214,27 @@ const styles = StyleSheet.create({
   inputContainer: {
     marginTop: 16,
   },
-  inputLabel: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: tokens.colors.text,
-    marginBottom: 8,
+  checkboxRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
   },
-  input: {
-    borderWidth: 1,
+  checkbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    borderWidth: 2,
     borderColor: tokens.colors.border,
-    borderRadius: 8,
-    padding: 14,
-    fontSize: 16,
-    backgroundColor: tokens.colors.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  checkboxChecked: {
+    backgroundColor: '#DC2626',
+    borderColor: '#DC2626',
+  },
+  checkboxLabel: {
+    fontSize: 15,
     color: tokens.colors.text,
   },
   footer: {

@@ -26,6 +26,7 @@ import { useQuery } from '@tanstack/react-query'
 import PrimaryButton from '../../components/ui/PrimaryButton'
 import EmptyState from '../../components/ui/EmptyState'
 import api from '../../lib/api'
+import { AuthBottomSheet } from '../../components/ui/AuthBottomSheet'
 
 export default function CartScreen() {
   const insets = useSafeAreaInsets()
@@ -36,6 +37,7 @@ export default function CartScreen() {
   const showUzs = customer?.phoneRegion === 'UZB'
   const isKOR = customer?.phoneRegion === 'KOR'
   const region = customer?.phoneRegion ?? 'KOR'
+  const [showAuthSheet, setShowAuthSheet] = useState(false)
 
   const [minOrderConfig, setMinOrderConfig] = useState<{
     minOrderKorKrw: number
@@ -283,10 +285,10 @@ export default function CartScreen() {
             label="Buyurtma berish"
             disabled={items.length === 0 || items.some((i) => !i.inStock) || isBelowMin}
             onPress={() => {
-              if (
-                !requireAuth(useAuthStore.getState().isAuthenticated, router, '/checkout')
-              )
+              if (!useAuthStore.getState().isAuthenticated) {
+                setShowAuthSheet(true)
                 return
+              }
               router.push({
                 pathname: '/checkout',
               })
@@ -294,6 +296,11 @@ export default function CartScreen() {
           />
         </View>
       </View>
+      <AuthBottomSheet
+        visible={showAuthSheet}
+        onClose={() => setShowAuthSheet(false)}
+        message="Buyurtma berish uchun tizimga kiring. Savatingiz saqlanib qoladi!"
+      />
     </View>
   )
 }
