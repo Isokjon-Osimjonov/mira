@@ -42,7 +42,7 @@ export default function HomeScreen() {
   const guestRegion = useRegionStore((s) => s.guestRegion)
   const activeRegion = customer?.phoneRegion || guestRegion
   const showUzs = activeRegion === 'UZB'
-  
+
   const setRate = useExchangeStore((s) => s.setRate)
   const addItem = useCartStore((s) => s.addItem)
   const [addingId, setAddingId] = useState<string | null>(null)
@@ -81,7 +81,13 @@ export default function HomeScreen() {
     refetch: refetchNew,
   } = useQuery({
     queryKey: ['products', 'newest', activeRegion],
-    queryFn: () => productService.getProducts({ sort: 'newest', limit: 10, region: activeRegion, isNew: true } as any),
+    queryFn: () =>
+      productService.getProducts({
+        sort: 'newest',
+        limit: 10,
+        region: activeRegion,
+        isNew: true,
+      } as any),
     staleTime: 2 * 60 * 1000,
   })
 
@@ -91,7 +97,13 @@ export default function HomeScreen() {
     refetch: refetchBest,
   } = useQuery({
     queryKey: ['products', 'bestselling', activeRegion],
-    queryFn: () => productService.getProducts({ sort: 'bestselling', limit: 10, region: activeRegion, featured: true } as any),
+    queryFn: () =>
+      productService.getProducts({
+        sort: 'bestselling',
+        limit: 10,
+        region: activeRegion,
+        featured: true,
+      } as any),
     staleTime: 2 * 60 * 1000,
   })
 
@@ -124,7 +136,7 @@ export default function HomeScreen() {
       const result = await productService.getProducts({
         page,
         limit: 20,
-        region: activeRegion
+        region: activeRegion,
       } as any)
       const newProds = result.data ?? []
       if (newProds.length < 20) {
@@ -459,7 +471,7 @@ export default function HomeScreen() {
         </View>
 
         {/* BESTSELLERS */}
-        <View style={[styles.section, { marginBottom: 100 }]}>
+        <View style={[styles.section, { marginBottom: 20 }]}>
           <View style={styles.paddingX}>
             <SectionHeader
               title="Ommabop mahsulotlar"
@@ -518,7 +530,7 @@ export default function HomeScreen() {
         {/* ALL PRODUCTS */}
         <View style={[styles.section, { marginBottom: 40 }]}>
           <View style={styles.paddingX}>
-            <Text style={{ fontSize: 18, fontFamily: 'Inter_600SemiBold', marginBottom: 16 }}>Barcha mahsulotlar</Text>
+            <SectionHeader title="Barcha mahsulotlar" />
           </View>
           <FlatList
             key="all-products-2col"
