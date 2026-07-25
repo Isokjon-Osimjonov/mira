@@ -29,14 +29,14 @@ export const settings = pgTable(
     cargoTransitDaysMax: integer('cargo_transit_days_max').default(10).notNull(),
 
     uzbCargoUsdPerKg: integer('uzb_cargo_usd_per_kg').default(10).notNull(),
-    usdToKrw: integer('usd_to_krw').default(1350).notNull(),
 
     minOrderKorKrw: integer('min_order_kor_krw').default(0).notNull(),
     minOrderUzbUzs: integer('min_order_uzb_uzs').default(0).notNull(),
 
-    telegramUrl: varchar('telegram_url', { length: 200 }),
-    instagramUrl: varchar('instagram_url', { length: 200 }),
-    websiteUrl: varchar('website_url', { length: 200 }),
+    telegramUrl: varchar('telegram_url', { length: 500 }),
+    instagramUrl: varchar('instagram_url', { length: 500 }),
+    websiteUrl: varchar('website_url', { length: 500 }),
+    phoneNumber: varchar('phone_number', { length: 50 }),
 
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),

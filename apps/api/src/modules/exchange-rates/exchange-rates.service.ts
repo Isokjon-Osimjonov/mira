@@ -61,7 +61,10 @@ export async function createManualExchangeRate(dto: CreateExchangeRateDto, admin
       .orderBy(desc(exchangeRateSnapshots.createdAt))
       .limit(1)
 
-    usdToKrw = latest ? Number(latest.usdToKrw) : 1350
+    usdToKrw = latest ? Number(latest.usdToKrw) : 1380
+    // Use current market rate not 1350
+    // This is only a last resort fallback
+    // when NO snapshots exist at all
   }
 
   const cargoRateKrwPerKg = Math.round(uzbCargoUsdPerKg * (usdToKrw as number))
