@@ -1,22 +1,38 @@
 import { z } from 'zod'
 
+const resourceEnum = z.enum([
+  'products',
+  'orders',
+  'customers',
+  'inventory',
+  'coupons',
+  'expenses',
+  'analytics',
+  'telegram',
+  'settings',
+  'users',
+  'roles',
+  'suppliers',
+  'cargo_shipments',
+  'walk_in_sales',
+  'uzb_stock',
+  'purchase_orders',
+  'notifications',
+  'dashboard',
+  'exchange_rates',
+  'boxes',
+])
+
+const actionEnum = z.enum([
+  'read',
+  'write',
+  'delete',
+  'manage',
+])
+
 const permissionSchema = z.object({
-  resource: z.enum([
-    'products',
-    'orders',
-    'customers',
-    'inventory',
-    'settings',
-    'analytics',
-    'telegram',
-    'expenses',
-    'coupons',
-    'exchange_rates',
-    'boxes',
-    'users',
-    'roles',
-  ]),
-  action: z.enum(['read', 'write', 'delete']),
+  resource: resourceEnum,
+  action: actionEnum,
 })
 
 export const createRoleSchema = z.object({
@@ -33,22 +49,8 @@ export const updateRoleSchema = z.object({
 
 export const updatePermissionSchema = z.object({
   operation: z.enum(['add', 'remove']),
-  resource: z.enum([
-    'products',
-    'orders',
-    'customers',
-    'inventory',
-    'settings',
-    'analytics',
-    'telegram',
-    'expenses',
-    'coupons',
-    'exchange_rates',
-    'boxes',
-    'users',
-    'roles',
-  ]),
-  action: z.enum(['read', 'write', 'delete']),
+  resource: resourceEnum,
+  action: actionEnum,
 })
 
 export type CreateRoleDto = z.infer<typeof createRoleSchema>

@@ -44,8 +44,15 @@ export async function getPermissionMatrix() {
     'boxes',
     'users',
     'roles',
+    'suppliers',
+    'cargo_shipments',
+    'walk_in_sales',
+    'uzb_stock',
+    'purchase_orders',
+    'notifications',
+    'dashboard',
   ]
-  const actions = ['read', 'write', 'delete']
+  const actions = ['read', 'write', 'delete', 'manage']
 
   const matrix: Record<string, string[]> = {}
   resources.forEach((res) => {
