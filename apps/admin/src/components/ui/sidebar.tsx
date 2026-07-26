@@ -2,6 +2,7 @@ import * as React from 'react'
 import { Slot } from '@radix-ui/react-slot'
 import { cva, type VariantProps } from 'class-variance-authority'
 import { PanelLeft } from 'lucide-react'
+import { useLocation } from '@tanstack/react-router'
 
 import { useIsMobile } from '@/hooks/use-mobile'
 import { cn } from '@/lib/utils'
@@ -68,6 +69,11 @@ const SidebarProvider = React.forwardRef<
   ) => {
     const isMobile = useIsMobile()
     const [openMobile, setOpenMobile] = React.useState(false)
+
+    const location = useLocation()
+    React.useEffect(() => {
+      setOpenMobile(false)
+    }, [location.pathname])
 
     // This is the internal state of the sidebar.
     // We use openProp and setOpenProp for control from outside the component.
