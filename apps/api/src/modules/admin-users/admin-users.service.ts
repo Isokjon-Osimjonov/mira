@@ -194,3 +194,29 @@ export async function deleteAdminUser(id: string, targetId: string) {
 
   return deleted
 }
+
+export async function updateAdminUserStatus(
+  id: string,
+  data: {
+    isActive?: boolean
+    roleId?: string | null
+  }
+) {
+  const [updated] = await db
+    .update(adminUsers)
+    .set({
+      ...data,
+      updatedAt: new Date(),
+    })
+    .where(eq(adminUsers.id, id))
+    .returning()
+
+  if (!updated)
+    throw {
+      status: 404,
+      code: 'USER_NOT_FOUND',
+      message: 'Admin topilmadi',
+    }
+
+  return updated
+}

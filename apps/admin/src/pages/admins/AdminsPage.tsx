@@ -39,7 +39,7 @@ export function AdminsPage() {
   const [deactivateTarget, setDeactivateTarget] = useState<any>(null)
   const [tempPasswordModal, setTempPasswordModal] = useState<string | null>(null)
 
-  const { data: admins = [], isLoading: adminsLoading } = useQuery({
+  const { data: admins = [], isLoading: adminsLoading, refetch } = useQuery({
     queryKey: QK.ADMINS,
     queryFn: adminsApi.list,
   })
@@ -116,6 +116,18 @@ export function AdminsPage() {
       .join('')
       .toUpperCase()
       .slice(0, 2) || 'A'
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Bu adminni o'chirishni tasdiqlaysizmi?")) return
+
+    try {
+      await adminsApi.deleteAdmin(id)
+      refetch()
+      toast.success("Admin o'chirildi")
+    } catch (err: any) {
+      toast.error(err?.response?.data?.error?.message ?? 'Xatolik')
+    }
+  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -236,6 +248,17 @@ export function AdminsPage() {
                           <CheckCircle className="h-4 w-4" strokeWidth={1.5} />
                         </button>
                       ))}
+
+                    {!admin.isSuperAdmin && !isSelf && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-destructive hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={() => handleDelete(admin.id)}
+                      >
+                        O'chirish
+                      </Button>
+                    )}
                   </div>
                 )
               })}
@@ -253,7 +276,9 @@ export function AdminsPage() {
           </div>
           <div className="divide-y divide-border/30">
             {roles.map((role: any) => {
-              const adminCount = admins.filter((a: any) => a.roleId === role.id).length
+              const adminCount = admins.filter(
+                (a: any) => a.role?.id === role.id || a.roleId === role.id
+              ).length
               return (
                 <div key={role.id} className="px-5 py-3">
                   <div className="flex items-center justify-between mb-1">

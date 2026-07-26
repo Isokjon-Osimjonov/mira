@@ -1,4 +1,7 @@
 import type { Request, Response } from 'express'
+import { db } from '../../config/db'
+import { adminUsers } from '@mira/db'
+import { eq } from 'drizzle-orm'
 import * as service from './admin-users.service'
 import { createAdminUserSchema, updateAdminUserSchema } from './admin-users.schema'
 
@@ -47,20 +50,58 @@ export async function createAdminUser(req: Request, res: Response) {
 
 export async function updateAdminUser(req: Request, res: Response) {
   try {
-    const validated = updateAdminUserSchema.parse(req.body)
-    const adminId = (req.user as any).sub
-    const data = await service.updateAdminUser(adminId, req.params.id, validated)
-    const { passwordHash, ...safeData } = data as any
-    return res.json({ data: safeData, error: null })
+    const { id } = req.params
+    const { roleId, isActive, email, isSuperAdmin } = req.body
+
+    const updateData: any = {
+      updatedAt: new Date(),
+    }
+
+    if (roleId !== undefined) updateData.roleId = roleId
+    if (isActive !== undefined) updateData.isActive = isActive
+    if (email !== undefined) updateData.email = email
+    if (isSuperAdmin !== undefined) updateData.isSuperAdmin = isSuperAdmin
+
+    const [updated] = await db
+      .update(adminUsers)
+      .set(updateData)
+      .where(eq(adminUsers.id, id))
+      .returning()
+
+    return res.json({
+      data: updated,
+      error: null,
+    })
   } catch (e: any) {
-    if (e.name === 'ZodError')
-      return res.status(400).json({
-        data: null,
-        error: { message: "Ma'lumotlar noto'g'ri", code: 'VALIDATION_ERROR', details: e.errors },
-      })
-    return res
-      .status(e.status ?? 500)
-      .json({ data: null, error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' } })
+    return res.status(e.status ?? 500).json({
+      data: null,
+      error: {
+        message: e.message,
+        code: e.code ?? 'INTERNAL_ERROR',
+      },
+    })
+  }
+}
+
+export async function updateAdminUserStatus(req: Request, res: Response) {
+  try {
+    const { id } = req.params
+    const { isActive, roleId } = req.body
+
+    const updated = await service.updateAdminUserStatus(id, { isActive, roleId })
+
+    return res.json({
+      data: updated,
+      error: null,
+    })
+  } catch (e: any) {
+    return res.status(e.status ?? 500).json({
+      data: null,
+      error: {
+        message: e.message,
+        code: e.code ?? 'INTERNAL_ERROR',
+      },
+    })
   }
 }
 

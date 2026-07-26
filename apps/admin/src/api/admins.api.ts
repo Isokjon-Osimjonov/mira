@@ -30,4 +30,6 @@ export const adminsApi = {
     const res = await api.get('/admin/roles')
     return res.data.data
   },
+
+  deleteAdmin: (id: string) => api.delete(`/admin/users/${id}`),
 }
