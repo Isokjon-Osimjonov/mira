@@ -14,7 +14,6 @@ async function seed() {
     await db.insert(settings).values({
       paymentTimeoutMinutes: 30,
       lowStockThreshold: 10,
-      uzbCargoUsdPerKg: 10,
       minOrderKorKrw: 0,
       minOrderUzbUzs: 0,
       lockColumn: 'X',

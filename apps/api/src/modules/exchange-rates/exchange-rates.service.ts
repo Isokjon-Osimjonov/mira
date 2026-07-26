@@ -4,7 +4,6 @@ import { desc, eq } from 'drizzle-orm'
 import axios from 'axios'
 import { env } from '../../config/env'
 import type { CreateExchangeRateDto } from './exchange-rates.schema'
-import { getSettings } from '../settings/settings.service'
 import { cacheGet, cacheSet, cacheDelete, CACHE_TTL } from '../../lib/cache'
 
 const CACHE_KEY = 'exchange_rate:latest'
@@ -51,29 +50,27 @@ export async function getExchangeRateHistory() {
 }
 
 export async function createManualExchangeRate(dto: CreateExchangeRateDto, adminId: string) {
-  const { uzbCargoUsdPerKg } = await getSettings()
+  const [latest] = await db
+    .select()
+    .from(exchangeRateSnapshots)
+    .orderBy(desc(exchangeRateSnapshots.createdAt))
+    .limit(1)
 
-  let usdToKrw = dto.usdToKrw
-  if (!usdToKrw) {
-    const [latest] = await db
-      .select()
-      .from(exchangeRateSnapshots)
-      .orderBy(desc(exchangeRateSnapshots.createdAt))
-      .limit(1)
-
-    usdToKrw = latest ? Number(latest.usdToKrw) : 1380
-    // Use current market rate not 1350
-    // This is only a last resort fallback
-    // when NO snapshots exist at all
+  const usdToKrw = dto.usdToKrw || (latest ? Number(latest.usdToKrw) : 1380)
+  let cargoRateKrwPerKg: number
+  if (dto.cargoRateKrwPerKg) {
+    cargoRateKrwPerKg = dto.cargoRateKrwPerKg
+  } else if (dto.uzbCargoUsdPerKg) {
+    cargoRateKrwPerKg = Math.round(dto.uzbCargoUsdPerKg * usdToKrw)
+  } else {
+    cargoRateKrwPerKg = latest ? Number(latest.cargoRateKrwPerKg) : Math.round(10 * usdToKrw)
   }
-
-  const cargoRateKrwPerKg = Math.round(uzbCargoUsdPerKg * (usdToKrw as number))
 
   const [created] = await db
     .insert(exchangeRateSnapshots)
     .values({
       krwToUzs: dto.krwToUzs.toString(),
-      usdToKrw: (usdToKrw as number).toString(),
+      usdToKrw: usdToKrw.toString(),
       cargoRateKrwPerKg: cargoRateKrwPerKg.toString(),
       note: dto.note,
       source: 'MANUAL',
@@ -120,8 +117,13 @@ export async function fetchAndSaveExchangeRate() {
     const krwToUzs = Number(data.conversion_rates.UZS.toFixed(2))
     const usdToKrw = Math.round(1 / data.conversion_rates.USD)
 
-    const { uzbCargoUsdPerKg } = await getSettings()
-    const cargoRateKrwPerKg = Math.round(uzbCargoUsdPerKg * usdToKrw)
+    const [latest] = await db
+      .select()
+      .from(exchangeRateSnapshots)
+      .orderBy(desc(exchangeRateSnapshots.createdAt))
+      .limit(1)
+
+    const cargoRateKrwPerKg = latest ? Number(latest.cargoRateKrwPerKg) : Math.round(10 * usdToKrw)
 
     const [created] = await db
       .insert(exchangeRateSnapshots)

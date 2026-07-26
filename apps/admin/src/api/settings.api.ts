@@ -51,8 +51,9 @@ export const settingsApi = {
     return res.data.data
   },
 
-  updateExchangeRate: async (rate: number) => {
-    const res = await api.post('/admin/exchange-rates', { krwToUzs: rate })
+  updateExchangeRate: async (payload: number | { krwToUzs: number; usdToKrw?: number; uzbCargoUsdPerKg?: number; note?: string }) => {
+    const data = typeof payload === 'number' ? { krwToUzs: payload } : payload
+    const res = await api.post('/admin/exchange-rates', data)
     return res.data
   },
 
@@ -71,8 +72,13 @@ export const settingsApi = {
     paymentTimeoutMinutes?: number
     minOrderKorKrw?: number
     minOrderUzbUzs?: number
-    usdToKrw?: number
-    uzbCargoUsdPerKg?: number
+    cargoTransitDaysMin?: number
+    cargoTransitDaysMax?: number
+    lowStockThreshold?: number
+    telegramUrl?: string | null
+    instagramUrl?: string | null
+    websiteUrl?: string | null
+    phoneNumber?: string | null
   }) => {
     const res = await api.patch('/admin/settings/order', payload)
     return res.data

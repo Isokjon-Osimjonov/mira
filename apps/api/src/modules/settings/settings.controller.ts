@@ -56,7 +56,7 @@ export async function getPaymentInfo(req: Request, res: Response) {
           account: e9pay?.accountNumber ?? '',
         },
         cargo: {
-          uzbCargoUsdPerKg: settings.uzbCargoUsdPerKg ?? 3,
+          uzbCargoUsdPerKg: rate ? Math.round(Number(rate.cargoRateKrwPerKg) / Number(rate.usdToKrw)) : 10,
         },
         rates: {
           krwToUzs: rate ? Number(rate.krwToUzs) : 7.62,
@@ -168,7 +168,7 @@ export async function getPublicConfig(req: Request, res: Response) {
 
     return res.json({
       data: {
-        uzbCargoUsdPerKg: Number(appSettings?.uzbCargoUsdPerKg ?? 10),
+        uzbCargoUsdPerKg: rate ? Math.round(Number(rate.cargoRateKrwPerKg) / Number(rate.usdToKrw)) : 10,
         usdToKrw: Number(rate?.usdToKrw ?? 1380),
         minOrderKorKrw: Number(appSettings?.minOrderKorKrw ?? 0),
         minOrderUzbUzs: Number(appSettings?.minOrderUzbUzs ?? 0),

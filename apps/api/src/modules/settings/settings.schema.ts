@@ -3,8 +3,7 @@ import { z } from 'zod'
 export const updateSettingsSchema = z.object({
   paymentTimeoutMinutes: z.number().optional(),
   lowStockThreshold: z.number().optional(),
-  uzbCargoUsdPerKg: z.number().optional(),
-  usdToKrw: z.number().optional(),
+  phoneNumber: z.string().max(50).optional().nullable(),
 
   minOrderKorKrw: z.coerce.number().optional(),
   minOrderUzbUzs: z.coerce.number().optional(),

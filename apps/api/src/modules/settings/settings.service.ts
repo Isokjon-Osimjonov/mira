@@ -61,8 +61,6 @@ export async function getOrderSettings() {
     lowStockThreshold: s.lowStockThreshold,
     cargoTransitDaysMin: s.cargoTransitDaysMin,
     cargoTransitDaysMax: s.cargoTransitDaysMax,
-    uzbCargoUsdPerKg: s.uzbCargoUsdPerKg,
-    usdToKrw: s.usdToKrw,
     minOrderKorKrw: Number(s.minOrderKorKrw),
     minOrderUzbUzs: Number(s.minOrderUzbUzs),
     telegramUrl: s.telegramUrl,
@@ -81,8 +79,6 @@ export async function updateOrderSettings(data: any) {
   if (data.lowStockThreshold !== undefined) update.lowStockThreshold = data.lowStockThreshold
   if (data.cargoTransitDaysMin !== undefined) update.cargoTransitDaysMin = data.cargoTransitDaysMin
   if (data.cargoTransitDaysMax !== undefined) update.cargoTransitDaysMax = data.cargoTransitDaysMax
-  if (data.uzbCargoUsdPerKg !== undefined) update.uzbCargoUsdPerKg = data.uzbCargoUsdPerKg
-  if (data.usdToKrw !== undefined) update.usdToKrw = data.usdToKrw
   if (data.minOrderKorKrw !== undefined) update.minOrderKorKrw = data.minOrderKorKrw
   if (data.minOrderUzbUzs !== undefined) update.minOrderUzbUzs = data.minOrderUzbUzs
   if (data.telegramUrl !== undefined) update.telegramUrl = data.telegramUrl

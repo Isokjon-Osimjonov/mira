@@ -15,6 +15,7 @@ import {
   Loader2,
   X,
   RefreshCw,
+  Phone,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { settingsApi } from '../../api/settings.api'
@@ -33,6 +34,7 @@ const TABS = [
   { id: 'shipping', label: 'Yetkazib berish', icon: Truck },
   { id: 'exchange', label: 'Valyuta kursi', icon: TrendingUp },
   { id: 'order', label: 'Buyurtma sozlamalari', icon: ShoppingCart },
+  { id: 'contact', label: 'Aloqa (Kontaktlar)', icon: Phone },
 ]
 
 export function SettingsPage() {
@@ -72,6 +74,7 @@ export function SettingsPage() {
           {tab === 'shipping' && <ShippingTiersTab />}
           {tab === 'exchange' && <ExchangeRateTab />}
           {tab === 'order' && <OrderSettingsTab />}
+          {tab === 'contact' && <ContactSettingsTab />}
         </div>
       </div>
     </div>
@@ -537,6 +540,8 @@ function ShippingTiersTab() {
 function ExchangeRateTab() {
   const qc = useQueryClient()
   const [newRate, setNewRate] = useState('')
+  const [usdToKrw, setUsdToKrw] = useState('')
+  const [uzbCargoUsdPerKg, setUzbCargoUsdPerKg] = useState('')
   const [fetching, setFetching] = useState(false)
   const [liveRate, setLiveRate] = useState<number | null>(null)
 
@@ -548,12 +553,27 @@ function ExchangeRateTab() {
 
   const currentRate = rates[0]
 
+  useEffect(() => {
+    if (currentRate) {
+      if (!newRate) setNewRate(Number(currentRate.krwToUzs).toString())
+      if (!usdToKrw) setUsdToKrw(Number(currentRate.usdToKrw).toString())
+      if (!uzbCargoUsdPerKg) {
+        const cargoUsd = Number(currentRate.cargoRateKrwPerKg) / Number(currentRate.usdToKrw || 1380)
+        setUzbCargoUsdPerKg(isNaN(cargoUsd) ? '10' : cargoUsd.toFixed(1))
+      }
+    }
+  }, [currentRate])
+
   const updateMutation = useMutation({
-    mutationFn: () => settingsApi.updateExchangeRate(parseFloat(newRate)),
+    mutationFn: () =>
+      settingsApi.updateExchangeRate({
+        krwToUzs: parseFloat(newRate || '0'),
+        usdToKrw: usdToKrw ? parseFloat(usdToKrw) : undefined,
+        uzbCargoUsdPerKg: uzbCargoUsdPerKg ? parseFloat(uzbCargoUsdPerKg) : undefined,
+      }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: QK.EXCHANGE_RATES })
-      toast.success('Valyuta kursi yangilandi')
-      setNewRate('')
+      toast.success('Valyuta kursi va kargo narxlari yangilandi')
       setLiveRate(null)
     },
     onError: (err: any) => toast.error(getErrorMessage(err?.errorCode ?? '')),
@@ -588,6 +608,11 @@ function ExchangeRateTab() {
               <p className="text-4xl font-black text-gray-900 tracking-tight">
                 1 ₩ = {Number(currentRate.krwToUzs).toLocaleString()} so'm
               </p>
+              <div className="flex flex-wrap gap-4 mt-2 text-sm text-gray-600 font-medium">
+                <span>1 USD = {Number(currentRate.usdToKrw).toLocaleString()} KRW</span>
+                <span>•</span>
+                <span>Kargo: ~${(Number(currentRate.cargoRateKrwPerKg) / Number(currentRate.usdToKrw || 1380)).toFixed(1)}/kg</span>
+              </div>
               <p className="text-xs text-muted-foreground mt-2 font-medium">
                 Yangilangan: {formatDateTime(currentRate.createdAt)}
               </p>
@@ -613,49 +638,61 @@ function ExchangeRateTab() {
 
       <div className="bg-white rounded-2xl border-[0.5px] border-border p-6 shadow-sm">
         <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-4">
-          Kursni yangilash
+          Kurs va kargoni yangilash
         </p>
         <div className="flex flex-col gap-4">
-          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-end">
-            <div className="flex-1 w-full">
-              <Label className="text-xs font-bold mb-2 block">Yangi kurs (1 ₩ = ? so'm)</Label>
-              <div className="flex flex-col sm:flex-row gap-3">
-                <Input
-                  value={newRate}
-                  onChange={(e) => setNewRate(e.target.value)}
-                  type="number"
-                  placeholder={currentRate ? Number(currentRate.krwToUzs).toString() : '12'}
-                  className="h-11 text-base font-bold rounded-xl border-[0.5px] focus:ring-primary/20 w-full sm:flex-1"
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={handleFetchLive}
-                  disabled={fetching}
-                  className="h-11 w-full sm:w-auto rounded-xl gap-2 shrink-0 border-[0.5px] text-xs font-bold text-blue-600 border-blue-200 hover:bg-blue-50 px-4"
-                >
-                  {fetching ? (
-                    <RefreshCw className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <RefreshCw className="h-4 w-4" />
-                  )}
-                  Kursni olish
-                </Button>
-              </div>
-              <p className="text-[11px] text-muted-foreground mt-2 font-medium">
-                "Kursni olish" — open.er-api.com dan joriy kursni avtomatik yuklaydi
-              </p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <Label className="text-xs font-bold">KRW → UZS (1 ₩ = ? so'm)</Label>
+              <Input
+                value={newRate}
+                onChange={(e) => setNewRate(e.target.value)}
+                type="number"
+                step="0.01"
+                placeholder="7.74"
+                className="h-11 text-base font-bold rounded-xl border-[0.5px] focus:ring-primary/20"
+              />
             </div>
+            <div className="space-y-2">
+              <Label className="text-xs font-bold">USD → KRW kursi</Label>
+              <Input
+                value={usdToKrw}
+                onChange={(e) => setUsdToKrw(e.target.value)}
+                type="number"
+                step="1"
+                placeholder="1380"
+                className="h-11 text-base font-bold rounded-xl border-[0.5px] focus:ring-primary/20"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs font-bold">🇺🇿 UZB Kargo (USD/kg)</Label>
+              <Input
+                value={uzbCargoUsdPerKg}
+                onChange={(e) => setUzbCargoUsdPerKg(e.target.value)}
+                type="number"
+                step="0.1"
+                placeholder="10"
+                className="h-11 text-base font-bold rounded-xl border-[0.5px] focus:ring-primary/20"
+              />
+            </div>
+          </div>
 
-            {newRate && !isNaN(parseFloat(newRate)) && (
-              <div className="pb-2 px-2 hidden sm:block">
-                <p className="text-[10px] font-bold uppercase text-muted-foreground">₩15,000 ≈</p>
-                <p className="text-lg font-bold text-gray-700">
-                  {formatUZS(Math.round(15000 * parseFloat(newRate)))}
-                </p>
-              </div>
-            )}
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleFetchLive}
+              disabled={fetching}
+              className="h-11 rounded-xl gap-2 border-[0.5px] text-xs font-bold text-blue-600 border-blue-200 hover:bg-blue-50 px-4"
+            >
+              {fetching ? (
+                <RefreshCw className="h-4 w-4 animate-spin" />
+              ) : (
+                <RefreshCw className="h-4 w-4" />
+              )}
+              Joriy kursni yuklash (open.er-api.com)
+            </Button>
 
             <Button
               onClick={() => updateMutation.mutate()}
@@ -718,8 +755,6 @@ function OrderSettingsTab() {
     paymentTimeoutMinutes: z.coerce.number().int().min(5).max(1440),
     minOrderKorKrw: z.coerce.number().int().min(0),
     minOrderUzbUzs: z.coerce.number().int().min(0),
-    usdToKrw: z.coerce.number().min(0),
-    uzbCargoUsdPerKg: z.coerce.number().min(0),
     cargoTransitDaysMin: z.coerce.number().int().min(1),
     cargoTransitDaysMax: z.coerce.number().int().min(1),
     lowStockThreshold: z.coerce.number().int().min(1).max(1000).optional(),
@@ -779,37 +814,6 @@ function OrderSettingsTab() {
               5-1440 daqiqa oralig'ida bo'lishi kerak
             </p>
           )}
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-2">
-          <div className="space-y-2">
-            <Label className="text-sm font-bold text-gray-900">USD → KRW kursi</Label>
-            <Input
-              {...register('usdToKrw')}
-              type="number"
-              step="1"
-              min="0"
-              placeholder="1350"
-              className="h-11 rounded-xl border-[0.5px] focus:ring-primary/20"
-            />
-            <p className="text-[11px] text-muted-foreground font-medium">
-              1 USD necha KRW ga teng (cargo hisoblash uchun)
-            </p>
-          </div>
-          <div className="space-y-2">
-            <Label className="text-sm font-bold text-gray-900">🇺🇿 UZB Kargo tarixi (USD/kg)</Label>
-            <Input
-              {...register('uzbCargoUsdPerKg')}
-              type="number"
-              step="0.1"
-              min="0"
-              placeholder="3"
-              className="h-11 rounded-xl border-[0.5px] focus:ring-primary/20"
-            />
-            <p className="text-[11px] text-muted-foreground font-medium">
-              1 kg yuk uchun USD narxi (Koreadan O'zbekistonga)
-            </p>
-          </div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-2">
@@ -901,3 +905,114 @@ function OrderSettingsTab() {
     </div>
   )
 }
+
+function ContactSettingsTab() {
+  const qc = useQueryClient()
+  const [savingField, setSavingField] = useState<string | null>(null)
+
+  const { data, isLoading } = useQuery({
+    queryKey: QK.ORDER_SETTINGS,
+    queryFn: settingsApi.getOrderSettings,
+    placeholderData: (prev) => prev,
+  })
+
+  const [formValues, setFormValues] = useState({
+    phoneNumber: '',
+    telegramUrl: '',
+    instagramUrl: '',
+    websiteUrl: '',
+  })
+
+  useEffect(() => {
+    if (data) {
+      setFormValues({
+        phoneNumber: data.phoneNumber || '',
+        telegramUrl: data.telegramUrl || '',
+        instagramUrl: data.instagramUrl || '',
+        websiteUrl: data.websiteUrl || '',
+      })
+    }
+  }, [data])
+
+  const handleBlur = async (field: keyof typeof formValues, value: string) => {
+    if (data && data[field] === value) return
+    setSavingField(field)
+    try {
+      await settingsApi.updateOrderSettings({ [field]: value })
+      qc.invalidateQueries({ queryKey: QK.ORDER_SETTINGS })
+      toast.success('Sozlama saqlandi')
+    } catch (err: any) {
+      toast.error(getErrorMessage(err?.errorCode ?? ''))
+    } finally {
+      setSavingField(null)
+    }
+  }
+
+  if (isLoading) return <div className="h-96 bg-white rounded-2xl animate-pulse" />
+
+  return (
+    <div className="bg-white rounded-2xl border-[0.5px] border-border p-6 shadow-sm space-y-6">
+      <div className="flex items-center justify-between">
+        <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+          Aloqa va kontaktlar
+        </p>
+        {savingField && (
+          <span className="text-xs font-bold text-primary flex items-center gap-1.5 animate-pulse">
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            Saqlanmoqda...
+          </span>
+        )}
+      </div>
+
+      <div className="space-y-4">
+        <div className="space-y-2">
+          <Label className="text-sm font-bold text-gray-900">Telefon raqam</Label>
+          <Input
+            value={formValues.phoneNumber}
+            onChange={(e) => setFormValues((p) => ({ ...p, phoneNumber: e.target.value }))}
+            onBlur={(e) => handleBlur('phoneNumber', e.target.value)}
+            placeholder="+998 90 123 45 67"
+            className="h-11 rounded-xl border-[0.5px] focus:ring-primary/20"
+          />
+          <p className="text-[11px] text-muted-foreground font-medium">
+            Mijozlar bilan bog'lanish uchun asosiy telefon raqam
+          </p>
+        </div>
+
+        <div className="space-y-2">
+          <Label className="text-sm font-bold text-gray-900">Telegram URL</Label>
+          <Input
+            value={formValues.telegramUrl}
+            onChange={(e) => setFormValues((p) => ({ ...p, telegramUrl: e.target.value }))}
+            onBlur={(e) => handleBlur('telegramUrl', e.target.value)}
+            placeholder="https://t.me/miracosmetics"
+            className="h-11 rounded-xl border-[0.5px] focus:ring-primary/20"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label className="text-sm font-bold text-gray-900">Instagram URL</Label>
+          <Input
+            value={formValues.instagramUrl}
+            onChange={(e) => setFormValues((p) => ({ ...p, instagramUrl: e.target.value }))}
+            onBlur={(e) => handleBlur('instagramUrl', e.target.value)}
+            placeholder="https://instagram.com/miracosmetics"
+            className="h-11 rounded-xl border-[0.5px] focus:ring-primary/20"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label className="text-sm font-bold text-gray-900">Veb-sayt URL</Label>
+          <Input
+            value={formValues.websiteUrl}
+            onChange={(e) => setFormValues((p) => ({ ...p, websiteUrl: e.target.value }))}
+            onBlur={(e) => handleBlur('websiteUrl', e.target.value)}
+            placeholder="https://miracosmetics.uz"
+            className="h-11 rounded-xl border-[0.5px] focus:ring-primary/20"
+          />
+        </div>
+      </div>
+    </div>
+  )
+}
+

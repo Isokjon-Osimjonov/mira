@@ -299,8 +299,8 @@ export async function createOrder(params: {
       const totalWeightKg = totalProductWeightGrams / 1000 + Number(box.boxWeightKg)
 
       const usdToKrw = rate ? Number(rate.usdToKrw) : 1380
-      const cargoUsd = totalWeightKg * appSettings.uzbCargoUsdPerKg
-      const calculatedCargoKrw = Math.round(cargoUsd * usdToKrw)
+      const cargoRateKrwPerKg = rate ? Number(rate.cargoRateKrwPerKg) : 13800
+      const calculatedCargoKrw = Math.round(totalWeightKg * cargoRateKrwPerKg)
       cargoFeeKrw = BigInt(Math.round(calculatedCargoKrw / 100) * 100) // round to 100
 
       boxWeightSnapshot = Number(box.boxWeightKg)
