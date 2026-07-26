@@ -1,5 +1,6 @@
 import type { Request, Response } from 'express'
 import { logger } from '../../config/logger'
+import { checkUserPermission } from '../../middleware/auth'
 import * as service from './telegram.service'
 import {
   createChannelSchema,
@@ -177,8 +178,15 @@ export async function updatePost(req: Request, res: Response) {
 export async function deletePost(req: Request, res: Response) {
   try {
     const adminId = (req.user as any).sub
-    const isSuperAdmin = (req.user as any).isSuperAdmin ?? false
-    const data = await service.deletePost(req.params.id, adminId, isSuperAdmin)
+    const user = req.user as any
+    const isSuperAdmin = user.isSuperAdmin ?? false
+
+    // Check if user has explicit telegram delete permission
+    const hasDeletePermission = await checkUserPermission(user.sub, 'telegram', 'delete')
+
+    const canDeleteSent = isSuperAdmin || hasDeletePermission
+
+    const data = await service.deletePost(req.params.id, adminId, canDeleteSent)
     return res.json({ data: { id: data.id, status: data.status }, error: null })
   } catch (e: any) {
     return res

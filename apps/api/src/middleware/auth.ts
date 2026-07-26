@@ -197,3 +197,37 @@ export function signRefreshToken(payload: Pick<JwtPayload, 'sub' | 'type'>) {
 export function verifyRefreshToken(token: string): Pick<JwtPayload, 'sub' | 'type'> {
   return jwt.verify(token, env.JWT_REFRESH_SECRET) as any
 }
+
+export async function checkUserPermission(
+  userId: string,
+  resource: string,
+  action: string
+): Promise<boolean> {
+  const user = await db
+    .select({
+      isSuperAdmin: adminUsers.isSuperAdmin,
+      roleId: adminUsers.roleId,
+    })
+    .from(adminUsers)
+    .where(eq(adminUsers.id, userId))
+    .limit(1)
+
+  if (!user[0]) return false
+  if (user[0].isSuperAdmin) return true
+  if (!user[0].roleId) return false
+
+  const permission = await db
+    .select()
+    .from(rolePermissions)
+    .where(
+      and(
+        eq(rolePermissions.roleId, user[0].roleId),
+        eq(rolePermissions.resource, resource),
+        eq(rolePermissions.action, action)
+      )
+    )
+    .limit(1)
+
+  return permission.length > 0
+}
+
