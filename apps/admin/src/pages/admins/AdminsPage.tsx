@@ -13,6 +13,14 @@ import { ConfirmDialog } from '../../components/shared/ConfirmDialog'
 import { useAuthStore } from '../../stores/auth.store'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
@@ -38,6 +46,10 @@ export function AdminsPage() {
   const [inviteSheet, setInviteSheet] = useState(false)
   const [deactivateTarget, setDeactivateTarget] = useState<any>(null)
   const [tempPasswordModal, setTempPasswordModal] = useState<string | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<{
+    id: string
+    email: string
+  } | null>(null)
 
   const { data: admins = [], isLoading: adminsLoading, refetch } = useQuery({
     queryKey: QK.ADMINS,
@@ -118,8 +130,6 @@ export function AdminsPage() {
       .slice(0, 2) || 'A'
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Bu adminni o'chirishni tasdiqlaysizmi?")) return
-
     try {
       await adminsApi.deleteAdmin(id)
       refetch()
@@ -254,7 +264,12 @@ export function AdminsPage() {
                         variant="ghost"
                         size="sm"
                         className="text-destructive hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
-                        onClick={() => handleDelete(admin.id)}
+                        onClick={() =>
+                          setDeleteTarget({
+                            id: admin.id,
+                            email: admin.email,
+                          })
+                        }
                       >
                         O'chirish
                       </Button>
@@ -441,6 +456,39 @@ export function AdminsPage() {
         loading={deactivateMutation.isPending}
         onConfirm={() => deactivateMutation.mutate(deactivateTarget.id)}
       />
+
+      <Dialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTarget(null)
+        }}
+      >
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Adminni o'chirish</DialogTitle>
+            <DialogDescription>
+              <span className="font-medium text-foreground">{deleteTarget?.email}</span> adminini
+              o'chirishni tasdiqlaysizmi? Bu amalni qaytarib bo'lmaydi.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setDeleteTarget(null)}>
+              Bekor qilish
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                if (deleteTarget) {
+                  handleDelete(deleteTarget.id)
+                  setDeleteTarget(null)
+                }
+              }}
+            >
+              O'chirish
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {tempPasswordModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100]">
