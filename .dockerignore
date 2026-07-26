@@ -17,9 +17,8 @@ build
 **/*.test.tsx
 **/*.spec.tsx
 
-# Mobile app (not needed for API)
+# Mobile app (not needed for API or Admin Docker builds)
 apps/mobile
-apps/admin
 
 # Git
 .git
