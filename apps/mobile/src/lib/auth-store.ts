@@ -1,5 +1,12 @@
 import { create } from 'zustand'
 import * as SecureStore from 'expo-secure-store'
+import axios from 'axios'
+import Constants from 'expo-constants'
+
+const BASE_URL =
+  process.env.EXPO_PUBLIC_API_URL ||
+  Constants.expoConfig?.extra?.apiUrl ||
+  ''
 
 // ─── Types ────────────────────────────────────────────────────
 export interface Customer {
@@ -99,6 +106,53 @@ export const useAuthStore = create<AuthState>((set) => ({
         } catch (e) {
           console.error(e)
         }
+
+        const checkAndRefreshToken = async () => {
+          try {
+            const accessToken = await SecureStore.getItemAsync('accessToken')
+            if (!accessToken) return
+
+            // Decode token to check expiry
+            const payload = JSON.parse(atob(accessToken.split('.')[1]))
+            const expiresAt = payload.exp * 1000
+            const now = Date.now()
+            const fiveMinutes = 5 * 60 * 1000
+
+            // If expires within 5 minutes
+            // refresh proactively
+            if (expiresAt - now < fiveMinutes) {
+              const refreshToken = await SecureStore.getItemAsync('refreshToken')
+              if (!refreshToken) return
+
+              const response = await axios.post(
+                `${BASE_URL}/auth/refresh`,
+                { refreshToken },
+                {
+                  headers: {
+                    'X-Client-Type': 'mobile',
+                  },
+                }
+              )
+
+              const { accessToken: newAccess, refreshToken: newRefresh } = response.data.data
+
+              await SecureStore.setItemAsync('accessToken', newAccess)
+              await SecureStore.setItemAsync('refreshToken', newRefresh)
+
+              useAuthStore.setState({
+                accessToken: newAccess,
+              })
+            }
+          } catch (err) {
+            console.error('Proactive refresh failed:', err)
+          }
+        }
+
+        // Call on app start
+        checkAndRefreshToken()
+
+        // Also check every 4 hours
+        setInterval(checkAndRefreshToken, 4 * 60 * 60 * 1000)
       } else {
         set({ isLoading: false })
       }

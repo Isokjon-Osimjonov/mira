@@ -52,11 +52,16 @@ api.interceptors.response.use(
     const originalRequest = error.config
 
     // Skip if no auth header was sent (guest requests should not refresh)
-    if (!originalRequest.headers['Authorization']) {
+    if (!originalRequest.headers?.['Authorization'] &&
+        !originalRequest.headers?.['authorization']) {
       return Promise.reject(error)
     }
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    if (
+      error.response?.status === 401 &&
+      !originalRequest._retry &&
+      !originalRequest.url?.includes('/auth/refresh')
+    ) {
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject })
@@ -109,7 +114,12 @@ api.interceptors.response.use(
         
         try {
           const { useAuthStore } = await import('./auth-store')
-          useAuthStore.getState().logout()
+          useAuthStore.setState({
+            accessToken: null,
+            refreshToken: null,
+            customer: null,
+            isAuthenticated: false,
+          })
         } catch {}
 
         try {
