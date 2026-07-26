@@ -421,6 +421,15 @@ export async function createOrder(params: {
       ? null
       : new Date(Date.now() + appSettings.paymentTimeoutMinutes * 60000)
 
+    const today = new Date()
+    const startDate = new Date(today)
+    startDate.setDate(today.getDate() + (appSettings?.cargoTransitDaysMin ?? 7))
+    const endDate = new Date(today)
+    endDate.setDate(today.getDate() + (appSettings?.cargoTransitDaysMax ?? 14))
+
+    const estimatedDeliveryStart = startDate.toISOString().split('T')[0]
+    const estimatedDeliveryEnd = endDate.toISOString().split('T')[0]
+
     const [newOrder] = await tx
       .insert(orders)
       .values({
@@ -453,6 +462,8 @@ export async function createOrder(params: {
         paymentDeadline,
         paymentConfirmedAt: isImmediate ? new Date() : null,
         paymentConfirmedBy: isImmediate ? params.adminId : null,
+        estimatedDeliveryStart,
+        estimatedDeliveryEnd,
         deliveryFullName: address
           ? address.fullName
           : `${customer.firstName} ${customer.lastName ?? ''}`.trim(),

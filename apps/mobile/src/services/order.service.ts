@@ -78,6 +78,7 @@ export interface Order {
   deliveryCity: string | null
   deliveryPostalCode: string | null
   deliveryRegion: string | null
+  profileRegion?: string | null
   createdAt: string
   items: OrderItem[]
   couponCode?: string | null

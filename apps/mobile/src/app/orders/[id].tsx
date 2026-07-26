@@ -13,6 +13,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Image } from 'expo-image'
 import { Ionicons, Feather } from '@expo/vector-icons'
+import { Truck } from 'lucide-react-native'
+import { format } from 'date-fns'
 
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { router, useLocalSearchParams } from 'expo-router'
@@ -57,16 +59,7 @@ export default function OrderDetailScreen() {
   const { id } = useLocalSearchParams()
   const customer = useAuthStore((s) => s.customer)
   const exchangeRate = useExchangeStore((s) => s.rate)
-  const isUZB = customer?.phoneRegion === 'UZB'
-  const showUzs = isUZB
   const queryClient = useQueryClient()
-
-  const formatPrice = (amount: number, region?: 'UZB' | 'KOR') => {
-    if (region === 'UZB') {
-      return `₩${Math.round(amount).toLocaleString('ko-KR')}` 
-    }
-    return `₩${Math.round(amount).toLocaleString('ko-KR')}`
-  }
 
   const {
     data: order,
@@ -84,6 +77,30 @@ export default function OrderDetailScreen() {
         : false
     },
   })
+
+  const isUZB =
+    order?.profileRegion === 'UZB' ||
+    order?.deliveryRegion === 'UZB' ||
+    customer?.phoneRegion === 'UZB'
+  const showUzs = isUZB
+
+  const estimatedStart = order?.estimatedDeliveryStart
+  const estimatedEnd = order?.estimatedDeliveryEnd
+
+  const deliveryText =
+    estimatedStart && estimatedEnd
+      ? `${format(new Date(estimatedStart), 'dd.MM.yyyy')} — ${format(
+          new Date(estimatedEnd),
+          'dd.MM.yyyy'
+        )}`
+      : 'Belgilanmagan'
+
+  const formatPrice = (amount: number, region?: 'UZB' | 'KOR') => {
+    if (region === 'UZB') {
+      return `₩${Math.round(amount).toLocaleString('ko-KR')}` 
+    }
+    return `₩${Math.round(amount).toLocaleString('ko-KR')}`
+  }
 
   const [timeLeft, setTimeLeft] = useState(0)
   const [isUploading, setIsUploading] = useState(false)
@@ -301,19 +318,6 @@ export default function OrderDetailScreen() {
           </View>
         )}
 
-        {isUZB && order.estimatedDeliveryStart && (
-          <View style={styles.deliveryEstimateCard}>
-            <Feather name="calendar" size={16} color={tokens.colors.primary} />
-            <View style={{ flex: 1, marginLeft: 10 }}>
-              <Text style={styles.deliveryEstimateLabel}>Taxminiy yetkazib berish</Text>
-              <Text style={styles.deliveryEstimateDate}>
-                {order.estimatedDeliveryStart.split('T')[0]} —{' '}
-                {order.estimatedDeliveryEnd?.split('T')[0]}
-              </Text>
-            </View>
-          </View>
-        )}
-
         {/* ORDER ITEMS */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Mahsulotlar</Text>
@@ -384,6 +388,15 @@ export default function OrderDetailScreen() {
         {/* DELIVERY ADDRESS */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Yetkazib berish manzili</Text>
+          {isUZB && (
+            <View style={styles.infoRow}>
+              <View style={styles.infoLeft}>
+                <Truck size={16} color={tokens.colors.textMuted} />
+                <Text style={styles.infoLabel}>Taxminiy yetkazib berish:</Text>
+              </View>
+              <Text style={styles.infoValue}>{deliveryText}</Text>
+            </View>
+          )}
           {infoRow('Ism:', order.deliveryFullName)}
           {infoRow('Tel:', order.deliveryPhone)}
           {infoRow('Manzil:', order.deliveryAddressLine1)}
@@ -757,17 +770,24 @@ const styles = StyleSheet.create({
   },
   infoRow: {
     flexDirection: 'row',
-    marginBottom: 6,
-    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: tokens.colors.border,
+  },
+  infoLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   infoLabel: {
-    width: 70,
-    fontSize: 12,
+    fontSize: 13,
     color: tokens.colors.textMuted,
   },
   infoValue: {
-    flex: 1,
     fontSize: 13,
+    fontWeight: '500',
     color: tokens.colors.text,
   },
   summaryRow: {
