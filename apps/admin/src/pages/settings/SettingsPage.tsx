@@ -623,15 +623,6 @@ function ExchangeRateTab() {
             <ExternalLink className="w-3 h-3" />
             1 USD → KRW
           </a>
-          <a
-            href="https://www.google.com/search?q=100000+krw+in+uzs"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border rounded-lg text-xs hover:bg-muted/50 transition-colors"
-          >
-            <ExternalLink className="w-3 h-3" />
-            100,000 KRW → UZS
-          </a>
         </div>
       </div>
 
