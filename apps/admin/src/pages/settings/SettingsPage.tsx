@@ -16,6 +16,7 @@ import {
   X,
   RefreshCw,
   Phone,
+  ExternalLink,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { settingsApi } from '../../api/settings.api'
@@ -597,6 +598,43 @@ function ExchangeRateTab() {
 
   return (
     <div className="space-y-4">
+      {/* Google rate check links */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3 bg-muted/30 rounded-lg mb-4">
+        <div>
+          <p className="text-sm font-medium">Google da joriy kurs</p>
+          <p className="text-xs text-muted-foreground">1 KRW = ? UZS ni tekshiring</p>
+        </div>
+        <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+          <a
+            href="https://www.google.com/search?q=1+krw+in+uzs"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border rounded-lg text-xs hover:bg-muted/50 transition-colors"
+          >
+            <ExternalLink className="w-3 h-3" />
+            1 KRW → UZS
+          </a>
+          <a
+            href="https://www.google.com/search?q=1+usd+in+krw"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border rounded-lg text-xs hover:bg-muted/50 transition-colors"
+          >
+            <ExternalLink className="w-3 h-3" />
+            1 USD → KRW
+          </a>
+          <a
+            href="https://www.google.com/search?q=100000+krw+in+uzs"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border rounded-lg text-xs hover:bg-muted/50 transition-colors"
+          >
+            <ExternalLink className="w-3 h-3" />
+            100,000 KRW → UZS
+          </a>
+        </div>
+      </div>
+
       {/* Current rate card */}
       <div className="bg-white rounded-2xl border-[0.5px] border-border p-6 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-6">
         <div className="text-center sm:text-left">
