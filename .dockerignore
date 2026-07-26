@@ -1,19 +1,50 @@
+# Dependencies
 node_modules
 **/node_modules
-.git
-.github
+
+# Build outputs
 dist
 **/dist
-.env
-.env.*
-!.env.example
+.next
+**/.next
+build
+**/build
+
+# Development files
+**/*.test.ts
+**/*.spec.ts
+**/__tests__
+**/*.test.tsx
+**/*.spec.tsx
+
+# Mobile app (not needed for API)
 apps/mobile
+apps/admin
+
+# Git
+.git
+.gitignore
+
+# Environment
+.env.local
+.env.development
+
+# Logs
 *.log
-.DS_Store
+logs
+
+# IDE
 .vscode
 .idea
-coverage
-.nx/cache
-.nx/workspace-data
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# CI/CD
+.github
+
+# Docs
 *.md
-!README.md
+README*
