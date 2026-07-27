@@ -1,13 +1,12 @@
 name: Mobile OTA Update
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'apps/mobile/**'
-      - 'libs/shared-types/**'
-      - 'libs/shared-utils/**'
-      - 'libs/ui-config/**'
+  workflow_dispatch:
+    inputs:
+      message:
+        description: 'Update message'
+        required: true
+        default: 'OTA Update'
 
 jobs:
   ota-update:
@@ -38,10 +37,16 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Install tsx for TS support
+        run: npm install -g tsx
+
       - name: Publish OTA update
         working-directory: apps/mobile
+        env:
+          EXPO_PUBLIC_API_URL: https://api.miramarket.uz/api/v1
         run: |
-          eas update \
+          node --import tsx/esm \
+            $(which eas) update \
             --branch production \
             --message "Auto update: ${{ github.sha }}" \
             --non-interactive
