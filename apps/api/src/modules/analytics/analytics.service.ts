@@ -120,8 +120,8 @@ export async function getOverview(from: string, to: string) {
   const expResult = await db.execute(
     sql`SELECT COALESCE(SUM(amount_krw)::text,'0')
         as total FROM expenses
-        WHERE expense_date >= ${from || '2000-01-01'}::date
-        AND expense_date <= ${to || '2100-01-01'}::date`
+        WHERE expense_date >= ${from || startOfMonth(new Date()).toISOString().split('T')[0]}::date
+        AND expense_date <= ${to || endOfMonth(new Date()).toISOString().split('T')[0]}::date`
   )
   const totalExpenses = Number((expResult.rows[0] as any)?.total || 0)
   
