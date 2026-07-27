@@ -537,20 +537,22 @@ export function ProductsPage() {
       </div>
 
       {/* Product Sheet (create/edit) */}
-      <ProductSheet
-        open={sheetOpen}
-        onClose={() => {
-          setSheetOpen(false)
-          setEditProduct(null)
-        }}
-        product={editProduct}
-        categories={flatCategories}
-        onSuccess={() => {
-          qc.removeQueries()
-          setSheetOpen(false)
-          setEditProduct(null)
-        }}
-      />
+      {sheetOpen && (
+        <ProductSheet
+          open={sheetOpen}
+          onClose={() => {
+            setSheetOpen(false)
+            setEditProduct(null)
+          }}
+          product={editProduct}
+          categories={flatCategories}
+          onSuccess={() => {
+            qc.removeQueries()
+            setSheetOpen(false)
+            setEditProduct(null)
+          }}
+        />
+      )}
 
       {/* Delete confirm */}
       <ConfirmDialog

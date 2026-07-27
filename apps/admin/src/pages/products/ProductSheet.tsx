@@ -207,6 +207,22 @@ export function ProductSheet({ open, onClose, product, categories, onSuccess }: 
     },
     onSuccess: () => {
       toast.success(isEdit ? 'Mahsulot yangilandi' : 'Mahsulot yaratildi')
+
+      if (!isEdit) {
+        reset({
+          name: '',
+          barcode: '',
+          brandName: '',
+          isActive: true,
+          isNew: false,
+          isFeatured: false,
+          imageUrls: [],
+          skinTypes: [],
+          minOrderQty: 1,
+          minWholesaleQty: 5,
+        })
+      }
+
       onSuccess()
     },
     onError: (err: any) => {
