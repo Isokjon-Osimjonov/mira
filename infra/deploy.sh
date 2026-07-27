@@ -1,6 +1,28 @@
 #!/bin/bash
 set -e
 
+pull_with_retry() {
+  local SERVICE=$1
+  local MAX_RETRIES=5
+  local RETRY_DELAY=15
+
+  for i in $(seq 1 $MAX_RETRIES); do
+    echo "Pull attempt $i/$MAX_RETRIES ($SERVICE)"
+    if docker compose -f docker-compose.prod.yml pull "$SERVICE"; then
+      echo "Pull successful ✅"
+      return 0
+    fi
+
+    if [ $i -eq $MAX_RETRIES ]; then
+      echo "Pull failed after $MAX_RETRIES attempts ❌"
+      exit 1
+    fi
+
+    echo "Retrying in ${RETRY_DELAY}s..."
+    sleep $RETRY_DELAY
+  done
+}
+
 echo "=== Mira Market Blue-Green Deploy ==="
 echo "Image tag: ${IMAGE_TAG:-latest}"
 
@@ -24,8 +46,8 @@ fi
 echo "Currently live: $LIVE_COLOR (port $LIVE_PORT)"
 echo "Deploying to idle: $IDLE_COLOR (port $IDLE_PORT)"
 
-# Pull the new image
-docker compose -f docker-compose.prod.yml pull api_$IDLE_COLOR
+# Pull the new image with retry
+pull_with_retry "api_$IDLE_COLOR"
 
 # Start the idle container with the new image
 docker compose -f docker-compose.prod.yml --profile $IDLE_COLOR up -d api_$IDLE_COLOR
@@ -68,7 +90,7 @@ docker compose -f docker-compose.prod.yml stop api_$LIVE_COLOR
 
 echo "Updating admin panel..."
 
-docker compose -f docker-compose.prod.yml pull admin
+pull_with_retry "admin"
 
 docker compose -f docker-compose.prod.yml up -d admin
 
