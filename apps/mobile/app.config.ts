@@ -42,19 +42,10 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     },
     permissions: ['CAMERA', 'READ_EXTERNAL_STORAGE', 'RECEIVE_BOOT_COMPLETED', 'VIBRATE'],
   },
-  updates: {
-    url: 'https://u.expo.dev/95de2ad4-6355-4322-af4e-a56b3629a2be',
-    enabled: true,
-    fallbackToCacheTimeout: 0,
-  },
-  runtimeVersion: {
-    policy: 'appVersion',
-  },
   plugins: [
     'expo-router',
     'expo-secure-store',
     'expo-font',
-    'expo-updates',
     [
       'expo-splash-screen',
       {
