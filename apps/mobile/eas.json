@@ -7,6 +7,9 @@
     "development": {
       "developmentClient": true,
       "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "http://172.30.1.4:4000/api/v1"
+      },
       "ios": {
         "simulator": false
       },
@@ -22,7 +25,11 @@
       }
     },
     "production": {
-      "autoIncrement": true
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://api.miramarket.uz/api/v1",
+        "EXPO_PUBLIC_BOT_USERNAME": "mira_beauty_bot"
+      }
     }
   },
   "submit": {
