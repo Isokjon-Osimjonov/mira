@@ -14,6 +14,7 @@ import {
   History,
   Loader2,
   Eye,
+  Pencil,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useNavigate } from '@tanstack/react-router'
@@ -147,6 +148,8 @@ export function InventoryPage() {
   const [historySheet, setHistorySheet] = useState(false)
   const [selectedProduct, setSelectedProduct] = useState<any>(null)
   const [deleteBatchTarget, setDeleteBatchTarget] = useState<any>(null)
+  const [editBatchSheet, setEditBatchSheet] = useState(false)
+  const [editingBatch, setEditingBatch] = useState<any>(null)
 
   // Debounce
   useEffect(() => {
@@ -209,6 +212,20 @@ export function InventoryPage() {
       setDeleteBatchTarget(null)
     },
     onError: (err: any) => toast.error(getErrorMessage(err?.errorCode ?? '')),
+  })
+
+  const updateBatchMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) => inventoryApi.updateBatch(id, data),
+    onSuccess: () => {
+      toast.success('Partiya yangilandi')
+      setEditBatchSheet(false)
+      setEditingBatch(null)
+      qc.invalidateQueries({ queryKey: ['inventory'] })
+      qc.invalidateQueries({ queryKey: ['inventory', 'batches', selectedProduct?.productId] })
+    },
+    onError: (err: any) => {
+      toast.error(err?.response?.data?.error?.message ?? 'Xatolik')
+    },
   })
 
   // Add batch mutation
@@ -630,33 +647,39 @@ export function InventoryPage() {
                 </p>
                 <div className="space-y-1.5">
                   {productBatches.map((b: any) => (
-                    <div
-                      key={b.id}
-                      className="flex items-center justify-between
-                                  p-2.5 rounded-lg bg-gray-50
-                                  border-[0.5px] border-border/50"
-                    >
-                      <div>
-                        <p className="text-xs font-medium">
-                          Mavjud: {b.currentQty} ta (Jami: {b.initialQty} ta)
+                    <div key={b.id} className="flex items-center justify-between p-3 border rounded-lg bg-muted/20">
+                      {/* Batch info */}
+                      <div className="space-y-1">
+                        <p className="text-sm font-medium">
+                          {b.currentQty} ta mavjud
+                          <span className="text-xs text-muted-foreground ml-1">
+                            (Jami: {b.initialQty} ta)
+                          </span>
                         </p>
                         {b.expiryDate && (
-                          <p
-                            className="text-[11px]
-                                      text-muted-foreground"
-                          >
+                          <p className="text-xs text-muted-foreground">
                             Muddat: {formatDate(b.expiryDate)}
                           </p>
                         )}
-                      </div>
-                      <div className="text-right">
-                        <p className="text-[11px] text-muted-foreground">
+                        <p className="text-xs text-muted-foreground">
                           Tannarx: {formatKRW(Number(b.costPrice))}
                         </p>
-                        <p className="text-[10px] text-muted-foreground">
-                          {formatDate(b.receivedAt)}
-                        </p>
                       </div>
+
+                      {/* Edit button */}
+                      {canWrite('inventory') && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setEditingBatch(b)
+                            setEditBatchSheet(true)
+                          }}>
+                          <Pencil className="w-3.5 h-3.5 mr-1" />
+                          Tahrirlash
+                        </Button>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -1089,13 +1112,10 @@ export function InventoryPage() {
                       <div
                         key={b.id}
                         className="p-3 rounded-xl border-[0.5px]
-                                    border-border bg-gray-50/50"
+                                    border-border bg-gray-50/50 flex items-center justify-between"
                       >
-                        <div
-                          className="flex items-center
-                                      justify-between mb-1"
-                        >
-                          <div className="flex items-center gap-2">
+                        <div>
+                          <div className="flex items-center gap-2 mb-1">
                             <span className="text-sm font-bold text-gray-900">
                               {b.currentQty} ta
                             </span>
@@ -1104,9 +1124,6 @@ export function InventoryPage() {
                                 (jami: {b.initialQty})
                               </span>
                             )}
-                          </div>
-
-                          <div className="flex items-center gap-2">
                             {b.expiryDate && (
                               <span
                                 className={cn(
@@ -1121,24 +1138,38 @@ export function InventoryPage() {
                                 {formatDate(b.expiryDate)}
                               </span>
                             )}
-
-                            {canWrite('inventory') && b.currentQty === b.initialQty && (
-                              <button
-                                onClick={() => setDeleteBatchTarget(b)}
-                                className="w-6 h-6 rounded-lg flex items-center justify-center hover:bg-red-50 text-red-400 hover:text-red-600 transition-colors"
-                              >
-                                <Trash2 className="h-3 w-3" />
-                              </button>
-                            )}
+                          </div>
+                          <div
+                            className="flex items-center gap-3
+                                        text-[11px] text-muted-foreground"
+                          >
+                            <span>Tannarx: {formatKRW(Number(b.costPrice))}</span>
+                            <span>•</span>
+                            <span>Qabul: {formatDate(b.receivedAt)}</span>
                           </div>
                         </div>
-                        <div
-                          className="flex items-center gap-3
-                                      text-[11px] text-muted-foreground"
-                        >
-                          <span>Tannarx: {formatKRW(Number(b.costPrice))}</span>
-                          <span>•</span>
-                          <span>Qabul: {formatDate(b.receivedAt)}</span>
+                        
+                        <div className="flex items-center gap-2">
+                          {canWrite('inventory') && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setEditingBatch(b)
+                                setEditBatchSheet(true)
+                              }}>
+                              <Pencil className="w-3.5 h-3.5 mr-1" />
+                              Tahrirlash
+                            </Button>
+                          )}
+                          {canWrite('inventory') && b.currentQty === b.initialQty && (
+                            <button
+                              onClick={() => setDeleteBatchTarget(b)}
+                              className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-red-50 text-red-400 hover:text-red-600 transition-colors"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          )}
                         </div>
                       </div>
                     ))
@@ -1305,6 +1336,196 @@ export function InventoryPage() {
         loading={deleteBatchMutation.isPending}
         onConfirm={() => deleteBatchMutation.mutate(deleteBatchTarget.id)}
       />
+
+      {/* ── EDIT BATCH SHEET ──────────────────────────────── */}
+      <Sheet
+        open={editBatchSheet}
+        onOpenChange={(open) => {
+          setEditBatchSheet(open)
+          if (!open) setEditingBatch(null)
+        }}>
+        <SheetContent side="right"
+          className="w-[90vw] sm:w-[480px] sm:max-w-[480px] overflow-y-auto flex flex-col">
+          <SheetHeader>
+            <SheetTitle>
+              Partiyani tahrirlash
+            </SheetTitle>
+          </SheetHeader>
+
+          {editingBatch && (
+            <EditBatchForm
+              batch={editingBatch}
+              onSubmit={(data) => {
+                updateBatchMutation.mutate({
+                  id: editingBatch.id,
+                  data
+                })
+              }}
+              isPending={updateBatchMutation.isPending}
+              onCancel={() => {
+                setEditBatchSheet(false)
+                setEditingBatch(null)
+              }}
+            />
+          )}
+        </SheetContent>
+      </Sheet>
+    </div>
+  )
+}
+
+function EditBatchForm({
+  batch,
+  onSubmit,
+  isPending,
+  onCancel
+}: {
+  batch: any
+  onSubmit: (data: any) => void
+  isPending: boolean
+  onCancel: () => void
+}) {
+  const [currentQty, setCurrentQty] = useState(String(batch.currentQty))
+  const [costPrice, setCostPrice] = useState(String(batch.costPrice))
+  const [expiryDate, setExpiryDate] = useState(batch.expiryDate ? batch.expiryDate.split('T')[0] : '')
+  const [reason, setReason] = useState('')
+  const [error, setError] = useState('')
+
+  const handleSubmit = () => {
+    if (!reason.trim()) {
+      setError('Sababini kiriting')
+      return
+    }
+
+    const qty = parseInt(currentQty)
+    if (isNaN(qty) || qty < 0) {
+      setError("Miqdor 0 dan kichik bo'lmaydi")
+      return
+    }
+
+    setError('')
+    onSubmit({
+      currentQty: qty,
+      costPrice: costPrice || undefined,
+      expiryDate: expiryDate || null,
+      reason: reason.trim()
+    })
+  }
+
+  return (
+    <div className="space-y-4 mt-6">
+      {/* Current info */}
+      <div className="p-3 bg-muted/30 rounded-lg text-sm">
+        <p className="text-muted-foreground text-xs mb-1">
+          Hozirgi holat:
+        </p>
+        <p>Miqdor: <span className="font-medium">
+          {batch.currentQty} ta</span>
+        </p>
+        <p>Tannarx: <span className="font-medium">
+          {formatKRW(Number(batch.costPrice))}
+          </span>
+        </p>
+        {batch.expiryDate && (
+          <p>Muddat: <span className="font-medium">
+            {batch.expiryDate.split('T')[0]}
+            </span>
+          </p>
+        )}
+      </div>
+
+      {/* New quantity */}
+      <div className="space-y-2">
+        <label className="text-sm font-medium">
+          Yangi miqdor (dona) *
+        </label>
+        <input
+          type="number"
+          min={0}
+          value={currentQty}
+          onChange={e => setCurrentQty(e.target.value)}
+          className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+          placeholder="Yangi miqdorni kiriting"
+        />
+        {batch.currentQty !== parseInt(currentQty) && !isNaN(parseInt(currentQty)) && (
+          <p className="text-xs text-amber-600">
+            O'zgarish: {
+              parseInt(currentQty) - batch.currentQty > 0
+                ? `+${parseInt(currentQty) - batch.currentQty}`
+                : parseInt(currentQty) - batch.currentQty
+            } ta
+          </p>
+        )}
+      </div>
+
+      {/* Cost price */}
+      <div className="space-y-2">
+        <label className="text-sm font-medium">
+          Tannarx (KRW)
+        </label>
+        <input
+          type="number"
+          min={0}
+          value={costPrice}
+          onChange={e => setCostPrice(e.target.value)}
+          className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+          placeholder="Tannarx"
+        />
+      </div>
+
+      {/* Expiry date */}
+      <div className="space-y-2">
+        <label className="text-sm font-medium">
+          Yaroqlilik muddati
+        </label>
+        <input
+          type="date"
+          value={expiryDate}
+          onChange={e => setExpiryDate(e.target.value)}
+          className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+        />
+      </div>
+
+      {/* Reason - REQUIRED */}
+      <div className="space-y-2">
+        <label className="text-sm font-medium">
+          Sabab *
+          <span className="text-xs text-muted-foreground ml-1">
+            (majburiy)
+          </span>
+        </label>
+        <textarea
+          value={reason}
+          onChange={e => setReason(e.target.value)}
+          rows={3}
+          className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none"
+          placeholder="Masalan: Offline savdo tuzatish, Hisoblash xatosi..."
+        />
+      </div>
+
+      {/* Error */}
+      {error && (
+        <p className="text-sm text-destructive">
+          {error}
+        </p>
+      )}
+
+      {/* Buttons */}
+      <div className="flex gap-3 pt-2">
+        <Button
+          variant="outline"
+          className="flex-1"
+          onClick={onCancel}
+          disabled={isPending}>
+          Bekor
+        </Button>
+        <Button
+          className="flex-1"
+          onClick={handleSubmit}
+          disabled={isPending}>
+          {isPending ? 'Saqlanmoqda...' : 'Saqlash'}
+        </Button>
+      </div>
     </div>
   )
 }

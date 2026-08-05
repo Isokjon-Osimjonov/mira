@@ -78,4 +78,17 @@ export const inventoryApi = {
     const res = await api.delete(`/admin/inventory/batches/${id}`)
     return res.data
   },
+
+  updateBatch: async (
+    id: string,
+    data: {
+      currentQty?: number
+      costPrice?: string
+      expiryDate?: string | null
+      reason: string
+    }
+  ) => {
+    const res = await api.patch(`/admin/inventory/batches/${id}`, data)
+    return res.data
+  },
 }
